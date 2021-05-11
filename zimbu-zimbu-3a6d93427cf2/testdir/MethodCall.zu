@@ -1,0 +1,58 @@
+# Test method calls, function overloading.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE MethodCall @public
+
+  PROC test() @public
+    IO.print("testdir/MethodCall.zu")
+    testSimple()
+    testOverload()
+  }
+
+  FUNC invert(bool flag) bool
+    RETURN !flag
+  }
+
+  FUNC doIt(bool fail) status
+    RETURN fail ? FAIL : OK
+  }
+
+  PROC testSimple()
+    IO.print("not true is " .. invert(TRUE)
+             .. " and not false is " .. invert(FALSE))
+    IO.print("fail is " .. doIt(TRUE) .. " and !fail is " .. doIt(FALSE))
+  }
+
+  PROC print(string text)
+    IO.print("text: " .. text)
+  }
+  PROC print(int nr)
+    IO.print("number: " .. nr)
+  }
+  PROC print(bool what)
+    IO.print("Bool: " .. what)
+  }
+  PROC print(status what)
+    IO.print("Status: " .. what)
+  }
+  PROC print(list<string> names)
+    IO.print("list: " .. names.ToString())
+  }
+  PROC print(list<string> names, bool yes)
+    IO.print("list: " .. names.ToString() .. yes)
+  }
+
+  PROC testOverload()
+    print(OK)
+    print(FAIL)
+    print(7)
+    print(TRUE)
+    print(["John", "Mary"])
+    print(["Peter", "Ramona"], FALSE)
+  }
+
+}

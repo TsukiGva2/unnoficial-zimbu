@@ -1,0 +1,6 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  dict<string, int> d = ["one": 1, "two": 2]
+  IO.print(d.ToString())
+  RETURN 0
+}

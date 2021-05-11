@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutHtmlUrlAttributes.zut
+
+FUNC Main() int
+  # HTML - Url / Attributes
+  ZUT.Attributes attr = NEW().add("xxx")
+  string fail = Testing.inHtmlUrlAttributes(attr).ToString()
+  RETURN 0
+}

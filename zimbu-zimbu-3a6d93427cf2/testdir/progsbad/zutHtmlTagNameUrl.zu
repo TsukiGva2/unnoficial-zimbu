@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutHtmlTagNameUrl.zut
+
+FUNC Main() int
+  # HTML tag name / Url
+  ZUT.Url url = NEW().add("xxx")
+  string fail = Testing.inTagNameUrl(url).ToString()
+  RETURN 0
+}

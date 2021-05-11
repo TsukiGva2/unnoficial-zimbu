@@ -1,0 +1,7 @@
+MODULE Testing
+  # URL / Html
+  TEMPLATE inUrlHtml(ZUT.Html html) ZUT.Url @public
+    [=html]
+  }
+}
+

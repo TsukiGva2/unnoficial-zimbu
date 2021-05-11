@@ -1,0 +1,546 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module TIO - Terminal IO
+#
+
+#= Classes, Interfaces and methods for Terminal Input/Output.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE TIOModule @public @items=public
+
+  #= Return a TIO.Mode with the current mode for file |fd|.
+  #- The C functionality that this is based on can be found in the termios
+  #- manpage.  E.g. http://linux.die.net/man/3/termios
+  FUNC getMode(IO.File fd) Mode
+    IF fd == NIL
+      THROW E.NilAccess.NEW("fd is NIL")
+    }
+    Mode r = NEW()
+    bool noFile
+    bool getFail
+
+    int c_iflag
+    int c_oflag
+    int c_cflag
+    int c_lflag
+
+>>> uses(termios)
+  {
+   int i;
+   struct termios tio;
+   int fd = fileno(%fd.<IO.File.C>.fd%);
+   if (fd == -1) {
+    %noFile% = 1;
+   } else {
+    if (tcgetattr(fd, &tio) == -1) {
+     %getFail% = 1;
+    } else {
+     // Cannot assign to a BITS field here, do that in Zimbu code below.
+     %c_iflag% = tio.c_iflag;
+     %c_oflag% = tio.c_oflag;
+     %c_cflag% = tio.c_cflag;
+     %c_lflag% = tio.c_lflag;
+
+     %r.discard% = tio.c_cc[VDISCARD];
+#ifdef VDSUSP
+     %r.dsusp% = tio.c_cc[VDSUSP];
+#endif
+     %r.eof% = tio.c_cc[VEOF];
+     %r.eol% = tio.c_cc[VEOL];
+     %r.eol2% = tio.c_cc[VEOL2];
+     %r.erase% = tio.c_cc[VERASE];
+     %r.intr% = tio.c_cc[VINTR];
+     %r.kill% = tio.c_cc[VKILL];
+     %r.lnext% = tio.c_cc[VLNEXT];
+     %r.min% = tio.c_cc[VMIN];
+     %r.quit% = tio.c_cc[VQUIT];
+     %r.reprint% = tio.c_cc[VREPRINT];
+     %r.start% = tio.c_cc[VSTART];
+#ifdef VSTATUS
+     %r.status% = tio.c_cc[VSTATUS];
+#endif
+     %r.stop% = tio.c_cc[VSTOP];
+     %r.susp% = tio.c_cc[VSUSP];
+#ifdef VSWTCH
+     %r.swtch% = tio.c_cc[VSWTCH];
+#endif
+     %r.time% = tio.c_cc[VTIME];
+     %r.werase% = tio.c_cc[VWERASE];
+
+     for (i = 0; i <= 1; ++i) {
+      speed_t sp = i == 0 ? cfgetispeed(&tio) : cfgetospeed(&tio);
+      int zsp;
+      switch (sp) {
+       case B0: zsp = %Speed.s0%; break;
+       case B50: zsp = %Speed.s50%; break;
+       case B75: zsp = %Speed.s75%; break;
+       case B110: zsp = %Speed.s110%; break;
+       case B134: zsp = %Speed.s134%; break;
+       case B150: zsp = %Speed.s150%; break;
+       case B200: zsp = %Speed.s200%; break;
+       case B300: zsp = %Speed.s300%; break;
+       case B600: zsp = %Speed.s600%; break;
+       case B1200: zsp = %Speed.s1200%; break;
+       case B1800: zsp = %Speed.s1800%; break;
+       case B2400: zsp = %Speed.s2400%; break;
+       case B4800: zsp = %Speed.s4800%; break;
+       case B9600: zsp = %Speed.s9600%; break;
+       case B19200: zsp = %Speed.s19200%; break;
+       case B38400: zsp = %Speed.s38400%; break;
+       case B57600: zsp = %Speed.s57600%; break;
+       case B115200: zsp = %Speed.s115200%; break;
+       case B230400: zsp = %Speed.s230400%; break;
+      }
+      if (i == 0) %r.inputSpeed% = zsp;
+      else %r.outputSpeed% = zsp;
+     }
+    }
+   }
+  }
+<<<
+    IF noFile
+      THROW E.IOError.NEW("fd is not associated with a file")
+    }
+
+    r.input.ignbrk = (c_iflag & C(IGNBRK)) != 0
+    r.input.brkint = (c_iflag & C(BRKINT)) != 0
+    r.input.ignpar = (c_iflag & C(IGNPAR)) != 0
+    r.input.parmrk = (c_iflag & C(PARMRK)) != 0
+    r.input.inpck = (c_iflag & C(INPCK)) != 0
+    r.input.istrip = (c_iflag & C(ISTRIP)) != 0
+    r.input.inlcr = (c_iflag & C(INLCR)) != 0
+    r.input.igncr = (c_iflag & C(IGNCR)) != 0
+    r.input.icrnl = (c_iflag & C(ICRNL)) != 0
+    r.input.iuclc = (c_iflag & C(IUCLC)) != 0
+    r.input.ixon = (c_iflag & C(IXON)) != 0
+    r.input.ixany = (c_iflag & C(IXANY)) != 0
+    r.input.ixoff = (c_iflag & C(IXOFF)) != 0
+    r.input.imaxbel = (c_iflag & C(IMAXBEL)) != 0
+    r.input.iutf8 = (c_iflag & C(IUTF8)) != 0
+
+    r.output.opost = (c_oflag & C(OPOST)) != 0
+    r.output.olcuc = (c_oflag & C(OLCUC)) != 0
+    r.output.onlcr = (c_oflag & C(ONLCR)) != 0
+    r.output.ocrnl = (c_oflag & C(OCRNL)) != 0
+    r.output.onocr = (c_oflag & C(ONOCR)) != 0
+    r.output.onlret = (c_oflag & C(ONLRET)) != 0
+    r.output.ofill = (c_oflag & C(OFILL)) != 0
+    r.output.ofdel = (c_oflag & C(OFDEL)) != 0
+    r.output.nldly = (c_oflag & C(NLDLY)) != 0
+    r.output.crdly = (c_oflag & C(CRDLY)) != 0
+    r.output.tabdly = (c_oflag & C(TABDLY)) != 0
+    r.output.bsdly = (c_oflag & C(BSDLY)) != 0
+    r.output.vtdly = (c_oflag & C(VTDLY)) != 0
+    r.output.ffdly = (c_oflag & C(FFDLY)) != 0
+
+    SWITCH c_cflag & C(CSIZE)
+      CASE C(CS5); r.control.csize = CharSize.cs5
+      CASE C(CS6); r.control.csize = CharSize.cs6
+      CASE C(CS7); r.control.csize = CharSize.cs7
+      CASE C(CS8); r.control.csize = CharSize.cs8
+     }
+    r.control.cstopb = (c_cflag & C(CSTOPB)) != 0
+    r.control.cread = (c_cflag & C(CREAD)) != 0
+    r.control.parenb = (c_cflag & C(PARENB)) != 0
+    r.control.parodd = (c_cflag & C(PARODD)) != 0
+    r.control.hupcl = (c_cflag & C(HUPCL)) != 0
+    r.control.clocal = (c_cflag & C(CLOCAL)) != 0
+>>>
+#ifdef LOBLK
+<<<
+    r.control.loblk = (c_cflag & C(LOBLK)) != 0
+>>>
+#endif
+<<<
+    r.control.cmspar = (c_cflag & C(CMSPAR)) != 0
+    r.control.crtscts = (c_cflag & C(CRTSCTS)) != 0
+
+    r.local.isig = (c_lflag & C(ISIG)) != 0
+    r.local.icanon = (c_lflag & C(ICANON)) != 0
+    r.local.xcase = (c_lflag & C(XCASE)) != 0
+    r.local.echo = (c_lflag & C(ECHO)) != 0
+    r.local.echoe = (c_lflag & C(ECHOE)) != 0
+    r.local.echok = (c_lflag & C(ECHOK)) != 0
+    r.local.echonl = (c_lflag & C(ECHONL)) != 0
+    r.local.echoctl = (c_lflag & C(ECHOCTL)) != 0
+    r.local.echoprt = (c_lflag & C(ECHOPRT)) != 0
+    r.local.echoke = (c_lflag & C(ECHOKE)) != 0
+>>>
+#ifdef DEFECHO
+<<<
+    r.local.defecho = (c_lflag & C(DEFECHO)) != 0
+>>>
+#endif
+<<<
+    r.local.flusho = (c_lflag & C(FLUSHO)) != 0
+    r.local.noflsh = (c_lflag & C(NOFLSH)) != 0
+    r.local.tostop = (c_lflag & C(TOSTOP)) != 0
+    r.local.pendin = (c_lflag & C(PENDIN)) != 0
+    r.local.iexten = (c_lflag & C(IEXTEN)) != 0
+
+    RETURN r
+  }
+
+  #= For docs see the termios manpage, c_iflag constants.
+  BITS InputMode
+    bool  $ignbrk
+    bool  $brkint
+    bool  $ignpar
+    bool  $parmrk
+    bool  $inpck
+    bool  $istrip
+    bool  $inlcr
+    bool  $igncr
+    bool  $icrnl
+    bool  $iuclc
+    bool  $ixon
+    bool  $ixany
+    bool  $ixoff
+    bool  $imaxbel
+    bool  $iutf8
+  }
+
+  #= For docs see the termios manpage, c_oflag constants.
+  BITS OutputMode
+    bool  $opost
+    bool  $olcuc
+    bool  $onlcr
+    bool  $ocrnl
+    bool  $onocr
+    bool  $onlret
+    bool  $ofill
+    bool  $ofdel
+    bool  $nldly
+    bool  $crdly
+    bool  $tabdly
+    bool  $bsdly
+    bool  $vtdly
+    bool  $ffdly
+  }
+
+  #= Character size in bits.
+  ENUM CharSize
+    cs5
+    cs6
+    cs7
+    cs8
+  }
+
+  #= For docs see the termios manpage, c_cflag constants.
+  BITS ControlMode
+    CharSize  $csize
+    bool      $cstopb
+    bool      $cread
+    bool      $parenb
+    bool      $parodd
+    bool      $hupcl
+    bool      $clocal
+    bool      $loblk
+    bool      $cmspar
+    bool      $crtscts
+  }
+
+  #= For docs see the termios manpage, c_lflag constants.
+  BITS LocalMode
+    bool   $isig
+    bool   $icanon
+    bool   $xcase
+    bool   $echo
+    bool   $echoe
+    bool   $echok
+    bool   $echonl
+    bool   $echoctl
+    bool   $echoprt
+    bool   $echoke
+    bool   $defecho
+    bool   $flusho
+    bool   $noflsh
+    bool   $tostop
+    bool   $pendin
+    bool   $iexten
+  }
+
+  #= Speed in baud.
+  ENUM Speed
+    s0
+    s50
+    s75
+    s110
+    s134
+    s150
+    s200
+    s300
+    s600
+    s1200
+    s1800
+    s2400
+    s4800
+    s9600
+    s19200
+    s38400
+    s57600
+    s115200
+    s230400
+  }    
+
+  #= Stores terminal mode values.
+  CLASS Mode @public @items=public
+    InputMode   $input
+    OutputMode  $output
+    ControlMode $control
+    LocalMode   $local
+    Speed       $inputSpeed
+    Speed       $outputSpeed
+
+    int         $discard
+    int         $dsusp
+    int         $eof
+    int         $eol
+    int         $eol2
+    int         $erase
+    int         $intr
+    int         $kill
+    int         $lnext
+    int         $min
+    int         $quit
+    int         $reprint
+    int         $start
+    int         $status
+    int         $stop
+    int         $susp
+    int         $swtch
+    int         $time
+    int         $werase
+
+    FUNC $ToString() string
+      IO.StringWriter w = NEW()
+      w.write("{input: \($input), ")
+      w.write("output: \($output), ")
+      w.write("control: \($control), ")
+      w.write("local: \($local), ")
+      w.write("inputSpeed: \($inputSpeed), ")
+      w.write("outputSpeed: \($outputSpeed)")
+      IF $discard != 0
+        w.write(", discard: \($discard)")
+      }
+      IF $dsusp != 0
+        w.write(", dsusp: \($dsusp)")
+      }
+      IF $eof != 0
+        w.write(", eof: \($eof)")
+      }
+      IF $eol != 0
+        w.write(", eol: \($eol)")
+      }
+      IF $eol2 != 0
+        w.write(", eol2: \($eol2)")
+      }
+      IF $erase != 0
+        w.write(", erase: \($erase)")
+      }
+      IF $intr != 0
+        w.write(", intr: \($intr)")
+      }
+      IF $kill != 0
+        w.write(", kill: \($kill)")
+      }
+      IF $lnext != 0
+        w.write(", lnext: \($lnext)")
+      }
+      IF $min != 0
+        w.write(", min: \($min)")
+      }
+      IF $quit != 0
+        w.write(", quit: \($quit)")
+      }
+      IF $reprint != 0
+        w.write(", reprint: \($reprint)")
+      }
+      IF $start != 0
+        w.write(", start: \($start)")
+      }
+      IF $status != 0
+        w.write(", status: \($status)")
+      }
+      IF $stop != 0
+        w.write(", stop: \($stop)")
+      }
+      IF $susp != 0
+        w.write(", susp: \($susp)")
+      }
+      IF $swtch != 0
+        w.write(", swtch: \($swtch)")
+      }
+      IF $time != 0
+        w.write(", time: \($time)")
+      }
+      IF $werase != 0
+        w.write(", werase: \($werase)")
+      }
+      w.write("}")
+      RETURN w.ToString()
+    }
+
+    #= Set this mode on |fd|
+    #- Return FAIL if not all modes could be set.
+    FUNC $setMode(IO.File fd) status
+      IF fd == NIL
+        THROW E.NilAccess.NEW("fd is NIL")
+      }
+      bool noFile
+      status ret = OK
+>>> uses(termios)
+  {
+   int i;
+   int fd = fileno(%fd.<IO.File.C>.fd%);
+   if (fd == -1) {
+    %noFile% = 1;
+   } else {
+    struct termios tio;
+    memset(&tio, 0, sizeof(struct termios));
+    if (%$input.ignbrk%) tio.c_iflag |= IGNBRK;
+    if (%$input.brkint%) tio.c_iflag |= BRKINT;
+    if (%$input.ignpar%) tio.c_iflag |= IGNPAR;
+    if (%$input.parmrk%) tio.c_iflag |= PARMRK;
+    if (%$input.inpck%) tio.c_iflag |= INPCK;
+    if (%$input.istrip%) tio.c_iflag |= ISTRIP;
+    if (%$input.inlcr%) tio.c_iflag |= INLCR;
+    if (%$input.igncr%) tio.c_iflag |= IGNCR;
+    if (%$input.icrnl%) tio.c_iflag |= ICRNL;
+    if (%$input.iuclc%) tio.c_iflag |= IUCLC;
+    if (%$input.ixon%) tio.c_iflag |= IXON;
+    if (%$input.ixany%) tio.c_iflag |= IXANY;
+    if (%$input.ixoff%) tio.c_iflag |= IXOFF;
+    if (%$input.imaxbel%) tio.c_iflag |= IMAXBEL;
+    if (%$input.iutf8%) tio.c_iflag |= IUTF8;
+
+    if (%$output.opost%) tio.c_oflag |= OPOST;
+    if (%$output.olcuc%) tio.c_oflag |= OLCUC;
+    if (%$output.onlcr%) tio.c_oflag |= ONLCR;
+    if (%$output.ocrnl%) tio.c_oflag |= OCRNL;
+    if (%$output.onocr%) tio.c_oflag |= ONOCR;
+    if (%$output.onlret%) tio.c_oflag |= ONLRET;
+    if (%$output.ofill%) tio.c_oflag |= OFILL;
+    if (%$output.ofdel%) tio.c_oflag |= OFDEL;
+    if (%$output.nldly%) tio.c_oflag |= NLDLY;
+    if (%$output.crdly%) tio.c_oflag |= CRDLY;
+    if (%$output.tabdly%) tio.c_oflag |= TABDLY;
+    if (%$output.bsdly%) tio.c_oflag |= BSDLY;
+    if (%$output.vtdly%) tio.c_oflag |= VTDLY;
+    if (%$output.ffdly%) tio.c_oflag |= FFDLY;
+
+    switch (%$control.csize%) {
+     case %CharSize.cs5%: tio.c_cflag |= CS5; break;
+     case %CharSize.cs6%: tio.c_cflag |= CS6; break;
+     case %CharSize.cs7%: tio.c_cflag |= CS7; break;
+     case %CharSize.cs8%: tio.c_cflag |= CS8; break;
+    }
+    if (%$control.cstopb%) tio.c_cflag |= CSTOPB;
+    if (%$control.cread%) tio.c_cflag |= CREAD;
+    if (%$control.parenb%) tio.c_cflag |= PARENB;
+    if (%$control.parodd%) tio.c_cflag |= PARODD;
+    if (%$control.hupcl%) tio.c_cflag |= HUPCL;
+    if (%$control.clocal%) tio.c_cflag |= CLOCAL;
+#ifdef LOBLK
+    if (%$control.loblk%) tio.c_cflag |= LOBLK;
+#endif
+    if (%$control.cmspar%) tio.c_cflag |= CMSPAR;
+    if (%$control.crtscts%) tio.c_cflag |= CRTSCTS;
+
+    if (%$local.isig%) tio.c_lflag |= ISIG;
+    if (%$local.icanon%) tio.c_lflag |= ICANON;
+    if (%$local.xcase%) tio.c_lflag |= XCASE;
+    if (%$local.echo%) tio.c_lflag |= ECHO;
+    if (%$local.echoe%) tio.c_lflag |= ECHOE;
+    if (%$local.echok%) tio.c_lflag |= ECHOK;
+    if (%$local.echonl%) tio.c_lflag |= ECHONL;
+    if (%$local.echoctl%) tio.c_lflag |= ECHOCTL;
+    if (%$local.echoprt%) tio.c_lflag |= ECHOPRT;
+    if (%$local.echoke%) tio.c_lflag |= ECHOKE;
+#ifdef DEFECHO
+    if (%$local.defecho%) tio.c_lflag |= DEFECHO;
+#endif
+    if (%$local.flusho%) tio.c_lflag |= FLUSHO;
+    if (%$local.noflsh%) tio.c_lflag |= NOFLSH;
+    if (%$local.tostop%) tio.c_lflag |= TOSTOP;
+    if (%$local.pendin%) tio.c_lflag |= PENDIN;
+    if (%$local.iexten%) tio.c_lflag |= IEXTEN;
+
+    tio.c_cc[VDISCARD] = %$discard%;
+#ifdef VDSUSP
+     tio.c_cc[VDSUSP] = %$dsusp%;
+#endif
+     tio.c_cc[VEOF] = %$eof%;
+     tio.c_cc[VEOL] = %$eol%;
+     tio.c_cc[VEOL2] = %$eol2%;
+     tio.c_cc[VERASE] = %$erase%;
+     tio.c_cc[VINTR] = %$intr%;
+     tio.c_cc[VKILL] = %$kill%;
+     tio.c_cc[VLNEXT] = %$lnext%;
+     tio.c_cc[VMIN] = %$min%;
+     tio.c_cc[VQUIT] = %$quit%;
+     tio.c_cc[VREPRINT] = %$reprint%;
+     tio.c_cc[VSTART] = %$start%;
+#ifdef VSTATUS
+     tio.c_cc[VSTATUS] = %$status%;
+#endif
+     tio.c_cc[VSTOP] = %$stop%;
+     tio.c_cc[VSUSP] = %$susp%;
+#ifdef VSWTCH
+     tio.c_cc[VSWTCH] = %$swtch%;
+#endif
+     tio.c_cc[VTIME] = %$time%;
+     tio.c_cc[VWERASE] = %$werase%;
+
+     for (i = 0; i <= 1; ++i) {
+      int zsp = i == 0 ? %$inputSpeed% : %$outputSpeed%;
+      speed_t sp;
+      switch (zsp) {
+       case %Speed.s0%: sp = B0; break;
+       case %Speed.s50%: sp = B50; break;
+       case %Speed.s75%: sp = B75; break;
+       case %Speed.s110%: sp = B110; break;
+       case %Speed.s134%: sp = B134; break;
+       case %Speed.s150%: sp = B150; break;
+       case %Speed.s200%: sp = B200; break;
+       case %Speed.s300%: sp = B300; break;
+       case %Speed.s600%: sp = B600; break;
+       case %Speed.s1200%: sp = B1200; break;
+       case %Speed.s1800%: sp = B1800; break;
+       case %Speed.s2400%: sp = B2400; break;
+       case %Speed.s4800%: sp = B4800; break;
+       case %Speed.s9600%: sp = B9600; break;
+       case %Speed.s19200%: sp = B19200; break;
+       case %Speed.s38400%: sp = B38400; break;
+       case %Speed.s57600%: sp = B57600; break;
+       case %Speed.s115200%: sp = B115200; break;
+       case %Speed.s230400%: sp = B230400; break;
+      }
+      if (i == 0) cfsetispeed(&tio, sp);
+      else cfsetospeed(&tio, sp);
+     }
+
+     // Set the new values.
+     // TODO: TCSADRAIN and TCSAFLUSH ?
+     tcsetattr(fd, TCSANOW, &tio);
+
+     // Check if it worked.
+     if (tcsetattr(fd, TCSANOW, &tio) == -1) %ret% = %FAIL%;
+    }
+  }
+<<<
+      IF noFile
+        THROW E.IOError.NEW("fd is not associated with a file")
+      }
+      RETURN ret
+    }
+  }
+
+
+}

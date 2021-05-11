@@ -1,0 +1,624 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# JS implementation for List.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../ContainerType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../ListStuff.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "../ZuiExpressionExt.zu"
+IMPORT "WriteJS.zu"
+
+MODULE WriteListJS @public @items=public      # TODO: restrict visibility
+
+  # Keep track of used items.
+  Declaration listGet = NEW("listGet")
+  Declaration listAdd = NEW("listAdd")
+  Declaration listInsert = NEW("listInsert")
+  Declaration newListInit = NEW("newListInit")
+  Declaration listExtend = NEW("listExtend")
+  Declaration listConcat = NEW("listConcat")
+  Declaration listClear = NEW("listClear")
+  Declaration listPopItem = NEW("listPopItem")
+  Declaration listPopList = NEW("listPopList")
+  Declaration listSlice = NEW("listSlice")
+  Declaration stringListSort = NEW("stringListSort")
+  Declaration intListSort = NEW("intListSort")
+  Declaration listJoin = NEW("listJoin")
+  Declaration listMap = NEW("listMap")
+  Declaration listKeyMap = NEW("listKeyMap")
+
+  # [item1, item2]  ->  [item1, item2]
+  # |destType| is the type of a list item (may be NIL).
+  # Only called when actually generating code
+  FUNC generateNewList(Zui.Expression expr, Type destType, SContext ctx) Type
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    Type type = destType
+    ctx.out.write("[")
+    IF expr.sizeListItem() > 0
+      IF exprExt.resultType ISA ContainerType
+        # Get the type from the resolve pass.
+        type = exprExt.resultType.<ContainerType>.itemType
+      ELSE
+        # Get the type from the first item.
+        type = Generate.genExpr(expr.getListItem(0), ctx.copyNoOut(), destType)
+      }
+
+      string comma = ""
+      FOR item IN expr.getListItemList()
+        ctx.out.write(comma)
+        Generate.genExprDoConv(item, ctx, type)
+        comma = ", "
+      }
+    }
+    ctx.out.write("]")
+    RETURN type
+  }
+
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr, bool lvalue,
+                                                 SContext ctx, Type destType
+       ) Type
+    # Only used when actually writing.
+    ctx.setDeclUsed(listGet)
+    ctx.out.write("ZListGet(")
+    Generate.genExpr(expr.getLeft(), ctx)
+    ctx.out.write(", ")
+    Generate.genExpr(expr.getRight(), ctx, Type.anInt)
+    ctx.out.write(")")
+    IF type.itemType != NIL
+      RETURN type.itemType
+    }
+    RETURN destType
+  }
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) != FAIL
+                                                       && type.itemType != NIL
+        ctx.out.write("ZListToString(")
+
+        # Write the object and arguments for item type.
+        Generate.generateVarname(objExpr, ctx, type)
+        listToStringArgument(type.itemType, call.getPos(), TRUE, ctx)
+        # TODO: format argument
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "Type"
+      IF ctx.doError()
+        ctx.error("Type() is not yet supported for list", call.getPos())
+      }
+    ELSEIF methodName == "get"
+      # list.get(idx) is the same as list[idx].
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        Zui.Expression expr = NEW()
+        expr.setLeft(objExpr)
+        expr.setRight(argList[0])
+        retType = ctx.gen.subscript(expr, ctx, NIL)
+      }
+    ELSEIF methodName == "add" || methodName == "insert"
+      # For C:
+      # numberList.add(item)  ->  ZLa(numberList, -1, item, NULL)
+      # numberList.add(item, i)  ->  ZLa(numberList, i, item, NULL)
+      # pointerList.add(item)  ->  ZLa(pointerList, -1, 0, item)
+      # pointerList.add(item, i)  ->  ZLa(pointerList, i, 0, item)
+      # numberList.insert(item) -> ZListInsert(numberList, 0, item, NULL)
+      # numberList.insert(item, i) -> ZListInsert(numberList, i, item, NULL)
+      # pointerList.insert(item) -> ZListInsert(pointerList, 0, 0, item)
+      # pointerList.insert(item, i) -> ZListInsert(pointerList, i, 0, item)
+      #
+      # For JS there is no difference between number and pointer:
+      # list.add(item)       -> ZLa(list, -1, item)
+      # list.add(item, i)    -> ZLa(list, i, item)
+      # list.insert(item)    -> ZListInsert(list, 0, item)
+      # list.insert(item, i) -> ZListInsert(list, i, item)
+      IF Generate.checkArgCount(call, 1, 2, ctx) != FAIL
+        IF methodName == "add"
+          ctx.setDeclUsed(listAdd)
+          ctx.out.write("ZLa(")
+        ELSE
+          ctx.setDeclUsed(listInsert)
+          ctx.out.write("ZListInsert(")
+        }
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+
+        # generate the index argument
+        IF call.sizeArgument() > 1
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+        ELSE
+          IF methodName == "add"
+            ctx.out.write("-1")  # add(item) appends to end of the list
+          ELSE
+            ctx.out.write("0")   # insert(item) inserts before start of the list
+          }
+        }
+        ctx.out.write(", ")
+
+        # generate the pointer or integer value
+        IF type.itemType != NIL
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, type.itemType)
+        }
+
+        # finish up
+        ctx.out.write(")")
+      }
+      retType = ListStuff.newList(type)
+    ELSEIF methodName == "extend" || methodName == "concat"
+      # List.extend(list)
+      # List.concat(list)
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        ctx.setDeclUsed(listExtend)
+        IF methodName == "extend"
+          ctx.out.write("ZListExtend(")
+        ELSE
+          ctx.setDeclUsed(listConcat)
+          ctx.out.write("ZListConcat(")
+        }
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        # type of both lists should be equal
+        Zui.Expression arg0 = call.getArgument(0)
+        Generate.genExpr(arg0, ctx, type)
+        IF methodName != "extend"
+          # Need to set the item type for the new list.
+          IF type.itemType != NIL && !type.itemType.isValueType()
+            ctx.out.write(", 1")
+          ELSE
+            ctx.out.write(", 0")
+          }
+        }
+        ctx.out.write(")")
+      }
+      retType = ListStuff.newList(type)
+    ELSEIF methodName == "clear" && call.sizeArgument() == 0
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        ctx.setDeclUsed(listClear)
+        ctx.out.write("ZListClear(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "find" || methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "has"
+          ctx.out.write("(")
+        }
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(".indexOf(")
+        Generate.genExprDoConv(call.getArgument(0), ctx, type.itemType)
+        ctx.out.write(")")
+        IF methodName == "has"
+          ctx.out.write(">= 0)")
+        }
+      }
+      retType = methodName == "has" ? Type.aBool : Type.anInt
+    ELSEIF methodName == "remove"
+           || (methodName == "clear" && call.sizeArgument() == 1)
+      IF Generate.checkArgCount(call, 0, 2, ctx) != FAIL
+        bool removeOne
+        bool hasArg
+
+        IF !call.hasArgument()
+          # mylist.remove()
+          removeOne = TRUE
+        ELSEIF call.sizeArgument() == 1
+          # mylist.remove(index)
+          removeOne = TRUE
+          hasArg = TRUE
+        }
+
+        IF removeOne
+          # mylist.remove() or mylist.remove(index)
+          ctx.setDeclUsed(listPopItem)
+          ctx.out.write("ZListPopItem(")
+          Generate.generateVarname(objExpr, ctx, type)
+          ctx.out.write(", ")
+          IF hasArg
+            Zui.Expression arg0 = call.getArgument(0)
+            Generate.genExpr(arg0, ctx, Type.anInt)
+          ELSE
+            ctx.out.write("-1")
+          }
+          IF methodName == "remove"
+            ctx.out.write(", 1)")
+          ELSE
+            ctx.out.write(", 0)")
+          }
+          IF type.itemType != NIL
+            retType = type.itemType
+          }
+        ELSE
+          # mylist.remove(start, end)
+          ctx.setDeclUsed(listPopList)
+          ctx.out.write("ZListPopList(")
+          Generate.generateVarname(objExpr, ctx, type)
+          ctx.out.write(", ")
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", ")
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+          ctx.out.write(")")
+          retType = ListStuff.newList(type)
+        }
+      }
+    ELSEIF methodName == "slice"
+      IF Generate.checkArgCount(call, 1, 2, ctx) != FAIL
+        # mylist.slice(start, end)
+        ctx.setDeclUsed(listSlice)
+        ctx.out.write("ZListSlice(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        Zui.Expression arg0 = call.getArgument(0)
+        IF call.sizeArgument() > 1
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", ")
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+        ELSE
+          # slice(start) == slice(start, -1)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", -1")
+        }
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "sort"
+      IF type.itemType != NIL
+        SWITCH type.itemType.ttype
+          CASE Type.Enum.string
+          CASE Type.Enum.int
+            BREAK
+          DEFAULT
+            IF ctx.doError()
+              ctx.error("sort() is currently only supported for int and string",
+                                                              call.getPos())
+            }
+        }
+      }
+      # TODO: accept ascending argument.
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        # nothing
+      ELSE
+        # mylist.sort()
+        ctx.out.write("(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(").sort() ")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "join"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        # nothing
+      ELSEIF type.itemType != NIL
+        # mylist.join()
+        string fname
+        ctx.setDeclUsed(listJoin)
+        ctx.out.write("ZListJoin(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        IF call.hasArgument()
+          # join(separator)
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExprDoConv(arg0, ctx, Type.aString)
+        ELSE
+          # join()
+          ctx.out.write("\" \"")
+        }
+        listToStringArgument(type.itemType, call.getPos(), FALSE, ctx)
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "map"
+          ctx.setDeclUsed(listMap)
+          ctx.out.write("ZListMap(")
+        ELSE
+          ctx.setDeclUsed(listKeyMap)
+          ctx.out.write("ZListKeyMap(")
+        }
+        Generate.generateVarname(objExpr, ctx, type)
+
+        ctx.out.write(", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(".slice()")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(".length")
+      }
+      retType = Type.anInt
+    ELSE
+      IF ctx.doError()
+        ctx.error("Method " .. methodName .. "() not supported for List",
+                                                              call.getPos())
+      }
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  PROC listToStringArgument(Type type, Zui.Position pos,
+                                                 bool useQuotes, SContext ctx)
+    int undef
+    int typeNr = WriteJS.getArgumentType(type, pos, &undef, ctx)
+    ctx.out.write(", ")
+    ctx.out.write(typeNr)
+    IF useQuotes
+      ctx.out.write(", 1")
+    ELSE
+      ctx.out.write(", 0")
+    }
+  }
+
+  PROC writeListAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 2
+      ctx.setDeclUsed(newListInit)
+      IF type.itemType != NIL
+        ctx.out.write("ZnewListInit(")
+        Generate.genExprDoConv(args[0], ctx, Type.anInt)
+        ctx.out.write(", ")
+        Generate.genExprDoConv(args[1], ctx, type.itemType)
+        ctx.out.write(")")
+      }
+    ELSE
+      ctx.out.write("[]")
+    }
+  }
+
+  PROC writeBody(WriteJS gen, IO.File fd)
+    IF gen.isDeclUsed(listAdd)
+      # TODO: Normal append could be optimized.
+      fd.write(''"
+/* List add */
+function ZLa(head, after, val) {
+  if (head == null) Zthrow("Inovking add() on NIL list");
+  if (after == -1 || after >= head.length) {
+    head.push(val);
+  } else {
+    if (after < 0) {
+      var before = head.length + after + 1;
+      if (before < 0) {
+        before = 0;
+      }
+      head.splice(before, 0, val);
+    } else {
+      head.splice(after + 1, 0, val);
+    }
+  }
+  return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(newListInit)
+      fd.write(''"
+function ZnewListInit(len, val) {
+  var l = [];
+  for (var i = 0; i < len; ++i) {
+    l.push(val);
+  }
+  return l;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listInsert)
+      fd.write(''"
+function ZListInsert(head, before, val) {
+  if (head == null) Zthrow("Invoking insert() on NIL list");
+  if (before >= 0) {
+    if (before > head.length) {
+      head.push(val);
+    } else {
+      head.splice(before, 0, val);
+    }
+  } else {
+    var idx = head.length + before;
+    if (idx < 0) {
+      idx = 0;
+    }
+    head.splice(idx, 0, val);
+  }
+  return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listGet)
+      fd.write(''"
+function ZListGet(head, idx) {
+  if (idx >= 0) {
+    if (idx >= head.length) return null;
+    return head[idx];
+  }
+  var i = head.length + idx;
+  if (i < 0) return null;
+  return head[i];
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.itemToString)
+      fd.write(''"
+function ZListToString(head, type, useq) {
+  if (head == null) Zthrow("Invoking ToString() on NIL list");
+  var result = "[";
+  var comma = "";
+  for (var i = 0; i < head.length; ++i) {
+    result = result + comma + ZitemToString(head[i], type, useq);
+    comma = ", ";
+  }
+  return result + "]";
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listExtend)
+      fd.write(''"
+function ZListExtend(head, head2) {
+  if (head == null) Zthrow("Invoking extend() on NIL list");
+  if (head2 == null) return head;
+  for (var i in head2) {
+    head.push(head2[i]);
+  }
+  return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listClear)
+      fd.write(''"
+function ZListClear(head) {
+  if (head == null) Zthrow("Invoking clear() on NIL list");
+  head.length = 0;
+  return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listPopItem)
+      fd.write(''"
+function ZListPopItem(head, idx, remove) {
+  if (head == null) Zthrow(remove ? "Invoking remove() on a NIL list" : "Invoking clear() on a NIL list");
+  if (head.length == 0) return null;
+  if (idx == -1) return head.pop();
+  var i = idx;
+  if (idx < 0) {
+    i = head.length + idx;
+  }
+  if (i >= 0 && i < head.length) {
+    var a = head.splice(i, 1);
+    if (remove) return a[0];
+    return head;
+  }
+  if (remove) return null;
+  return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listPopList)
+      fd.write(''"
+function ZListPopList(head, i1, i2) {
+  if (head == null) Zthrow("Invoking remove() on NIL list");
+  var idx1 = i1;
+  var idx2 = i2;
+  if (i1 < 0) {
+    idx1 = head.length + i1;
+  }
+  if (idx1 < 0) idx1 = 0;
+  if (idx1 >= head.length) idx1 = head.length - 1;
+  if (i2 < 0) {
+    idx2 = head.length + i2;
+  }
+  if (idx2 < 0) idx2 = 0;
+  if (idx2 >= head.length) idx2 = head.length - 1;
+  if (idx1 > idx2) return [];
+  return head.splice(idx1, idx2 - idx1 + 1);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listJoin)
+      fd.write(''"
+function ZListJoin(head, sep, type, useq) {
+ if (head == null) Zthrow("Invoking join() on NIL list");
+ var result = "";
+ var s = "";
+ for (var i = 0; i < head.length; ++i) {
+  result = result + s + ZitemToString(head[i], type, useq);
+  s = sep;
+ }
+ return result;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listMap)
+      fd.write(''"
+function ZListMap(head, f) {
+ if (head == null) Zthrow("Invoking map() on NIL list");
+ for (var i = 0; i < head.length; ++i) {
+  head[i] = f(head[i]);
+ }
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listKeyMap)
+      fd.write(''"
+function ZListKeyMap(head, f) {
+ if (head == null) Zthrow("Invoking keyMap() on NIL list");
+ for (var i = 0; i < head.length; ++i) {
+  head[i] = f(i, head[i]);
+ }
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(listSlice)
+      fd.write(''"
+function ZListSlice(head, i1, i2) {
+  if (head == null) Zthrow("Invoking slice() on NIL list");
+  var idx1 = i1;
+  var idx2 = i2;
+  if (i1 < 0) {
+    idx1 = head.length + i1;
+  }
+  if (idx1 < 0) idx1 = 0;
+  if (idx1 >= head.length) idx1 = head.length - 1;
+  if (i2 < 0) {
+    idx2 = head.length + i2;
+  }
+  if (idx2 < 0) idx2 = 0;
+  if (idx2 >= head.length) idx2 = head.length - 1;
+  if (idx1 > idx2) return [];
+  return head.slice(idx1, idx2 + 1);
+}
+"'')
+    }
+  }
+
+}

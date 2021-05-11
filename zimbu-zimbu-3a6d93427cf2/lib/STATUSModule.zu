@@ -1,0 +1,70 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module STATUS - integer support
+#
+
+#= Methods for the builtin status type.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE STATUSModule @public
+
+  #= The builtin type status. It has either the value FAIL or OK.
+  #- The object methods can be used on a status variable or value:
+  #% IO.print("It did " .. FAIL.ToString())
+  CLASS STARTstatus @public
+    # For Zudocu: start of status class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return either "OK" or "FAIL".
+  FUNC ToString(status this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= When |format| is "1t" output "0" and "1" instead of "FAIL" and "OK"..
+  #- |format| must either be "t", in which case it works just like ToString(),
+  #- or "1t", in which case it returns "0" for FAIL and "1" for OK.
+  FUNC ToString(status this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number of bytes in a status.
+  #- Always returns 1.
+  FUNC Size(status this) int @public
+    ###### Only for generating documentation.
+    RETURN 1
+  }
+
+  #= Return the type of the status.
+  FUNC Type(status this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 when |other| is OK and this status is FAIL, zero when |other|
+  #= is equal to this status, and 1 when |other| is FAIL and this status is
+  #= OK.
+  FUNC Compare(status this, status other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this status.
+  FUNC Equal(status this, status other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #! For Zudocu: end of the status class.
+  CLASS ENDstatus
+  }
+
+}

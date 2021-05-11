@@ -1,0 +1,37 @@
+# Tests for the Zimbu compiler, new style.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+# All the "test_" functions in the files included with IMPORT.TEST will be
+# executed.
+IMPORT.TEST lib/BYTESTRINGModule_test.zu
+IMPORT.TEST lib/FLOATModule_test.zu
+IMPORT.TEST lib/INTModule_test.zu
+IMPORT.TEST lib/IOModule_test.zu
+IMPORT.TEST lib/LISTModule_test.zu
+IMPORT.TEST lib/REModule_test.zu
+IMPORT.TEST lib/SORTEDLISTModule_test.zu
+IMPORT.TEST lib/STRINGModule_test.zu
+IMPORT.TEST lib/VARBYTESTRINGModule_test.zu
+IMPORT.TEST lib/VARSTRINGModule_test.zu
+IMPORT.TEST lib/ZUTModule_test.zu
+IMPORT.TEST testdir/inherit_test.zu
+IMPORT.TEST testdir/isa_test.zu
+IMPORT.TEST testdir/augmentsGrows_test.zu
+IMPORT.TEST testdir/bits_test.zu
+IMPORT.TEST testdir/enum_test.zu
+IMPORT.TEST testdir/forloop_test.zu
+IMPORT.TEST testdir/switch_test.zu
+IMPORT.TEST testdir/type_test.zu
+
+# Simple test to check if the testing is working.
+FUNC test_first() status
+
+  CHECK.true(TRUE)
+  string s = " one house"
+  TEST.equal("this is one house", "this is" .. s)
+
+  RETURN OK
+}

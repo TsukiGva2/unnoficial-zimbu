@@ -1,0 +1,239 @@
+# Test file for ?.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE DotNilTest @public
+
+  PROC test() @public
+    IO.print("testdir/DotNilTest.zu")
+    testSize()
+    testMethodCall()
+    testIfnil()
+  }
+
+  PROC testSize()
+    # Size() works on NIL without ?.
+    string s
+    varString vs
+    array<int> a
+    list<int> l
+    dict<string, int> d
+    IO.print("zero size: " .. s.Size()
+                      .. " - " .. vs.Size()
+                      .. " - " .. a.Size()
+                      .. " - " .. l.Size()
+                      .. " - " .. d.Size()
+               )
+    multiDict<string, int> md
+    IO.print("zero size multiDict: " .. md.Size())
+    set<int> set
+    IO.print("zero size set: " .. set.Size())
+    sortedList<int> sl
+    IO.print("zero size sortedList: " .. sl.Size())
+  }
+
+  CLASS Foo
+    dict<int, int> $members
+    multiDict<int, int> $others
+
+    FUNC $values() list<int>
+      IFNIL
+        RETURN []
+      }
+      RETURN $members.values()
+    }
+  }
+
+  CLASS Bar EXTENDS Foo
+    int $nothing
+  }
+
+  PROC testMethodCall() @public
+    multiDict<string, int> md
+    list<list<int>> values = md?.values()
+    IO.print("values size: " .. values.Size())
+
+    Foo foo
+    list<int> mlist = foo?.members?.values()
+    IO.print("mlist is " .. (mlist == NIL ? "NIL" : "not NIL"))
+
+    list<list<int>> olist = foo?.others?.values()
+    IO.print("olist is " .. (olist == NIL ? "NIL" : "not NIL"))
+
+    string s
+    IO.print("string size: " .. s?.Size())
+    IO.print("string ToString: " .. (s?.ToString() == NIL ? "NIL" : "wrong"))
+    IO.print("string toVarString: " .. (s?.toVarString() == NIL ? "NIL" : "wrong"))
+    IO.print("string asByteString: " .. (s?.asByteString() == NIL ? "NIL" : "wrong"))
+
+    IO.print("toInt: " .. s?.toInt()
+               .. ", with def: " .. s?.toInt(23))
+    IO.print("binToInt: " .. s?.binToInt()
+               .. ", with def: " .. s?.binToInt(24))
+    IO.print("hexToInt: " .. s?.hexToInt()
+               .. ", with def: " .. s?.hexToInt(25))
+    IO.print("quotedToInt: " .. s?.quotedToInt()
+               .. ", with def: " .. s?.quotedToInt(33))
+    IO.print("quotedBinToInt: " .. s?.quotedBinToInt()
+               .. ", with def: " .. s?.quotedBinToInt(34))
+    IO.print("quotedHexToInt: " .. s?.quotedHexToInt()
+               .. ", with def: " .. s?.quotedHexToInt(35))
+
+    IO.print("toUpper: " .. (s?.toUpper() == NIL ? "NIL" : "wrong"))
+    IO.print("toLower: " .. (s?.toLower() == NIL ? "NIL" : "wrong"))
+    IO.print("toUpperAscii: " .. (s?.toUpperAscii() == NIL ? "NIL" : "wrong"))
+    IO.print("toLowerAscii: " .. (s?.toLowerAscii() == NIL ? "NIL" : "wrong"))
+
+    IO.print("find char: " .. s?.find(2))
+    IO.print("find char: " .. s?.find(2, 2))
+    IO.print("find string: " .. s?.find("foo"))
+    # IO.print("find string: " .. s?.find("foo", 2))
+    IO.print("findLast char: " .. s?.findLast(2))
+    IO.print("findLast string: " .. s?.findLast("foo"))
+    IO.print("startsWith: " .. s?.startsWith("foo"))
+    IO.print("endsWith: " .. s?.endsWith("foo"))
+
+    IO.print("slice one: " .. (s?.slice(3) == NIL ? "NIL" : "wrong"))
+    IO.print("slice two: " .. (s?.slice(3, 4) == NIL ? "NIL" : "wrong"))
+
+    IO.print("split: " .. (s?.split() == NIL ? "NIL" : "wrong"))
+    IO.print("split arg: " .. (s?.split("c") == NIL ? "NIL" : "wrong"))
+    IO.print("split any: " .. (s?.splitAnyOf("abc") == NIL ? "NIL" : "wrong"))
+
+    IO.print("escape: " .. (s?.escape() == NIL ? "NIL" : "wrong"))
+    IO.print("replace: " .. (s?.replace('a', 'b') == NIL ? "NIL" : "wrong"))
+    IO.print("replaceAll: " .. (s?.replaceAll('a', 'b') == NIL ? "NIL" : "wrong"))
+
+    IO.print("trim: " .. (s?.trim() == NIL ? "NIL" : "wrong"))
+    IO.print("padLeft: " .. (s?.padLeft(0, '-') == NIL ? "NIL" : "wrong"))
+    IO.print("padRight: " .. (s?.padRight(0, '-') == NIL ? "NIL" : "wrong"))
+
+    IO.print("reverse: " .. (s?.reverse() == NIL ? "NIL" : "wrong"))
+    IO.print("Compare NIL: " .. s?.Compare(NIL))
+    IO.print("Compare foo: " .. s?.Compare("foo"))
+
+    byteString b
+    IO.print("byteString size: " .. b?.Size())
+    IO.print("byteString ToString: " .. (b?.ToString() == NIL ? "NIL" : "wrong"))
+    IO.print("byteString latin1ToString: " .. (b?.latin1ToString() == NIL ? "NIL" : "wrong"))
+    IO.print("byteString toVarString: " .. (b?.toVarString() == NIL ? "NIL" : "wrong"))
+    IO.print("byteString toVarByteString: " .. (b?.toVarByteString() == NIL ? "NIL" : "wrong"))
+    IO.print("byteString asByteString: " .. (s?.asByteString() == NIL ? "NIL" : "wrong"))
+
+    IO.print("get: " .. b?.get(2))
+    IO.print("getByte: " .. b?.getByte(2))
+    IO.print("getChar: " .. b?.getChar(2))
+    IO.print("getCharSize: " .. b?.getCharSize(2))
+
+    IO.print("find char: " .. b?.find(2))
+    IO.print("find char: " .. b?.find(2, 2))
+    IO.print("find string: " .. b?.find("foo"))
+    # IO.print("find string: " .. b?.find("foo", 2))
+    IO.print("findLast char: " .. b?.findLast(2))
+    IO.print("findLast string: " .. b?.findLast("foo"))
+    IO.print("startsWith: " .. b?.startsWith("foo"))
+    IO.print("endsWith: " .. b?.endsWith("foo"))
+
+    IO.print("slice one: " .. (b?.slice(3) == NIL ? "NIL" : "wrong"))
+    IO.print("slice two: " .. (b?.slice(3, 4) == NIL ? "NIL" : "wrong"))
+
+    IO.print("split: " .. (b?.split() == NIL ? "NIL" : "wrong"))
+    IO.print("split arg: " .. (b?.split("c") == NIL ? "NIL" : "wrong"))
+#    IO.print("Compare NIL: " .. b?.Compare(NIL))
+#    IO.print("Compare foo: " .. b?.Compare("foo"))
+
+    varString vs
+    IO.print("varString size: " .. vs?.Size())
+    IO.print("varString ToString: " .. (vs?.ToString() == NIL ? "NIL" : "wrong"))
+    IO.print("varString toVarString: " .. (vs?.toVarString() == NIL ? "NIL" : "wrong"))
+    IO.print("varString asVarByteString: " .. (vs?.asVarByteString() == NIL ? "NIL" : "wrong"))
+
+    IO.print("toInt: " .. vs?.toInt()
+               .. ", with def: " .. vs?.toInt(53))
+    IO.print("binToInt: " .. vs?.binToInt()
+               .. ", with def: " .. vs?.binToInt(54))
+    IO.print("hexToInt: " .. vs?.hexToInt()
+               .. ", with def: " .. vs?.hexToInt(55))
+    IO.print("quotedToInt: " .. vs?.quotedToInt()
+               .. ", with def: " .. vs?.quotedToInt(43))
+    IO.print("quotedBinToInt: " .. vs?.quotedBinToInt()
+               .. ", with def: " .. vs?.quotedBinToInt(44))
+    IO.print("quotedHexToInt: " .. vs?.quotedHexToInt()
+               .. ", with def: " .. vs?.quotedHexToInt(45))
+    IO.print("toUpper: " .. (vs?.toUpper() == NIL ? "NIL" : "wrong"))
+    IO.print("toLower: " .. (vs?.toLower() == NIL ? "NIL" : "wrong"))
+    IO.print("toUpperAscii: " .. (vs?.toUpperAscii() == NIL ? "NIL" : "wrong"))
+    IO.print("toLowerAscii: " .. (vs?.toLowerAscii() == NIL ? "NIL" : "wrong"))
+
+    IO.print("find char: " .. vs?.find(2))
+    IO.print("find char: " .. vs?.find(2, 2))
+    IO.print("find string: " .. vs?.find("foo"))
+    # IO.print("find string: " .. vs?.find("foo", 2))
+    IO.print("findLast char: " .. vs?.findLast(2))
+    IO.print("findLast string: " .. vs?.findLast("foo"))
+    IO.print("startsWith: " .. vs?.startsWith("foo"))
+    IO.print("endsWith: " .. vs?.endsWith("foo"))
+
+    TRY
+      vs?.add("foo")
+    CATCH E.Exception e
+      IO.print("Caught NIL varString add()")
+    }
+
+    IO.print("slice one: " .. (vs?.slice(3) == NIL ? "NIL" : "wrong"))
+    IO.print("slice two: " .. (vs?.slice(3, 4) == NIL ? "NIL" : "wrong"))
+
+    IO.print("split: " .. (vs?.split() == NIL ? "NIL" : "wrong"))
+    IO.print("split arg: " .. (vs?.split("c") == NIL ? "NIL" : "wrong"))
+    IO.print("split any: " .. (vs?.splitAnyOf("abc") == NIL ? "NIL" : "wrong"))
+#    IO.print("Compare NIL: " .. vs?.Compare(NIL))
+#    IO.print("Compare foo: " .. vs?.Compare("foo"))
+
+    varByteString vb
+    IO.print("varByteString size: " .. vb?.Size())
+    IO.print("varByteString ToString: " .. (vb?.ToString() == NIL ? "NIL" : "wrong"))
+    IO.print("varByteString toVarString: " .. (vb?.toVarString() == NIL ? "NIL" : "wrong"))
+    IO.print("varByteString asVarString: " .. (vb?.asVarString() == NIL ? "NIL" : "wrong"))
+    IO.print("varByteString toByteString: " .. (vb?.toByteString() == NIL ? "NIL" : "wrong"))
+    IO.print("varByteString toVarByteString: " .. (vb?.toVarByteString() == NIL ? "NIL" : "wrong"))
+
+    IO.print("find char: " .. vb?.find(2))
+    IO.print("find char: " .. vb?.find(2, 2))
+    IO.print("find string: " .. vb?.find("foo"))
+    # IO.print("find string: " .. vb?.find("foo", 2))
+    IO.print("findLast char: " .. vb?.findLast(2))
+    IO.print("findLast string: " .. vb?.findLast("foo"))
+    IO.print("startsWith: " .. vb?.startsWith("foo"))
+    IO.print("endsWith: " .. vb?.endsWith("foo"))
+
+    IO.print("slice one: " .. (vb?.slice(3) == NIL ? "NIL" : "wrong"))
+    IO.print("slice two: " .. (vb?.slice(3, 4) == NIL ? "NIL" : "wrong"))
+
+    TRY
+      vb?.add("foo")
+    CATCH E.Exception e
+      IO.print("Caught NIL varByteString add()")
+    }
+
+    IO.print("split: " .. (vb?.split() == NIL ? "NIL" : "wrong"))
+    IO.print("split arg: " .. (vb?.split("c") == NIL ? "NIL" : "wrong"))
+#    IO.print("Compare NIL: " .. vb?.Compare(NIL))
+#    IO.print("Compare foo: " .. vb?.Compare("foo"))
+  }
+
+  PROC testIfnil()
+    Bar b
+    IO.print("NIL Bar values: " .. b.values().ToString())
+    # The Foo object could also be a Bar, making IFNIL more complicated.
+    Foo f
+    IO.print("NIL Foo values: " .. f.values().ToString())
+
+    f = NEW()
+    f.members = NEW()
+    IO.print("not-NIL Foo values: " .. f.values().ToString())
+  }
+
+}

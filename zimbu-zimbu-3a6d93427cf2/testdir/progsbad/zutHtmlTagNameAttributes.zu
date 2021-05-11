@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutHtmlTagNameAttributes.zut
+
+FUNC Main() int
+  # HTML tag name / Attributes
+  ZUT.Attributes attr = NEW().add("xxx")
+  string fail = Testing.inTagNameAttributes(attr).ToString()
+  RETURN 0
+}

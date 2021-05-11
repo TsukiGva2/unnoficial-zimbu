@@ -1,0 +1,110 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# THREAD module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Config.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "../genC/WriteC.zu"
+
+MODULE THREADLoader @public @items=public
+  Declaration moduleDecl
+  Declaration threadBase
+  Declaration threadDecl
+  Declaration evalThreadDecl
+  Declaration lockDecl
+  Declaration autoLockDecl
+  Declaration condDecl
+
+  # Prepare for using the builtin THREAD module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "THREADModule"
+    b.fileName = "THREADModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the THREAD module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("THREAD", builtin)
+
+      IF LOG.errorCount == 0
+        # Define the "thread" class as an alias for THREAD.Thread.
+        threadDecl = moduleDecl.type.findMember("Thread", NIL)
+        IF threadDecl == NIL || threadDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.Thread")
+          EXIT 2
+        }
+        # TODO: this doesn't work for inheritance
+        # threadSymbol = threadSymbol.copy()
+        # threadSymbol.name = "thread"
+
+        threadBase = moduleDecl.type.findMember("ThreadBase", NIL)
+        IF threadBase == NIL || threadBase.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.ThreadBase")
+          EXIT 2
+        }
+        threadBase.addDependsOn(WriteC.pthread)
+
+        # Define the "evalThread" class as an alias for THREAD.EvalThread.
+        evalThreadDecl = moduleDecl.type.findMember("EvalThread", NIL)
+        IF evalThreadDecl == NIL || evalThreadDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.EvalThread")
+          EXIT 2
+        }
+
+        # Define the "lock" class as an alias for THREAD.Lock.
+        lockDecl = moduleDecl.type.findMember("Lock", NIL)
+        IF lockDecl == NIL || lockDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.Lock")
+          EXIT 2
+        }
+
+        # Define the "autoLock" class as an alias for THREAD.AutoLock.
+        autoLockDecl = moduleDecl.type.findMember("AutoLock", NIL)
+        IF autoLockDecl == NIL || autoLockDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.AutoLock")
+          EXIT 2
+        }
+
+        # Define the "cond" class as an alias for THREAD.Cond.
+        condDecl = moduleDecl.type.findMember("Cond", NIL)
+        IF condDecl == NIL || condDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find THREAD.Cond")
+          EXIT 2
+        }
+      }
+    }
+  }
+
+  FUNC getThreadDecl() Declaration
+    RETURN threadDecl
+  }
+
+  FUNC getEvalThreadDecl() Declaration
+    RETURN evalThreadDecl
+  }
+
+  FUNC getLockDecl() Declaration
+    RETURN lockDecl
+  }
+
+  FUNC getAutoLockDecl() Declaration
+    RETURN autoLockDecl
+  }
+
+  FUNC getCondDecl() Declaration
+    RETURN condDecl
+  }
+}

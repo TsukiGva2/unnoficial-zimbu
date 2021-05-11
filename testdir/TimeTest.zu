@@ -1,0 +1,51 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for TIME
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE TimeTest @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/TimeTest.zu")
+    test1()
+  }
+
+  # Replace the hour with a fixed number to avoid the current timezone making
+  # a difference.
+  FUNC fixTimezone(string s) string
+    int ei = s.find(":58")
+    IF ei < 0
+      ei = s.find(":28")
+      IF ei < 0
+        RETURN s
+      }
+    }
+    int si = ei - 1
+    IF s[si - 1].isDigit()
+      si--
+    }
+    RETURN s.slice(0, si - 1) .. "15:58" .. s.slice(ei + 3)
+  }
+
+  PROC test1()
+    int sec = 1360508304000000
+    TIME.Values t = NEW(sec)
+    IO.print(fixTimezone(t.ToString()))
+    IO.print(fixTimezone(t.toStringShort()))
+    IO.print(fixTimezone(t.toStringFull()))
+    IO.print(t.getUsec())
+
+    string s = t.ToString()
+    IO.print(TIME.Values.fromString(s).getUsec())
+    IO.print(fixTimezone(TIME.Values.fromString(s).ToString()))
+    IO.print(fixTimezone(TIME.Values.fromString(s.slice(0, -4)).ToString()))
+  }
+
+}
+

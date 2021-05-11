@@ -1,0 +1,220 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Base class for all protocol buffer Messages.
+#
+# This file is used by the .zu files generated from .proto files.
+# It cannot depend on files from the proto plugin.  The other way around is
+# OK.
+#
+#= Protocol Buffer support
+
+IMPORT "Proto.zu"
+
+#= The base class for every protocol message class.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+CLASS Message @abstract @public @items=public       # TODO: less visibility?
+
+  #! When using writeBinaryDeref() and a message is about to be written:
+  #  $derefTime is set to Proto.Writer.derefTime and $derefId to
+  #  Proto.Writer.derefId + 1
+  int    $derefTime
+  int    $derefId
+
+  #! When using writeBinaryDeref() and the size of a message is about to be
+  #  computed: $derefTimeSize is set to Proto.Writer.derefTimeSize and
+  #  $derefIdSize to Proto.Writer.derefIdSize + 1
+  int    $derefTimeSize
+  int    $derefIdSize
+
+  #= Not defined in subclass when there are no non-repeated fields.
+  FUNC $hasField(int fieldNr) bool @default
+    RETURN FALSE
+  }
+  FUNC $name() string @default
+    RETURN ""
+  }
+
+  #= Get methods should be implemented when used.
+  FUNC $enumGet(int fieldNr) int @default
+    RETURN 0
+  }
+  FUNC $enumGet(int fieldNr, int idx) int @default
+    RETURN 0
+  }
+  FUNC $enumNameGet(int fieldNr) string @default
+    RETURN ""
+  }
+  FUNC $enumNameGet(int fieldNr, int idx) string @default
+    RETURN ""
+  }
+  FUNC $intGet(int fieldNr) int @default
+    RETURN 0
+  }
+  FUNC $intGet(int fieldNr, int idx) int @default
+    RETURN 0
+  }
+  FUNC $int32Get(int fieldNr) int32 @default
+    RETURN 0
+  }
+  FUNC $int32Get(int fieldNr, int idx) int32 @default
+    RETURN 0
+  }
+  FUNC $uint64Get(int fieldNr) nat @default
+    RETURN 0
+  }
+  FUNC $uint64Get(int fieldNr, int idx) nat @default
+    RETURN 0
+  }
+  FUNC $uint32Get(int fieldNr) nat32 @default
+    RETURN 0
+  }
+  FUNC $uint32Get(int fieldNr, int idx) nat32 @default
+    RETURN 0
+  }
+  # Protocol buffer float is 32 bits.
+  FUNC $floatGet(int fieldNr) float32 @default
+    RETURN 0
+  }
+  FUNC $floatGet(int fieldNr, int idx) float32 @default
+    RETURN 0
+  }
+  # Protocol buffer double is 64 bits, which is float in Zimbu.
+  FUNC $doubleGet(int fieldNr) float @default
+    RETURN 0
+  }
+  FUNC $doubleGet(int fieldNr, int idx) float @default
+    RETURN 0
+  }
+  FUNC $boolGet(int fieldNr) bool @default
+    RETURN FALSE
+  }
+  FUNC $boolGet(int fieldNr, int idx) bool @default
+    RETURN FALSE
+  }
+  FUNC $stringGet(int fieldNr) string @default
+    RETURN ""
+  }
+  FUNC $stringGet(int fieldNr, int idx) string @default
+    RETURN ""
+  }
+
+  #= Set methods should be implemented when used.
+  PROC $enumSet(int fieldNr, int value) @default
+  }
+  PROC $enumNameSet(int fieldNr, string value) @default
+  }
+  PROC $intSet(int fieldNr, int value) @default
+  }
+  PROC $int32Set(int fieldNr, int32 value) @default
+  }
+  PROC $uint64Set(int fieldNr, nat value) @default
+  }
+  PROC $uint32Set(int fieldNr, nat32 value) @default
+  }
+  PROC $floatSet(int fieldNr, float32 value) @default
+  }
+  PROC $doubleSet(int fieldNr, float value) @default
+  }
+  PROC $boolSet(int fieldNr, bool value) @default
+  }
+  PROC $stringSet(int fieldNr, string value) @default
+  }
+  # TODO: $addEnum() $addInt() $addString()
+
+  FUNC $messageGet(int fieldNr) Message @default
+    RETURN NIL
+  }
+  FUNC $messageGet(int fieldNr, int idx) Message @default
+    RETURN NIL
+  }
+  PROC $messageSet(int fieldNr, Message m) @default
+  }
+  PROC $messageAdd(int fieldNr, Message m) @default
+  }
+
+  FUNC $mergeMessageFromReader(int fieldNr,
+                               Proto.FileFormat format,
+                               Proto.I_Reader reader
+                              ) bool @default
+    RETURN FALSE
+  }
+
+  #= Get size for repeated fields.
+  FUNC $size(int fieldNr) int @default
+    RETURN 0
+  }
+
+  FUNC $fieldSpecs() list<Proto.FieldSpec> @abstract
+  }
+
+  #= Return text version with field names as a string.
+  #- Starts with zero indent.
+  FUNC $ToString() string
+    IO.StringWriter writer = NEW()
+    Proto.Writer protoWriter = NEW(writer, "", FALSE)
+    Proto.writeText(THIS, protoWriter)
+    RETURN writer.ToString()
+  }
+
+  #= Return text version with field names as a string.
+  #- Starts with indent |indent|.
+  FUNC $toString(string indent) string
+    IO.StringWriter writer = NEW()
+    Proto.Writer protoWriter = NEW(writer, indent, FALSE)
+    Proto.writeText(THIS, protoWriter)
+    RETURN writer.ToString()
+  }
+  
+  #= Write string version with field numbers to |writer|.
+  #- Starts with zero indent.
+  PROC $writeText(IO.I_Writer writer)
+    Proto.Writer protoWriter = NEW(writer, "", TRUE)
+    Proto.writeText(THIS, protoWriter)
+  }
+  PROC $writeText(string indent, IO.I_Writer writer)
+    Proto.Writer protoWriter = NEW(writer, indent, TRUE)
+    Proto.writeText(THIS, protoWriter)
+  }
+
+  #= Compare the contents to |other|.  Return TRUE only if they are exactly
+  #= the same.
+  FUNC $Equal(Message other) bool
+    IF other IS THIS
+      RETURN TRUE
+    }
+    RETURN Proto.equal(THIS, other)
+  }
+
+  #= Write the message in binary form to |writer|.
+  PROC $writeBinary(IO.I_ByteWriter writer)
+    Proto.Writer protoWriter = NEW(writer, FALSE)
+    Proto.writeBinary(THIS, protoWriter)
+  }
+
+  #= Write the message in binary form to |writer| and when encountering a
+  #= message that was already written write a reference to it instead.
+  PROC $writeBinaryDeref(IO.I_ByteWriter writer)
+    Proto.Writer protoWriter = NEW(writer, TRUE)
+    Proto.writeBinary(THIS, protoWriter)
+  }
+
+  #= Write JSON version of proto buf to |writer|.
+  PROC $writeJson(IO.I_Writer writer)
+    Proto.Writer protoWriter = NEW(writer, FALSE)
+    Proto.writeJson(THIS, protoWriter)
+  }
+
+  #= Write JSON version of proto buf to |writer|.
+  PROC $writeJsonDeref(IO.I_Writer writer)
+    Proto.Writer protoWriter = NEW(writer, TRUE)
+    Proto.writeJson(THIS, protoWriter)
+  }
+
+}

@@ -1,0 +1,15 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  int8 x
+  test(x)
+  RETURN 0
+}
+
+PROC test(int8 x)
+  IO.print(x)
+}
+
+PROC test(int8 y)
+  IO.print(y)
+}

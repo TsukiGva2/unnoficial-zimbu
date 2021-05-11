@@ -1,0 +1,48 @@
+# The Zimbu compiler written in Zimbu
+#
+# Part of the protocol buffer plugin
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "I_ProtoItem.zu"
+
+CLASS EnumItem IMPLEMENTS I_ProtoItem @items=directory
+  string      $name
+  list<Value> $members
+
+  NEW()
+    $members = NEW()
+  }
+
+  PROC $addValue(string name, int nr, Z.Pos pos)
+    Value v = NEW()
+    v.id = name
+    v.nr = nr
+    v.pos = pos
+    $members.add(v)
+  }
+
+  CLASS Value @items=directory
+    string   $id
+    int      $nr
+    Z.Pos    $pos       # where the field was defined
+  }
+
+  # Check for errors after parsing.
+  FUNC $checkErrors() status
+    set<int> used = NEW()
+    status ret = OK
+    FOR m IN $members
+      IF used.has(m.nr)
+        LOG.error("Enum number used again: \(m.nr)", m.pos)
+        ret = FAIL
+      ELSE
+        used.add(m.nr)
+      }
+    }
+    RETURN ret
+  }
+}

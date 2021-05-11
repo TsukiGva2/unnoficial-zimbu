@@ -1,0 +1,49 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module MULTISET
+#
+
+
+#= Classes, Interfaces and methods for multiSet.
+#
+#- NOT IMPLEMENTED YET
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE MULTISETModule @public
+
+  #! The MULTISETloader changes "MULTISETmodule.MultiSet" to "multiSet",
+  #! as this is how it is used globally.
+
+  #= The builtin type multiSet.
+  #
+  #- MultiSets keep a counter for each key that is present.
+  #
+  #- NOT IMPLEMENTED YET
+  #
+  #- The key type must support the ToString() method.  It is used for
+  #- ToString() on the multiSet and for error messages.
+  #
+  #- Example:
+  #% multiSet<string> ms = NEW()
+  #% ms.add("yes")
+  #% ms.add("yes")
+  #% IO.WriteLine("multiSet has yes: " .. ms.has("yes"))
+  #% IO.WriteLine("multiSet has yes " .. ms.get("yes") .. " times")
+  #% ms.remove("yes")
+  CLASS MultiSet<Tkey> @public
+
+    #= Return a string representation of the multiSet.
+    #- Looks like a list of the keys: [key1, key2, key3]
+    FUNC $ToString() string @public
+      string res = "["
+      # TODO
+      RETURN res .. "]"
+    }
+  }
+
+}

@@ -1,0 +1,162 @@
+# Test file for garbage collection.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Garbage @public
+
+  PROC test() @public
+    IO.print("testdir/Garbage.zu")
+    testStmt()
+    testExpr()
+    testFinish()
+    testCallbacks()
+  }
+
+  # Invoke the GC at the most inconvenient moments.  Verifies that all
+  # intermedate results are on the stack frame.
+  PROC testStmt()
+    string s = "foo" .. stringGC() .. "foo"
+    dict<string, int> d = NEW()
+    d[stringGC()] = intGC()
+  }
+
+  # Invoke the GC at the most inconvenient moments.  Verifies that all
+  # intermedate results are on the stack frame.
+  PROC testExpr()
+    IO.print(stringGC() .. "bar" .. stringGC() .. "bar" .. stringGC())
+    IF "bar" == stringGC()
+      IO.print("wrong 1")
+    }
+    IF stringGC() != "foo"
+      IO.print("wrong 2")
+    }
+    IO.print("r = " .. "foo"[intGC()])
+  }
+
+  FUNC stringGC() string
+    GC.run()
+    RETURN "foo"
+  }
+
+  FUNC intGC() int
+    GC.run()
+    RETURN 0
+  }
+
+  MyObject keep
+
+  PROC testFinish()
+    getMyObject()
+    getBadObject()
+    getSlowObject()
+    keep = NEW("call Finish on exit")
+
+    GC.run()  # triggers calling Finish(), SlowObject.Finish returns FAIL
+    IO.print("after GC one")
+    GC.run()  # triggers calling Finish(), SlowObject.Finish returns OK
+    IO.print("after GC two")
+    GC.run()  # triggers calling Finish()
+    IO.print("after GC three")
+  }
+
+  PROC getMyObject()
+    MyObject m = NEW("MyObject finished")
+    IO.print("got an object")
+    GC.run()  # does nothing, object is still referenced.
+    IO.print("my collected")
+  }
+
+  PROC getBadObject()
+    BadObject m = NEW()
+    IO.print("got a bad object")
+    GC.run()  # does not free BadObject, object is still referenced.
+              # does call MyObject.Finish()
+    IO.print("bad collected")
+  }
+
+  PROC getSlowObject()
+    SlowObject m = NEW()
+    IO.print("got a slow object")
+    GC.run()  # does not free SlowObject, object is still referenced.
+              # does call BadObject.Finish()
+    IO.print("slow collected")
+  }
+
+  CLASS MyObject
+    string $msg
+    NEW(string msg)
+      $msg = msg
+    }
+    FUNC $Finish() status
+      IO.print($msg .. "; exiting == " .. Z.exiting)
+      RETURN OK
+    }
+  }
+  CLASS BadObject
+    FUNC $Finish() status
+      IO.print("BadObject.Finish; exiting == " .. Z.exiting)
+      # This exception will be caught and printed on stderr.
+      THROW "BadObject.Finish() (don't worry, this exception is expected)"
+    }
+  }
+  CLASS SlowObject
+    int $count
+    FUNC $Finish() status
+      ++$count
+      IO.print("Finish " .. $count)
+      RETURN $count == 2 ? OK : FAIL
+    }
+  }
+
+  # Test running GC inside a callback
+  PROC testCallbacks()
+    int count
+    FUNC show(int idx, int what USE &count) int
+      IO.print(idx .. ": " .. what)
+      count += what
+      GC.run()  # try to free the callback while it's used...
+      RETURN what
+    }
+
+    string concat = ""
+    FUNC shows(int idx, string what USE &concat) string
+      IO.print(idx .. ": " .. what)
+      concat ..= what
+      GC.run()  # try to free the callback while it's used...
+      RETURN what
+    }
+
+    list<int> l = [1, 2, 3, 4]
+    l.keyMap({ i, v => show(i, v) })
+    IO.print("total keymapped list: " .. count)
+
+    count = 0
+    array<int> a = [1, 2, 3, 4]
+    a.map({ v => show(5, v) })
+    IO.print("total mapped array: " .. count)
+
+    count = 0
+    a.keyMap({ i, v => show(i, v) })
+    IO.print("total keymapped array: " .. count)
+
+    array<string> sa = ["one", "two", "three"]
+    sa.map({ v => shows(6, v) })
+    IO.print("map concatenated array: " .. concat)
+
+    concat = ""
+    sa.keyMap({ i, v => shows(i, v) })
+    IO.print("keymap concatenated array: " .. concat)
+
+    count = 0
+    dict<int, int> d = [1: 1, 2: 2, 3: 3]
+    d.map({ v => show(8, v) })
+    IO.print("total mapped dict: " .. count)
+
+    count = 0
+    d.keyMap({ i, v => show(i, v) })
+    IO.print("total keymapped dict: " .. count)
+  }
+}

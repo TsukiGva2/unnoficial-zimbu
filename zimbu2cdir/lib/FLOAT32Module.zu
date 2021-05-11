@@ -1,0 +1,58 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module FLOAT32 - float32 support
+#
+
+#= Methods for the builtin float32 type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE FLOAT32Module @public
+
+  #= The builtin type float32.
+  #- The object methods can be used on a float32 variable or value:
+  #% string val = 12.0.ToString()
+  #
+  #- Most things here work just like on float, except with smaller precision.
+  #- See the float documentation.
+  #
+  #- Predefined values are NAN (Not A Number), INF (infinity) and NINF
+  #- (negative infinity).
+  #
+  #- In case of doubt about specific computations, check the documentation for
+  #- the C math library.
+  #
+  #- NOTE: When compiled to Javascript a float32 is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTfloat32 @public
+    # For Zudocu: start of float32 class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in a float32.
+  #- Always returns 4, since a float32 is 32 bits
+  FUNC Size(float32 this) int @public
+    ###### Only for generating documentation.
+    RETURN 4
+  }
+
+  #= Return the number in a short form.
+  #- For example, 1.234.ToString() returns "1.234".
+  #
+  #- This uses 6 decimal places and uses the exponent notation when that is
+  #- shorter.
+  FUNC ToString(float32 this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #! For Zudocu: end of float32 class.
+  CLASS ENDfloat32
+  }
+
+}

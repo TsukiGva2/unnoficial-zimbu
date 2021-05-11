@@ -1,0 +1,8 @@
+MODULE Testing
+  # CSS double string / Url
+  TEMPLATE inCssDStringUrl(ZUT.Url text) ZUT.Css @public
+    p {
+     color: "[=text]";
+    }
+  }
+}

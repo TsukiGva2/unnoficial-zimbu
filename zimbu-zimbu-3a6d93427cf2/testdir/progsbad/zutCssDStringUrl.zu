@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutCssDStringUrl.zut
+
+FUNC Main() int
+  # CSS single string / Url
+  ZUT.Url url = NEW().add("xxx")
+  string fail = Testing.inCssDStringUrl(url).ToString()
+  RETURN 0
+}

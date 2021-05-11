@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>THREAD module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> THREAD
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Classes and methods for thread support.
+</p>
+<p class='ptext'> Still very much under development.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='THREAD.State.html'><b>State</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The possible states a thread can be in.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='THREAD.Type.html'><b>Type</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The possible types of threads.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.E_Thread.html'><b>E_Thread</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Exception thrown when there is a thread related error.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html'><b>ThreadBase</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Base class for Thread and EvalThread
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.Thread.html'><b>Thread</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The builtin type thread.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.EvalThread.html'><b>EvalThread</b></A><small>&lt;Titem&gt;</small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Thread to be used for evaluating a function and returning the result
+ through a pipe.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.Lock.html'><b>Lock</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The builtin type lock: An object to get exclusive access.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.AutoLock.html'><b>AutoLock</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The builtin type autoLock: an object that keeps a lock and releases it
+ when destructed.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='THREAD.Cond.html'><b>Cond</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The builtin type cond: An object to wait on a condition.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='THREAD.html#eval'><b>eval</b></a><small>&lt;Titem&gt;</small>(<small>f</small>) <small><span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a thread to evaluate <b>f</b> and return a pipe from which the
+ result can be read.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.html#threads'><b>threads</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='THREAD.Thread.html'>thread</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list of all currently created threads.  TODO
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.html#current'><b>current</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='THREAD.Thread.html'>thread</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the object associated with the current thread. TODO
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='current'><b>current</b></A>() <span class='type'><A class='typehref' href='THREAD.Thread.html'>thread</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the object associated with the current thread. TODO
+</p>
+<p class='ptext'> Not Implemented Yet
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='eval'><b>eval</b></A>&lt;Titem&gt;(<span class='type'><span class='type'>func</span>&lt; =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a thread to evaluate <b>f</b> and return a pipe from which the
+ result can be read.
+</p>
+<p class='ptext'> Example:
+<pre class='example'> pipe&lt;string&gt; p = THREAD.eval({ =&gt; "hello there" })
+ IO.print(p.read())
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='threads'><b>threads</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='THREAD.Thread.html'>thread</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list of all currently created threads.  TODO
+</p>
+<p class='ptext'> Thread objects that have been created but for which <b>start()</b> has not
+ been invoked are not included.
+<p class='ptext'> Not Implemented Yet
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

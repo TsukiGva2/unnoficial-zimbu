@@ -1,0 +1,153 @@
+#
+# Main file of the Zimbu compiler written in Zimbu.
+#
+# This reads .zu files (and files imported through plugins) and procudes C
+# and/or Javascript code.
+#
+# Usage:
+#      zimbu2c {file}.zu    Compile {file}.zu to {file}.c
+#
+# Options:
+#      -d              Debug mode
+#      -q              Quick - no stack backtrace
+#      -v              Verbose
+#      -z              don't check for undefined symbols
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+IMPORT "Builtin.zu"
+IMPORT "Config.zu"
+IMPORT "MainFile.zu"
+IMPORT "ZimbuFile.zu"
+
+ARG.Usage usage = NEW("Usage: %0% [--help] [flags] source.zu")
+
+FUNC Main() int
+  IF ARG.Size() < 1
+    IO.print("Missing source file argument")
+    IO.print(usage.get())
+    EXIT 1
+  }
+  IF ARG.Size() > 1
+    LOG.fatal("Only one .zu file allowed")
+  }
+
+  # Catch common mistakes in arguments.
+  string inFileName = ARG.get(0)
+  IF inFileName.slice(-3) != ".zu"
+    LOG.fatal("Input name must end in '.zu': \(inFileName)")
+  }
+
+  # Run auto-configuration.  Fills in values for the Config module.
+  IF Config.run() != OK
+    LOG.fatal("Config failed, cannot compile a program")
+  }
+
+  string rootName = inFileName.slice(0, -4)  # without ".zu"
+  string rootTail = IO.tail(rootName)        # without directory
+  string dirName = IO.directory(rootName)
+  string zudirName = IO.concatPath(dirName, Config.zudirName)
+  IO.mkdir(zudirName)  # ignore returned status
+
+  # Prepare for defining builtin modules.  A builtin module is only processed
+  # when used.
+  Builtin.prepare()
+
+  # Try opening the output file now.  It's pointless to start parsing if we
+  # can't write the result.
+  string outFileName = IO.concatPath(zudirName, rootTail .. ".c")
+  IO.File outFile = IO.fileWriter(outFileName)
+  IF outFile == NIL
+    LOG.fatal("Cannot open file for writing: \(outFileName)")
+  }
+
+  # Also open the file for Extra Compiler Arguments.
+  string ecaFileName = IO.concatPath(zudirName, IO.tail(rootName) .. ".eca")
+  IO.File ecaFile = IO.fileWriter(ecaFileName)
+  IF ecaFile == NIL
+    LOG.fatal("Cannot open file for writing: \(ecaFileName)")
+  }
+
+  #
+  # STEP 1: Read the main .zu file and imported files, parse and resolve
+  # symbols.
+  #
+
+  # Parse |inFileName|.
+  MainFile %mainFile = NEW(inFileName)
+  IF %mainFile.parse() == FAIL
+    LOG.fatal("Cannot open file for reading: \(inFileName)")
+  }
+  IF !%mainFile.hasMain()
+    LOG.fatal("No Main() found in \(inFileName)")
+  }
+
+  # If there are parse errors there is no point in doing more work.
+  IF LOG.errorCount == 0
+    # Recursively parse imported files.
+    %mainFile.parseImports()
+
+    #
+    # Resolve symbols.  This recursively enters imported files.
+    # Repeat this until they are all defined or no more can be resolved.
+    #
+    DO
+      bool doPass = %mainFile.resolve()
+    UNTIL !doPass || LOG.errorCount > 0
+  }
+
+  IF LOG.errorCount == 0
+    IF ZimbuFile.writeZuiFlag.get()
+      # the NEW way (doesn't completely work yet)
+      #
+      # STEP 2: Write .zui files, give errors for unresolved symbols
+      #
+      %mainFile.writeZuiFiles()
+
+      IF LOG.errorCount == 0
+        #
+        # STEP 3: Write C code.
+        #
+        %mainFile.writeZuiC(outFile)
+      }
+
+    ELSE
+      # the OLD way (working)
+
+      # STEP 2 + 3: Produce C code from the parse tree and write it to
+      # outFile, give errors for unresolved symbols.
+      %mainFile.generateC(inFileName, outFile)
+
+      # Produce any JS code for ZUT modules.
+      # This is written to separate files.
+      %mainFile.generateJS()
+    }
+  }
+
+  outFile.close()
+
+  IF LOG.errorCount == 0
+    # Write the Extra Compiler Arguments into the .eca file.
+    ecaFile.print(Config.extraCompilerArgs())
+    ecaFile.close()
+  }
+
+  IF LOG.isVerbose()
+    # Dump info about garbage collection.
+    GC.writeRunInfo(IO.stdout)
+  }
+
+  RETURN LOG.errorCount > 0 ? 1 : 0
+}

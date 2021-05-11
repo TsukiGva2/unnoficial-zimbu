@@ -1,0 +1,58 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for Equal() and Compare() on objects.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE CompareTest @public
+
+  PROC test() @public
+    IO.print("testdir/CompareTest.zu")
+    testEqual()
+    testCompare()
+  }
+
+  CLASS Foo
+    string $s
+    FUNC $Equal(Foo other) bool
+      RETURN $s == other.s
+    }
+    FUNC $Compare(Foo other) int
+      RETURN $s.Compare(other.s)
+    }
+  }
+
+  PROC testEqual()
+    Foo f1 = NEW()
+    Foo f2 = NEW()
+    f1.s = "aaa"
+    f2.s = "aaa"
+    IO.print("aaa == aaa: " .. (f1 == f2))
+    IO.print("aaa != aaa: " .. (f1 != f2))
+
+    f2.s = "bbb"
+    IO.print("aaa == bbb: " .. (f1 == f2))
+    IO.print("aaa != bbb: " .. (f1 != f2))
+  }
+
+  PROC testCompare()
+    Foo f1 = NEW()
+    Foo f2 = NEW()
+    f1.s = "aaa"
+    f2.s = "aaa"
+    IO.print("aaa > aaa: " .. (f1 > f2))
+    IO.print("aaa >= aaa: " .. (f1 >= f2))
+    IO.print("aaa < aaa: " .. (f1 < f2))
+    IO.print("aaa <= aaa: " .. (f1 <= f2))
+
+    f2.s = "bbb"
+    IO.print("aaa > bbb: " .. (f1 > f2))
+    IO.print("aaa >= bbb: " .. (f1 >= f2))
+    IO.print("aaa < bbb: " .. (f1 < f2))
+    IO.print("aaa <= bbb: " .. (f1 <= f2))
+  }
+}

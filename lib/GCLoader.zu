@@ -1,0 +1,38 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# GC module: Garbage Collector stuff
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE GCLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin GC module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "GCModule"
+    b.fileName = "GCModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the GC module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("GC", builtin)
+      ModuleType mt = moduleDecl.type.<ModuleType>
+    }
+  }
+}

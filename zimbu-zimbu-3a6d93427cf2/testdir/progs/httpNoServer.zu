@@ -1,0 +1,16 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  HTTP.Server server = NEW(8888)
+  server.start()
+  IO.print("Server start")
+  IO.flush()
+  TIME.sleep(100)
+  IO.print("Killing server")
+  IO.flush()
+  # On MS-Windows killing doesn't always work.  That's what the IO.flush()
+  # calls are for.
+  server.kill()
+  IO.print("Exiting")
+  IO.flush()
+  RETURN 0
+}

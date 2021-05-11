@@ -1,0 +1,384 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# UsedFile class: values for an imported or main file.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Builtin.zu"
+IMPORT "Config.zu"
+IMPORT "Declaration.zu"
+IMPORT "FileScope.zu"
+IMPORT "Generate.zu"
+IMPORT "Resolve.zu"
+IMPORT "SContext.zu"
+IMPORT "TopScope.zu"
+IMPORT "Util.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiImportExt.zu"
+
+CLASS UsedFile @items=public   # TODO: restrict visibility
+  bool      $isTopFile    # TRUE for main file and top ZWT file, code is to be
+                          # generated for it
+  ZimbuFile $zimbuFile    # Info about the imported file not related to where
+                          # it's imported from.
+  string    $asName       # name for IMPORT "Foo.zu" AS OtherFoo
+  bool      $didError     # given error message for wrong $asName
+
+  BITS Flags
+    bool  $isMainFile
+    bool  $isTopFile
+  }
+
+  NEW(string fileName, Flags flags)
+    $zimbuFile = NEW(fileName, flags.isMainFile)
+    $isTopFile = flags.isTopFile
+    $zimbuFile.usedAsZimbu = TRUE
+  }
+
+  NEW(ZimbuFile zimbuFile, bool isTopFile)
+    $zimbuFile = zimbuFile
+    $isTopFile = isTopFile
+  }
+
+  FUNC $parse(TopScope topScope, string indent) status
+    status ret = $zimbuFile.parse(indent, THIS)
+
+    # Check for built-in modules that are used.
+    # Import nodes are prepended for these at the top file scope.
+    IF ret == OK
+      Builtin.checkBuiltin(THIS, topScope)
+    }
+
+    RETURN ret
+  }
+
+  PROC $parseImports(string indent, SContext ctx)
+    # Set the indent on the scope again, it changes when finding builtin
+    # modules and when skipping files.
+    $scope().importIndent = indent
+
+    # Go through the IMPORT statements of this scope.
+    ZuiFile zf = $zimbuFile.zuiFile
+    IF zf.contents.hasImport()
+      FOR import IN zf.contents.getImportList()
+        $parseImport(import, ctx)
+      }
+    }
+  }
+
+  PROC $parseImport(Zui.Import import, SContext ctx)
+    TopScope topScope = ctx.topScope
+    string pluginName = import.hasPlugin() ? import.getPlugin() : NIL
+
+    IF pluginName == "CHEADER"
+      # Handle IMPORT.CHEADER <somefile.h>
+      # TODO: check if file exists.
+      string key = import.getAngleQuotes()
+                ? "<" .. import.getFileName() .. ">"
+                : "\"../" .. Generate.relativeName(
+                                       THIS, import.getFileName()) .. "\""
+      IF topScope.cheaders.find(key) < 0
+        topScope.cheaders.add(key)
+      }
+      RETURN
+    }
+
+    VAR importExt = ZuiImportExt.get(import)
+    IF importExt.usedFile == NIL
+      # Didn't handle this import before, create a UsedFile for it now.
+      # For IMPORT.ZWT it creates a new TopScope.
+      topScope = $handleImport(import, ctx)
+      IF importExt.usedFile == NIL
+        RETURN
+      }
+      IF pluginName == "ZWT"
+        # Remember the TopScope of the ZWT file tree.
+        importExt.topScope = topScope
+      }
+    }
+
+    ZimbuFile importZimbuFile = importExt.usedFile.zimbuFile
+    IF importZimbuFile == NIL
+      RETURN  # error already reported
+    }
+
+    FileScope scope = ctx.scope
+    string name = importZimbuFile.filename
+
+    IF importZimbuFile.startedPass == -1
+      # Didn't parse the imported file yet, do it now.
+      # This will also check for using builtin modules.
+      importExt.usedFile.parse(topScope, scope.importIndent)
+      IF importZimbuFile.fileScope == NIL
+        ctx.error("Cannot open file for reading: " .. name, import.getPos())
+      ELSE
+        importZimbuFile.dirName = Util.dirName(name)
+      }
+    }
+
+    # Recursively handle IMPORT in the parsed file.
+
+    # We need to go into the imported file if we haven't done it yet for the
+    # current top file (Main() or .zwt file).
+    # Rationale: "foo.zu" may be included below the file containing Main() and
+    # also below a ZWT file.  It must then be generated and included in both.
+    # This must be known at the toplevel, also for builtin modules.
+    IF topScope.isNewImport(importZimbuFile)
+                       && (LOG.errorCount == 0 || Generate.continueAfterError)
+      importExt.usedFile.parseImports(scope.importIndent,
+                               NEW(ctx, importExt.usedFile.scope(), ctx.outs))
+
+      Zui.Statement stmt = importZimbuFile.fileScope.getFirstStatement()
+      IF stmt != NIL
+        IF !importZimbuFile.isProto
+          # Check that the toplevel item name appears in the file name,
+          # ignoring case.
+          IF     stmt.getType() == Zui.StatementType.eCLASS_DECL
+              || stmt.getType() == Zui.StatementType.eMODULE_DECL
+              || stmt.getType() == Zui.StatementType.eENUM_DECL
+              || stmt.getType() == Zui.StatementType.eBITS_DECL
+            string topName = stmt.getDeclaration().getName()
+            string root
+            int slash = name.findLast('/')
+            IF slash >= 0
+              root = name.slice(slash + 1)   # use name after last /
+            ELSE
+              root = name
+            }
+            int dot = root.findLast('.')
+            IF dot > 0
+              root = root.slice(0, dot - 1)  # remove .zu or .proto
+            }
+            int i = root.find(topName)
+            IF i < 0
+              ctx.error("Name must match the file name: " .. topName, stmt)
+            ELSEIF i > 0 && root[i - 1] != '_'
+                || (i + topName.Size() < root.Size()
+                                           && root[i + topName.Size()] != '_')
+              ctx.error("Name matches only part of the file name: "
+                                                             .. topName, stmt)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  # Handle an IMPORT for |import| and add the ZimbuFile to |import|.usedFile.
+  # This is only called once for every IMPORT statement that actually imports
+  # a .zu file, not for IMPORT.CHEADER.
+  FUNC $handleImport(Zui.Import import, SContext ctx) TopScope
+    FileScope scope = $scope()
+    string name = import.getFileName()
+
+    IF name.startsWith("$PLUGIN/")
+      name = Config.pluginPath .. name.slice(7)
+    ELSE
+      name = Generate.relativeName(THIS, name)
+    }
+
+    # TODO: more flexible way to handle plugins.
+    bool isProto
+    string pluginName
+    IF import.hasPlugin()
+      pluginName = import.getPlugin()
+      IF pluginName == "PROTO"
+        name = $plugin(import, name, protoPluginConfig, ctx)
+        IF name == NIL
+          RETURN ctx.topScope
+        }
+      ELSEIF pluginName == "ZUT"
+        name = $plugin(import, name, zutPluginConfig, ctx)
+        IF name == NIL
+          RETURN ctx.topScope
+        }
+      ELSEIF pluginName != "ZWT"
+        # IMPORT.ZWT is handled elsewhere
+        ctx.error("Unsupported import plugin: " .. pluginName, import.getPos())
+        RETURN ctx.topScope
+      }
+      isProto = TRUE
+    }
+
+    IF name.slice(-3) != ".zu"
+      ctx.error("Import name must end in '.zu': " .. name, import.getPos())
+      RETURN ctx.topScope
+    }
+
+    ZimbuFile zimbuFile = ZimbuFile.find(%importedFiles, name)
+    IF zimbuFile == NIL
+      # Didn't encounter this file before, create a new ZimbuFile.
+      zimbuFile = NEW(name, FALSE)
+      %importedFiles.add(zimbuFile)
+    }
+
+    zimbuFile.isProto = isProto
+
+    bool topFile
+    TopScope topScope = ctx.topScope
+    IF pluginName == "ZWT"
+      # This file needs to be produced as Javascript.
+      zimbuFile.usedAsZwt = TRUE
+      zimbuFile.topZwtFile = TRUE
+      # IMPORT.ZWT means generating a new JS file, thus topFile is TRUE.
+      topFile = TRUE
+      topScope = NEW()
+
+      # Use the same pass count as in the non-ZWT code, since .zu files are
+      # getting a pass only once, no matter though if the route through which
+      # they get imported is below IMPORT.ZWT or not.
+      topScope.pass = ctx.topScope.pass
+    }
+
+    # For IMPORT "Name.zu" @javascript
+    # add the file to the list of javascript files.
+    IF import.getJavascript()
+      zimbuFile.usedAsZwt = TRUE
+      topScope.addJavascript(zimbuFile)
+    }
+
+    VAR importExt = ZuiImportExt.get(import)
+    importExt.usedFile = NEW(zimbuFile, topFile)
+    importExt.usedFile.asName = import.hasAsName() ? import.getAsName() : NIL
+
+    RETURN topScope
+  }
+
+  # handle IMPORT.PROTO "file.proto", |name| is "file.proto".
+  # Return the name of the generated .zu file.
+  # Return NIL in case of an error
+  FUNC $plugin(Zui.Import import, string name, PluginConfig config,
+                                                          SContext ctx) string
+    IF !name.endsWith("." .. config.extension)
+      ctx.error("Proto import name must end in '.\(config.extension)': \(name)",
+                                                              import.getPos())
+      RETURN NIL
+    }
+
+    # "file.proto" to "ZUDIR/file.zu"
+    # "dir/file.proto" to "dir/ZUDIR/file.zu"
+    string outFileName = name.slice(0, -(config.extension.Size() + 2)) .. ".zu"
+    int slash = outFileName.findLast('/')
+    string outDirName
+    IF slash < 0
+      outDirName = Config.zudirName
+    ELSE
+      outDirName = outFileName.slice(0, slash) .. Config.zudirName
+      outFileName = outFileName.slice(slash + 1)
+    }
+    outFileName = outDirName .. "/" .. outFileName
+
+    IF !%protoDone.has(outFileName)
+      IF IO.fileInfo(outDirName).status == FAIL
+        IF IO.mkdir(outDirName) == FAIL
+          ctx.error("Cannot create directory " .. outDirName,
+                                                          import.getPos())
+        }
+      }
+
+      # Find the plugin program in the same directory as zimbu itself.
+      string dir = ""
+      slash = ARG.exeName.findLast('/')
+      IF slash > 0
+        dir = ARG.exeName.slice(0, slash)
+      }
+      FileScope scope = $scope()
+      LOG.info("\(scope.importIndent)  Converting \(name)...")
+      string options = import.hasOptions() ? import.getOptions() : ""
+      int rv = SYS.shell("\(dir)\(config.program) \(options) "
+                                          .. "\"\(name)\" \"\(outFileName)\"")
+
+      IF rv != 0 || IO.fileInfo(outFileName).size == 0
+        ctx.error("Conversion failed for " .. name, import.getPos())
+        RETURN NIL
+      }
+      LOG.info("\(scope.importIndent)  Done.")
+      %protoDone.add(outFileName)
+    }
+
+    RETURN outFileName
+  }
+
+  # Return TRUE if there is a Main() method in this file.
+  FUNC $hasMain() bool
+    RETURN $findMainDecl() != NIL 
+  }
+
+  FUNC $findMainDecl() Zui.Statement
+    IF $zimbuFile.fileScope == NIL
+      RETURN NIL
+    }
+    FOR stmt IN $zimbuFile.fileScope.statements ?: []
+      IF stmt.getType() == Zui.StatementType.eMETHOD_DECL
+                                  && stmt.getDeclaration().getName() == "Main"
+        # Error for wrong type or arguments given elsewhere.
+        RETURN stmt
+      }
+    }
+    RETURN NIL
+  }
+
+  PROC $markMainUsed(Resolve gen, TopScope topScope)
+    # Mark used items.  Start with the Main() method and descend recursively.
+    Zui.Statement mainStmt = $findMainDecl()
+    IF mainStmt == NIL
+      LOG.internal("Main() not found")
+    ELSE
+      Zui.Declaration zuiDecl = mainStmt.getDeclaration()
+      # "declExt.decl" was set in generateMain().
+      VAR declExt = ZuiDeclarationExt.get(zuiDecl)
+      IF declExt.decl == NIL
+        LOG.internal("Main() decl is NIL")
+      ELSE
+        # We do not want to write a declaration for abstract classes.
+        Declaration.abstractClass.clearUsed()
+        # We do not write an inherited method in the parent class.
+        Declaration.inheritMethod.clearUsed()
+
+        # Let the language add dependencies between symbols and mark items as
+        # used that are always used.
+        gen.addDependencies()
+
+        # Mark Main() as used, will recursively mark all contained items and
+        # their dependencies as used.
+        gen.setDeclUsed(declExt.decl)
+      }
+    }
+  }
+
+  FUNC $hasUsedItem(Resolve gen, string indent) bool
+    RETURN $zimbuFile.hasUsedItem(gen, indent)
+  }
+
+  FUNC $scope() FileScope
+    RETURN $zimbuFile.fileScope
+  }
+
+  SHARED
+
+    set<string> %protoDone = NEW()  # Proto files already converted.
+    list<ZimbuFile> %importedFiles = NEW()
+
+    CLASS PluginConfig
+      string $extension
+      string $program
+    }
+    PluginConfig protoPluginConfig = {
+        extension: "proto",
+        program: "pluginproto",
+      }
+    PluginConfig zutPluginConfig = {
+        extension: "zut",
+        program: "pluginzut",
+      }
+  }
+
+}

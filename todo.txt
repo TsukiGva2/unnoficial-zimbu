@@ -1,0 +1,1717 @@
+SOON TO BE FIXED OR IMPLEMENTED:
+
+---------- Recent ideas
+
+Implement ZUT to replace ZWT: use templates, filled in at runtime where
+needed.  See templates.txt.
+
+---------- Current work
+
+Also allow INCLUDE in a SHARED section, if the PIECE only has a SHARED
+section?
+
+Gives error for pName member instead of missing DeclStore:
+        string pName = DeclStore.getDecl("MZUTModule", "eventConfig").pName
+
+
+ENHANCES
+
+Add ENHANCES: Like EXTENDS but can only add methods; objects are considered of
+the same type.  Conversion between the two always works.
+Implementation: Need a different __T or not?  Probably not.
+               CLASS ZuiExpression ENHANCES Zui.Expression
+                 FUNC $ext() ZuiExpressionExt
+                   IF $extension == NIL
+                     $extension = ZuiExpressionExt.NEW()
+                   }
+                   RETURN $extension
+                 }
+               }
+               ...
+               Zui.Expression zuiExpr = ...
+               ZuiExpression expr = zuiExpr
+               expr.ext().undefined = 0
+Should be able to enhance IO.File to add special write functions:
+	CLASS HtmlFile ENHANCES IO.File
+	  PROC writeParagraph(string text)
+	    print("<p>" .. text .. "</p>")
+	  }
+	}
+
+CTX
+
+Instead of dependency injection, pass a context down through the stack.
+        HttpRequest request = NEW(...)
+        CTX.add(request)
+        proc()
+        ...
+        PROC proc()
+          HttpRequest request = CTX.get()
+        }
+One can add items to the context and get them, but not replace them.
+This avoids a function down the call stack changing an item and forgetting to
+restore it.
+Implementation: Use a list, so that when returning from a function the newly
+added items are dropped (truncate the list at its original length).
+
+
+DYN
+
+- Assigning string literal to dyn uses Zstr("string") instead of a static var.
+            dyn value
+            ...
+            value = "INVALID"
+- Implement more of ZdynEqual()
+   - Only include compares for types actually used.
+- Implement more of ZdynCompare()
+- Add a default object Equal() and Compare(): compare each member.
+  Similar to the default ToString() method, use the same To entries.
+- Check that dict works with "dyn" key and item.
+- template type of object / iobject with template?
+- Only generate "dyn" conversion functions when needed, not all at the same
+  time.
+- Allow invoking any function on a dyn?  Throw exception if it does not exist.
+        - Need a way to check if it exists and get its Type.
+        - Implementation: Need a dict with functions, arguments and return
+          types.
+- How to test equality of "dyn"?
+        dyn p = v
+        IF p == NIL  # Test p itself or the pointer inside it?  Both!
+  Can use Zderef().
+- Need a way to get the type:
+        dyn a
+        T.isInteger(a)  # any kind of int: int8, int16, etc.
+        T.isInt(a)      # int64 or "int"
+        T.isNumber(a)   # int or nat or float
+        T.isString(a)   # string
+        T.isReference(a)  # any reference
+        T.isValue(a)     # any value
+        or
+        SWITCH a.Type()
+          CASE T.int
+          CASE T.list
+          CASE MyClass.Type()
+          etc.
+        a ISA T.int
+        a ISA T.int32
+        a ISA T.string
+        a ISA T.list
+        a ISA FooBar
+
+LOG Module:
+- set level at runtime: LOG.setLevel(LOG.Level level)
+- Different level for specific module/class
+
+Support a "flat array": instead of object or tuple references it stores the
+objects themselves.
+        array<%MyObject>
+        array<%tuple<string, dyn>>
+
+When a list contains a mix of types should automatically choose list<dyn>,
+instead of using the type of the first item.  E.g.:
+     list<dyn> l = ["one", 2, FAIL, [1, "one", 1.0]]
+
+Check that all types have Size(), ToString(), Type(), Equal(), Compare().
+Test them also when the type is assigned to dyn.
+        string
+        byteString
+        varString
+        varByteString
+        enum
+        bits
+        enumValue  -> does not have Type()
+        bitsValue
+        array
+        list
+        dict
+        tuple   use tuple.Compare() also for t1 == t2
+        set
+        multiDict
+Dict: Use Equal() of an object or iobject, instead of checking identity.
+To implement:
+- varString.Compare()
+- varString.Equal()
+- varByteString.Compare()
+- varByteString.Equal()
+Careful: if left and right type differs this requires more work!
+
+Bug: using ToString() on Token causes errors for enum type not defined.
+Missing dependency?
+
+Cleanup: Remove support for triple-quoted strings. in Tokenizer.zu.
+
+Implement map() and keyMap() on array, list and dict of iobject.
+Implement mapTo() on array, list and dict of iobject and/or resulting in a
+array/list/dict of iobject  (use in generateMethodType)
+
+Implement list.toArray()
+Implement array.toList()
+        Useful for dict.keys().toArray()
+And/or implement dict.keyArray() and dict.valueArray()
+
+Make it possible to call method accepting an array with a [] list.
+
+Varargs Optimization: Only fill in the array with arugument names when used.
+Either directly or by passing the varargs to a method.
+Use MethodType.varargsName.
+
+For a typespec the type is generated every pass.  Create it once and update it
+when needed.
+
+Efficient unicode character manipulation for strings:
+  Add string.toArray() and array<int32>.asString().
+  add string.toList() and list<int32>.asString().
+
+
+Interesting discussion site: http://code-fight.club/
+
+
+DOCS
+
+Make it possible to navigate all the docs in checked-in files, without an
+internet connection.
+- Include a html file for contents of the docs, like the sites page.
+  With "Standard library overview" and "Built-in types"
+  Generate from .mkd file?
+- Document zimbu command line flags:
+        Turn usage.txt into a .mkd
+        reference from the docs contents file
+
+@primitive:
+- Give an error when calling a method that is not @primitive.
+- Use in more places, verify it works.
+- Set the flag automatically for simple methods.
+Also detect a simple assignment and do not set sf.pos before it.  E.g.:
+   VscanfHexFormat = ((Tc*)&Y3d3);
+
+Should a closure use another variable instance every time?
+Lua does: http://www.lua.org/manual/5.2/manual.html#3.3.1 
+          3.5 – Visibility Rules
+  list<func< => int>> fs = NEW()
+  int x = 20
+  FOR i IN 1 TO 10
+    int y = 3
+    fs.add(FUNC (USE x, &y) int; y = y + 1; RETURN x + y; })
+  }
+  FOR f IN fs
+    IO.print(f())
+  }
+
+
+IDEAS
+
+Check.notNil() is produced for every type of pointer.
+  - Can this function be "inline" ?  With types like a template?
+  - Or can we do something like #define in C?
+
+Remove size(), everything should use Size() now.
+
+Datastructures from Python (http://docs.python.org/2/library/collections.html):
+- OrderedDict - dict and list combined.
+        make this like a list (able to insert, append and remove items) that
+        can also be looked up by a key.
+        Also: sortedDict: combination of dict and sortedList
+    Name: Just use dict, with extra argument when constructing it.
+- Defaultdict - just a dict with a default value or func to provide default
+        mydict.setDefault(val)
+        mydict.setDefault(func)
+Already have:
+- Counter - similar to multiSet
+        myset["foo"] += 2
+- Deque - fancy list implementation
+        Use three or more arrays: at head, middle, tail
+        Here middle can be more arrays, but reduced when doing index lookups.
+        Compromise by work to reallocate arrays and lookup by index.
+        -> When appending/inserting allocate more arrays, in linked list
+        -> When doing lookup by index compact the middle.
+        -> Provide "compact" method to compact when desired.
+        -> Possibly use "pointer blocks", like used in Vim swap file.
+- Namedtuple - just a Zimbu tuple
+
+Ordered dict: add getByIndex()
+
+Ideas from Java 8:
+- Optional class (use dyn with special type T.none?)
+- Streams (read http://blog.hartveld.com/2013/03/jdk-8-33-stream-api.html)
+
+Errors and exceptions need to be translated.  But it must still be possible to
+recognize them by someone who doesn't understand the target language.  Add an
+identifier to each message:
+        "EdupVar: Duplicate variable name"
+        "InoNext: Calling next() while there is no next item"
+Use these identifiers in the generated documentation.
+
+-------------
+
+When a module has a method format() then no other method can use the "format"
+argument.  Can that restriction be removed?
+
+More formatting for builtin types: var.ToString("format")
+    list
+    array
+    dict
+- limit number of items listed.
+- optionally use ellipses.
+- limit depth.
+
+Because IO.stdin is created with a method call, it is always included, since
+the method call could have side effects.  Doing it in an Init() method has the
+same problem.  How to avoid this?  Perhaps assume a primitive method does not
+have side effects?
+
+In more places, when an object is NIL do not throw an exception but return a
+default value, like ?. was used.
+
+Ideas from comparing Ruby and Go:
+http://nathany.com/good/
+
+Cobol formatting?
+      number.ToString("999.99")
+      number.ToString(".99")
+      number.ToString("0.99e99")
+      name.ToString("XXXXXX")
+
+Have a look at swift: https://developer.apple.com/swift/
+        esp. "Documentation and Sample code" / Swift programming language
+           / Language Guide
+
+Have a look at Nimrod: http://nimrod-lang.org/
+
+Have a look at Julia: http://julialang.org/
+        ideas for using LLVM
+        use their benchmarks?
+
+Allow for composition: INCLUDE with a CLASS, just like with a PIECE.
+- It is basically working.
+- Call Init() of each included class.
+- Could call it FLATTEN?  Probably not, that more for $%pos
+- The class automatically implements the interface of included classes and
+  pieces (unless rewiring disables it).
+
+Multiple return types:
+- Turn the return values into a tuple:
+        tuple<string, status> t = tryIt()
+        VAR t = tryIt()
+
+Allow for default values in tuple, like with arguments:
+  tuple<int x = 1, int y = 1, string text = "unknown"> t
+  a = NEW(text = "hello")  # x == 1, y == 1
+  b = NEW(x = 10, y = 10)  # text == "unknown"
+
+-------------
+
+Implement float:
+- Assignment of float to int: require trunc(), floor() ?
+- Only produce float code when actually used.
+- Implement float32 functions different from float functions?
+- Implement float80 and float128.
+- Implement using float as key in dict.
+- Implement power:   a ** b
+- Implement float divide:   7 // 2  # Result: 3.5
+
+Docs: When a builtin module only contains a class, list that class in the
+index.  Useful for BYTES, STRING, etc.  Possibly add a comment item for it.
+
+For callback create a ToXXX struct instead of setting it in every constructed
+callback.  See tuple for example.
+
+Allow for having space at the end of an object of variable length, to avoid
+another allocation.  Equivalent in C:
+              struct blah {
+                struct blah *next;
+                char buf[1];  // actually longer
+              };
+              struct blah *p = malloc(sizeof(struct blah) + buf_len);
+        - size must be set in NEW() or INIT(), or a special constructor?
+        - item size must be known in class declaration:
+                embeddedArray<byte> chars
+
+A function that does not use THIS does not need a stackframe, e.g.:
+        FUNC $getFoo() Type
+          RETURN fooType
+        }
+Also when returning a constant, e.g. RETURN ""
+Also don't check if THIS is NIL.
+
+Still a large problem with using NIL object references.  Swift has a possible
+solution for that: Only option types can be NIL.
+Other idea: When reading always behave like ?., return default value when
+object is NIL.  When writing throw an exception as before.
+        list<int> l
+        IO.print(l.Size())       # "0"
+        IO.print(l[3])           # "0"
+        IO.print(l.ToString())   # "NIL"
+        l.add(3)        # exception
+
+When GC.run() is not used, there is no need for the .frof field and Zfo and
+Zsf and sfF.
+
+Using Finish() actually does not depend on the class being used but the class
+being instantiated.  Thus whether any NEW() is called.  Matters when only a
+child class is instantiated, e.g. ThreadBase.
+
+Improvements in GC:
+- GC with threads doesn't work with MingW, pthread_kill() is not implemented.
+  Test hangs in calling GC.  Use native threads?
+  For now GC is disabled when building on Windows with threads.
+  When resetting "manage" because pthread is used ugly dependency on zfree.
+- Mark phase: Spread the work evenly over threads.  When a block is full any
+  thread that's done can obtain a full block from another thread.
+- Docs: STW is like a skull&bones on household chemicals: Not nice but you
+  have to use them.
+
+For statement blocks, instead of clearing Scope.declDict every time, mark
+entries as "forward" until they are encountered.  Avoids a lot of
+reallocations. Use profiling to find out how much it helps.
+
+Support using var?.method() for all methods of:
+- array
+- list
+- dict
+
+Add array.fill(x): file whole array with "x".
+array.map() only works for int, not for int8, int16, etc.
+Add a NEW method for array to reserve space for the actual objects, instead of
+references to objects.  All are created with default values using Init().
+Next pointer points to array header, which has a flag to indicate its contents
+is not to be freed by the GC.
+
+Most File methods can't use GENERATE_ERROR, because File is actually
+instantiated and the methods are used in children on non-file objects.
+
+Proto plugin: Exceptions should have an object
+
+Instead of "option zimbu_field" in the .proto file, this must be in a separate
+file that is passed to the proto plugin.  That way the .proto file can be
+shared with other programming languages.
+        IMPORT.PROTO "zui.proto" "zui.zuproto"
+   with zui,zuproto:
+        message Declaration {
+          DeclObj $decl
+          int $undefined
+        }
+
+@autoclose: Call Close() on the object when leaving the block.
+        {
+          IO.File f @autoclose = IO.FileReader.NEW("file")
+          # read from f
+        } # f.Close() called here, no matter what.
+It's a bit like TRY-FINALLY, except that an exception thrown inside Close()
+will not cause other Close() calls to be skipped.
+Implementation: Can usually do it at end of block, but when exception is
+thrown need to do this in the stack-frame-unwinder (avoid using setjmp()).
+
+PIECE and class composition:
+- Support SHARED section inside PIECE?
+- Make rewiring work for PIECE.
+  Document that rewiring only works within one INCLUDE block.
+- Check including a CLASS - composition.
+- A Piece can extend another piece, it just means including it as well.
+  Make test2() in PieceTest work: when including a piece deal with parents.
+- Implement USES for a PIECE.
+- Support using Init() in PIECE.  Called by Init() of class that uses the
+  PIECE.
+
+callbacks / closures / lambda expressions / lambda methods:
+- Lambda method: test using USE and GET
+- Be able to make a callback for methods on builtin types.
+
+Weird errors when SortedList.set() is declared to return list<Titem>.
+
+Make multiDict and sortedList support []:
+    When a class defines 
+            FUNC Get(Tkey key) Titem
+    Then make:
+            a = var[key]
+    work like:
+            var.Get(key)
+    When a class defines
+            PROC Set(Tkey key, Titem value)
+    Then make:
+            var[key] = value
+    work like:
+            var.Set(key, value)
+Support using var?[idx] - return default value when var is NIL.
+Also var?[idx] = value ?  Do nothing when var is NIL.
+
+testje.zu does not compile with the sortedList example.
+Type for $sortMethod is not defined.
+
+Add Enum.FromStringOrThrow()
+Add Enum.ToInt() and Enum.FromInt() (and Enum.FromIntOrThrow())
+
+Idea:
+        METHOD add(Foo foo, int x) Foo
+          foo.count += x
+        }
+Can be called like this:
+        Foo f
+        f.add(3)
+Gives error if Foo already has an add() method.
+It's like extending the class to add the method, but without the hassle of
+adding a new class and type casts.
+Against it:  Why not just use add(f, 3) ?
+Also: how to import the method?
+
+Garbage collection --manage=linked:
+- Make sure all intermediate results are stored in a temp var.
+  Add more tests to call GC.run() inside an expression.
+- Block GC for all signal-unsafe functions.  How to find them all?
+
+- Template with variable number of arguments (custom Tuple):
+     CLASS Tuple<Titem ...>
+       GENERATE_FOR i IN 1 TO Titem.size()
+         Titem[i] $item%i%
+       }
+       PROC NEW(list<dyn> values)
+         #?
+       }
+     }
+
+Check that all methods of builtin types check the argument count.
+
+Command line arguments not handled properly:
+        --manage -v
+Works like --manage=-v, should give an error.
+
+Need something like @InheritDoc for zudocu, when a method implements an
+interface method.
+
+"zimbu prog.zu -x" should check the timestamp of "prog" and skip compiling if
+it's newer.  Add a flag to force compiling anyway.
+
+"make zwtdemo" Proto.zu and Message.zu twice "checking imports".
+
+map() can only have the output type equal to the input type.
+Add copyMap(): Create new list with possibly different type.
+Add copyKeyMap(): keyMap() + copyMap()
+
+Cannot do "NIL ISA Class".  Should just result in FALSE.
+Only for an iobject.  Also for ISNOTA.
+
+Cannot use ISA on a class itself: (Type.aList ISA ContainerType)
+
+Bug, wrong code generated for IS with class:
+        IF parent IS IO.File # I.Iterator
+
+Bug: When import for CodeProperties is missing in Annotator.zu, get errors for
+multiple matching functions.
+
+Support unpacking a short list, like a tuple:
+    list<int> l = [1, 2, 3]
+    int a, int b, int c = l
+NO, you can use:
+  int a, int b, int c = l[0], l[1], l[2]
+
+Implement Iterator() and KeyIterator() for dict.  Use in MultiDict.
+Implement TupleIterator(): returns a tuple at a time.
+        FOR a, b, c IN myObject   # uses myObject.TupleIterator()
+
+Manual memory allocation:
+        l = HEAP.NEW()             # manual
+        l.add("one")               # GC
+        HEAP.free(l)               # doesn't free "one"
+        l = HEAP.["a", "b", "c"]   # manual items
+        HEAP.freeAll(l)            # frees l and items
+        d = HEAP.["a": 1]
+        HEAP.freeAll(d)
+- Alternative: Use allocater interface, allow for user defined memory
+  allocation.  Does Objective-C have this?
+- Make sure array, list, dict items are also allocated/freed on heap.
+> No special name, can mix GC and manual allocation.
+> manual items can contain GC items and the other way around.
+
+In an interface, instead of having $addSupported() annotate $add() with
+@optional.  If $add() is not implemented automatically insert a method that
+throws E.Unsupported.
+Then add an INFO.supported(foo.add) method.  Or foo.add.SUPPORTED().
+        or foo.add.INFO.supported()
+        or foo.INFO.hasMethod("add")
+Or something like that.
+OR: use the PIECE equivalent of an interface.  This basically requires
+$Iterator() to return something that is a combination of interfaces, since
+it is already possible to put a list of interfaces after IMPLEMENTS.
+
+When generating $Init() lines from elsewhere, don't check visibility.
+
+Javascript: NEW methods are produced that are not used.
+
+Remove support for:
+      PROC NEW(arg)
+
+Attribute between variable and init looks weird:
+    int         $x @protected = -1  #!
+Recommend using two lines:
+    int         $x @protected
+                = -1  #!
+
+On the livedemo: add a "run now" button.
+
+C# has enumerators, a bit like iterators but can be used e.g., on a fibonacci
+generator.
+
+Add --debug flag: put all function arguments in the stack frame, show the
+values when printing the stack.
+
+When a subclass only adds methods, no members, all inherited methods are
+exaclty the same, don't produce them twice.
+
+Crash in this code in plugin/proto/Proto.zu:
+              writer.write(msg.boolGet(fspec.nr) ? "1" : "0")
+C code:
+      ((Ts  (*)(void *, Tc *))(Vwriter->table[2]))(Vwriter->ptr, (((Tb  (*)(void *, Ti ))(Amsg->table[5]))(Amsg->ptr, Vfspec->Vnr)) ? ((ICH = ZstrLen("\0011", 2), ICH && ++*(Ti*)ICH, ICH)) : ((IDH = ZstrLen("\0010", 2), IDH && ++*(Ti*)IDH, IDH)));
+When used from cdbase.
+
+For string operations it would be much more efficient to allocate the string
+once at the start and then be able to write the values.  Create it as varbytes
+first to avoid char length computations.
+      FUNC addDashes(string middle) string
+        bytes m = middle.asBytes()
+        int size = 1 + m.size() + 1
+        varbytes b = NEW(size)
+        b.set(0, '-')
+        b.set(1, m)
+        b.set(1 + m.size(), '-')
+        RETURN b.asString()
+      }
+
+Do not get an error for adding @default to a method in a module.
+
+The current way of disabling command line arguments, such as in echo.zu, still
+drags in a lot of the ARG module.  Can more be omitted, perhaps when a
+variable is always FALSE?
+
+No error when plugin.proto.Message.mergeFromTextFields() is called with reader
+instead of reader.byteReader()
+
+Bug: A function argument with a class that has children is not seen as the .I
+version.  Causes crash at runtime.
+
+Bug (?):  dict<string, int16> can store value that doesn't fit in int16.  Do
+we care?
+
+Change compiler code from MyClass.I to MyClass.
+
+What is ALIAS supposed to do with a class that has children?
+Currently used as class itself, otherwise zwt_demo doesn't build.
+
+Is this the right way to declare a method ref:
+    Class1*.func< : int> getOne
+
+Remove * from Zui.Expression*
+Find places where * is not allowed after an ID and give an error.
+
+Idea: instead of adding zimbu_option to .proto file, keep proto file as-is and
+extend it somehow with Zimbu methods and fields.  Proto file specifies what is
+in the (binary) message, what is extended is only at runtime.
+
+Bug: Declaring a set and using it as NIL, without creating one produces C code
+that uses Dicthead without declaring it.
+
+Bug: Declaring a set without creating an element of its type proces C code
+that doesn't compile.
+
+When extending a class there is no error for adding a member with a name that
+is used in the parent class.
+
+To access the class members of an object, in the SHARED section:
+        object.SHARED.member
+
+Scope.scopeBreak not marked as used.
+- Move from end of Generate to SHARED section in SCOPE
+
+Need to dereference the argument in:
+        ZListSize()
+
+In fullPath(): arg ref is incremented before end of declarations.
+
+Do not get an error for:
+    ctx.gen.vartype(type.itemType)
+
+Use Zran instead of Zra in more places: clear added memory.
+
+No error for including SContext.zu twice.
+
+GENERATE_IF in testdir/IOtests.zu: variables inside are marked as used, but
+they end up not being generated on MS-Windows.  The dereference is, which
+doesn't work.
+
+Make SWITCH work for string.  At least for string constants, later for
+expressions.
+
+---------- Big items:
+
+- Improve keeping track of allocated memory.
+
+- Need a pass specifically to produce errors:
+  Also give errors for code that isn't used.
+  Don't delete the previous version of the program before we know the new one
+  can be compiled.
+
+- Turn list and dict into real classes, so that they can be extended.
+  -> How to extend templated classes?
+  -> Make it so that the functions of container-like templated classes are
+     produced only twice: for value type and reference type.
+     Where Titem.method() or o.method(Titem) is used need to figure out
+     method to call at runtime.
+  -> Make list lookup much faster.  E.g. by using index blocks and pointer
+     blocks.  First index block is the header.
+
+- For efficiency avoid generating exactly the same method for inherited
+  methods and templated classes.  Very often it only matters is the item is a
+  value or a reference, or we only need to know the size of the item.  E.g. to
+  reverse the order of a list.  Only when code depends on the type it must be
+  generated for each type.
+  Example: Check.notNil() only uses the pointer value, all template
+  implementations are the same.
+  Different when:
+  - The __T used for GC. Disallow GC inside the function?
+  - object and iobject are different.
+  Possible ways:
+  - Generate it first, put it in a dict?  But how to change callers of the
+    method to call the method with the other name?
+  - Inspect the statements, if there is only an assignment or that a method or
+    member is used.
+
+-------- Keep track of allocated memory
+
+Use ideas from objective C for memory allocation?
+
+Use ideas from D for objects local to a thread?  Mainly useful for detecting
+race conditions.
+
+Use ideas from Rust for tasks?
+http://static.rust-lang.org/doc/master/guide-tasks.html
+
+Support item that is not managed, for manual memory management.
+Define at class declaration.  Also "rawbytes" type.
+
+Figure out what can be put on the stack, it's more efficient than allocating
+memory.  For each statement and expression keep track of "keeps reference"
+side-effect.  C# has a solution for this?
+Thus object can be managed or not, need to set "to" item accordingly.
+
+For deeply nested objects (E.g. a long list, each object referencing the next
+one) functions such as ZgcMarkGrey() run out of stack space. Instead of a
+recursive solution use a iterative solution.
+
+Other work on reference counting cycle detection:
+    Harel Paz, Erez Petrank 2010 - An Efficient On-the-Fly Cycle Collection
+Main improves the efficiency of cycle handling.
+
+--------- Not managed memory
+
+Make all global objects not allocated, unless it is used in a way that it
+needs to be allocated.  Initially assume all objects are not allocated, then
+reset the noAlloc flag when object is used in a way that it must be allocated.
+Must be possible for global variables.  Not for local ones: how do we know
+when the variable is still in use when the method returns?
+
+When an array declaration has NEW() and the size is a constant:
+        array<string> a = NEW(3)  Also put array itself on the stack.
+
+"flatten" object inside another object:
+        int $%var
+   or:
+        int $var @flatten
+Can't do this always, uses lots of memory and blows up for nested objects.
+
+-------- Avoid generating code for unused items
+
+genC/WriteDictC marks exceptions always as used, should be more fine grained.
+
+In testprog MARGModule.Status is unused.
+In testprog MGreat__ENested is unused.
+
+Can concatenate a string and a number at compile time:
+        x = "an hour has " .. (60 * 60) .. " seconds";
+
+Add a small program to testdir/progs/ for every builtin library method.
+Everything that is generated only when a declaration is marked as used.
+
+Later: Currently a member inherited from a parent class is generated when it
+   was used anywhere. Could generate it only for classes where it is actually
+   used.  Requires adding the declaration to the child class instead of
+   searching for the member in parent classes.
+Later: give warning for unused imports.
+Later: give warning for unused variables, methods, etc.
+
+When using GENERATE_IF Z.lang == "C" there is no separate scope, thus used
+items are added for all languages.  E.g., "stdout" in IO.print(text).
+
+Make string concat functions ZcS3(a, b, c), ZcS4(a, b, c, d), etc.
+
+-------- Move all C and JS writing to genC and genJS directories.
+
+Still various code written from Generate.zu.
+
+for C/JS code in lib/*.zu:
+    Add info in Builtin object?
+        GenInfo gen = builtin.addGenC()
+        gen.addDeclWriter(writeDecl)
+        gen.addBodyWriter(writeBody)
+avoid using decl.jsFName, jsMName
+
+--------  Syntax
+
+Bits function arguments have the same appearance as variables, e.g.
+        func(searchParent)
+Prepend something to make them stand out and avoid mistakes?
+        func(:searchParent)
+        func(.searchParent)   # .member may appear with other meaning
+        func(B.searchParent)  # looks like module member
+
+Instead of "GENERATE_IF" use "COMPILE IF"
+
+Idea from Go: Instead of TRY / FINALLY, use defer.  E.g. for releasing locks,
+closing a file, etc.  Call it ONRETURN ?
+
+Can we have a way to describe the initializer in one place and use it
+somewhere else?  Also for dict and list initializers.  Only works with
+constants and global methods:
+        init defaultFoo = {name: "empty", job: "unknown"}
+        init numberList = [1, 2, 3, 4]
+        ...
+        Foo foo = defaultFoo
+        list<int> l = numberList
+Or use ALIAS ?
+This sort-of replaces #define from C.
+
+--------  Redesign: store intermediate results in .zui files
+
+What to store in .zui file to avoid the need to resolve again?
+
+Make "make testzui" work, using generated .zui files:
+- Resolve using the Zui items.
+        Turn Module.method()  into Module_method(), so that we don't have to
+        look it up every resolve round ?
+- For each item:
+  - Make ZuiWriteC.generateBody() work without Write_C.
+- Make the builtin files work by parsing into Zui.X and generating code from
+  that.
+- in ZimbuFile.parse(), don't parse if the .zui file could be read.
+
+Store intermediate results in ZUDIR/{filename}.zui
+- Use protocol buffer for definition.  Done: zui.proto
+- Write protocol buffer to .zui file.
+- Read protocol buffer from .zui file instead of parsing/resolving.
+
+First step:
+- Go through main file and imported files, recursively.
+  This locates all the files needed for building, except builtin libraries.
+- Do passes like now on .zu files where the .zui file wasn't read, until all
+  symbols are resolved (or known undefined).
+  - Fill in Zui.Contents and what it points to.
+  - Make table of class and method template uses
+  - Make table of interfaces used
+  - Assign C and JS names to all declaration.
+  - Mark code when referenced.
+
+Second step:
+- For each .zu file not read from .zui file convert to .zui format and write
+  the .zui file.  Give errors and abort when there are any errors.
+
+ALTERNATIVE: Go through the Zui tree and produce another tree to produce code
+from.  Make a pass over it to remove unused code, share common parts and
+optimize in other ways. Then the produced code is much smaller and faster.
+
+Third step (only when building a program):
+- Produce code (as one big file?), skip unreferenced code
+- Option to produce portable code (with #ifdefs) for the compiler itself; when
+  off produce code that only runs on the configured system.
+
+Fourth step:
+- Compile C code into binary.
+
+ALSO:
+- Only produce .zui files for file.zu and its imported .zu files:
+	zimbu -c file.zu
+- Only produce .zui file for file.zu, not its imported files:
+	zimbu --c1 file.zu
+
+Array access with bounds checking.
+Make array[i] not check boundaries, array.get(i) does check boundaries.
+Also  array.get(-1)  works to index the last item.
+        foo.set(val, 1)
+        val = foo.get(1)
+        val = foo.get(-1)
+
+------------- array<> ----------
+
+Array Declaration: include dimensions:
+        array<string>  foo     # unknown number of dimensions
+        array<string, 3>  foo  # fixed number of dimensions
+        foo = NEW([8, 10, 2])
+        foo[7][9][1] = "last one"
+        val = foo[7][9][1]
+        foo.set([7, 9, 1]) = "with bounds checking"
+        val = foo.get([7, 9, 1])
+
+Implement FOR over array.  Enable test in testprog.zu with getAnArray()
+Implement array.resize(size).
+Implement array.resize(size, off).
+
+------------- FIX SYMBOLS AND SCOPES ----------
+
+4.  Separate items that depend on JS/C, templates, inheritance, etc.?
+
+This doesn't work:
+        list<int> l
+        IF (l ?: []).size() == 0
+
+Idea: Access to member or subscript on NIL object results in 0 or NIL when the
+object is NIL:
+    aaa?.bbb    is equivalent to    aaa == NIL ? 0 : aaa.bbb
+    aaa?[nr]    is equivalent to    aaa == NIL ? 0 : aaa[nr]
+
+-------- Bugs
+
+When moving variable initialization of "textStyle" in livedemo to the module
+scope Color and Style are used but not generated.
+
+Bug: No error if child class defines member with the same name as parent.
+
+Bug: No error when trying to use ZWT.Widget in C code.  Do get a C compiler
+error, because the ZWT code is only produced for JS.
+Should check that the items (classes, members) used are actually written.
+
+This should give an error, falling through from a CASE to DEFAULT:
+        SWITCH foo
+          CASE 1
+             # something removed
+          DEFAULT
+        }
+
+Zwt_demo doesn't work for Chrome on Windows.
+
+In testprog.zu, class Node is nested inside Main() but can't use symbols from
+Main(), thus must not give error for shadowing.
+
+Automatic conversion from cstring to string doesn't work here:
+  pipe<string> p = THREAD.eval({ => "Hello there" })
+
+Make this work:
+  # TODO: start() doesn't return thread yet.
+  thread t = thread.NEW({ => IO.print("in the thread") }).start()
+
+Make this work:
+  pipe<string> p = THREAD.eval({ => "Hello there" })
+
+Inside a function this doesn't work:
+  int nextListNr = 3
+  FUNC list<int> getAList()
+    RETURN [nextListNr++]
+  }
+
+Need to access info.name in lib/ZWTModule.zu, otherwise $name is not generated
+while it is accessed in genC/WriteC.zu
+
+Reading from pipe twice causes SEGV:
+  pipe<cstring> p = THREAD.eval({ => "Hello there" })
+  IO.print(p.read())
+  IO.print(p.read())
+
+No error for impossible type cast ReferenceType to MethodType:
+            ReferenceType ref = p.typeObj.<ReferenceType>.reference
+            IF ref != NIL && ref.<MethodType>.returnType != NIL
+
+No automatic conversion for object to iobject and vv when passing a function
+reference.  Esp. relevant for proto buffer rpc(): Should be able to convert
+from/to Message.I and a specific class, e.g. AddressBook.
+
+Should have someting like @default and @final that means that every subclass
+must define the method. @local ?
+
+A class or module name doesn't depend on the directory.  Having the same class
+or module name in two directories doesn't work.
+
+Need to make a separate type for alias?  Currently decl.type.decl != decl.
+
+-------- Testing
+
+To read: language comparison C++/Java/Scale/Go:
+https://days2011.scala-lang.org/sites/days2011/files/ws3-1-Hundt.pdf
+
+Allow creating a mock for any class and use it instead of objects of that
+class:
+   Context:
+        CLASS Foo
+          int $n
+          FUNC $read() int
+            ... complicated code ...
+          }
+        }
+   Code under test:
+        FUNC read3(Foo f) int
+          RETURN f.read() * 3
+        }
+        PROC add5(Foo f)
+          f.n = f.read() + 5
+        }
+   Test code:
+        MOCK Foo f = NEW()
+        f.read().return(4)  # every "f.read()" returns 4
+        CHECK.equal(12, read3(f))
+        ...
+        int newVal
+        f.Set(n, &newVal)   # value assigned to "f.n" is stored in newVal
+        add5(f)
+        CHECK.equal(9, newVal)
+
+Methods that build and run code and check for zero exit code.
+With the 'stdout' argument verify that it matches stdout.
+
+TEST.buildAndRun(code)          # code must contain Main() or TestMain()
+TEST.buildAndRun(code, stdout)
+TEST.buildAndRunFile(fileName)  # file must contain Main() or TestMain()
+TEST.buildAndRunFile(fileName, stdout)
+TEST.buildAndRunShort(lines)    # lines run inside TestMain()
+TEST.buildAndRunShort(lines, stdout)
+
+    TEST.buildAndRunShort("IO.print("12345".find(3))", "2")
+
+- Unittests
+- Mocks
+- etc.
+
+--------  Visibility
+
+A @private method should not be used for the interface of a class, e.g.
+Resolve.I   Works the same as @local ?
+
+Need a way to make items local to directory tree.  E.g. ZWT files should be
+visible only in ZWTModule, not higher up.
+
+Later: Add @scope= attribute.
+
+Split Zui.Attributes into TypeAttr and DeclAttr (visibility, wantBacktrace).
+
+---------  Implement more stuff for pipe:
+
+- Implement FOR i IN pipeVar
+- Implement WITH block.  Handle using multiple locks at once.
+- Implement threadPool: all threads read from a pipe for work and write
+  results into another pipe.
+	  pipe<string> works = NEW()
+	  pipe<string> results = NEW()
+	  THREAD.Pool.NEW({ string s => s .. " done" }, works, results)
+							.setWorkers(10).start()
+	  works.write("some work")
+	  IO.print(results.read())
+- Idea: Let thread method return a pipe that it reads from, so that a sequence
+  of pipes can be easily created:
+    readInput(fileNameInput, processData(writeOutput(fileNameOutput)))
+
+
+Coroutines could be useful.  GNU Pth would be a possible implementation:
+http://www.gnu.org/software/pth/
+
+--------
+
+Concurrent assignment (similar to tuple unpack):
+    string a = "foo"
+    string b = "bar"
+    [a, b] = [b, a]
+    [a, b] = ["blah", 10]
+ Implementtion: Use a temp var for each item:
+        t1 = b
+        t2 = a
+        a = t1
+        b = t2
+TODO: leave out the [] ?
+    a, b = b, a
+Looks too much like "a,", "b = b", ", a" perhaps?
+
+
+Add Zimbu to http://rosettacode.org
+
+It's more efficient to create styles at the start and use them later.  How to
+do that nicely?
+
+Implement TRY/CATCH/FINALLY for Javascript.
+
+Implement Z.int.MAX
+
+In a method, defining a method that accesses a local var doesn't generate an
+error, fails when compiling the C code:
+      PROC foo()
+         int a
+         PROC bar()
+            a = 4
+         }
+      }
+
+Bug:  "s = s .. i" (i being an int) is OK but "s ..= i" doesn't work.  Need
+automatic conversion to string for ..=.
+
+When closing a File twice: should give an error message instead of crashing.
+
+Add list<string>.join()  and use it in livedemo/buildzimbuservlet.zu.
+
+No error message when child class has member with same name as parent class
+(Scope.zimbuFile and FileScope.zimbuFile)
+
+Have a better look at Vala: http://live.gnome.org/Vala/Tutorial
+- Also produces C code.
+- Some ideas can be used?  Based on C# syntax.
+
+bug: In AddressBookServlet, moving getAddressBook() from SHARED to the class
+causes a type mismatch error for optionsArg at runtime.
+
+bug: BuildZimbuServlet.NEW() doesn't work, can't override the default NEW()
+from RpcServlet
+
+bug: When buildAndRun is a method instead of a shared function, there is no
+compiler warning in livedemo/buildzimbuservlet.zu  Results in a crash, because
+THIS argument is passed but not expected.
+
+bug: using $copy() inside Output.Group gives error for finding two $copy
+methods, one of them being Output.copy().  Should find the right one.
+
+Function reference to interface class can't call method directly, need to
+check the type of the object and call the right method.  See
+testdir/Inherit.zu test8().
+
+-----------------
+
+We generate an imt table for every class, just in case it's used as an
+interface, even though there are no children.  Detect the class is used as an
+interface and only generate the table then.
+
+ARG flags: with --help should mention the default value.
+
+ALIAS for including a method of "list" doesn't work, because these are not
+real methods:
+      list<string>  $list
+      ALIAS $list.size $size  # doesn't work
+
+Does ALIAS work for overloaded methods?
+
+Make Thread.start() return THIS.  Doesn't work right away, because subclasses
+return a different type, e.g. Server, which is a subclass of thread.
+How to specify a return type that is the class itself, so that it's the
+subclass in subclasses?
+
+The way NEW() calls are parsed and generated is different from other methods,
+can that be changed?  Do not parse (arg) at the lowest level?
+
+Init bytes from array and series of strings:
+	bytes bv
+	bv = [1, 2, 3, 4]             # -> "\001\002\003\004"
+	bv = "hello" .. [1, 2, 3, 4]  # -> "hello\001\002\003\004"
+
+String implementation later:
+- More clever use of Zcord and Zpiece, avoid reallocation.
+- Implement varstring.toLower(), varstring.toUpper(), varstring.makeLower(),
+  varstring.makeUpper()
+- Turn any Cord and copy-on-write into a one contigues memory (defragment):
+	bytes b = ...
+	b.flatten()
+
+Proto: RPC could generate an abstract class that extends HTTP.RpcServlet, does
+the $addHandler() calls, so that the servlet only has to implement the RPC
+functions.
+
+proto plugin:
+- no error for using same field name twice, only get an error when compiling
+  the .zu code.
+
+Returning an object or i_object from a function reference:
+    in $serve()
+          Message.I response = h.rpcInfo.createResponse()
+    creates an object, but we need a i_object
+    Can we detect that a function returning an object is called to obtain an
+    i_object and produce a wrapper function?
+    Or should we use a Zcall struct to store the function pointer?
+    Using Zcall is probably better.
+
+Undefined count when looping: should split it in stages. E.g, when finding a
+function call there these stages:
+- undefined symbol: ++undefined[0]
+- symbol defined: undefined[1] += (nr of argument types undefined)
+- symbol and args defined: undefined[2] = 1 if not one matching function
+OR: when something gets defined set "newDefined" flag, only quit resolving if
+undefined is zero or undefined is equal and "newDefined" is not set.
+
+When there is a problem in a GENERATE_ELSE part that is not generated
+undefined may not go down to zero and there will be no error.
+
+Performance stuff: use "Loop Recognition" algorithm:
+http://code.google.com/p/mao/source/browse/trunk/src/MaoLoops.cc
+Suggested by Robert Hundt.
+
+GENERATE_IF only works in a class scope with a constant expression, because
+members are always added in the first passes, can't skip them conditionally
+later.
+
+
+High level goal: Address book
+- GUI implemented with ZWT (partly done)
+   Improve layout mechanism, add form fields.
+- HTTP server (done)
+- GUI communicates with server through protobuf in JSON (done)
+    Handle errors
+- Store data in database - SQLite
+
+For numbers: "a ?: b" means "a != 0 ? a : b"
+For strings: "a ?: b" means "a != NIL && a != '' ? a : b"
+
+Protobuf:
+-> Implement service
+	disallow empty message, it's not extensible.
+-> Write and read JSON
+	Use JSON.parse() when available, eval() otherwise
+        Use an array of arrays, first one starts with field 1, others have the
+        first field number in the first position:
+            [[field1,field2,,,field5],[101,field101,field102],[2345,field2345]]
+-> give error when redefining a message or enum
+-> give error when using same field nr twice.
+-> accept field name with anything, also "message"
+-> handle imports, use package name for message/enum names
+
+Bug "FOR p IN call()" where call() returns invalid type (e.g. list<Z.Pos>
+instead of list<SYS.Pos>) gives confusing error message.
+
+Bug: Using RPC.Control.I in plugin/proto/proto.zu results in the I_imt table
+not being defined.
+
+Bug: When IMPLEMENTS is used before EXTENDS don't get a nice error msg.
+
+ARG.Alias log = NEW("l", "log")  # -l alias for --log
+
+When defining the same module twice in different files get an error at C
+compile time.  Detect they are different modules, disallow importing both,
+give one another C name.
+
+Mark translated string literals with L():
+        L("this can be translated")
+Optionally specify a message identifier:
+        L("this can be translated", "transId")
+The compiler will use the globally specified language.  To use a specific
+language pass a locale context:
+        L("this can be translated", locale)
+Both:
+        L("this can be translated", "transId", locale)
+Combine with inline formatting:
+        L("this \(name) can be translated", locale)
+
+TODO: how to handle counts, with or without translation:
+        L"\(count) item"
+        "0 items", "1 item", "2 items"?
+
+Implement variable number of arguments, with type: Array of arg
+See design.txt "VARIABLE NUMBER OF FUNCTION ARGUMENTS".
+
+Need a better way to define dependencies for module methods.
+E.g., when using IO.print() should not drag in all of the IO module.
+Only use include file when actually needed:
+
+	# Include header when function is used.
+	Z.useHeader("<sys/types.h>")
+
+	# Uses "Zalloc" functionality, add to runtime.
+	# Error when "Zalloc" is not registered.
+	Z.uses("Zalloc")
+
+	# Register function that defines "Zalloc".
+	Z.register("Zalloc", writeZalloc)
+
+Also:
+	string fp = Z.filePosition()   # demoApp.zu line 234
+	string fp = Z.filePos()        # demoApp.zu:234
+	string f = Z.fileName()        # demoApp.zu
+	int l = Z.line()               # 234
+
+Idea: "zimbu build <binary>" reads table from binary that lists source files
+(with date and size) and checks if any of them changed, then builds when
+needed.  If <binary> does not exist then finds <binary>.zu and builds it.
+"<binary> --buildinfo" lists the table.
+Also list the compiler used and any plugins used.
+
+Should make the parser and resolver available in the Z module, so that tools
+such as zudocu can use it.
+	Zui.ParseResult = Z.Parse(string fileName)
+	Z.Resolver resolver = NEW()
+	resolver.Resolve(string fileName)
+
+SYS.Process still needs a lot of work.
+- See Python subprocess library for ideas.
+
+Idea: criterions
+E.g., a list can only be changed when a lock is held:
+	WITH mutex.lock()  # provides "mutex~locked" criterion
+	  list.add(item)   # requires "mutex~locked"
+	}
+This provides compile time checking.
+Also transfer criterions to function calls, using attributes:
+	@require=mutex~locked
+	@disallow=mutex~locked
+	@add=mutex~locked
+	@remove=mutex~locked
+
+# return TRUE if files |fname1| and |fname2| contain the same bytes.
+FUNC bool IO.equalContents(string fname1, string fname2)
+
+Implement methods in BITS.  E.g. ToString()
+	Make BITS more like a class?  Makes it a lot easier to define a
+	method, using THIS.
+Bug: When adding to a BITS allow using the full name: 
+	attributes = Attr.fromParent
+
+Implement BUILD_IF.
+
+Implement more Z module stuff, see design.txt.
+
+Mac bug: threadtest doesn't work, hangs after killing a thread.
+Bug: When defining ENUM FileFormat in messagebase.zu, it can't be used in
+     subclass addressbook.zu
+Bug: when return type isn't known for a FUNC, get an error where it's called
+as if it was defined a PROC.
+Bug: trinary operator doesn't give error for different types:
+    SWITCH sym.type == Node.Type.array ? sym.returnSymbol : sym.type
+
+Check: When a child class includes a method from a parent (fromParent
+attribute set), a next pass may change the signature of the method.  Does this
+cause trouble?
+Bug: When defining a class in a function scope, accessing vars from the
+function scope doesn't work.
+	PROC Foo()
+	   int value
+	   CLASS Bar
+	     PROC do()
+	       ++value
+Bug: "int $value" gives error "name without operation".  When text appears
+it should be reporting an unrecognized symbol and skip to the next line.
+
+Bug: when the BITS example in the spec has an enum type that is not defined,
+the number of undefined items in the compiler is increased by 1 each round,
+resulting in 20 rounds before the compiler gives up.
+
+Make custom plugin possible.  Demo: plugin that generates message with build
+date and time.
+
+testdir/inherit.zu, using object method reference, only works by "luck".
+Using Class1.getNumber() on a Class2 object should use the getNumber() method
+generated for Class2, not the Class1 method.  How to implemnt this?
+
+JS: module initializers can be written directly, no need for Imodule() init
+function.
+
+When using IO.dirlist() we need to include <dirent.h> but otherwise we don't.
+What mechanism to use for modules to only include a file when actually needed?
+
+Implement |=  &=  ||=  &&=  *=  /=  %=
+
+Should have IO.File for read/write, IO.InputFile for reading, IO.OutputFile
+for writing
+
+When nothing from an imported file is used, give an error.
+
+Implementation of PARENT.method() is a bit of a hack.
+
+Optimization: Can we move "type" from To into the first item of "table" for
+virtual function?
+
+With SHARED inside CLASS Foo, use Foo.Type().shared for the shared bits
+Remove code to find class Date inside module Date.
+
+Bug: Using Node.Type.new_def inside Node class gives error for emtpy module.
+Should drop "Node." here.
+
+There is no check for arguments when calling Use.declWriters.add().
+
+- Move more stuff from generate.zu to resolve.zu/write_c.zu/write_js.zu.
+   Move class methods into the class for JS.
+   	this.add() = function(y) {
+	   this.x = y;
+	};
+
+Guido: having all composite mutable will cause problems for threading.  User
+needs to use a lot of explicit locks.  Have everything in mutable and
+immutable version?
+	string
+	const string = "asdf"
+	list<int>
+	const list<int> = [1, 2, 3]
+	etc.
+Also dynamic:
+	list<int> mylist
+	mylist.add(some)
+	mylist.readonly()  # changes no longer possible, don't need locks
+
+- Instead of using different outputs for declarations:
+      - Add list to scope to produce variable declarations.
+      - Add list at toplevel scope for structs, typedefs, etc.
+      - When writing output, go through these lists.
+
+Make list of vars work:
+	bool a, b
+Disallow inits before the comma:
+	bool a, b = 1      # OK
+	bool a = 1, b = 2  # ERROR
+
+MIOmodule__Veof is #defined, which requires special cases in the declaration.
+Find a generic solution for constants, so that they can be used in a SWITCH.
+
+Improve zudocu:
+- Links from comment to other classes and methods. "@link" ?
+- list items in the SHARED section of a class.
+
+Todo later:
+     Remove "outDir" from ZimbuFile?
+     Change didInitFunc ?
+
+Bug: ZwtDemoPage.init is not accepted as proc<>, while "init" is
+
+- Have another look at Go: http://golang.org/doc/effective_go.html#data
+  And: http://golang.org/ref/spec
+
+- Have another look at Lua, esp. about closures.
+
+- Look at Erlang for how it supports threads (ignore the syntax).
+
+- Consider main goal: "A better C" ?
+  Only for the non-threading and non-O-O parts.
+
+- Have a look at Modula 3, sets are like BITS?
+  http://www.cs.cmu.edu/~rwh/courses/modules/papers/cardelli-etal89/paper.pdf
+  -> separates traced and untraced references (untraced are not GC'ed)
+
+- Have a look at javafx: lazy evaluation, variable binding
+
+- Look at this blog: http://gbracha.blogspot.com/
+
+- Bug: cannot use Conversion.int2string.name()
+
+- Trying to initialize an array results in code that creates a list.
+  Either implement it or give a "not implemented" error.
+
+- Threads: invoke run() indirectly, when it returns set a flag, so that we can
+  use thread.running() to check.
+  Use thread.running() in testserver.zu.
+
+- Threads: Instead of using the pthreads way for thread-local data, consider
+  using the __thread modifier.  GCC supports it.  Requires a config check.
+
+- "Output out = Output.NEW(NEW())"  doesn't work.
+
+- Implement *=  /=  %=  ~=  |=  &=
+
+- This doesn't work:
+	  list<list<Symbol>> altList = NEW()
+	  altList[0][0].toString("")
+
+- Implement THIS.TYPE().toString() to display type of THIS
+
+- Give an error when func ref return type doesn't match actual function return
+  type.
+
+- Also interesting: www.haxe.org.  Converts to javascript, flash, etc.
+
+- Function defined inside function can't use vars defined in outer function.
+  Pass pointer like with THIS?
+
+- When assigning a constant to a certain type the compiler may complain when
+  this results in an overflow.  E.g. assigning -1 to a Nat.
+- Make a nice mechanism for invoking C functions, so that we can use all
+  existing C libraries:
+  -> with a nice Zimbu interface for some libraries
+  -> directly, with Zimbu/C conversion for types, for the rest
+  Later for C++? (dreaming of Qt...)
+- '''literal''''''string''':  double ''' to get '''
+- Define a var with the type of another var:
+	TYPEOF(Stat.dev) dev
+    or  Stat.dev.TYPE() dev
+  Useful if you don't know the type of something but do want to keep a copy.
+
+SMALLER ITEMS:
+- Error for "class.attrbute.abstract" is about abstract instead of attrbute.
+- Using "abc" + proc(), where proc() doesn't return a value, does not give an
+  error.
+- No error for using non-existent member: "scope.builtinsp[id]"
+	Get error for subscript instead.
+- Using somedict[key] doesn't work for string keys, somedict.get(key) works
+  OK.
+- Implement ISA and ISNOTA: use _isa table like _off and _ptr.
+- Ignore case of user symbols after the first char.  "function", "fUNCTION",
+  and "funCtiOn" are the same.
+  Better: ignore case when looking up symbols, but give an error when there is
+  a mismatch.  That way we can tell the user about the mistake and still keep
+  the source code consistent.
+- For "unexpected EOF" error, print position of block start.
+  Guess based on indent?
+- Implement EMPTY() as SIZE() == 0 if EMPTY() is not defined.
+- No error for CLASS with reserved name.  See testerrors.zu.
+
+
+TO THINK ABOUT:
+- Idea: handle locks like exceptions:
+	use a block to obtain locks:
+		LOCK(listLock.read, dictLock.write)
+		  v = gothroughlist(list)
+		  addtodict(dict, v)
+		}
+	A function specifies that it must be called with a lock held
+	       FUNC gothroughlist(list list) LOCKED(listLock.read)
+	         FOR l IN list
+		   v = ...
+		 }
+		 RETURN v
+	       }
+	       PROC addtodict(dict dict, v v) LOCKED(dictLock.write)
+	         dict[v.k] = v.v ...
+	       }
+	A variable specifies that it can only be accesed while holding a lock:
+	lock listLock
+	list<> list LOCKED(listLock)
+
+- For real compilation, use LLVM?
+- Documentation: Use common (generated) format and upload to code.google.com?
+- Alternatives for implementing interface objects:
+  1. More efficient inheritance when assuming that inherited member variables
+     are exactly in the same order.
+	Link to parent, check that nothing is defined twice, child struct
+	contains all members from parent in same order, typecast for invoking
+	method on parent.
+	When using an interface, decide at runtime which function to call,
+	depending on the actual type.
+  2. Pass i_object to the function instead of THIS.  The function then needs
+     to apply the _off and _ptr tables where THIS is used.
+
+- By default a declaration creates a new object:
+	  Node n  # automatically does n = Node()
+   You get an error if there is no constructor without arguments.
+   However, optimization may remove the init.
+   To avoid init assign NULL:
+	  Node n = NULL
+   Alternatively, like Java:
+   	  Node n          # defaults to NULL
+	  Node n = NEW()  # creates an object
+
+A SHARED variable could be initialzed the first time the function is executed.
+Instead of:
+  PROC printStartTime()
+    SHARED int startTime
+    IF startTime == 0
+      startTime = TIME.current()
+    }
+    IO.print(TIME.Values.NEW(startTime).ToString())
+  }
+Can use:
+    PROC printStartTime()
+      SHARED int startTime = TIME.current()
+      IO.print(TIME.Values.NEW(startTime).ToString())
+    }
+Or is this too confusing?
+Implementation: Do init directly if it's a constant, otherwise also generate a
+flag that's set the first time.
+
+
+LATER:
+- Executor, thread pools: create threads and recycle them.
+- For short names:
+  	USE IO.File, IO.Stat, SYS.Timing
+- Loop over two (or more) lists with the same index (like Python zip()):
+       list<string> days = ['mon', 'tue', 'wed', 'thu', 'fri']
+       list<int>    nrs  = [2, 3, 4, 5, 6]
+       FOR day, nr IN days, nrs
+         IO.print(day .. ": " .. nr)
+       }
+  When a list runs out, use the default value (NIL, FALSE, 0).
+
+- result = someList.reduce({S + V})
+	# First value is assigned to S (sum), then for every next value S is
+	# assigned the result of "S + V".
+	# result: addition of all values.
+- someList.filter({K < 3 || V > 8})   # only keep values where expr is TRUE
+- someList.reduce({ a, b => a + b })  See Python for how it works.
+
+
+Bugs to be fixed:
+- use bcopy() or memcpy() for systems that don't have memmove()
+- Stat.size and Stat.time are int, should be int64.
+- THIS.name doesn't work, if "$name" is a member of the parent class.
+  e.g.: MethodScope.NEW() can use $fillFromOuter() but not THIS.fillFromOuter()
+
+
+Partly implemented:
+- "For i IN var" only works for List of Int or String.
+- List.toString() only works for Int and String.
+- Optimization: if an interface has only one child it can be accessed
+  directly, no need for a _ptr or _off table.
+- Extend List type with:
+        mylist += item
+        newlist = mylist + item + item
+        mylist.remove(item)        # removes first item where value equals
+                                   # item, returns mylist
+        n = mylist.index(item)     # lowest i where mylist[i] == item
+        n = mylist.count(item)     # nr of times mylist[i] == item
+        item = mylist.min()        # item with minimum value, uses COMPARE
+        item = mylist.max()        # item with maximum value, uses COMPARE
+        mylist.sort()              # returns mylist
+        mylist.reverse()           # returns mylist
+
+Future features:
+- Implement =~ and !~ operators: regexp
+  Include regexp library, e.g. libtre, recommended by Adam Hoka.
+  Or a PCRE syntax one?
+- Implement CONF module: works like autoconf but using a Zimbu program.
+  Start with finding compiler, how to run preproc, how to link, etc.
+  Keep dict with collected defines, compiler flags, libraries.
+    CONF.hasHeader("stdlib.h")
+    CONF.hasLibrary("math")
+    CONF.hasLibrary("math", "floor(1.1)")
+    CONF.eval("sizeof(long long)")
+- Distributed zimbu.c and zimbu2c read a config.h file, generated by first
+  running the config program.
+
+
+More efficient string implementation.
+  - Pointer points to first byte.  If the string is in allocated memory, the
+    "next pointer" is before this.
+  - The length is stored before the {text}.  It includes the trailing 0x00,
+    thus is always 1 or more.
+  - The length is variable-length encoded.
+        lenght 1 - 127 bytes: one byte
+        length 128 - 32768 bytes: two bytes
+        etc.
+  - There always is a trailing 0x00, to be able to use C libraries.  Although
+    any 0x00 inside the string will terminate it.
+- Static strings: 0x00 {length} {text} 0x00
+    The 0x00 at the start is the 0x00 at the end of the previous string!
+    There is no "next pointer" before the 0x00
+    The strings are not aligned in memory.
+    E.g. "yes" is encoded as: 0x00 0x04 y e s 0x00  (6 bytes)
+    These are immutable.
+- Allocated strings: {np} {length} {text} 0x00
+    The {length} field is on a pointer boundary, actually used memory is
+    aligned, length rounded up to multiples of 4 or 8 bytes.
+    E.g. "yes": {pointer} 0x04 y e s 0x00  (13 bytes with 64 bit pointers,
+    rounded up to 16 bytes)
+    For the user these strings are immutable, although it would be possible to
+    change them so long as the byte length doesn't change.
+
+
+Check use of "Ti" instead of "int" in C code and other configured types.
+
+When a list gets very big and inserting/deleting in the middle, split it up
+  in multiple arrays.  Use pointers to listheads:
+        int index = desired_entry;
+        if (head->indirect) {
+         int n = 0;
+         int i;
+         for (i = 0;; ++i) {
+          int count = head->Pitems[i]->itemCount;
+          if (n + count > index)
+           // Could also have another level of indirection?
+           return head->Pitems[i]->Pitems[index - n];
+          n += count;
+         }
+          
+        } else {
+         return head->Pitems[index];
+        }
+
+Add @noMoreCode annotation: give error when code follows, like with RETURN
+  and EXIT.
+
+
+Infoworld article:
+http://www.infoworld.com/d/application-development/10-programming-languages-could-shake-it-181548?page=0,3
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+STRING MANIPULATION
+
+Operations not yet implemented:
+        "item: %s = %d".format(name, value)
+        list<string> l = s.splitRE(" *: *")  # split on match with regexp
+        int i = s.find(x, idx)      # position of sub-string at or after "idx"
+        int i = s.findLast(x, idx)  # last position of sub-string at or after "idx"
+        int i = s.find(x, idx, end)      # position of sub-string at or after "idx", before or at "end"
+        int i = s.findLast(x, idx, end)  # position of sub-string at or after "idx", before or at "end"
+        int last = s.findLastChar('y', idx) # last position of 'y' at or before "idx"
+        bool b = c.isUpper()
+        bool b = c.isLower()
+        bool b = s.isUpper()
+        bool b = s.isLower()
+        s.makeUpperAscii()      # make upper case in place for ASCII
+        s.makeLowerAscii()      # make lower case in place for ASCII
+
+        p = s.part(idx, len)    # similar to slice() but uses length instead of
+                                # second index
+        s.makeSlice(3)          # replace "s" with a slice of it
+        s.makeSlice(1, 3)       # replace "s" with a slice of it
+        s.makePart(idx, len)    # replace "s" with part of it
+        s.erase(8)              # erase from index 8 to end
+        s.erase(4, 8)           # erase characters 4 to 8 (inclusive)
+        p = s.extract(4, 8)     # erase and return what was erased
+
+
+LIST
+
+Operations not yet implemented:
+        mylist.get(i)              # like mylist[i]
+        mylist.clear(i)            # remove item i, return mylist
+        mylist.clear(i, j)         # remove items i to j, return mylist
+        newlist = mylist.part(idx, len) # similar to slice() but uses length
+        mylist += item
+        newlist = mylist + item + item
+        mylist.add(list<Titem> items, i)  # insert items after i 
+        mylist.insert(list<Titem> items, i)  # insert items before i 
+        mylist.find(item, i)       # return index of first item at or after
+                                   # index i where value equals item
+        mylist.find(item [, i])    # last index where value equals item
+        n = mylist.count(item)     # nr of times mylist[i] == item
+        item = mylist.min()        # item with minimum value, uses COMPARE
+        item = mylist.max()        # item with maximum value, uses COMPARE
+
+        mylist.reverse()           # returns mylist
+        mylist.setCompare(func)    # set compare function (syntax?)
+                                   #  NIL = use COMPARE on object
+        mylist.keepSorted(flag)    # keep list always sorted
+
+DICT
+
+Operations not yet implemented:
+        NEW(minItems)             # reserve space for minItems items
+        dict.set(key, value)      # No exception when "key" already exists
+        dict.remove(key)          # removes item, returns value of removed
+                                  # item, throws exception when not present
+        dict.remove(key, value)   # removes item, returns value of removed
+                                  # item or value if not present
+        dict.removeitem()         # remove and return key-value pair
+
+        dict.setdefault(key, default)
+                                  # if key is not present add it with value
+                                  # "default"
+        dict.update(other)        # update (overwrite) key-value pairs from
+                                  # "other" (dict or list of tuples)
+        dict.merge(other)         # merge in (no overwrite) key-value pairs
+                                  # from "other" (dict or list of tuples)
+
+        value = dict.min()        # item with minimum value, uses COMPARE
+        value = dict.max()        # item with maximum value, uses COMPARE
+
+        dict.iter()               # returns iterator over all the keys
+        dict.iterkeys()           # returns iterator over all the keys
+        dict.itervalues()         # returns iterator over all the values
+        dict.iteritems()          # returns iterator over all the key-value
+        dict.items()              # returns list with tuple<key, value>
+
+
+SET
+
+Operations not yet implemented:
+        NEW(minItems)            # reserve space for minItems items
+        set.update(other)        # update (overwrite) key-value pairs from
+                                 # "other" (set or list of tuples)
+        set.merge(other)         # merge in (no overwrite) key-value pairs
+                                 # from "other" (set or list of tuples)
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

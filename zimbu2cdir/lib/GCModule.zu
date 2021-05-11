@@ -1,0 +1,107 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Builtin module GC, the part written in Zimbu.  See ./GCLoader.zu for methods
+# directly generated as C code.
+#
+
+#= Items built into the compiler
+#
+#*license
+#* Copyright 2010 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE GCModule @items=public
+
+  #= Run the garbage collector with default settings.
+  PROC run()
+    GENERATE_IF Z.lang == "C"
+      int start = TIME.current()
+>>> uses(gcRun)
+ ZgcRun();
+<<<
+      Info info = NEW()
+>>>
+ %info.stwTime% = ZgcStwTime;
+ %info.markTime% = ZgcMarkTime;
+ %info.freeTime% = ZgcFreeTime;
+ %info.useCount% = ZgcUseCount;
+ %info.freeCount% = ZgcFreeCount;
+<<<
+      info.totalTime = TIME.current() - start
+      runInfo.add(info)
+    }
+  }
+
+  #! All the info about run().
+  Info currentInfo
+  list<Info> runInfo = NEW()
+
+  #= Information about a round of garbage collection.
+  CLASS Info @public
+    int $stwTime      # Time in usec that "stop the world" lasted.
+    int $markTime     # Time in usec for finding used objects.
+    int $freeTime     # Time in usec for freeing unused objects.
+    int $totalTime    # Time in usec for run().
+    int $useCount     # Number of objects still in use..
+    int $freeCount    # Number of objects freed.
+
+    FUNC $ToString() string
+      RETURN "GC run time " .. $totalTime.toQuotedString()
+          .. " usec, STW " .. $stwTime.toQuotedString()
+          .. " usec, mark " .. $markTime.toQuotedString()
+          .. " usec, free " .. $freeTime.toQuotedString()
+          .. " usec; "
+          .. $freeCount.toQuotedString() .. " objects freed, "
+          .. $useCount.toQuotedString() .. " still in use"
+    }
+  }
+
+  #= Return a list with information about previous garbage collection runs.
+  FUNC getRunInfo() list<Info> @public
+    RETURN runInfo
+  }
+
+  #= Write information about previous garbage collection runs to |writer|.
+  PROC writeRunInfo(IO.I_Writer writer)
+    writer.print("Number of GC runs: " .. runInfo.Size())
+    int n = 1
+    int stwTime
+    int markTime
+    int freeTime
+    int freed
+    int stillUsed
+>>>
+    %stillUsed% = ZgcUseCount;
+<<<
+    FOR info IN runInfo
+      writer.write(n .. ": ")
+      writer.print(info.ToString())
+      stwTime += info.stwTime
+      markTime += info.markTime
+      freeTime += info.freeTime
+      freed += info.freeCount
+      ++n
+    }
+
+    writer.write("total GC time ")
+    writer.write((markTime + freeTime).toQuotedString())
+    writer.write(" usec, STW ")
+    writer.write(stwTime.toQuotedString())
+    writer.write(" usec, mark ")
+    writer.write(markTime.toQuotedString())
+    writer.write(" usec, free ")
+    writer.write(freeTime.toQuotedString())
+    writer.print(" usec")
+
+    writer.write((stillUsed + freed).toQuotedString())
+    writer.write(" objects allocated, ")
+    writer.write(freed.toQuotedString())
+    writer.write(" freed, ")
+    writer.write(stillUsed.toQuotedString())
+    writer.print(" still in use")
+  }
+
+}

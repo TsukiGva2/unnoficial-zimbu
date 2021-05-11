@@ -1,0 +1,42 @@
+#
+# Program to dump the contents of a .zui file as text.
+#
+
+IMPORT.PROTO "zui.proto"
+
+FUNC Main() int
+  IF ARG.Size() != 1
+    fatal("One .zui file argument required.")
+  }
+  string inFileName = ARG.get(0)
+  IF inFileName.slice(-4) != ".zui"
+    fatal("Input name must end in '.zui': " .. inFileName)
+  }
+
+  IO.File reader = IO.fileReader(inFileName)
+  IF reader == NIL
+    fatal("Cannot open for reading: " .. inFileName)
+  }
+
+  VAR header = Zui.Header.createFromBinary(reader)
+  IO.print("--------- Header ---------")
+  IO.write(header.ToString())
+
+  # Read and dump the Contents.
+  VAR contents = Zui.Contents.createFromBinary(reader)
+  IO.print("--------- Contents ---------")
+  IO.write(contents.ToString())
+
+  # Read and dump the Body.
+  VAR body = Zui.Body.createFromBinary(reader)
+  IO.print("--------- Body ---------")
+  IO.write(body.ToString())
+
+  RETURN 0
+}
+
+PROC fatal(string msg)
+  IO.print(msg)
+  EXIT 1
+}
+

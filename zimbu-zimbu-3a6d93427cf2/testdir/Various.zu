@@ -1,0 +1,190 @@
+# Zimbu tests for various features.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+MODULE Various
+  PROC test() @public
+    IO.print("testdir/Various.zu")
+    test1()
+    test2()
+    test3()
+    testLangSpecific()
+  }
+
+  PROC test1()
+    # should not trigger loading the thread library
+    bool thread
+    thread = TRUE
+
+    IO.print("5 >> 1 = " .. (5 >> 1))
+    IO.print("8 >> 2 = " .. (8 >> 2))
+    IO.print("8 << 1 = " .. (8 << 1))
+    IO.print("1 << 4 = " .. (1 << 4))
+  }
+
+  PROC echoInt(int nn, string xtra)
+    IO.write("echoInt(" .. nn .. ", " .. xtra .. ")\n")
+  }
+
+  PROC doNothing()
+    IO.print("doNothing()")
+  }
+
+  FUNC getInt(int nn, string xtra) string
+    RETURN "getInt(" .. nn .. ", " .. xtra .. ")\n"
+  }
+
+  FUNC genInt() int
+    RETURN 8
+  }
+
+  PROC test2()
+    # Free up memory.
+    GC.run()
+
+    # Test reference to function
+    proc<int, string> echoIntRef
+    echoIntRef = echoInt
+    echoIntRef(5, "-")
+
+    proc<> dono = doNothing
+    dono()
+
+    func< => int> noGetInt
+    noGetInt = genInt
+    IO.print("func ref: " .. noGetInt())
+
+    func<int, string => string> newGetInt
+    newGetInt = getInt
+    IO.write(newGetInt(9, "blah"))
+  }
+
+  FUNC addTen(int n, int /* second */ m) int /*added*/
+    getNone()
+    int nn = n
+    ++nn
+    RETURN nn + m + 9
+  }
+
+  PROC getNone()
+    VAR v
+    v = "called getNone\n"
+    IO.write(v.Size() .. ": ")
+    IO.write(v)
+    IF TRUE
+      RETURN
+    }
+    IO.write("error")
+  }
+
+  CLASS Type
+    int  $type
+    bool $flag
+  }
+
+  CLASS Node
+    string          $name
+    int             $type
+    array<Type.C>   $types
+
+    NEW()
+      $name = "not set"
+    }
+
+    FUNC $Equal(Node nn) bool
+      RETURN $name == nn.name && $type == nn.type
+    }
+  }
+
+  PROC nodeInc(Node node)
+    ++node.type
+  }
+
+  PROC test3()
+    int xx = addTen(22, 11)
+    IO.print("got " .. addTen(8, 14))
+
+    int asdf
+    Node node = NEW()
+    node.type = 2
+    ++asdf
+    node.name = "class" .. " Node "
+    nodeInc(node)
+    IO.print(node.name .. node.type)
+
+    VAR nnode
+    nnode = Node.NEW(); nnode = Node.NEW()
+    IO.print("Node name is " .. nnode.name)
+
+    bool yes = TRUE
+    IF !yes
+      IO.write("this is wrong\n")
+    ELSE
+      IO.write("this is right\n")
+    }
+    Type.C no = NEW()
+    no.flag = FALSE
+    IO.print("yes is " .. yes .. " and no is " .. no.flag)
+
+    # Object equality and identity.
+    Node noden = NEW()
+    Node othern = noden
+    Node nodem = NEW()
+    IF noden == othern
+      IO.write("== othern ")
+    }
+    IF noden IS othern
+      IO.write("IS othern ")
+    }
+    IF noden == nodem
+      IO.write("== nodem ")
+    }
+    IF noden IS nodem
+      IO.write("IS nodem ")
+    }
+    IO.write("\n")
+
+    # Pass object by reference
+    PROC changeObject(Node &nod, bool recurse)
+      nod = NEW()
+      nod.name = "by reference"
+      string some = nod.name
+      IF recurse
+        changeObject(nod, FALSE)
+      }
+    }
+    Node nodeX = NEW()
+    Node bef = nodeX
+    changeObject(&nodeX, TRUE)
+
+    noden = NIL
+    IO.print("here found: " .. (noden == NIL))
+
+    IO.print("node name is " .. nodeX.name .. ", "
+                 .. (bef IS nodeX ? "same" : "different") .. " object")
+    Node nop
+    changeObject(&nop, TRUE)
+
+    # Free up memory.
+    GC.run()
+  }
+
+  PROC testLangSpecific()
+    string cs
+    int i
+    GENERATE_IF Z.lang == "JS"
+>>> # this comment is ignored
+    %cs% = %{ "C or JS code" }%;
+    console.log(%cs%); /* %i% */
+<<<
+    GENERATE_ELSE
+>>> uses(getCstring) blockgc # this is C code
+    %cs% = %{ "C or JS code" }%;
+    puts(ZgetCstring(%cs%)); /* %i% */
+<<<
+    }
+  }
+
+}

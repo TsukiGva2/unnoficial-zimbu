@@ -1,0 +1,231 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Stuff for Dict that is not target language specific.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ContainerStuff.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "ExprArg.zu"
+IMPORT "Generate.zu"
+IMPORT "ListStuff.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+
+MODULE DictStuff @items=public                   # TODO: restrict visibility
+
+  # Resolve pass dict method call.
+  FUNC generateMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    VAR objectExt = ZuiExpressionExt.get(object)
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    VAR callExt = ZuiMethodCallExt.get(call)
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == OK
+        Generate.generateVarname(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        IF argList.Size() == 1
+          Generate.genExpr(argList[0], ctx, Type.aString)
+          callExt.undefined += ZuiExpressionExt.get(argList[0]).undefined
+        }
+
+        # Mark ToString() used for key type.
+        WriteCommon.oneToStringArgument(type.keyType, call, TRUE, ctx)
+
+        # Mark ToString ()used for item type.
+        WriteCommon.oneToStringArgument(type.itemType, call, TRUE, ctx)
+      }
+      retType = Type.aString
+    ELSEIF methodName == "Type"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF type.itemType != NIL && type.keyType != NIL
+        type.typeUsed(ctx)
+      }
+      retType = Type.aType
+    ELSEIF methodName == "isOrdered"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      }
+      retType = Type.aBool
+    ELSEIF methodName == "get"
+      IF Generate.checkArgCount(call, 1, 2, ctx) == OK
+        retType = ctx.gen.dictGet(type, object, argList[0],
+                     call.sizeArgument() > 1 ? argList[1] : NIL,
+                                                                ctx, destType)
+      }
+    ELSEIF methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        Zui.Expression arg = argList[0]
+        genKeyArg(type, arg, ctx)
+        callExt.undefined = objectExt.undefined
+                                         + ZuiExpressionExt.get(arg).undefined
+        retType = Type.aBool
+      }
+    ELSEIF methodName == "add" || methodName == "set"
+      IF Generate.checkArgCount(call, 2, 2, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        Zui.Expression arg0 = argList[0]
+        Zui.Expression arg1 = argList[1]
+        genKeyArg(type, arg0, ctx)
+        genValueArg(type, arg1, ctx)
+        callExt.undefined = objectExt.undefined
+                            + ZuiExpressionExt.get(arg0).undefined
+                            + ZuiExpressionExt.get(arg1).undefined
+        retType = newDict(type)
+      }
+    ELSEIF methodName == "remove"
+                       || (methodName == "clear" && call.sizeArgument() > 0)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        Zui.Expression arg = argList[0]
+        Generate.genExpr(object, ctx, type)
+        genKeyArg(type, arg, ctx)
+        IF type.keyType != NIL
+          keyTypeUsed(type.keyType, ctx)
+        }
+        callExt.undefined = objectExt.undefined
+                                         + ZuiExpressionExt.get(arg).undefined
+        IF methodName == "remove"
+          # Return the removed item.
+          retType = type.itemType
+        ELSE
+          # Return the dict.
+          retType = newDict(type)
+        }
+      }
+    ELSEIF methodName == "clear"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        retType = newDict(type)
+      }
+    ELSEIF methodName == "keys"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        ContainerType listType = NEW(Type.Enum.list, "list")
+        listType.itemType = type.keyType
+        retType = listType
+        ctx.addUsedItem(Declaration.list)
+      }
+    ELSEIF methodName == "values"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        retType = ListStuff.newList(type)
+        ctx.addUsedItem(Declaration.list)
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg,
+                 methodName == "map" ? NIL : type.keyType, type.itemType, ctx)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+        retType = newDict(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        retType = newDict(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+      }
+      retType = Type.anInt
+    # ELSE
+    #   no error in case the type turns out not to be a dict
+    }
+
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  # Create a new dict using key and item type from |type|.
+  FUNC newDict(ContainerType type) Type
+    ContainerType ret = NEW(type.ttype, "dict")
+    ret.keyType = type.keyType
+    ret.itemType = type.itemType
+    RETURN ret
+  }
+
+  # Generate the key argument for |expr|.
+  PROC genKeyArg(ContainerType type, Zui.Expression expr, SContext ctx)
+    Generate.genExprDoConv(expr, ctx, type.keyType ?: Type.anInt)
+  }
+
+  # Generate the value argument for |expr|.
+  PROC genValueArg(ContainerType type, Zui.Expression expr, SContext ctx)
+    Generate.genExprDoConv(expr, ctx, type.itemType ?: Type.anInt)
+  }
+
+  # Call this when a subscript or get is used on a dict.
+  PROC keyTypeUsed(Type keyType, SContext ctx)
+    SWITCH keyType.ttype
+      CASE Type.Enum.int
+      CASE Type.Enum.bool
+      CASE Type.Enum.status
+        ctx.addUsedItem(Declaration.dictIntKey)
+      DEFAULT
+        ctx.addUsedItem(Declaration.dictStringKey)
+    }
+  }
+
+  # Dict functions common to all languages.  These are defined in
+  # lib/DICTModule.zu
+  FUNC commonMethodCall(ContainerType type,
+                        Zui.MethodCall call,
+                        SContext ctx,
+                        Type destType,
+                        Type &retTypeRef
+                        ) status
+    Type retType
+
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "mapTo" || methodName == "keyMapTo"
+      retType = ContainerStuff.generateMapCall(
+                         type, call, methodName, ctx, destType, "MDICTModule")
+    ELSEIF methodName == "forEach" || methodName == "forKeyEach"
+      retType = ContainerStuff.generateForEachCall(
+                         type, call, methodName, ctx, destType, "MDICTModule")
+    ELSE
+      RETURN FAIL
+    }
+    IF retType == NIL
+      retType = Type.anUnknown
+    }
+    retTypeRef = retType
+    RETURN OK
+  }
+
+}

@@ -1,0 +1,53 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# SORTEDLIST module loader
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+
+MODULE SORTEDLISTLoader @public @items=public
+  Declaration moduleDecl
+  Declaration sortedListDecl
+
+  # Prepare for using the builtin SORTEDLIST module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "SORTEDLISTModule"
+    b.fileName = "SORTEDLISTModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the SORTEDLIST module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("SORTEDLIST", builtin)
+
+      IF LOG.errorCount == 0
+        # Define the "sortedList" class as an alias for SORTEDLIST.SortedList.
+        sortedListDecl = moduleDecl.type.findMember("SortedList", NIL)
+        IF sortedListDecl == NIL || sortedListDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find SORTEDLIST.SortedList")
+          EXIT 2
+        }
+        # TODO: this doesn't work for inheritance
+        # sortedListSymbol = sortedListSymbol.copy()
+        # sortedListSymbol.name = "sortedList"
+      }
+    }
+  }
+
+  FUNC getSortedListDecl() Declaration
+    RETURN sortedListDecl
+  }
+
+}

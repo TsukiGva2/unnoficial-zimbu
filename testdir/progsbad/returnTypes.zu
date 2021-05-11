@@ -1,0 +1,13 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  FUNC doIt() string, int
+    RETURN "yes", 88
+  }
+  string s
+  int i
+  i, s = doIt()
+  IO.print("s: " .. s .. ", i: " .. i)
+
+  RETURN 0
+}

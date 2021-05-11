@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+
+BITS foo
+  bool $b
+}
+
+FUNC Main() int
+  RETURN 0
+}

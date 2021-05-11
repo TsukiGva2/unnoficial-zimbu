@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.mkdir("does/not/exist")
+  RETURN 0
+}

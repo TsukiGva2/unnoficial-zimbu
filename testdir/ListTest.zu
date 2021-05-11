@@ -1,0 +1,958 @@
+# Test file for list<>
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE ListTest @public
+
+  PROC test() @public
+    IO.print("testdir/ListTest.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    test6()
+    test7()
+    test8()
+    test9()
+    test10()
+    testFind()
+    testGet()
+    testSet()
+    testJoin()
+    testToString()
+    testEnum()
+    testForNil()
+    testMapReduceFilter()
+    testTypes()
+    testForWithIndex()
+    testForEach()
+    testEqual()
+  }
+
+  CLASS SomeVal
+    string $name
+
+    NEW(string n)
+      $name = n
+    }
+
+    SHARED
+      FUNC Init() status
+        IO.print("ListTest.SomeVal.Init()")
+        RETURN OK
+      }
+
+      FUNC EarlyInit() status
+        IO.print("ListTest.SomeVal.EarlyInit()")
+        RETURN OK
+      }
+    }
+  }
+
+  CLASS ListItem
+    string $name
+    int    $value
+    NEW(string name, int value)
+      $name = name
+      $value = value
+    }
+  }
+
+  ListItem five = NEW("five", 5)
+  ListItem six = NEW("six", 5)
+
+  PROC test1() @public
+    list<int> il = NEW(7, 7)
+    IO.print(il.ToString())
+    il.keyMap({ idx, val => idx + 1 })
+    IO.print(il.ToString())
+
+    list<string> sl = NEW(5, "five")
+    IO.print(sl.ToString())
+
+    list<string> noList = []
+    list<string> strList = NEW()
+    strList.add("hello").add("there")
+    IO.print(strList[0] .. " " .. strList[1] .. " and "
+           .. strList[-2] .. " " .. strList[-1])
+
+    list<int> intList = NEW()
+    intList.add(333).add(444)
+    intList.insert(999, 9)
+    intList.insert(888, -1)
+    intList.insert(222)
+    intList.insert(111, -9)
+    IO.print(intList[0] .. " " .. intList[1] .. " " .. intList[2] .. " "
+               .. intList[-3] .. " " .. intList[-2] .. " " .. intList[-1])
+    WHILE intList.Size() > 0
+      IO.write(" remove " .. intList.remove())
+    }
+    IO.write("\n")
+
+    list<SomeVal> someList
+    someList = NEW()
+    someList.add(NEW("jop"))
+    someList.add(NEW("jip")).add(NEW("jap"))
+    IO.write(someList.Size() .. " items: ")
+    VAR copyList = someList.copy()
+    IO.print(copyList[0].name .. copyList[1].name .. copyList[-1].name)
+    copyList.clear()
+    IO.print("After clear: " .. copyList.Size())
+
+    VAR xstringList = list<string>.NEW().add("1").add("2").add("3").add("4")
+    IO.print("slice: " .. xstringList.slice(2, -1).ToString())
+
+    list<string> stringList = NEW().add("1").add("2").add("3").add("4")
+    VAR partList = stringList.remove(2, -1)
+    IO.write("stringList: " .. stringList.ToString())
+    IO.print("  partList: " .. partList.ToString())
+
+    # test FOR on list of string
+    list<string> abc = ["a", "b", "c", "4", ]
+    IO.print(abc
+                    .ToString()
+                    )
+    FOR s IN abc
+      IO.write(s .. " ")
+    }
+    IO.write("\n")
+
+    # test FOR on list of string
+    list<string> svabc = ["a", "b", "c", "4", ]
+    FOR s IN svabc
+      IO.write(s .. " ")
+    }
+    IO.write("\n")
+
+    # test FOR on list of int
+    list<int> abx = [4, 3, 2, 1
+        ]
+    int i
+    IO.print(abx.ToString())
+    FOR USE i IN abx
+      IO.write(i .. " ")
+    }
+    IO.write("\n")
+
+    # test FOR on list of objects
+    list<ListItem> items = [NEW("one", 1), NEW("two", 2)]
+    FOR item IN items
+      IO.print("ListItem " .. item.name .. "=" .. item.value)
+    }
+    IO.print("Found: " .. findItem(items, "two").value)
+
+    findItem([five, six], "six")
+
+    # test FOR on enum
+    ENUM Foo
+      one
+      two
+      three
+    }
+    FOR foo IN Foo
+      IO.print("enum value: " .. foo.ToString())
+    }
+
+    # test FOR on string
+    FOR cc IN "123äbçdéf"
+      IO.print("string char: " .. cc)
+    }
+
+    # test FOR on byteString
+    FOR cc IN "123äbçdéf".asByteString()
+      IO.print("byteString char: " .. cc)
+    }
+  }
+
+  FUNC findItem(list<ListItem> items, string name) ListItem
+    FOR item IN items
+      IF item.name == name
+        RETURN item
+      }
+    }
+    RETURN NIL
+  }
+
+  # Test list<string> sorting
+  PROC test2()
+    list<string> unsorted = ["zoo", "bar", "foo", "aap"]
+    IO.print("Unsorted: " .. unsorted.ToString())
+    IO.print("Sorted: " .. unsorted.sort().ToString())
+    IO.print("Sorted again: " .. unsorted.sort(TRUE).ToString())
+    IO.print("Sorted reverse: " .. unsorted.sort(FALSE).ToString())
+
+    # Test list join()
+    IO.print("joined: " .. unsorted.join())
+    IO.print("joined with +: " .. unsorted.join(" + "))
+  }
+
+  CLASS Foo
+    string $word
+    NEW(string w)
+      $word = w
+    }
+    FUNC $Compare(Foo other) int
+      RETURN $word.Compare(other.word)
+    }
+    FUNC $ToString() string
+      RETURN $word
+    }
+  }
+
+  # Test list<object> sorting
+  PROC test3()
+    list<Foo> l = [NEW("one"), NEW("two"), NEW("twO"), NEW("onemore")]
+    IO.print("Unsorted: " .. l.ToString())
+    l.sort()
+    IO.print("Sorted: " .. l.ToString())
+    l.sort(TRUE)
+    IO.print("Sorted again: " .. l.ToString())
+    l.sort(FALSE)
+    IO.print("Reverse sorted: " .. l.ToString())
+  }
+
+  # Test NEW(size, value)
+  PROC test4()
+    list<int> il = NEW(0, 123)
+    IO.print(il.ToString())
+    il = NEW(1, 123)
+    IO.print(il.ToString())
+    il = NEW(5, 123)
+    IO.print(il.ToString())
+
+    list<string> sl = NEW(3, "one")
+    IO.print(sl.ToString())
+
+    list<Foo> fl = NEW(3, NEW("foo"))
+    IO.print(fl.ToString())
+  }
+
+  # list growing in size
+  PROC test5()
+    list<int> intList = NEW()
+    FOR i IN 0 TO 33
+      intList.add(i)
+    }
+    FOR i IN 0 TO 33
+      IF intList[i] != i
+        IO.print("ListTest expected " .. i .. " but got " .. intList[i])
+      }
+    }
+
+    intList = NEW()
+    FOR i IN 0 TO 33
+      intList.insert(i)
+    }
+    FOR i IN 0 TO 33
+      IF intList[33 - i] != i
+        IO.print("ListTest expected " .. i .. " but got " .. intList[32 - i])
+      }
+    }
+  }
+
+  # extend()
+  PROC test6()
+    # int extend()
+    list<int> lone = NEW()
+    lone.extend(NIL)
+    list<int> ltwo = NEW()
+    lone.extend(ltwo)
+    IO.print("empty + empty: " .. lone.ToString())
+
+    ltwo.add(5).add(6)
+    lone.extend(ltwo)
+    IO.print("empty + some: " .. lone.ToString())
+
+    ltwo = NEW()
+    lone.extend(ltwo)
+    IO.print("some + empty: " .. lone.ToString())
+
+    ltwo.add(1).add(3)
+    lone.extend(ltwo)
+    IO.print("some + some: " .. lone.ToString())
+
+    # string extend()
+    list<string> sone = NEW()
+    sone.extend(NIL)
+    list<string> stwo = NEW()
+    sone.extend(stwo)
+    IO.print("empty + empty: " .. sone.ToString())
+
+    stwo.add("5").add("6")
+    sone.extend(stwo)
+    IO.print("empty + some: " .. sone.ToString())
+
+    stwo = NEW()
+    sone.extend(stwo)
+    IO.print("some + empty: " .. sone.ToString())
+
+    stwo.add("1").add("3")
+    sone.extend(stwo)
+    IO.print("some + some: " .. sone.ToString())
+  }
+
+  # concat()
+  PROC test7()
+    # int concat()
+    list<int> lone = NEW()
+    IO.print("empty + NIL: " .. lone.concat(NIL).ToString())
+
+    list<int> ltwo = NEW()
+    IO.print("empty + empty: " .. lone.concat(ltwo).ToString())
+
+    ltwo.add(5).add(6)
+    IO.print("empty + some: " .. lone.concat(ltwo).ToString())
+
+    lone.add(5).add(6)
+    ltwo = NEW()
+    IO.print("some + empty: " .. lone.concat(ltwo).ToString())
+
+    ltwo.add(1).add(3)
+    IO.print("some + some: " .. lone.concat(ltwo).ToString())
+
+    # string concat()
+    list<string> sone = NEW()
+    IO.print("empty + NIL: " .. sone.concat(NIL).ToString())
+
+    list<string> stwo = NEW()
+    IO.print("empty + empty: " .. sone.concat(stwo).ToString())
+
+    stwo.add("5").add("6")
+    IO.print("empty + some: " .. sone.concat(stwo).ToString())
+
+    sone.add("5").add("6")
+    stwo = NEW()
+    IO.print("some + empty: " .. sone.concat(stwo).ToString())
+
+    stwo.add("1").add("3")
+    IO.print("some + some: " .. sone.concat(stwo).ToString())
+  }
+
+  # remove()
+  PROC test8()
+    list<int> il = [1, 2]
+    int i = il.remove(0)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+    i = il.remove(0)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+
+    il = [1, 2]
+    i = il.remove(1)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+    i = il.remove(0)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+
+    il = [1, 2, 3]
+    i = il.remove(1)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+    i = il.remove(1)
+    IO.print("Removed " .. i .. ", remains: " .. il.ToString())
+
+    list<string> sl = ["one", "two"]
+    string s = sl.remove(0)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+    s = sl.remove(0)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+
+    sl = ["one", "two"]
+    s = sl.remove(1)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+    s = sl.remove(0)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+
+    sl = ["one", "two", "three"]
+    s = sl.remove(1)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+    s = sl.remove(1)
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+
+    sl = ["one", "two", "three"]
+    s = sl.removeItem("two")
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+    s = sl.removeItem("three")
+    IO.print("Removed " .. s .. ", remains: " .. sl.ToString())
+
+    sl = ["one", "two", "three"]
+    list<string> sl2 = sl.clearItem("two")
+    IO.print("Cleared two, remains: " .. sl2.ToString())
+    sl2 = sl.clearItem("xxx")
+    IO.print("Removed xxx, remains: " .. sl2.ToString())
+    sl.clearItem("three")
+    IO.print("Removed three, remains: " .. sl.ToString())
+  }
+
+  # insert()
+  PROC test9()
+    list<int> il = NEW()
+    il.insert(3)
+    il.insert(2)
+    il.insert(1)
+    IO.print("Inserted: " .. il.ToString())
+
+    list<string> sl = NEW()
+    sl.insert("three")
+    sl.insert("two")
+    sl.insert("one")
+    IO.print("Inserted: " .. sl.ToString())
+  }
+
+  # clear()
+  PROC test10()
+    list<int> il = [1, 2, 3, 4]
+    il.clear(0).clear(2)
+    IO.print("cleared int: " .. il.ToString())
+
+    list<string> sl = ["1", "2", "3", "4"]
+    sl.clear(0).clear(2)
+    IO.print("cleared string: " .. sl.ToString())
+  }
+
+  # find()
+  PROC testFind()
+    list<string> l = ["one", "two", "three"]
+    IO.print("String list: " .. l.find("one")
+              .. "-" .. l.find("two")
+              .. "-" .. l.find("three"))
+
+    list<int> n = [111, 22, 3]
+    IO.print("Number list: " .. n.find(111)
+              .. "-" .. n.find(22)
+              .. "-" .. n.find(3))
+  }
+
+  # get()
+  PROC testGet()
+    list<string> sl = ["one", "two", "three"]
+    IO.print(sl[0] .. " == " .. sl.get(0))
+    IO.print(sl[1] .. " == " .. sl.get(1))
+    IO.print(sl[2] .. " == " .. sl.get(2))
+    IO.print(sl[-1] .. " == " .. sl.get(-1))
+    IO.print(sl[-2] .. " == " .. sl.get(-2))
+    IO.print(sl[-3] .. " == " .. sl.get(-3))
+
+    list<int> il = [1, 2, 3]
+    IO.print(il[0] .. " == " .. il.get(0))
+    IO.print(il[-1] .. " == " .. il.get(-1))
+  }
+
+  # set() and list[i] = val
+  PROC testSet()
+    list<string> sl = ["one", "two", "three"]
+    sl[0] = "ONE"
+    sl[-1] = "LAST"
+    IO.print(sl.ToString())
+
+    sl.set(0, "nul").set(-2, "twee")
+    IO.print(sl.ToString())
+
+    TRY
+      sl[3] = "wrong"
+    CATCH E.OutOfRange e
+      IO.print("caught out of range 3")
+    }
+    TRY
+      sl[-4] = "wrong"
+    CATCH E.OutOfRange e
+      IO.print("caught out of range -4")
+    }
+    TRY
+      sl.set(3, "wrong")
+    CATCH E.OutOfRange e
+      IO.print("caught set out of range 3")
+    }
+    TRY
+      sl.set(-4, "wrong")
+    CATCH E.OutOfRange e
+      IO.print("caught set out of range -4")
+    }
+  }
+
+  # join()
+  PROC testJoin()
+    list<string> sl = ["one", "two", "three"]
+    IO.print(sl.join())
+    IO.print(sl.join("/"))
+
+    list<int> il = [1, 2, 3]
+    IO.print(il.join())
+    IO.print(il.join("-"))
+
+    list<Foo> fl = NEW().add(NEW("a")).add(NEW("b")).add(NEW("c"))
+    IO.print(fl.join())
+    IO.print(fl.join(" = "))
+
+    list<list<string>> lls = [["one", "two"], ["three", "four"]]
+    IO.print(lls.join())
+    IO.print(lls.join(","))
+  }
+
+  CLASS Top
+    string $name
+
+    FUNC $ToString() string @default
+      RETURN "Top " .. $name
+    }
+  }
+
+  CLASS Bar EXTENDS Top
+    FUNC $ToString() string @replace
+      RETURN "Bar " .. $name
+    }
+  }
+
+  PROC testToString()
+    list<Top> l = NEW()
+    Top top = NEW()
+    top.name = "one"
+    l.add(top)
+    Bar bar = NEW()
+    bar.name = "two"
+    l.add(bar)
+    IO.print("list with iobjects: " .. l.ToString())
+
+    IO.print("list type: " .. l.Type().ToString())
+
+    int itop = l.find(top)
+    int ibar = l.find(bar)
+    IO.print("Found top: " .. itop .. " and bar: " .. ibar)
+
+    l = NEW(5, top)
+    IO.print("prefilled list with iobjects: " .. l.ToString())
+
+    l = NIL
+    IO.print("NIL list: " .. l.ToString())
+  }
+
+  PROC testEnum()
+    ENUM Color
+      black
+      blue
+      red
+      orange
+    }
+    list<Color> cs = NEW()
+    cs.add(Color.orange)
+    cs.add(Color.black)
+    cs.add(Color.blue)
+    IO.print("Colors list: " .. cs.ToString())
+  }
+
+
+  # FOR on a NIL list does nothing.
+  PROC testForNil()
+    list<string> ss
+    FOR i IN ss
+      IO.print("nope")
+    }
+
+    string s
+    FOR c IN s
+      IO.print("char")
+    }
+
+    byteString bs
+    FOR b IN bs
+      IO.print("byte")
+    }
+  }
+
+  PROC testMapReduceFilter()
+    list<int> nrl = [1, -8, 3, 7]
+    int positiveMax = nrl.reduce(1, { a, b => b > a ? b : a })
+    IO.print("positiveMax: " .. positiveMax)
+
+    nrl = []
+    int r = nrl.reduce(1, { a, b => b > a ? b : a })
+    IO.print("empty Max: " .. r)
+
+    nrl = [8]
+    r = nrl.reduce(1, { a, b => b > a ? b : a })
+    IO.print("one Max: " .. r)
+
+    nrl = [1, 2, 3, 4]
+    int total = nrl.reduce({ a, b => a + b })
+    IO.print("total: " .. total)
+
+    nrl = []
+    total = nrl.reduce({ a, b => a + b })
+    IO.print("empty total: " .. total)
+
+    nrl = [8]
+    total = nrl.reduce({ a, b => a + b })
+    IO.print("one total: " .. total)
+
+    nrl = [1, 2, 3, 4, 5, 6]
+    VAR oddList = nrl.filter({ a => a % 2 == 1 })
+    IO.print("odd: " .. oddList.ToString())
+
+    nrl = []
+    oddList = nrl.filter({ a => a % 2 == 1 })
+    IO.print("empty odd: " .. oddList.ToString())
+
+    nrl = [6, 8, 124]
+    oddList = nrl.filter({ a => a % 2 == 1 })
+    IO.print("empty result odd: " .. oddList.ToString())
+
+    list<int> numberList = [1, -8, 3, 4]
+    list<string> sl = numberList.mapTo({ n => n .. ":" })
+    IO.print("mapTo: " .. sl.ToString())
+
+    sl = numberList.keyMapTo({ i, n => i .. ": " .. n })
+    IO.print("keyMapTo: " .. sl.ToString())
+
+    string values = numberList.reduceTo("values:", { s, v => s .. " " .. v })
+    IO.print("reduceTo: '" .. values .. "'")
+  }
+
+  PROC testTypes()
+    # Avoid error for value overflow
+    int off2 = 22
+    int off3 = 33
+    int off4 = 44
+    list<int> il = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    list<int8> i8l = [11, 256 + off2, 256 * 256 * 3 + off3, 256 * 256 * 256 * 256 * 7 + off4]
+    list<int16> i16l = [11, 256 + 22, 256 * 256 * 3 + off3, 256 * 256 * 256 * 256 * 7 + off4]
+    list<int32> i32l = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + off4]
+    list<nat> nl = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    list<nat8> n8l = [11, 256 + off2, 256 * 256 * 3 + off3, 256 * 256 * 256 * 256 * 7 + off4]
+    list<nat16> n16l = [11, 256 + 22, 256 * 256 * 3 + off3, 256 * 256 * 256 * 256 * 7 + off4]
+    list<nat32> n32l = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + off4]
+    list<float> fl = [1.1, 0.000012, 199999, 1.4e100]
+    list<float32> f32l = [1.1, 0.000012, 199999, 1.4e100]
+
+    IO.write("int list: ")
+    FOR i IN il
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint8 list: ")
+    FOR i IN i8l
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint16 list: ")
+    FOR i IN i16l
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint32 list: ")
+    FOR i IN i32l
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat list: ")
+    FOR i IN nl
+      IO.write(i .. ", ")
+    }
+    IO.write("\nbyte list: ")
+    FOR i IN n8l
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat16 list: ")
+    FOR i IN n16l
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat32 list: ")
+    FOR i IN n32l
+      IO.write(i .. ", ")
+    }
+    IO.print()
+
+    IO.write("float list: ")
+    FOR i IN fl
+      IO.write(i .. ", ")
+    }
+    IO.write("\nfloat32 list: ")
+    FOR i IN f32l
+      IO.write(i .. ", ")
+    }
+    IO.print()
+
+    IO.print("int list copy: " .. il.copy().ToString())
+    IO.print("int8 list copy: " .. i8l.copy().ToString())
+    IO.print("int16 list copy: " .. i16l.copy().ToString())
+    IO.print("int32 list copy: " .. i32l.copy().ToString())
+    IO.print("nat list copy: " .. nl.copy().ToString())
+    IO.print("nat8 list copy: " .. n8l.copy().ToString())
+    IO.print("nat16 list copy: " .. n16l.copy().ToString())
+    IO.print("nat32 list copy: " .. n32l.copy().ToString())
+    IO.print("float list copy: " .. fl.copy().ToString())
+    IO.print("float32 list copy: " .. f32l.copy().ToString())
+
+    il[1] = 1234567890123
+    i8l[1] = 123
+    i16l[1] = 12345
+    i32l[1] = 123456789
+    nl[1] = 1234567890123
+    n8l[1] = 123
+    n16l[1] = 12345
+    n32l[1] = 123456789
+    fl[1] = 12345
+    f32l[1] = 12345
+
+    IO.print(il[1] .. "-" .. i8l[1] .. "-" .. i16l[1] .. "-" .. i32l[1])
+    IO.print(nl[1] .. "-" .. n8l[1] .. "-" .. n16l[1] .. "-" .. n32l[1])
+    IO.print(fl[1] .. "-" .. f32l[1])
+
+    il.keyMap({ idx, val => val + idx })
+    IO.print(il.ToString())
+    i8l.keyMap({ idx, val => val + idx })
+    IO.print(i8l.ToString())
+    i16l.keyMap({ idx, val => val + idx })
+    IO.print(i16l.ToString())
+    i32l.keyMap({ idx, val => val + idx })
+    IO.print(i32l.ToString())
+
+    nl.keyMap({ idx, val => val + idx })
+    IO.print(nl.ToString())
+    n8l.keyMap({ idx, val => val + idx })
+    IO.print(n8l.ToString())
+    n16l.keyMap({ idx, val => val + idx })
+    IO.print(n16l.ToString())
+    n32l.keyMap({ idx, val => val + idx })
+    IO.print(n32l.ToString())
+
+    fl.keyMap({ idx, val => val + idx })
+    IO.print(fl.ToString())
+    f32l.keyMap({ idx, val => val + idx })
+    IO.print(f32l.ToString())
+
+    il.map({ val => val - 2 })
+    IO.print(il.ToString())
+    i8l.map({ val => val - 2 })
+    IO.print(i8l.ToString())
+    i16l.map({ val => val - 2 })
+    IO.print(i16l.ToString())
+    i32l.map({ val => val - 2 })
+    IO.print(i32l.ToString())
+
+    nl.map({ val => val - 2 })
+    IO.print(nl.ToString())
+    n8l.map({ val => val - 2 })
+    IO.print(n8l.ToString())
+    n16l.map({ val => val - 2 })
+    IO.print(n16l.ToString())
+    n32l.map({ val => val - 2 })
+    IO.print(n32l.ToString())
+
+    fl.map({ val => val - 2 })
+    IO.print(fl.ToString())
+    f32l.map({ val => val - 2 })
+    IO.print(f32l.ToString())
+
+    IO.print(il.join("+"))
+    IO.print(i8l.join('+'))
+    IO.print(i16l.join("+"))
+    IO.print(i32l.join("+"))
+
+    IO.print(nl.join("*"))
+    IO.print(n8l.join("*"))
+    IO.print(n16l.join('*'))
+    IO.print(n32l.join("*"))
+
+    IO.print(fl.join("_"))
+    IO.print(f32l.join("_"))
+
+    il = [999999, 1, -888, 7777]
+    i8l = [99, 1, -88, 7]
+    i16l = [99, 1, -888, 77]
+    i32l = [9999, 1, -888, 77]
+    IO.print(il.sort().ToString())
+    IO.print(il.sort(FALSE).ToString())
+    IO.print(i8l.sort().ToString())
+    IO.print(i8l.sort(FALSE).ToString())
+    IO.print(i16l.sort().ToString())
+    IO.print(i16l.sort(FALSE).ToString())
+    IO.print(i32l.sort().ToString())
+    IO.print(i32l.sort(FALSE).ToString())
+
+    nl = [999999, 1, 888, 7777]
+    n8l = [99, 1, 201, 7]
+    n16l = [99, 1, 60123, 77]
+    n32l = [9999, 1, 888, 77]
+    IO.print(nl.sort().ToString())
+    IO.print(nl.sort(FALSE).ToString())
+    IO.print(n8l.sort().ToString())
+    IO.print(n8l.sort(FALSE).ToString())
+    IO.print(n16l.sort().ToString())
+    IO.print(n16l.sort(FALSE).ToString())
+    IO.print(n32l.sort().ToString())
+    IO.print(n32l.sort(FALSE).ToString())
+
+    fl = [989999, 1, 888, 7777]
+    f32l = [9899, 1, 888, 77]
+    IO.print(fl.sort().ToString())
+    IO.print(fl.sort(FALSE).ToString())
+    IO.print(f32l.sort().ToString())
+    IO.print(f32l.sort(FALSE).ToString())
+
+    il = [111, -222]
+    i8l = [33, -127]
+    il.extend(i8l)
+    IO.print("i ext i8: " .. il.ToString())
+    i16l = [44, -12723]
+    il.extend(i16l)
+    IO.print("i ext i16: " .. il.ToString())
+    i32l = [55, -1234322723]
+    il.extend(i32l)
+    IO.print("i ext i32: " .. il.ToString())
+
+    nl = [111, 222]
+    n8l = [33, 244]
+    nl.extend(n8l)
+    IO.print("n ext n8: " .. nl.ToString())
+    n16l = [44, 31211]
+    nl.extend(n16l)
+    IO.print("n ext n16: " .. nl.ToString())
+    n32l = [55, 31211234]
+    nl.extend(n32l)
+    IO.print("n ext n32: " .. nl.ToString())
+
+    il = [111, -222]
+    n8l = [33, 244]
+    il.extend(n8l)
+    IO.print("i ext n8: " .. il.ToString())
+    n16l = [44, 31211]
+    il.extend(n16l)
+    IO.print("i ext n16: " .. il.ToString())
+    n32l = [55, 31211234]
+    il.extend(n32l)
+    IO.print("i ext n32: " .. il.ToString())
+
+    fl = [1.111, -2.222]
+    f32l = [3.33, -4.444]
+    fl.extend(f32l)
+    IO.print("f ext f32: " .. fl.ToString())
+
+    il = [111, -222]
+    i8l = [33, -127]
+    IO.print("i concat i8: " .. il.concat(i8l).ToString())
+    i16l = [44, -12723]
+    IO.print("i concat i16: " .. il.concat(i16l).ToString())
+    i32l = [55, -1234322723]
+    IO.print("i concat i32: " .. il.concat(i32l).ToString())
+
+    nl = [111, 222]
+    n8l = [33, 244]
+    IO.print("n concat n8: " .. nl.concat(n8l).ToString())
+    n16l = [44, 31211]
+    IO.print("n concat n16: " .. nl.concat(n16l).ToString())
+    n32l = [55, 31211234]
+    IO.print("n concat n32: " .. nl.concat(n32l).ToString())
+
+    il = [111, -222]
+    n8l = [33, 244]
+    IO.print("i concat n8: " .. il.concat(n8l).ToString())
+    n16l = [44, 31211]
+    IO.print("i concat n16: " .. il.concat(n16l).ToString())
+    n32l = [55, 31211234]
+    IO.print("i concat n32: " .. il.concat(n32l).ToString())
+
+    fl = [1.111, -2.222]
+    f32l = [3.33, -4.444]
+    IO.print("f concat f32: " .. fl.concat(f32l).ToString())
+
+    il = [111, -222]
+    il.insert(23433, 1)
+    IO.print("i ins: " .. il.ToString())
+    i8l = [33, -127]
+    i8l.insert(23, 1)
+    IO.print("i8 ins: " .. i8l.ToString())
+    i16l = [44, -12723]
+    i16l.insert(2345, 1)
+    IO.print("i16 ins: " .. i16l.ToString())
+    i32l = [55, -1234322723]
+    i32l.insert(-2345, 1)
+    IO.print("i32 ins: " .. i32l.ToString())
+
+    nl = [111, 222222]
+    nl.insert(233, 1)
+    IO.print("n ins: " .. nl.ToString())
+    n8l = [33, 244]
+    n8l.insert(123, 1)
+    IO.print("n8 ins: " .. n8l.ToString())
+    n16l = [44, 31211]
+    n16l.insert(2345, 1)
+    IO.print("n16 ins: " .. n16l.ToString())
+    n32l = [55, 31211234]
+    n32l.insert(2345, 1)
+    IO.print("n32 ins: " .. n32l.ToString())
+
+    fl = [1.11, 2.222]
+    fl.insert(3.333, 1)
+    IO.print("f ins: " .. fl.ToString())
+    f32l = [3.33, 4.444]
+    f32l.insert(5.555, 1)
+    IO.print("f32 ins: " .. f32l.ToString())
+
+    int off5 = 55
+    il = [111, -222]
+    IO.print(il.find(-222) .. " ! " .. il.find(333))
+    i8l = [33, -127]
+    IO.print(i8l.find(-127) .. " ! " .. i8l.find(off3 + 256))
+    i16l = [44, -12723]
+    IO.print(i16l.find(-12723) .. " ! " .. i16l.find(off4 + 256 * 256))
+    i32l = [55, -1234322723]
+    IO.print(i32l.find(-1234322723) .. " ! " .. i32l.find(off5 + 256 * 256 * 256 * 256))
+
+    nl = [111, 222222]
+    IO.print(nl.find(222222) .. " ! " .. nl.find(333))
+    n8l = [33, 244]
+    IO.print(n8l.find(244) .. " ! " .. n8l.find(off3 + 256))
+    n16l = [44, 31211]
+    IO.print(n16l.find(31211) .. " ! " .. n16l.find(off4 + 256 * 256))
+    n32l = [55, 31211234]
+    IO.print(n32l.find(31211234) .. " ! " .. n32l.find(off5 + 256 * 256 * 256 * 256))
+
+    fl = [1.11, -2.22]
+    IO.print(fl.find(-2.22) .. " ! " .. fl.find(3.33))
+    f32l = [3.33, -4.44]
+    IO.print(f32l.find(-4.44) .. " ! " .. f32l.find(5.55))
+
+    nl = [33, T.nat.max]
+    IO.print("18446744073709551615: " .. nl[1])
+    n8l = [33, T.byte.max]
+    IO.print("255: " .. n8l[1])
+    n16l = [33, T.nat16.max]
+    IO.print("65535: " .. n16l[1])
+    n32l = [33, T.nat32.max]
+    IO.print("4294967295: " .. n32l[1])
+  }
+
+  PROC testForWithIndex()
+    FOR i, nr IN [1, 2, 3]
+      IO.print(i .. ": " .. nr)
+    }
+
+    FOR i, f IN [1.1, 2.2, 3.3]
+      IO.print(i .. ": " .. f)
+    }
+
+    FOR i, s IN ["one", "two", "three"]
+      IO.print(i .. ": " .. s)
+    }
+  }
+
+  PROC testForEach()
+    list<string> isl = ["one", "two", "three"]
+    VAR l = isl.forEach({ s => IO.print(s) })
+    l.forKeyEach({ i, s => IO.print(i .. ": " .. s) })
+  }
+
+  PROC testEqual()
+    list<int> a = [1, 2, 3]
+    list<int> b = [1, 2, 3]
+    list<int8> b8 = [1, 2, 3]
+    list<int> c = [1, 4, 3]
+    IO.print("equal list: " .. (a == b))
+    IO.print("equal list: " .. (a == b8))
+    IO.print("not equal list: " .. (a == c))
+
+    list<string> sa = ["1", "2", "3"]
+    list<string> sb = ["1", "2", "3"]
+    list<string> sc = ["1", "4", "3"]
+    IO.print("equal list: " .. (sa == sb))
+    IO.print("not equal list: " .. (sa == sc))
+  }
+
+}

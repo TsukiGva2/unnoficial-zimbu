@@ -1,0 +1,47 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Template class.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+
+CLASS Template @items=public   # TODO: restrict visibility
+  string            $name    # unique name per templated class
+  list<Declaration> $decls # list of type declarations (can have NIL items)
+  Zui.Statement     $stmt    # copy of the CLASS statement (NIL when not copied
+                             # yet)
+  Zui.Declaration   $zuiDecl # copy of the declaration.
+  ClassType         $templateClass  # the original template class
+  Zui.Position      $firstUsePos    # position where first used
+
+  # Note: caller must also set $name
+  NEW(list<Declaration> types)
+    $decls = types
+  }
+
+  # Return a list of type names, used for error messages.
+  FUNC $typeString() string
+    IO.StringWriter writer = NEW()
+    writer.write("<")
+    string comma = ""
+    FOR decl IN $decls
+      writer.write(comma)
+      comma = ", "
+      IF decl == NIL
+        writer.write("NIL")
+      ELSE
+        writer.write(decl.type.typeName())
+      }
+    }
+    writer.write(">")
+    RETURN writer.ToString()
+  }
+}

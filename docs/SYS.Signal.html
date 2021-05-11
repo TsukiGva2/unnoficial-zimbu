@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>SYS.Signal enum - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='SYS.html'>up:&nbsp;SYS</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>ENUM</span> SYS.Signal
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Signals that can be received and send to a <b>Process</b>.
+</p>
+<p class='ptext'> The action mentioned is the default action.  A process can change this by
+ intercepting the signal.  Except for the ones marked with "cannot be
+ blocked".
+<p class='ptext'> The number in parenthesis is the standard Unix signal number.
+</p>
+<table></table></td></tr></table>
+<h2>values</h2><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><table><tr><td><b>hup</b>&nbsp;</td><td><p class='ptext'> (1) action: exit. Hangup detected on controlling terminal
+                   or death of controlling process.
+</p>
+</td></tr><tr><td><b>int</b>&nbsp;</td><td><p class='ptext'> (2)  action: exit. Interrupt from keyboard.
+</p>
+</td></tr><tr><td><b>quit</b>&nbsp;</td><td><p class='ptext'> (3)  action: dump core. Quit from keyboard.
+</p>
+</td></tr><tr><td><b>ill</b>&nbsp;</td><td><p class='ptext'> (4)  action: dump core. Illegal Instruction.
+</p>
+</td></tr><tr><td><b>trap</b>&nbsp;</td><td><p class='ptext'> (5)  action: dump core.
+</p>
+</td></tr><tr><td><b>abrt</b>&nbsp;</td><td><p class='ptext'> (6)  action: dump core. Abort signal from abort command.
+</p>
+</td></tr><tr><td><b>fpe</b>&nbsp;</td><td><p class='ptext'> (8)  action: dump core.  Floating point exception.
+</p>
+</td></tr><tr><td><b>kill</b>&nbsp;</td><td><p class='ptext'> (9)  action: exit. Cannot be blocked.
+</p>
+</td></tr><tr><td><b>segv</b>&nbsp;</td><td><p class='ptext'> (11) action: dump core. Invalid memory reference.
+</p>
+</td></tr><tr><td><b>pipe</b>&nbsp;</td><td><p class='ptext'> (13) action: exit. Broken pipe: write to pipe with no readers.
+</p>
+</td></tr><tr><td><b>alrm</b>&nbsp;</td><td><p class='ptext'> (14) action: exit.   Timer signal from alarm command.
+</p>
+</td></tr><tr><td><b>term</b>&nbsp;</td><td><p class='ptext'> (15) action: exit.   Termination signal.
+</p>
+</td></tr><tr><td><b>poll</b>&nbsp;</td><td><p class='ptext'>      action: exit.
+</p>
+</td></tr><tr><td><b>prof</b>&nbsp;</td><td><p class='ptext'>      action: exit.
+</p>
+</td></tr><tr><td><b>usr1</b>&nbsp;</td><td><p class='ptext'>      action: exit. User-defined signal 1.
+</p>
+</td></tr><tr><td><b>usr2</b>&nbsp;</td><td><p class='ptext'>      action: exit. User-defined signal 2.
+</p>
+</td></tr><tr><td><b>vtalrm</b>&nbsp;</td><td><p class='ptext'>      action: exit.
+</p>
+</td></tr><tr><td><b>stkflt</b>&nbsp;</td><td><p class='ptext'>      action: exit.  Might not be implemented.
+</p>
+</td></tr><tr><td><b>pwr</b>&nbsp;</td><td><p class='ptext'>      action: ignore. Might exit on some systems.
+</p>
+</td></tr><tr><td><b>winch</b>&nbsp;</td><td><p class='ptext'>      action: ignore.
+</p>
+</td></tr><tr><td><b>chld</b>&nbsp;</td><td><p class='ptext'>      action: ignore. Child stopped or terminated.
+</p>
+</td></tr><tr><td><b>urg</b>&nbsp;</td><td><p class='ptext'>      action: ignore.
+</p>
+</td></tr><tr><td><b>tstp</b>&nbsp;</td><td><p class='ptext'>      action: stop. Stop typed at tty, might interact with
+                    the shell.
+</p>
+</td></tr><tr><td><b>ttin</b>&nbsp;</td><td><p class='ptext'>      action: stop.  Tty input for background process, might
+                     interact with the shell.
+</p>
+</td></tr><tr><td><b>ttou</b>&nbsp;</td><td><p class='ptext'>      action: stop.  Tty output for background process, might
+                     interact with the shell.
+</p>
+</td></tr><tr><td><b>stop</b>&nbsp;</td><td><p class='ptext'>      action: stop process. Cannot be blocked.
+</p>
+</td></tr><tr><td><b>cont</b>&nbsp;</td><td><p class='ptext'>      action: continue if stopped, otherwise ignore.
+</p>
+</td></tr><tr><td><b>sys</b>&nbsp;</td><td><p class='ptext'>      action: dump core.  Might not be implemented.
+</p>
+</td></tr><tr><td><b>emt</b>&nbsp;</td><td><p class='ptext'>      action: dump core.  Might not be implemented.
+</p>
+</td></tr><tr><td><b>bus</b>&nbsp;</td><td><p class='ptext'>      action: dump core. Core dump might fail.
+</p>
+</td></tr><tr><td><b>xcpu</b>&nbsp;</td><td><p class='ptext'>      action: dump core. Core dump might fail.
+</p>
+</td></tr><tr><td><b>xfsz</b>&nbsp;</td><td><p class='ptext'>      action: dump core. Core dump might fail.
+</p>
+</td></tr></table></td></tr></table><h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2010 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

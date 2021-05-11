@@ -1,0 +1,7 @@
+MODULE Testing
+  # URL / Attributes
+  TEMPLATE inUrlAttributes(ZUT.Attributes attr) ZUT.Url @public
+    [=attr]
+  }
+}
+

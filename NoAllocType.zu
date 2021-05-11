@@ -1,0 +1,280 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# NoAllocType class.
+#
+# A Type used for items located on the stack.  This wraps another type.
+# Inheritance can't be used, because an object could be on the stack or not on
+# the stack.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassScope.zu"
+IMPORT "ClassType.zu"
+IMPORT "ClassRefType.zu"
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+
+CLASS NoAllocType EXTENDS ReferenceType @items=public
+  Type      $wrappedType
+
+  # When the wrapped type is an iobject, we don't know the size of the
+  # actually used object and would need to allocated it.  But in most cases
+  # there is only one assignment and then we do know the object type.  Then we
+  # can reserve room for that type and avoid the alloc.
+  # "iobjectType" is NIL until an assignment is found for this type, then it
+  # is set to that type.  If another assignment is found for a different type,
+  # it is set to "THIS".  In that case an alloc is needed.
+  Type      $iobjectType
+
+  # Cached return value of getValueType()
+  Type      $valueType
+
+  # Used to track scopes that depend on $iobjectType
+  ClassScope     $scope
+
+  NEW(Type type, string name)
+    NEW(type.ttype, name)
+    $wrappedType = type
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    NoAllocType ret = NEW($wrappedType, $name)
+    $copyObjectValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyObjectValues(NoAllocType ret) @default
+    $copyReferenceValues(ret)
+    ret.type = $wrappedType
+  }
+
+  FUNC $typeToString() string @replace
+    RETURN "%" .. $wrappedType.typeToString()
+  }
+
+  FUNC $getValueType(SContext ctx) Type @replace
+    IF $valueType == NIL
+      $valueType = $wrappedType.getValueType(ctx).getNoAllocType()
+    }
+    RETURN $valueType
+  }
+
+  FUNC $getNoAllocType() Type @replace
+    RETURN THIS
+  }
+
+  FUNC $isNoAlloc() bool @replace
+    RETURN TRUE
+  }
+
+  FUNC $getTtype() Enum @replace
+    RETURN $wrappedType.getTtype()
+  }
+
+  # Return the effective type.  For a typedef it is the defined type.
+  FUNC $getEffType() Type @replace
+    RETURN $wrappedType.getEffType()
+  }
+
+  FUNC $getRefType() Type @replace
+    THROW "Internal: cannot pass a variable on stack by reference"
+  }
+
+  PROC $setCtypeName(string name) @replace
+    $wrappedType.setCtypeName(name)
+  }
+
+  FUNC $getCtypeName() string @replace
+    RETURN $wrappedType.getCtypeName()
+  }
+
+  FUNC $getAllocType(SContext ctx) Type @replace
+    THROW "Internal: getAllocType() does not work for a not allocated variable"
+  }
+
+  FUNC $isAllocType(SContext ctx) bool @replace
+    RETURN FALSE
+  }
+
+  FUNC $isManaged() bool @replace
+    RETURN FALSE  # on the stack means not allocated
+  }
+
+  FUNC $getStarType(Zui.Position pos, SContext ctx) ClassRefType @replace
+    RETURN $wrappedType.getStarType(pos, ctx)
+  }
+
+  FUNC $isAbstract() bool @replace
+    RETURN $wrappedType.isAbstract()
+  }
+
+  FUNC $isIntType() bool @replace
+    RETURN FALSE
+  }
+
+  FUNC $isNatType() bool @replace
+    RETURN FALSE
+  }
+
+  FUNC $isFloatType() bool @replace
+    RETURN FALSE
+  }
+
+  FUNC $isMethodType() bool @replace
+    RETURN $wrappedType.isMethodType()
+  }
+
+  FUNC $isMethodOrRefType() bool @replace
+    RETURN $wrappedType.isMethodOrRefType()
+  }
+
+  FUNC $typeName(bool long) string @replace
+    RETURN "%" .. $wrappedType.typeName(long)
+  }
+  
+  FUNC $getTypeName(SContext ctx) string @replace
+    RETURN $wrappedType.getTypeName(ctx)
+  }
+
+  FUNC $needCopyValue() bool @replace
+    RETURN $wrappedType.needCopyValue()
+  }
+
+  # |ctx| can be NIL if the scope doesn't need to be revisted when the type
+  # changes.
+  FUNC $getClassType(SContext ctx) ClassType @replace
+    IF ctx != NIL && ($iobjectType == NIL || $iobjectType ISNOT THIS)
+      # $iobjectType may change later, we need to come back here then.
+      IF $scope == NIL
+        $scope = ClassScope.NEW(NIL, NIL)
+      }
+      $scope.addScopeDependency(ctx.scope)
+    }
+
+    IF $iobjectType != NIL && $iobjectType ISNOT THIS
+      # We know what class is going to be used for the iobject, return that
+      # class.
+      RETURN $iobjectType
+    }
+
+    # Either we don't know what class is going to be used, or more than one
+    # class can be used ($iobjType IS THIS). Return the interface class. 
+    RETURN $wrappedType.getClassType(ctx)
+  }
+
+  FUNC $getMethod() MethodType @replace
+    RETURN $wrappedType.getMethod()
+  }
+
+  FUNC $getDeclDict() multiDict<string, Declaration> @replace
+    RETURN $wrappedType.getDeclDict()
+  }
+
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @replace
+    RETURN $wrappedType.getDeclDict()
+  }
+
+  FUNC $getArgList() list<Declaration.C> @replace
+    RETURN $wrappedType.getArgList()
+  }
+
+  FUNC $getReturnType() Type @replace
+    RETURN $wrappedType.getReturnType()
+  }
+
+  FUNC $getTypespecType(int idx) Type @replace
+    RETURN $wrappedType.getTypespecType(idx)
+  }
+
+  FUNC $hasAnyMembers() bool @replace
+    RETURN $wrappedType.hasAnyMembers()
+  }
+
+  FUNC $findMember(string name, SymUse symUse) Declaration @replace
+    RETURN $wrappedType.findMember(name, symUse)
+  }
+
+  FUNC $findObjectMember(string name,
+                         SymUse symUse,
+                         MethodType.FindFuncOptions options,
+                         bool inParent
+                        ) Declaration @replace
+    RETURN $wrappedType.findObjectMember(name, symUse, options, inParent)
+  }
+
+  PROC $findMatchingMethods(string name,
+                            bool objectMethod,
+                            list<Declaration.C> argList,
+                            MethodType.Skip skip,
+                            MethodType.FindFuncOptions options,
+                            int &undef,
+                            multiDict<int, Declaration> funcs,
+                            SContext ctx
+                           ) @replace
+    $wrappedType.findMatchingMethods(name, objectMethod, argList, skip, options,
+                                                            undef, funcs, ctx)
+  }
+
+  FUNC $findNewFromContainerMethod(Zui.Expression expr,
+                                   Type.Enum ttype, string tName,
+                                             SContext ctx) MethodType @replace
+    RETURN $wrappedType.findNewFromContainerMethod(expr, ttype, tName, ctx)
+  }
+
+  # This type isn't produced, the wrapped type is.  Therefore depend on the
+  # wrapped type.
+  PROC $addDependsOn(Declaration decl) @replace
+    $wrappedType.addDependsOn(decl)
+  }
+
+  PROC $addDependsOnCond(Declaration decl, Declaration dependency) @replace
+    $wrappedType.addDependsOnCond(decl, dependency)
+  }
+
+  # Set the type of an iobject NEW() call, so that we know the size of the
+  # object.
+  PROC $setIobjectType(Type type, SContext ctx)
+    IF $wrappedType.getTtype() == Type.Enum.iobject
+      ClassType classType = type.getClassType(ctx)
+      IF classType != NIL && $iobjectType ISNOT THIS
+                                               && $iobjectType ISNOT classType
+        IF $iobjectType == NIL
+          # Now we know what object type will be used.
+          $iobjectType = classType
+        ELSE
+          # Found two different NEW() calls, object type will change at runtime,
+          # need to allocate the object.
+          $iobjectType = THIS
+        }
+        # Scopes that used $iobjectType before must be re-visited.
+        IF $scope != NIL
+          $scope.setNeedPassInDependencies(ctx)
+        }
+      }
+    }
+  }
+
+  # Return TRUE if this is an iobject with more that one NEW() call types.
+  FUNC $needAlloc() bool
+    RETURN $iobjectType IS THIS
+  }
+
+  # Return the name of the class that this object or iobject should be
+  # initialzed with.  Only to be used when $needAlloc() returns FALSE.
+  FUNC $getClassName(string default) string
+    RETURN $iobjectType == NIL ? default : $iobjectType.pName
+  }
+
+}

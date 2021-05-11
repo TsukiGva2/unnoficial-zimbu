@@ -1,0 +1,349 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module BOX
+#
+
+#= Pieces for Boxes (Containers)
+#
+#- Still very much under development.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE BOXModule @public
+
+  #= Provide max() and min() for any Box that has $Iterator() and the item
+  #= supports Compare().
+  PIECE MaxMin<Titem> @public
+
+    #= Return the maximum value in the Box.
+    #- When the Box is empty returns NIL/zero/false.
+    FUNC $max() Titem @public
+      Titem max
+      I.Iterator<Titem> it = $Iterator()
+      IF it.hasNext()
+        max = it.next()
+        WHILE it.hasNext()
+          Titem item = it.next()
+          IF item.Compare(max) > 0
+            max = item
+          }
+        }
+      }
+      RETURN max
+    }
+
+    #= Return the minimum value in the Box.
+    #- When the Box is empty returns NIL/zero/false.
+    FUNC $min() Titem @public
+      Titem min
+      I.Iterator<Titem> it = $Iterator()
+      IF it.hasNext()
+        min = it.next()
+        WHILE it.hasNext()
+          Titem item = it.next()
+          IF item.Compare(min) < 0
+            min = item
+          }
+        }
+      }
+      RETURN min
+    }
+  }
+
+  #= Provide average() and total() for any Box that has $Iterator() and
+  #= where the item type can be added up.
+  PIECE Average<Titem> @public
+
+    #= Return the average value of all items in the Box.
+    #- The value will be wrong when total() does not fit in Titem.
+    #
+    #- The value will be rounded.  E.g. a list [4, 5, 5] will have an average
+    #- of 5.
+    #
+    #- When the Box is empty returns NIL/zero/false.
+    FUNC $average() Titem @public
+      Titem total
+      int count
+      I.Iterator<Titem> it = $Iterator()
+      IF !it.hasNext()
+        RETURN total
+      }
+      WHILE it.hasNext()
+        total += it.next()
+        ++count
+      }
+      RETURN (total + count / 2) / count
+    }
+
+    #= Return the total value of all items in the Box.
+    #- The value will be wrong when it does not fit in Titem.
+    #
+    #- When the Box is empty returns NIL/zero/false.
+    FUNC $total() Titem @public
+      Titem total
+      I.Iterator<Titem> it = $Iterator()
+      IF it.hasNext()
+        WHILE it.hasNext()
+          total += it.next()
+        }
+      }
+      RETURN total
+    }
+  }
+
+  #= Provide removeItem(Titem) and clearItem(Titem) for any Box that has
+  #= find(Titem), remove(int) and clear(int)
+  PIECE ByItem<Titem> @public
+
+    #= Remove |item|  and return it.
+    #- Throws an E.ItemNotFound exception if the item is not present.
+    FUNC $removeItem(Titem item) Titem @public @backtrace=no
+      int i = $find(item)
+      IF i < 0
+        THROW E.ItemNotFound.NEW(Z.callerPos(), "item: " .. item.ToString())
+      }
+      RETURN $remove(i)
+    }
+
+    #= Remove |item|  and return THIS.
+    #- If the item is not present the Box is unchanged.
+    FUNC $clearItem(Titem item) THIS @public
+      int i = $find(item)
+      IF i >= 0
+        $clear(i)
+      }
+      RETURN THIS
+    }
+  }
+
+  #= The iterator that list<Titem>.Iterator() returns.
+  CLASS ListIterator<Titem>
+        IMPLEMENTS I.Iterator<Titem>,
+                   I.BidiIterator<Titem>,
+                   I.MutateIterator<Titem>,
+                   I.BidiMutateIterator<Titem>
+    list<Titem> $items         #!
+    int         $pos           #!
+    int         $editPos = -1  #!
+    int         $insertPos = 0 #! only used when $editPos < 0
+    int         $addPos = -1   #! only used when $editPos < 0
+
+    #= Create an iterator for |items|.
+    NEW(list<Titem> items) @public
+      $items = items
+    }
+
+    #= Implements I.Iterator
+    FUNC $hasNext() bool @public
+      RETURN $pos < $items.Size()
+    }
+
+    #= Implements I.Iterator
+    FUNC $next() Titem @public @backtrace=no
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                 "Calling next() while there is no next item")
+      }
+      Titem item = $items.get($pos)
+      $editPos = $pos
+      ++$pos
+      RETURN item
+    }
+
+    #= Implements I.Iterator
+    FUNC $peekSupported() bool @public
+      RETURN TRUE
+    }
+
+    #= Implements I.Iterator
+    FUNC $peek() Titem @public @backtrace=no
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                 "Calling peek() while there is no next item")
+      }
+      RETURN $items.get($pos)
+    }
+
+    #= Implements I.BidiIterator
+    FUNC $hasPrevious() bool @public
+      RETURN $pos > 0 && $pos <= $items.Size()
+    }
+
+    #= Implements I.BidiIterator
+    FUNC $previous() Titem @public @backtrace=no
+      IF $pos <= 0 || $pos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                         "Calling previous() while there is no previous item")
+      }
+      --$pos
+      $editPos = $pos
+      RETURN $items.get($pos)
+    }
+
+    #= Implements I.BidiIterator
+    FUNC $peekPreviousSupported() bool @public
+      RETURN TRUE
+    }
+
+    #= Implements I.BidiIterator
+    FUNC $peekPrevious() Titem @public @backtrace=no
+      IF $pos <= 0 || $pos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                     "Calling peekPrevious() while there is no previous item")
+      }
+      RETURN $items.get($pos - 1)
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $setSupported() bool @public @default
+      RETURN TRUE
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $set(Titem item) status @public @default @backtrace=no
+      IF $editPos < 0
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                            "Calling set() not after next() or previous()")
+      }
+      IF $editPos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                "List got shorter after next() or previous()")
+      }
+      $items[$editPos] = item
+      $addPos = $editPos
+      $insertPos = $editPos
+      $editPos = -1
+      RETURN OK
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $removeSupported() bool @public @default
+      RETURN TRUE
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $remove() status @public @default @backtrace=no
+      IF $editPos < 0
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                            "Calling remove() not after next() or previous()")
+      }
+      IF $editPos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                "List got shorter after next() or previous()")
+      }
+      $items.clear($editPos)
+      $editPos = -1
+      $addPos = -1
+      $insertPos = -1
+      --$pos
+      RETURN OK
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $addSupported() bool @public @default
+      RETURN TRUE
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $add(Titem item) status @public @default @backtrace=no
+      IF $editPos < 0
+        IF $addPos < 0
+          THROW E.OutOfRange.NEW(Z.callerPos(),
+                            "Calling add() not after next() or previous()")
+        }
+      ELSE
+        $addPos = $editPos
+      }
+      IF $addPos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                "List got shorter after next() or previous()")
+      }
+      $items.add(item, $addPos)
+      IF $editPos < 0
+        ++$addPos
+      ELSE
+        ++$editPos
+      }
+      ++$pos
+      RETURN OK
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $insertSupported() bool @public @default
+      RETURN TRUE
+    }
+
+    #= Implements I.MutateIterator
+    FUNC $insert(Titem item) status @public @default @backtrace=no
+      IF $editPos < 0
+        IF $insertPos < 0
+          THROW E.OutOfRange.NEW(Z.callerPos(),
+                                          "Calling insert() when not allowed")
+        }
+      ELSE
+        $insertPos = $editPos
+      }
+      IF $insertPos > $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                "List got shorter after next() or previous()")
+      }
+      $items.insert(item, $insertPos)
+      IF $editPos < 0
+        ++$insertPos
+        IF $addPos >= 0
+          ++$addPos
+        }
+      ELSE
+        ++$editPos
+      }
+      ++$pos
+      RETURN OK
+    }
+  }
+
+  #= The iterator that list<Titem>.KeyIterator() returns.
+  CLASS ListKeyIterator<Titem>
+        IMPLEMENTS I.KeyIterator<int, Titem>
+    list<Titem> $items         #! reference to the list iterated over
+    int         $pos           #! next position
+
+    #= Create an iterator for |items|.
+    NEW(list<Titem> items) @public
+      $items = items
+    }
+
+    #= Implements I.KeyIterator
+    FUNC $hasNext() bool @public
+      RETURN $pos < $items.Size()
+    }
+
+    #= Implements I.KeyIterator
+    FUNC $next() int, Titem @public @backtrace=no
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                 "Calling next() while there is no next item")
+      }
+      Titem item = $items.get($pos)
+      ++$pos
+      RETURN $pos - 1, item
+    }
+
+    #= Implements I.KeyIterator
+    FUNC $peekSupported() bool @public
+      RETURN TRUE
+    }
+
+    #= Implements I.KeyIterator
+    FUNC $peek() int, Titem @public @backtrace=no
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW(Z.callerPos(),
+                                 "Calling peek() while there is no next item")
+      }
+      RETURN $pos, $items.get($pos)
+    }
+  }
+}

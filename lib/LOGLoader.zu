@@ -1,0 +1,35 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# LOG module loader
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+
+MODULE LOGLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin LOG module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "LOGModule"
+    b.fileName = "LOGModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the LOG module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("LOG", builtin)
+    }
+  }
+
+}

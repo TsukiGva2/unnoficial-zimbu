@@ -1,0 +1,456 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>NAT.nat class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='NAT.html'>up:&nbsp;NAT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.nat
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type nat: 64 bit natural number.
+</p>
+<p class='ptext'> The object methods can be used on a nat variable or value:
+<pre class='example'> IO.print("0x" .. 1234.toHex())
+</pre>
+<p class='ptext'>
+ NOTE: The implementation is incomplete, many methods fall back to the
+ equivalent "int" method.
+<p class='ptext'> NOTE: When compiled to Javascript a nat is stored as a float, since
+ Javascript only supports float numbers.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of bytes in a nat.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number in decimal form.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number in the specified <b>format</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$Compare'><b>$Compare</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return &lt; 0 when <b>other</b> is larger than this nat, zero when <b>other</b> is
+ equal to this nat, and &gt; 0 when <b>other</b> is smaller than this nat.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$Equal'><b>$Equal</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when <b>other</b> is equal to this nat.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$asString'><b>$asString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with one character that is equal to the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$asByteString'><b>$asByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a byteString with one byte that is equal to the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toQuotedString'><b>$toQuotedString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number in decimal form with quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toHex'><b>$toHex</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with the hex representation of the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toHex'><b>$toHex</b></a>(<small>minSize</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with the hex representation of the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toHexUpper'><b>$toHexUpper</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with the hex representation of the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toHexUpper'><b>$toHexUpper</b></a>(<small>minSize</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with the hex representation of the number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isWhite'><b>$isWhite</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a white space character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isDigit'><b>$isDigit</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a digit character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isHexDigit'><b>$isHexDigit</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a hex digit character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isAlpha'><b>$isAlpha</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is an alphabetical character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isLower'><b>$isLower</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a lower case alphabetical character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isUpper'><b>$isUpper</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is an upper case alphabetical character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isWhiteAscii'><b>$isWhiteAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a white space character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isAlphaAscii'><b>$isAlphaAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is an alphabetical ASCII character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isLowerAscii'><b>$isLowerAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is a lower case alphabetical ASCII character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$isUpperAscii'><b>$isUpperAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the number is an upper case alphabetical ASCII character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toLowerAscii'><b>$toLowerAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the letter turned in to lower case for ASCII letters.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$toUpperAscii'><b>$toUpperAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return letter turned in to upper case for ASCII letters.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$abs'><b>$abs</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the absolute value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$floor'><b>$floor</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the largest integral value not greater than the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$ceil'><b>$ceil</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the smallest integral value not less than the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$trunc'><b>$trunc</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value rounded to integer, toward zero.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$round'><b>$round</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value rounded to integer, away from zero.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$exp'><b>$exp</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of e (the base of natural logarithms) raised to the
+ power of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$log'><b>$log</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the natural logarithm of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$log10'><b>$log10</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the base 10 logarithm of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$sqrt'><b>$sqrt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the nonnegative quare root of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$pow'><b>$pow</b></a>(<small>x</small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value raised to the power of <b>x</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$sin'><b>$sin</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the sine value, using the value as radians.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$sinh'><b>$sinh</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hyperbolic sine value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$cos'><b>$cos</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the cosine value, using the value as radians.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$cosh'><b>$cosh</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hyperbolic cosine value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$tan'><b>$tan</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the tangent value, using the value as radians.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$tanh'><b>$tanh</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hyperbolic tangent value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$asin'><b>$asin</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the principal value of the arc sine of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$acos'><b>$acos</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the principal value of the arc cosine of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$atan'><b>$atan</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the principal value of the arc tangent of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='NAT.nat.html#$atan2'><b>$atan2</b></a>(<small>x</small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the principal value of the arg tangent of the value divided by
+ <b>x</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Compare'><b>$Compare</b></A>(<span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span> other) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return &lt; 0 when <b>other</b> is larger than this nat, zero when <b>other</b> is
+ equal to this nat, and &gt; 0 when <b>other</b> is smaller than this nat.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Equal'><b>$Equal</b></A>(<span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span> other) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when <b>other</b> is equal to this nat.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of bytes in a nat.
+</p>
+<p class='ptext'> Always returns 8, since a nat is 64 bits
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number in decimal form.
+</p>
+<p class='ptext'> For example, 1234.ToString() returns "1234".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number in the specified <b>format</b>.
+</p>
+<p class='ptext'> For example, 123.ToString(".5d") returns "00123",
+ 123.ToString("5d") returns "  123".
+<p class='ptext'> The <b>format</b> has the fields: [width][.precision]{type}.
+<p class='ptext'> {type} can be d for decimal notation or x for hexadecimal notation.
+<p class='ptext'> [width] give the minimal width of the result.  When the number starts
+ with zero padding is done with zero characters, otherwise with spaces.
+<p class='ptext'> [.precision] gives the minimum number of digits that will appear.  If the
+ value requires fewer digits it is padded on the left with zeroes.  When
+ the precision is zero and the value is zero the result is an empty
+ string.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$abs'><b>$abs</b></A>() <span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the absolute value.
+</p>
+<p class='ptext'> This is a No-op, only provided for consistency.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$acos'><b>$acos</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the principal value of the arc cosine of the value.
+</p>
+<p class='ptext'> Same as T.float.acos().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asByteString'><b>$asByteString</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a byteString with one byte that is equal to the number.
+</p>
+<p class='ptext'> Same as T.int.asString()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asString'><b>$asString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with one character that is equal to the number.
+</p>
+<p class='ptext'> Same as T.int.asString()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asin'><b>$asin</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the principal value of the arc sine of the value.
+</p>
+<p class='ptext'> Same as T.float.asin().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$atan'><b>$atan</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the principal value of the arc tangent of the value.
+</p>
+<p class='ptext'> Same as T.float.atan().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$atan2'><b>$atan2</b></A>(<span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span> x) <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the principal value of the arg tangent of the value divided by
+ <b>x</b>.
+</p>
+<p class='ptext'> Same as T.float.atan2().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ceil'><b>$ceil</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the smallest integral value not less than the value.
+</p>
+<p class='ptext'> Same as T.float.ceil().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$cos'><b>$cos</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the cosine value, using the value as radians.
+</p>
+<p class='ptext'> Same as T.float.cos().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$cosh'><b>$cosh</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hyperbolic cosine value.
+</p>
+<p class='ptext'> Same as T.float.cosh().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$exp'><b>$exp</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of e (the base of natural logarithms) raised to the
+ power of the value.
+</p>
+<p class='ptext'> Same as T.float.exp().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$floor'><b>$floor</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the largest integral value not greater than the value.
+</p>
+<p class='ptext'> Same as T.float.floor().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isAlpha'><b>$isAlpha</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is an alphabetical character.
+</p>
+<p class='ptext'> That is for 'a' to 'z' and 'A' to 'Z'. TODO: Unicode support
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isAlphaAscii'><b>$isAlphaAscii</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is an alphabetical ASCII character.
+</p>
+<p class='ptext'> That is for 'a' to 'z' and 'A' to 'Z'
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isDigit'><b>$isDigit</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a digit character.
+</p>
+<p class='ptext'> That is for '0' (48, 0x30) up to '9' (57, 0x39).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isHexDigit'><b>$isHexDigit</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a hex digit character.
+</p>
+<p class='ptext'> That is for '0' (48, 0x30) up to '9' (57, 0x39),
+ 'a' up to 'f' and 'A' up to 'F'.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isLower'><b>$isLower</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a lower case alphabetical character.
+</p>
+<p class='ptext'> That is for 'a' to 'z'. TODO: Unicode support
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isLowerAscii'><b>$isLowerAscii</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a lower case alphabetical ASCII character.
+</p>
+<p class='ptext'> That is for 'a' to 'z'.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isUpper'><b>$isUpper</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is an upper case alphabetical character.
+</p>
+<p class='ptext'> That is for 'A' to 'Z'. TODO: Unicode support
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isUpperAscii'><b>$isUpperAscii</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is an upper case alphabetical ASCII character.
+</p>
+<p class='ptext'> That is for 'A' to 'Z'
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isWhite'><b>$isWhite</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a white space character.
+</p>
+<p class='ptext'> That is for space, tab, control characters, etc.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isWhiteAscii'><b>$isWhiteAscii</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the number is a white space character.
+</p>
+<p class='ptext'> That is for space, tab and control characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$log'><b>$log</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the natural logarithm of the value.
+</p>
+<p class='ptext'> Same as T.float.log().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$log10'><b>$log10</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the base 10 logarithm of the value.
+</p>
+<p class='ptext'> Same as T.float.log10().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$pow'><b>$pow</b></A>(<span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span> x) <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value raised to the power of <b>x</b>.
+</p>
+<p class='ptext'> Same as T.float.pow().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$round'><b>$round</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value rounded to integer, away from zero.
+</p>
+<p class='ptext'> Same as T.float.round().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$sin'><b>$sin</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the sine value, using the value as radians.
+</p>
+<p class='ptext'> Same as T.float.sin().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$sinh'><b>$sinh</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hyperbolic sine value.
+</p>
+<p class='ptext'> Same as T.float.sinh().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$sqrt'><b>$sqrt</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the nonnegative quare root of the value.
+</p>
+<p class='ptext'> Same as T.float.sqrt().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$tan'><b>$tan</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the tangent value, using the value as radians.
+</p>
+<p class='ptext'> Same as T.float.tan().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$tanh'><b>$tanh</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hyperbolic tangent value.
+</p>
+<p class='ptext'> Same as T.float.tanh().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toHex'><b>$toHex</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with the hex representation of the number.
+</p>
+<p class='ptext'> Uses lower case letters
+<p class='ptext'> For example: 123.toHex() returns "7b". 
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toHex'><b>$toHex</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> minSize) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with the hex representation of the number.
+</p>
+<p class='ptext'> Uses lower case letters 'a' to 'f'.
+<p class='ptext'> <b>minSize</b> is the minimum size of the string, leading zeroes are added
+ when needed.  The string will get longer when needed.
+<p class='ptext'> For example: 123.toHex(4) returns "007b". 
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toHexUpper'><b>$toHexUpper</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with the hex representation of the number.
+</p>
+<p class='ptext'> Uses upper case letters 'A' to 'F'.
+<p class='ptext'> For example: 123.toHex() returns "7B". 
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toHexUpper'><b>$toHexUpper</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> minSize) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with the hex representation of the number.
+</p>
+<p class='ptext'> Uses upper case letters 'A' to 'F'.
+<p class='ptext'> <b>minSize</b> is the minimum size of the string, leading zeroes are added
+ when needed.  The string will get longer when needed.
+<p class='ptext'> For example: 123.toHex(4) returns "007B". 
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toLowerAscii'><b>$toLowerAscii</b></A>() <span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the letter turned in to lower case for ASCII letters.
+</p>
+<p class='ptext'> Only works for ASCII, thus 'A' - 'Z' becomes 'a' - 'z'. All other
+ characters are returned unchanged.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toQuotedString'><b>$toQuotedString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number in decimal form with quotes.
+</p>
+<p class='ptext'> For example, 1000000.toQuotedString() returns "1'000'000".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toUpperAscii'><b>$toUpperAscii</b></A>() <span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return letter turned in to upper case for ASCII letters.
+</p>
+<p class='ptext'> Only works for ASCII, thus 'a' - 'z' becomes 'A' - 'Z'. All other
+ characters are returned unchanged.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$trunc'><b>$trunc</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value rounded to integer, toward zero.
+</p>
+<p class='ptext'> Same as T.float.trunc().
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

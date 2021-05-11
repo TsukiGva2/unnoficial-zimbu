@@ -1,0 +1,649 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module SYS
+#
+
+#= Various system related stuff
+#
+#- Still very much under development.
+#
+#*license
+#* Copyright 2010 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE SYSModule @items=public
+
+  #= Execute |command| with the shell.
+  #- Just like the C library system() function.
+  #
+  #- Returns the exit code, usually zero for success.
+  #- Returns -1 if the shell could not be executed.
+  FUNC shell(string command) int
+    int r
+    # Flush stdout, the system command is likely to echo something, we
+    # don't want to mess up the order.
+>>> uses(getCstring)
+    fflush(stdout);
+    %r% = system(ZgetCstring(%command%));
+<<<
+    RETURN r
+  }
+
+  #= Execute |command| with the shell in the background.
+  #- Like shell(), but does not wait for the command to finish.
+  #
+  #- Returns FAIL if the shell could not be executed.
+  FUNC shellBackground(string command) int
+    # TODO: This only works on Unix-like systems.
+    string cmd = command .. "&"
+    int r
+    # Flush stdout, the system command is likely to echo something, we
+    # don't want to mess up the order.
+>>> uses(getCstring)
+    fflush(stdout);
+    %r% = system(ZgetCstring(%cmd%));
+<<<
+    RETURN r
+  }
+
+  #= Get the value of environment variable |name|.
+  #- If |name| does not exist NIL is returned.
+  FUNC getEnv(string name) string
+    string res
+>>> uses(getCstring) blockgc
+ %res% = (Tc*)getenv(ZgetCstring(%name%));
+ if (%res% != NULL) %res% = Zstr((char*)%res%);
+<<<
+    RETURN res
+  }
+
+  #= Exception thrown for an error related to a Process.
+  CLASS E_Process EXTENDS E.Error
+  }
+
+  #= Open web address |page| in a browser.
+  #- |page| should be the full path, such as "http://www.zimbu.org".
+  #- Or "file:///tmp/loveletter.pdf".
+  #- For ZWT you need to use something like "http://localhost:8884/".
+  #
+  #- Does not wait for the browser to finish, uses SYS.shellBackground().
+  #
+  #- Uses $BROWSER when it is set.
+  #
+  #- Otherwise, on Mac OS the "open URL" command is used.
+  #- On MS-Windows the default browser is used. On other systems
+  #- the following commands are tried: "google-chrome", "firefox", "safari",
+  #- "opera" and "ie".  The first one that can be found in $PATH is used.
+  #- When none is found or execution fails then FAIL is returned.
+  FUNC openInBrowser(string page) status
+    string browser = getEnv("BROWSER")
+    IF browser == NIL || browser == ""
+      IF IO.isDirectory("/Applications")
+        # Mac OS
+        RETURN shellBackground("open '" .. page .. "'") == 0 ? OK : FAIL
+      }
+>>> uses(getCstring)
+#if defined(__MINGW32__) || defined(_MSC_VER)
+      ShellExecute(0, "open", ZgetCstring(%page%), 0, 0, 1);
+#endif
+<<<
+
+      FOR n IN ["google-chrome", "firefox", "safari", "opera", "ie"]
+        browser = IO.findExe(n)
+        IF IO.isExecutable(browser)
+          BREAK
+        }
+        browser = NIL
+      }
+    }
+    IF browser == NIL
+      RETURN FAIL
+    }
+    RETURN shellBackground(browser .. " '" .. page .. "'") == 0 ? OK : FAIL
+  }
+
+  # TODO: Process implementation for MS-Windows
+  GENERATE_IF Z.have("fork")
+
+  #= Class for handling processes.
+  CLASS Process
+    string         $cmd           #! The command to be executed.
+    list<string>   $arglist       #! the arguments for the command, can be NIL
+    IOFlags        $flags         #!
+    int            $abortTimeout  #!
+
+    bool         $started  #! start() was called
+    bool         $exited   #! detected that process no longer runs
+    int          $pid
+    bool         $didExit     #! TRUE when exitValue was set
+    int          $exitValue   #! exit value of the process
+
+    string       $stdinFname      #!
+    string       $stdoutFname     #!
+    string       $stderrFname     #!
+    bool         $stderrToStdout  #!
+
+    #= Create a Process to run |cmd| without arguments
+    #- When |cmd| contains a "/" it is used as-is. Otherwise $PATH is used to
+    #- locate the command.  See the execvp() man page for details.
+    NEW(string cmd) @public
+      $cmd = cmd
+      $abortTimeout = 1'000'000
+    }
+
+    #= Create a Process to run |cmd| with arguments |arglist|.
+    #= Otherwise just like NEW(cmd).
+    NEW(string cmd, list<string> arglist) @public
+      $cmd = cmd
+      $arglist = arglist
+      $abortTimeout = 1'000'000
+    }
+
+    #= Specify what IO of the process will be used.
+    #- Returns the object.
+    FUNC $setIO(SYS.IOFlags flags) Process @public
+      $flags = flags
+      RETURN THIS
+    }
+
+    #= Start the process.
+    #- Can be used only once, a process can't be restarted.
+    #
+    #- Returns the object.
+    FUNC $start() Process @public
+      # The #ifdef is for when the C code is generated Unix and compiled on
+      # MS-Windows.
+>>>
+#ifdef HAVE_FORK
+      pid_t pid;
+      int stdin_fd = -1;
+      int stdout_fd = -1;
+      int stderr_fd = -1;
+<<<
+      IF $started
+        THROW "process was already started"
+      }
+      $started = TRUE
+
+      int argc
+      int argidx
+      IF $arglist != NIL
+        argc = $arglist.Size()
+      }
+>>>
+      if (%$stderrFname% != NULL && %$stderrToStdout%) {
+<<<
+       E.throwIOError("Stderr has a file name while it's written to stdout")
+>>> uses(getCstring)
+      }
+      if (%$stdinFname% != NULL) {
+        stdin_fd = open(ZgetCstring(%$stdinFname%), O_RDONLY, 0);
+        if (stdin_fd < 0) {
+<<<
+         E.throwIOError("Cannot open stdin file for reading")
+>>>
+        }
+      }
+      if (%$stdoutFname% != NULL) {
+        stdout_fd = open(ZgetCstring(%$stdoutFname%), O_WRONLY | O_CREAT | O_TRUNC, 0777);
+        if (stdout_fd < 0) {
+<<<
+         E.throwIOError("Cannot open stdout file for writing")
+>>> uses(getCstring)
+        }
+        if (%$stderrToStdout%) {
+          stderr_fd = stdout_fd;
+        }
+      }
+      if (%$stderrFname% != NULL) {
+        stderr_fd = open(ZgetCstring(%$stderrFname%), O_WRONLY | O_CREAT | O_TRUNC, 0777);
+        if (stderr_fd < 0) {
+<<<
+         E.throwIOError("Cannot open stderr file for writing")
+>>>
+        }
+      }
+
+      pid = (Ti)fork();
+      %$pid% = pid;
+      if (pid == -1) {
+          if (stdin_fd >= 0) close(stdin_fd);
+          if (stdout_fd >= 0) close(stdout_fd);
+          if (stderr_fd >= 0 && stderr_fd != stdout_fd) close(stderr_fd);
+
+          %$exited% = 1;
+<<<
+          IF TRUE
+            THROW E_Process.NEW("Cannot fork")
+          }
+>>> uses(unistd, getCstring)
+      } else if (pid == 0) {
+          int dummy;
+          /* child */
+          /* TODO: reset signals to default */
+
+          if (stdin_fd >= 0) {
+            close(0);
+            dummy = dup(stdin_fd);
+          }
+          if (stdout_fd >= 0) {
+            close(1);
+            dummy = dup(stdout_fd);
+          }
+          if (stderr_fd >= 0) {
+            close(2);
+            dummy = dup(stderr_fd);
+          }
+          /* TODO: stdin */
+
+          {
+            char **argv = (char **)malloc((unsigned)((%argc% + 2) * sizeof(char *)));
+            argv[0] = ZgetCstring(%$cmd%);
+            for (%argidx% = 0; %argidx% < %argc%; ++%argidx%) {
+              argv[%argidx% + 1] = ZgetCstring(%$arglist[argidx]%);
+            }
+            argv[%argc% + 1] = NULL;
+            execvp(argv[0], argv);
+            _exit(%exec_failed_status%);  /* exec failed, return failure code */
+          }
+      } else {
+          /* parent */
+          if (stdin_fd >= 0) close(stdin_fd);
+          if (stdout_fd >= 0) close(stdout_fd);
+          if (stderr_fd >= 0 && stderr_fd != stdout_fd) close(stderr_fd);
+      }
+#endif  /* HAVE_FORK */
+<<<
+      RETURN THIS
+    }
+
+    #= Return TRUE if start() has been called.
+    FUNC $didStart() bool @public
+      RETURN $started
+    }
+
+    #= Check if the process is running.
+    #- Returns FALSE if the process didn't start yet and when it exited.
+    FUNC $isRunning() bool @public
+      IF !$started || $exited
+        RETURN FALSE
+      }
+>>> uses(sys_types, sys_wait, errno)
+#ifdef HAVE_FORK
+      {
+        int  status = -1;
+        int  wait_pid;
+        wait_pid = waitpid(%$pid%, &status, WNOHANG);
+        if (wait_pid != 0) {
+          if (wait_pid == %$pid%) {
+            %$exited% = 1;
+          } else if (wait_pid < 0 && errno == ECHILD) {
+            %$exited% = 1;
+          }
+        }
+        if (%$exited% == 1 && WIFEXITED(status)) {
+          %$didExit% = 1;
+          %$exitValue% = WEXITSTATUS(status);
+        }
+      }
+#endif  /* HAVE_FORK */
+<<<
+      RETURN !$exited
+    }
+
+    #= Return TRUE only if the process was executed and exited normally.
+    FUNC $didExitNormally() bool @public
+      RETURN $didExit && $exitValue != exec_failed_status
+    }
+
+    #= Get the exit value of the process.
+    #- Only to be invoked when didExitNormally() returns TRUE.
+    FUNC $getExitValue() int @public
+      IF !$didExitNormally()
+        THROW "calling exitValue() when process didn't exit normally"
+      }
+      RETURN $exitValue
+    }
+
+    #= Wait until the process has exited.
+    FUNC $wait() status @public
+      # TODO: don't use a loop
+      WHILE TRUE
+        IF !$isRunning()
+          BREAK
+        }
+        TIME.sleep(1000)
+      }
+      RETURN OK
+    }
+
+    #= Wait until the process has exited up to |timeout| usec.
+    #- Returns OK if the process has exited, FAIL if timed out.
+    FUNC $wait(int timeout) status @public
+      # TODO: don't use a loop
+      IF !$isRunning()
+        RETURN OK
+      }
+      int end = TIME.current() + timeout
+      WHILE TIME.current() < end
+        TIME.sleep(10000)
+        IF !$isRunning()
+          RETURN OK
+        }
+      }
+      RETURN FAIL
+    }
+
+    #= Abort the process.  Tries to make the process exit cleanly by sending
+    #= it Signal.int.  If that doesn't work then it is killed with Signal.kill
+    #= signal.
+    #- Use setAbortTimeout() to set the time to wait for a clean exit. Default
+    #- is one second.
+    #
+    #- Can only be used when process has been started and didn't exit yet.
+    #
+    #- Returns the object.
+    FUNC $abort() Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+>>>
+#ifdef HAVE_FORK
+      kill(%$pid%, SIGINT);
+#endif
+<<<
+      $wait($abortTimeout)
+      IF $isRunning()
+        $kill()
+      }
+      RETURN THIS
+    }
+
+    #= Set the time for abort() to wait for a clean exit to |timeout| usec.
+    #- Returns the object.
+    FUNC $setAbortTimeout(int timeout) Process @public
+      $abortTimeout = timeout
+      RETURN THIS
+    }
+
+    #= Interrupt the process.
+    #- Sends Signal.int (signal 2, SIGINT), to the process to make it exit
+    #- cleanly.  The process may intercept the signal and not exit.
+    #
+    #- Can only be used when process has been started and didn't exit yet.
+    #
+    #- Returns the object.
+    FUNC $interrupt() Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+>>>
+#ifdef HAVE_FORK
+      kill(%$pid%, SIGINT);
+#endif
+<<<
+      RETURN THIS
+    }
+
+    #= Abort the process.
+    #- Sends Signal.kill (signal 9, SIGKILL), to the process to kill it.
+    #- The process can't intercept this, use with care.
+    #
+    #- Can only be used when process has been started and didn't exit yet.
+    #
+    #- Returns the object.
+    FUNC $kill() Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+>>>
+#ifdef HAVE_FORK
+      kill(%$pid%, SIGKILL);
+#endif
+<<<
+      RETURN THIS
+    }
+
+    #= Send signal |sig| to the process.
+    #- Returns the object.
+    #
+    #- Can only be used when process has been started and didn't exit yet.
+    #
+    #- NOT IMPLEMENTED YET
+    FUNC $signal(SYS.Signal sig) Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+      # TODO
+      IF TRUE
+        THROW "Sorry, signal() not implemented yet"
+      }
+      RETURN THIS
+    }
+
+    #= Set the file to be used for stdin of the process to |fname|.
+    #- This works like "cmd < fname" in the shell.  Must be invoked before the
+    #- process is started.
+    #
+    #- Returns the object.
+    FUNC $readFrom(string fname) Process @public
+      IF $started
+        THROW "process was already started"
+      }
+      $stdinFname = fname
+      RETURN THIS
+    }
+
+    #= Set the file to be used for stdout of the process to |fname|.
+    #- This works like "cmd > fname" in the shell.  If |fname| exists it is
+    #- overwritten.  Must be invoked before the process is started.
+    #
+    #- Returns the object.
+    FUNC $writeTo(string fname) Process @public
+      IF $started
+        THROW "process was already started"
+      }
+      $stdoutFname = fname
+      RETURN THIS
+    }
+
+    #= Set the file to be used for stderr of the process to |fname|.
+    #- This works like "cmd >& fname" in the shell.  If |fname| exists it is
+    #- overwritten.  Must be invoked before the process is started.
+    #
+    #- Returns the object.
+    FUNC $writeErrorsTo(string fname) Process @public
+      IF $started
+        THROW "process was already started"
+      }
+      $stderrFname = fname
+      RETURN THIS
+    }
+
+    #= Set wether stderr of the process is written to the same file as
+    #= specified with writeTo().
+    #- Must be invoked before the process is started.
+    #
+    #- Returns the object.
+    FUNC $writeErrorsToOut(bool yes) Process @public
+      IF $started
+        THROW "process was already started"
+      }
+      $stderrToStdout = yes
+      RETURN THIS
+    }
+
+    #= Read all of stdout from the process.
+    #- Will block until the process exits.
+    #- Must not be called before the process is started.  Returns an empty
+    #- string when the process already exited.
+    #
+    #- NOT IMPLEMENTED YET
+    FUNC $read() string @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF !$exited
+        # TODO
+      }
+      RETURN ""
+    }
+
+    #= Read all of stdout from the process.
+    #- Will block until the process exits or |timeout| usec has passed.
+    #- Must not be called before the process is started.  Returns an empty
+    #- string when the process already exited.
+    #
+    #- NOT IMPLEMENTED YET
+    FUNC $read(int timeout) string @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      # TODO
+      RETURN ""
+    }
+
+    #= Write to stdin of the process.
+    #- May block until the process has read the input.
+    #- Must not be called before the process is started or after the process
+    #- exited.
+    #
+    #- Returns the object.
+    #
+    #- NOT IMPLEMENTED YET
+    FUNC $write() Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+      # TODO
+      RETURN THIS
+    }
+
+    #= Write to stdin of the process.
+    #- May block until the process has read the input up to |timeout| usec.
+    #- Must not be called before the process is started or after the process
+    #- exited.
+    #
+    #- Returns the object.
+    #
+    #- NOT IMPLEMENTED YET
+    FUNC $write(int timeout) Process @public
+      IF !$started
+        THROW "process was not started yet"
+      }
+      IF $exited
+        THROW "process already exited"
+      }
+      # TODO
+      RETURN THIS
+    }
+
+    SHARED
+      int          exec_failed_status = 123  #!
+    }
+  }
+
+  }  # GENERATE_IF
+
+  #= Flags to pass to Process.setIO().
+  BITS IOFlags
+    bool $stdin    #= write to stdin of the process
+    bool $stdout   #= capture stdout of the process
+    bool $stderr   #= capture stderr of the process
+  }
+
+  #= Signals that can be received and send to a |Process|.
+  #- The action mentioned is the default action.  A process can change this by
+  #- intercepting the signal.  Except for the ones marked with "cannot be
+  #- blocked".
+  #
+  #- The number in parenthesis is the standard Unix signal number.
+  ENUM Signal
+    hup    #= (1) action: exit. Hangup detected on controlling terminal
+           #=                   or death of controlling process.
+
+    int    #= (2)  action: exit. Interrupt from keyboard.
+
+    quit   #= (3)  action: dump core. Quit from keyboard.
+
+    ill    #= (4)  action: dump core. Illegal Instruction.
+
+    trap   #= (5)  action: dump core.
+
+    abrt   #= (6)  action: dump core. Abort signal from abort command.
+
+    fpe    #= (8)  action: dump core.  Floating point exception.
+
+    kill   #= (9)  action: exit. Cannot be blocked.
+
+    segv   #= (11) action: dump core. Invalid memory reference.
+
+    pipe   #= (13) action: exit. Broken pipe: write to pipe with no readers.
+
+    alrm   #= (14) action: exit.   Timer signal from alarm command.
+
+    term   #= (15) action: exit.   Termination signal.
+
+    poll   #=      action: exit.
+
+    prof   #=      action: exit.
+
+    usr1   #=      action: exit. User-defined signal 1.
+
+    usr2   #=      action: exit. User-defined signal 2.
+
+    vtalrm #=      action: exit.
+
+    stkflt #=      action: exit.  Might not be implemented.
+
+    pwr    #=      action: ignore. Might exit on some systems.
+
+    winch  #=      action: ignore.
+
+    chld   #=      action: ignore. Child stopped or terminated.
+
+    urg    #=      action: ignore.
+
+    tstp   #=      action: stop. Stop typed at tty, might interact with
+           #=                    the shell.
+
+    ttin   #=      action: stop.  Tty input for background process, might
+           #=                     interact with the shell.
+
+    ttou   #=      action: stop.  Tty output for background process, might
+           #=                     interact with the shell.
+
+    stop   #=      action: stop process. Cannot be blocked.
+
+    cont   #=      action: continue if stopped, otherwise ignore.
+
+    sys    #=      action: dump core.  Might not be implemented.
+
+    emt    #=      action: dump core.  Might not be implemented.
+
+    bus    #=      action: dump core. Core dump might fail.
+
+    xcpu   #=      action: dump core. Core dump might fail.
+
+    xfsz   #=      action: dump core. Core dump might fail.
+  }
+
+}

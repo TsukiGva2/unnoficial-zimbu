@@ -1,0 +1,8 @@
+MODULE Testing
+  # HTML + Javascript / Html
+  TEMPLATE inScriptHtml(ZUT.Html text) ZUT.Html @public
+    <script>[=text]</script>
+  }
+
+}
+

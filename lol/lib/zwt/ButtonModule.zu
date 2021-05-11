@@ -1,0 +1,62 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Button
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE ButtonModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A simple button that can call a procedure when clicked.
+  CLASS Button EXTENDS ZWT.Widget @public
+    string          $buttonText #!
+
+    #= Create a new Button with |text| as the text and calling |clickHandler|
+    #= when clicked.
+    #- |clickHandler| can be NIL.
+    NEW(string text, proc<ZWT.Event> clickHandler) @public
+      $buttonText = text
+>>>
+      %$elem% = $doc.createElement('button');
+      %$elem%.innerHTML = %text%;
+      %$elem%.style.whiteSpace = 'nowrap';
+<<<
+      $setClickHandler(clickHandler)
+    }
+
+    #= Return the text of the button.
+    FUNC $getText() string @replace @public
+      RETURN $buttonText
+    }
+
+    #= Return "Button(text)", where "text" is the text in the Button.
+    FUNC $ToString() string @replace @public
+      RETURN "Button(" .. $buttonText .. ")"
+    }
+
+    #= Set text wrapping on or off.
+    #- When |wrap| is TRUE the text might wrap if there is insufficient space
+    #- for the button.  The default is not to wrap.
+    #
+    #- Returns the object.
+    FUNC $setWrap(bool wrap) Button @public
+      IF wrap
+>>>
+        %$elem%.style.whiteSpace = '';
+<<<
+      ELSE
+>>>
+        %$elem%.style.whiteSpace = 'nowrap';
+<<<
+      }
+      RETURN THIS
+    }
+
+  }
+
+ }
+}

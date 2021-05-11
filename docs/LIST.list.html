@@ -1,0 +1,592 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>LIST.list class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='LIST.html'>up:&nbsp;LIST</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.list&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type list.
+</p>
+<p class='ptext'> A list contains zero or more items of the type specified in the
+ declaration.  The items are accessed by index.  The first item has index
+ zero.
+<p class='ptext'> A list can be used both as a stack and as a queue.
+<p class='ptext'> To use a list as a stack use the add() and remove() methods.
+<p class='ptext'> To use a list as a queue use the add() and remove(0) methods.
+<p class='ptext'> Adding and removing items at the end is the most efficient.  Adding and
+ removing at the start takes some more time.  Adding and removing in the
+ middle is not very efficient.
+<p class='ptext'> Besides the object methods, Zimbu has these syntax items for lists:
+<pre class='example'> list&lt;int&gt; intList = [1, 2, 3]  # list initializer
+ IO.print(intList[1])           # get list item by index
+ intList[0] = 99                # set list item by index
+</pre>
+<p class='ptext'>
+ When getting an item by index with <span class='commentcode'>intList[index]</span> and index is out of
+ range, it returns the default item value (NIL, zero, FALSE)
+<p class='ptext'> When setting an item by index with <span class='commentcode'>intList[index] = value</span> and index is
+ out of range this throws an exception.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new empty list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#NEW'><b>NEW</b></a>(<small>len, value</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a list with <b>len</b> items set to <b>value</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$size'><b>$size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the list with specified formatting.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$Type'><b>$Type</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the type of the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a shallow copy of the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$get'><b>$get</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the item at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$set'><b>$set</b></a>(<small>index, value</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$Iterator'><b>$Iterator</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='I.Iterator&lt;Titem&gt;.html'>I.Iterator&lt;Titem&gt;</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a BOX.ListIterator.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$KeyIterator'><b>$KeyIterator</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;.html'>I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a BOX.ListKeyIterator.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$slice'><b>$slice</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items starting at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items starting at <b>start</b> to <b>end</b> (inclusive).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$add'><b>$add</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Adds an item to the end of the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$add'><b>$add</b></a>(<small>item, index</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Adds an item after item <b>index</b> in the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$insert'><b>$insert</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Inserts an item before the start of the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$insert'><b>$insert</b></a>(<small>item, index</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Inserts an item before item <b>index</b> in the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$clear'><b>$clear</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes all items from the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$clear'><b>$clear</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes item <b>index</b> from the list and returns the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$clearItem'><b>$clearItem</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes <b>item</b> from the list and returns the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$remove'><b>$remove</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the last item from the list and returns it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$remove'><b>$remove</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the item at <b>index</b> from the list and returns it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$removeItem'><b>$removeItem</b></a>(<small>item</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>item</b> from the list and return it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$remove'><b>$remove</b></a>(<small>from, to</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes items <b>from</b> to <b>to</b> (inclusive) from the list and returns them
+ in a new list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$extend'><b>$extend</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Appends all items of <b>other</b> to this list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$concat'><b>$concat</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items of this list and <b>other</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$has'><b>$has</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if there is an item that equals <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$find'><b>$find</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the index of the first item that equals <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$join'><b>$join</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return all items converted to a string and concatenated, separated by a
+ single space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$join'><b>$join</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>, which is used as a character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$join'><b>$join</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$sort'><b>$sort</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Sort all items. Supported for a list of string, int and objects.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$map'><b>$map</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$keyMap'><b>$keyMap</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$mapTo'><b>$mapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list where each item is the result of executing function <b>f</b>
+ on each item of this list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$keyMapTo'><b>$keyMapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list where each item is the result of executing function <b>f</b>
+ on each item of this list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$forEach'><b>$forEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$forKeyEach'><b>$forKeyEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$reduce'><b>$reduce</b></a>(<small>f</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$reduce'><b>$reduce</b></a>(<small>init, f</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$reduceTo'><b>$reduceTo</b></a>(<small>init, f</small>) <small><span class='type'>Tresult</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LIST.list.html#$filter'><b>$filter</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with those items where function <b>f</b> returns TRUE.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new empty list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> len, <span class='type'>Titem</span> value)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a list with <b>len</b> items set to <b>value</b>.
+</p>
+<p class='ptext'> If Titem is a reference type all items contain that reference, thus
+ refer to the same object.
+<p class='ptext'> Example:
+<pre class='example'> list&lt;string&gt; entries = NEW(20, "empty")
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Iterator'><b>$Iterator</b></A>() <span class='type'><A class='typehref' href='I.Iterator&lt;Titem&gt;.html'>I.Iterator&lt;Titem&gt;</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a BOX.ListIterator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$KeyIterator'><b>$KeyIterator</b></A>() <span class='type'><A class='typehref' href='I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;.html'>I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a BOX.ListKeyIterator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the list.
+</p>
+<p class='ptext'> Starts with "[" and ends in "]". Items are separated with ", ". An empty
+ list returns "[]".
+<pre class='example'> string s = [12, 34].ToString()
+ # s == "[12, 34]".
+</pre>
+<p class='ptext'>
+ A NIL list returns "NIL"
+<p class='ptext'> Each item is converted to a string by calling its ToString() method, if
+ there is one.
+<p class='ptext'> If the list contains itself somehow, instead of recursing
+ "[recursive-list]" will be used.  However, if multiple threads are doing
+ this for the same list the effect is unpredictable.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the list with specified formatting.
+</p>
+<p class='ptext'> Currently works like ToString() without a format argument.
+<p class='ptext'> TODO: limit depth, limit number of items (like string truncation,
+ optional ellipses), etc.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Type'><b>$Type</b></A>() <span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the type of the list.
+</p>
+<p class='ptext'> Invoking ToString() on the returned type results in something like
+ "list&lt;string&gt;".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Adds an item to the end of the list.
+</p>
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Adds an item after item <b>index</b> in the list.
+</p>
+<p class='ptext'> When <b>index</b> is 0 the new item will be at position 1.  When <b>index</b> is
+ negative it is used relative to the end of the list. When <b>index</b> is -1
+ the item is added to the end of the list.  When <b>index</b> is -2 it is
+ inserted before the last item in the list.
+<p class='ptext'> When the index is higher than the list size the item is appended to the
+ list.  When the index is negative and the absolute value higher than the
+ list size the item is prepended to the list.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes all items from the list.
+</p>
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes item <b>index</b> from the list and returns the list.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end of
+ the list.
+<p class='ptext'> When <b>index</b> is out of range the list is unchanged.
+<p class='ptext'> $remove(index) does the same but returns the removed item.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearItem'><b>$clearItem</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes <b>item</b> from the list and returns the list.
+</p>
+<p class='ptext'> When <b>item</b> is not in the list then nothing happens.
+<p class='ptext'> $remove(item) does the same but returns the removed item.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$concat'><b>$concat</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> other) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items of this list and <b>other</b>.
+</p>
+<p class='ptext'> If <b>other</b> is NIL the list is unchanged.
+<p class='ptext'> This is equivalent to using copy().extend(other).
+<p class='ptext'> Returns the new list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a shallow copy of the list.
+</p>
+<p class='ptext'> The returned list is a new instance, the items are the same ones as in
+ the current list, not copies.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$extend'><b>$extend</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> other) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Appends all items of <b>other</b> to this list.
+</p>
+<p class='ptext'> If <b>other</b> is NIL the list is unchanged.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$filter'><b>$filter</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; <A class='typehref' href='BOOL.bool.html'>bool</A>&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with those items where function <b>f</b> returns TRUE.
+</p>
+<p class='ptext'><pre class='example'> list&lt;int&gt; numberList = [1, -8, 3, 0]
+ VAR positives = numberList.filter({ a =&gt; a &gt; 0 })
+ # positives is [1, 3].
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the index of the first item that equals <b>item</b>.
+</p>
+<p class='ptext'> When Titem is a value type, a string or a byteString then the value is
+ compared. Otherwise IS is used, the item at the index IS <b>item</b>.
+<p class='ptext'> Returns -1 if <b>item</b> is not found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEach'><b>$forEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Titem&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the list.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the value.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEach'><b>$forKeyEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the list.
+</p>
+<p class='ptext'> The first argument for f is the index in the list, the second argument is
+ the value.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the item at <b>index</b>.
+</p>
+<p class='ptext'> Same as using list[index].
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if there is an item that equals <b>item</b>.
+</p>
+<p class='ptext'> This is equivalent to:
+<pre class='example'> $find(item) != -1
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Inserts an item before the start of the list.
+</p>
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Inserts an item before item <b>index</b> in the list.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end of
+ the list.  For example, to insert an item just before the last item in
+ the list:
+<pre class='example'> myList.insert(item, -1)
+</pre>
+<p class='ptext'>
+ Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$join'><b>$join</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all items converted to a string and concatenated, separated by a
+ single space.
+</p>
+<p class='ptext'><pre class='example'> IO.print([1, 2, 3].join())  # prints "1 2 3"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$join'><b>$join</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> sep) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>, which is used as a character.
+</p>
+<p class='ptext'><pre class='example'> IO.print([1, 2, 3].join('+'))  # prints "1+2+3"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$join'><b>$join</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> sep) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>.
+</p>
+<p class='ptext'><pre class='example'> IO.print([1, 2, 3].join(', '))  # prints "1, 2, 3"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMap'><b>$keyMap</b></A>(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The index in the list and the current value of the
+ item.  <b>f</b> must return the new value of the item.
+<pre class='example'> list&lt;string&gt; l = ["a", "b", "c"]
+ l.keyMap({ i, s =&gt; i .. ":" .. s })
+ # l == ["0:a", "1:b", "2:c"]
+</pre>
+<p class='ptext'>
+ Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapTo'><b>$keyMapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list where each item is the result of executing function <b>f</b>
+ on each item of this list.
+</p>
+<p class='ptext'> This is like keyMap() but with a different result type.
+<p class='ptext'> <b>f</b> has two arguments: The index in the list and the value of the item.
+ <b>f</b> must return the value for the new list.
+<pre class='example'> list&lt;int&gt; il = [11, 22, 33]
+ list&lt;string&gt; sl = il.keyMapTo({ i, n =&gt; i .. ": " .. n })
+ # sl == ["0: 11", "1: 22", "2: 33"]
+</pre>
+<p class='ptext'>
+ Returns the new list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$map'><b>$map</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value of the item, and must
+ return the new value of the item.
+<pre class='example'> list&lt;string&gt; l = ["a", "b", "c"]
+ l.map({ s =&gt; s .. ":" })
+ # l == ["a:", "b:", "c:"]
+</pre>
+<p class='ptext'>
+ Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapTo'><b>$mapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list where each item is the result of executing function <b>f</b>
+ on each item of this list.
+</p>
+<p class='ptext'> This is like map() but with a different result type.
+<p class='ptext'> <b>f</b> has one argument, which is the value of the item, and must return the
+ value for the new list.
+<pre class='example'> list&lt;int&gt; il = [1, 2, 3]
+ list&lt;string&gt; sl = il.mapTo({ n =&gt; n .. ":" })
+ # sl == ["1:", "2:", "3:"]
+</pre>
+<p class='ptext'>
+ Returns the new list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduce'><b>$reduce</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; Titem&gt;</span> f) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the first item of
+ the list.
+<p class='ptext'> If the list is empty the default item value (zero, FALSE, NIL) is
+ returned.
+<p class='ptext'> If the list contains only one item that item is returned.
+<pre class='example'> list&lt;int&gt; numberList = [1, 2, 3, 4]
+ int total = numberList.reduce({ a, b =&gt; a + b })
+ # total is 10.
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduce'><b>$reduce</b></A>(<span class='type'>Titem</span> init, <span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; Titem&gt;</span> f) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the <b>init</b>value.
+<p class='ptext'> If the list is empty the <b>init</b> value is returned.
+<pre class='example'> list&lt;int&gt; numberList = [1, -8, 3, 4]
+ int positiveMax = numberList.reduce(1, { a, b =&gt; b &gt; a ? b : a })
+ # positiveMax is 4.
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduceTo'><b>$reduceTo</b></A>(<span class='type'>Tresult</span> init, <span class='type'><span class='type'>func</span>&lt;Tresult, Titem =&gt; Tresult&gt;</span> f) <span class='type'>Tresult</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the <b>init</b> value.
+<p class='ptext'> If the list is empty the <b>init</b> value is returned.
+<pre class='example'> list&lt;int&gt; numberList = [1, -8, 3, 4]
+ string values = numberList.reduceTo("values:", { r, v =&gt; r .. " " .. v })
+ # values is "values: 1 -8 3 4"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>() <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the last item from the list and returns it.
+</p>
+<p class='ptext'> This does the same as remove(-1).
+<p class='ptext'> When using a list as a stack, it is most efficient to use add() to push
+ items and remove() to pop items.  Using insert() and remove(0) will also
+ work but is less efficient.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the item at <b>index</b> from the list and returns it.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end of
+ the list.
+<p class='ptext'> $clear(index) does the same but returns the list.
+<p class='ptext'> When <b>index</b> is out of range the list is unchanged and the default item
+ value returned (NIL, zero, FALSE).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> from, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> to) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes items <b>from</b> to <b>to</b> (inclusive) from the list and returns them
+ in a new list.
+</p>
+<p class='ptext'> <b>from</b> and <b>to</b> are used as with $add(): a negative index is relative to
+ the end of the list.
+<p class='ptext'><pre class='example'> list&lt;string&gt; myList = ["zero", "one", "two", "three", "four", "five"]
+ list&lt;string&gt; removed = myList.remove(1, 3)
+ # removed == ["one", "two", "three"]
+</pre>
+<p class='ptext'>
+ When <b>from</b> or <b>to</b> is before the list then index zero is used. When
+ <b>from</b> or <b>to</b> is past the end of the list then the last item in the list
+ is used.  If the <b>from</b> item is beyond the <b>to</b> item the list is
+ unmodified and an empty list is returned.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$removeItem'><b>$removeItem</b></A>(<span class='type'>Titem</span> item) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove <b>item</b> from the list and return it.
+</p>
+<p class='ptext'> Throws an E.KeyNotFound exception if the item is not present.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index, <span class='type'>Titem</span> value) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the item at <b>index</b>.
+</p>
+<p class='ptext'> Same as assigning to list[index].  A negative index is relative to the
+ end, -1 refers to the last item.
+<p class='ptext'> Throws an E.OutOfRange exception when <b>index</b> does not refer to an
+ existing list item.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$size'><b>$size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the list.
+</p>
+<p class='ptext'> When the list is NIL this returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items starting at <b>index</b>.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end of
+ the list.
+<p class='ptext'> When <b>index</b> is before the first item zero is used.  When <b>index</b> is
+ beyond the last item an empty list is returned.
+<p class='ptext'> When Titem is a reference type both the original list and the slice point
+ to the same objects, as with a shallow copy.
+<p class='ptext'> When <b>index</b> is zero this is equivalent to $copy().
+<p class='ptext'> Returns the new list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items starting at <b>start</b> to <b>end</b> (inclusive).
+</p>
+<p class='ptext'> <b>start</b> and <b>end</b> are used as with $add(): a negative index is relative
+ to the end of the list.
+<p class='ptext'> When <b>start</b> is before the first item zero is used.  When <b>end</b> is
+ beyond the last item the last item is used. When end is before start then
+ an empty list is returned.
+<p class='ptext'> When Titem is a reference type both the original list and the slice point
+ to the same objects, as with a shallow copy.
+<p class='ptext'> Returns the new list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$sort'><b>$sort</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Sort all items. Supported for a list of string, int and objects.
+</p>
+<p class='ptext'> When Titem is a class it must have the Compare() method:
+<pre class='example'> FUNC Compare(Titem other) int
+</pre>
+ The method must return 0 when the value of <b>other</b> is equal to the value
+ of the current item, smaller than zero when <b>other</b> has a larger value
+ and larger than zero if <b>other</b> has a smaller value.
+<p class='ptext'> Returns the list.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

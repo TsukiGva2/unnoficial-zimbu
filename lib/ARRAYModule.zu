@@ -1,0 +1,270 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module ARRAY - array support
+
+#= Methods for the builtin array type.
+#= An array contains zero or more items of the type specified in the
+#= declaration.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE ARRAYModule @public
+
+  #= The builtin type array.
+  #= An array contains zero or more items of the type specified in the
+  #= declaration:
+  #% array<Type> myarray      # array with 1 dimension
+  #% array<Type, 3> myarray   # array with 3 dimensions
+  #- NOTE: Currently only one-dimensional arrays are implemented.
+  #
+  #- Arrays can be resized, but this is inefficient.
+  #
+  #- Besides the object methods, Zimbu has these syntax items for arrays:
+  #% array<int> intArray = [1, 2, 3]  # initialize from a list
+  #% IO.print(intArray[1])            # get array item by index
+  #% intArray[0] = 99                 # set array item by index
+  #
+  #- When getting an item by index with `intArray[index]` and index is out of
+  #- range, it returns the default item value (NIL, zero, FALSE)
+  #
+  #- When setting an item by index with `intArray[index] = value` and index is
+  #- out of range this throws an exception.
+  CLASS STARTarray<Titem> @public
+    # For Zudocu: start of array class.
+    # This is not an actual class to make generating code easier.
+
+    #= Create a new one-dimensional array with |count| items.
+    #- All items are set to their default value (NIL, FALSE, 0).
+    NEW(int count) @public
+      ###### Only for generating documentation.
+    }
+  }
+
+  #= Return the number of items a one-dimensional array can hold.
+  #- It does not matter if some array entries were never set, they will have
+  #- the default value (NIL, FALSE, 0).
+  #
+  #- When used on NIL Size() returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size<Titem>(array<Titem> this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return a string representation of the array.
+  #- Starts with "[" and ends in "]".  Items are separated with ", ".
+  #
+  #- An empty array returns "[]".
+  #% string s = ["a", "b"].ToString()
+  #% # s == "["a", "b"]".
+  #
+  #- A NIL array returns "NIL"
+  #
+  #- Each item is converted to a string by calling its ToString() method, if
+  #- there is one.
+  #
+  #- If the list contains itself somehow, instead of recursing
+  #- "[recursive-array]" will be used.  However, if multiple threads are doing
+  #- this for the same array the effect is unpredictable.
+  FUNC ToString<Titem>(array<Titem> this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a string representation of the array with specified formatting.
+  #- Currently works like ToString() without a format argument.
+  #
+  #- TODO: limit depth, limit number of items (like string truncation,
+  #- optional ellipses), etc.
+  FUNC ToString<Titem>(array<Titem> this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN ""
+  }
+
+  #= Return the type of the array.
+  #- Invoking ToString() on the returned type results in something like
+  #- "array<string>".
+  FUNC Type<Titem>(array<Titem> this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Resize a one-dimensional array to contain |count| items.
+  #- If the array was larger before, the items at |count| and further are
+  #- discarded.
+  #
+  #- If the array was smaller before, the new item locations are set to the
+  #- default value (NIL, FALSE, 0).
+  #
+  #- Returns the array.
+  FUNC resize<Titem>(array<Titem> this, int count) array<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Set the items starting at position |index| to the byteString |values|.
+  #- Titem must be a number type: int or byte.
+  #
+  #- If |values| contains more items that the array has space then the extra
+  #- items are not used.
+  #
+  #- Returns the array.
+  FUNC set<Titem>(array<Titem> this, int index, byteString values) array<Titem>
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Set the items starting at position |index| to the array |values|.
+  #
+  #- If |values| contains more items that the array has space then the extra
+  #- items are not used.
+  #
+  #- Returns the array.
+  FUNC set<Titem>(array<Titem> this, int index, array<Titem> values
+                 ) array<Titem>
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Set the items starting at position |index| to the list |values|.
+  #
+  #- If |values| contains more items that the array has space then the extra
+  #- items are not used.
+  #
+  #- Returns the array.
+  FUNC set<Titem>(array<Titem> this, int index, list<Titem> values
+                 ) array<Titem>
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return TRUE if there is an item that equals |item|.
+  #- This is equivalent to:
+  #% $find(item) != -1
+  FUNC has<Titem>(array<Titem> this, Titem item) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the index of the first item that equals |item|.
+  #- When Titem is a value type, a string or a byteString then the value is
+  #- compared. Otherwise IS is used, the item at the index IS |item|.
+  #
+  #- Returns -1 if |item| is not found.
+  FUNC find<Titem>(array<Titem> this, Titem item) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Execute function |f| on each item.  Each item is replaced by the result
+  #= of the function.
+  #- |f| has one argument, which is the current value of the item, and must
+  #- return the new value of the item.
+  #
+  #- Keep in mind that items have their default value when never set, which
+  #- an be NIL.
+  #
+  #% array<string> a = ["a", "b", "c"]
+  #% a.map({ s => s .. ":" })
+  #% # a == ["a:", "b:", "c:"]
+  #
+  #- Returns the array.
+  FUNC map<Titem>(array<Titem> this,
+                                  func<Titem => Titem> f) array<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Execute function |f| on each item.  Each item is replaced by the result
+  #= of the function.
+  #- |f| has two arguments: The index in the array and the current value of the
+  #- item.  |f| must return the new value of the item.
+  #
+  #- Keep in mind that items have their default value when never set, which
+  #- an be NIL.
+  #
+  #% array<string> a = ["a", "b", "c"]
+  #% a.keyMap({ i, s => i .. ":" .. s })
+  #% # a == ["0:a", "1:b", "2:c"]
+  #
+  #- Returns the array.
+  FUNC keyMap<Titem>(array<Titem> this,
+                                  func<Titem => Titem> f) array<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Create a new array where each item is the result of executing function |f|
+  #= on each item of this array.
+  #- This is like map() but with a different result type.
+  #
+  #- |f| has one argument, which is the value of the item, and must return the
+  #- value for the new array.
+  #% array<int> ia = [1, 2, 3]
+  #% array<string> sl = ia.mapTo({ n => n .. ":" })
+  #% # sl == ["1:", "2:", "3:"]
+  #
+  #- Returns the new array.
+  FUNC mapTo<Titem, Tresult>(array<Titem> this, func<Titem => Tresult> f
+                            ) array<Tresult> @public
+    array<Tresult> r = NEW(this.Size())
+    FOR i IN 0 UNTIL this.Size()
+      r[i] = f(this[i])
+    }
+    RETURN r
+  }
+
+  #= Create a new array where each item is the result of executing function |f|
+  #= on each item of this array.
+  #- This is like keyMap() but with a different result type.
+  #
+  #- |f| has two arguments: The index in the array and the value of the item.
+  #- |f| must return the value for the new array.
+  #% array<int> il = [11, 22, 33]
+  #% array<string> sl = il.keyMapTo({ i, n => i .. ": " .. n })
+  #% # sl == ["0: 11", "1: 22", "2: 33"]
+  #
+  #- Returns the array.
+  FUNC keyMapTo<Titem, Tresult>(array<Titem> this, func<int, Titem => Tresult> f
+                               ) array<Tresult> @public
+    array<Tresult> r = NEW(this.Size())
+    FOR i IN 0 UNTIL this.Size()
+      r[i] = f(i, this[i])
+    }
+    RETURN r
+  }
+
+  #= Call method |f| for every item in the array.
+  #- The argument for |f| is the value.
+  #
+  #- Returns the array.
+  FUNC forEach<Titem>(array<Titem> this, proc<Titem> f) array<Titem> @public
+    FOR item IN this
+      f(item)
+    }
+    RETURN this
+  }
+
+  #= Call method |f| for every item in the array.
+  #- The first argument for f is the index in the array, the second argument is
+  #- the value.
+  #
+  #- Returns the array.
+  FUNC forKeyEach<Titem>(array<Titem> this, proc<int, Titem> f
+                        ) array<Titem> @public
+    FOR idx IN 0 UNTIL this.Size()
+      f(idx, this[idx])
+    }
+    RETURN this
+  }
+
+  #! For Zudocu: End of the array class.
+  CLASS ENDarray
+  }
+
+}

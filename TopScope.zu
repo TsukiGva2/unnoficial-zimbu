@@ -1,0 +1,107 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TopScope class.
+#
+# The Scope used for the main file and toplevel ZWT file.  Used to find global
+# items.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Builtin.zu"
+IMPORT "CallbackType.zu"
+IMPORT "FileScope.zu"
+IMPORT "MethodType.zu"
+IMPORT "TupleType.zu"
+IMPORT "ZimbuFile.zu"
+
+CLASS TopScope @items=public
+  # A list of imported files.  Once included we don't need to process is
+  # again.
+  dict<string, ZimbuFile>   $usedImports
+
+  # A dict of builtin modules used in this file or in an imported file.
+  dict<string, Builtin>     $usedBuiltins
+
+  # A dict of imported files with the @javascript attribute.
+  dict<string, ZimbuFile>   $javascriptImports
+
+  # The files from IMPORT.CHEADER.
+  # The strings include the quotes, "" or <>.
+  # This is not a set so that we keep the headers in the order as they were
+  # encountered within one file.
+  list<string>            $cheaders = NEW()
+
+  # All the callbacks possibly used.
+  list<CallbackType>      $allCallbacks
+
+  # All defined TupleTypes.
+  list<TupleType>         $allTuples
+
+  # can differ from scope.pass when builtin modules are added.
+  int                     $pass
+
+  set<MethodType>         $registeredActions
+
+  int $id  # for debugging
+
+  NEW()
+    $usedImports = NEW()
+    $usedBuiltins = NEW()
+    Builtin.initBuiltins(THIS)
+    $id = ++nextId
+  }
+
+  # Check if we encountered import |name| before in the current tree of
+  # imports below the top file.  If not, return TRUE and add the import.
+  FUNC $isNewImport(ZimbuFile zf) bool
+    IF !$usedImports.has(zf.filename)
+      $usedImports[zf.filename] = zf
+      RETURN TRUE
+    }
+    RETURN FALSE
+  }
+
+  # Add |zf| to the list of files that were imported with @javascript.
+  PROC $addJavascript(ZimbuFile zf)
+    IF $javascriptImports == NIL
+      $javascriptImports = NEW()
+    ELSEIF $javascriptImports.has(zf.filename)
+      RETURN
+    }
+    $javascriptImports[zf.filename] = zf
+  }
+
+  # Clear the startedWrite flags in all imported and builtin files.
+  PROC $clearStartedWrite()
+    FOR zf IN $usedImports
+      zf.c.startedWrite = NIL
+      zf.js.startedWrite = NIL
+    }
+    FOR bi IN $usedBuiltins
+      IF bi != NIL && bi.usedFile != NIL
+        ZimbuFile zf = bi.usedFile.zimbuFile
+        zf.c.startedWrite = NIL
+        zf.js.startedWrite = NIL
+      }
+    }
+  }
+
+  # |method| is used in ZUT.registerAction() while writing.
+  # Store it for use when generating Javascript.
+  PROC $registerAction(MethodType method)
+    IF $registeredActions == NIL
+      $registeredActions = NEW()
+    }
+    $registeredActions.set(method)
+  }
+
+
+  SHARED
+    int nextId
+  }
+
+}

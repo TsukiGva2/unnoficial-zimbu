@@ -1,0 +1,4312 @@
+The Zimbu programming language
+
+  spec/zimbu.mkd  - the language specification
+  usage.txt       - how to use the program
+  design.txt      - decisions made when creating the language (this file)
+  design_gui.txt  - decisions made when creating the GUI
+  classes.txt     - design of classes, interfaces and parts
+  plugin.txt      - design and use of compiler plugins
+ 
+Website: http://www.zimbu.org
+        http://sites.google.com/site/zimbuweb/Home
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+YIN AND YANG: DESIGN DILEMMAS
+
+These are issues where there is no clear choice, but we need to find a balance
+between two conflicting viewpoints.
+
+
+A: There is only one way to specify something.
+B: Be flexible, give choides to the programmer.
+
++A: When every Zimbu program uses the same style and conventions, it will be
+    much easier to read and understand a program.
+
++A: Less choices means less time spend on making them.
+
++B: Everybody has their preferences and should be allowed to make things look
+    the way he likes.
+
+BTW: some comments on Zimbu: http://lambda-the-ultimate.org/node/3646
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+Choices for language constructions
+----------------------------------
+
+LINE CONTINUATION: what if a statement doesn't fit in a line.
+
+1. with a backslash at the end (Makefile, macros in C):
+                var \
+                  = \
+                  this + that
+        + common mechanism
+        - sorting lines requires \ to be moved
+        - it's easy to forget the \, because it's at the end of the line
+
+2. backslash at start of the line (Vim script):
+                var
+                  \ =
+                  \ this + that
+        + easier to spot than backslash after the line
+        + sorting lines works, except for first one
+        - uncommon
+
+3. use a semicolon after each statement:
+                var
+                   =
+                   this + that;
+        + simple
+        + formatting text is simple
+        - omitting the semicolon may lead to mistakes.
+
+4. use nothing:
+                var
+                   =
+                   this + that
+        + simple
+        + formatting text is simple
+        + no need to remember adding the semicolon
+        - restricts syntax
+        o can add () when needed:
+                    var = (this + that)
+
+5. Like 4., but also use a semicolon as a line separator to put statements in
+   one line:
+                CASE 5
+                        month = "May"
+                        days = 31
+                CASE 6
+                        month = "June"
+                        days = 30
+
+       can be written as:
+
+                CASE 5; month = "May"; days = 31
+                CASE 6; month = "June"; days = 30
+
+Choice: 5 
+
+
+
+ISOLATING CONDITION: find the end of a condition, start of a statement
+
+1. Use () like C
+                while (cond)
+                  do something
+                }
+                do
+                  something
+                until (cond)
+                if (con
+                        dition)
+                   do this
+                elseif (cond)
+                   do that
+                }
+        + common
+        - two extra symbols needed, the ( actually is superfluous.
+        - it's easy to mismatch (), missing ) causes following statement to be
+          joined in
+        - looks like a function call
+
+2. Use : like Python
+                while cond:
+                  do something
+                }
+                do
+                  something
+                until cond:
+                if con
+                        dition:
+                   do this
+                elseif cond:
+                   do that
+                }
+        + only one symbol needed
+        - it's easy to forget the :
+
+3. Use { like Python uses :
+                while cond {
+                  do something
+                }
+                do
+                  something
+                until cond {
+                if con
+                        dition {
+                   do this
+                elseif cond {
+                   do that
+                }
+        + only one symbol needed
+        + looks more like what programmers are used to
+        - it's easy to forget the {
+        - the until and elseif look ugly, unbalanced { is not what is expected
+
+3a. Like 3, but use } after "until"
+                while cond {
+                  do something
+                }
+                do
+                  something
+                until cond }
+                if con
+                        dition {
+                   do this
+                elseif cond {
+                   do that
+                }
+        + only one symbol needed
+        + looks more like what programmers are used to
+        - inconsistent
+        - it's easy to forget the {
+        - the until and elseif look ugly, unbalanced { is not what is expected
+
+3b. Use { } around the block
+                while cond {
+                  do something
+                }
+                do {
+                  something
+                } until cond {}
+                if con
+                        dition {
+                   do this
+                } elseif cond {
+                   do that
+                }
+        + only one symbol needed
+        + looks more like what programmers are used to
+        - it's easy to forget the {
+        - the until and elseif look ugly
+
+4. Use ; like Python uses :
+                while cond;
+                  do something
+                }
+                do
+                  something
+                until cond;
+                if con
+                        dition;
+                   do this
+                elseif cond;
+                   do that
+                }
+        + only one symbol needed
+        + consistent with how statements are terminated
+        - it's easy to forget the ;
+        - uncommon
+
+5. Use ) like Python uses :
+                while cond)
+                  do something
+                }
+                do
+                  something
+                until cond)
+                if con
+                        dition)
+                   do this
+                elseif cond)
+                   do that
+                }
+        + only one symbol needed
+        + consistent with how statements are terminated
+        - it's easy to forget the )
+        - it's easy to mix the ) up with unbalanced ()
+        - uncommon
+
+6. Use implicit end of condition, require a line break
+                while cond
+                  do something
+                }
+                do
+                  something
+                until cond
+                if con
+                        dition
+                   do this
+                elseif cond
+                   do that
+                }
+        + no symbol needed
+        - have to make sure that any start of a statement can't look like the
+          continuation of the condition.  This disallows ++ and -- at the
+          start of a statement (but that doesn't work anyway).
+
+Choice: 6: 2 is also a good second choice, let's try 6 and see if it works
+           confusion in meaning of ; disqualifies 4,
+           balancing () disqualifies 1,
+           3 has problem with elseif
+
+
+INCREMENT AND DECREMENT
+
+When supporting ++ and -- both in an expression and in a statement it's not
+clear where they are separated without an extra punctuation character.
+
+        a = b
+        ++c...
+Looks like:
+        a = b++
+        c...
+
+1. Terminate lines with ;
+     + it's what programmers are used to
+     - easy to forget
+     - code looks less clean
+
+2. Disallow ++ and -- in a statement
+        a = b
+        c += 1
+     - it's used quite often, not nice to make it longer
+
+3. Only allow it after the variable
+        a = b
+        c++
+     + works
+     - illogical, since pre-increment is allowed in expressions
+
+4. Allow both, but require a line break
+        a = b
+        ++c
+
+Choice: 4
+
+
+ALLOW MULTI-STATEMENT LINES?
+
+1. Yes
+                if aa  b = 6 else b = 4 }
+        - more difficult to read back
+        + less lines needed
+
+2. No
+                if aa
+                        b = 6
+                else
+                        b = 4
+                }
+        + more easy to read back
+        - more lines needed
+
+Choice 2: easy to read back is more important
+
+
+
+COMMENTS
+
+1. Use /* */ like C
+        - Can't contain /* or */.
+        - Not compatible with shell
+
+2. Use # like shell scripts
+        + Can be used as shell script
+        - Can't be used in between statements
+
+3. Use // and /* */ like C++
+        - Can't be used as shell script
+        - Can't be used in between statements
+
+Choice: 2: Shell script possibility is important for interpreted language,
+                comments halfway statements is ugly.
+
+
+EXAMPLE OF THE RESULT:
+
+        # a comment
+        IF aap == boven                         # a comment
+                        && pietje > 8
+                ++pietje
+                jantje = 
+                        aap + boven
+        ELSEIF aap == boven
+                        && jantje < 7
+                IF cond
+                        --pietje
+                }
+        ELSE
+                error()
+        }
+
+
+Evaluation:
+- Nice!
+
+
+SWITCH
+
+Allow any type in a switch statement where "==" can be used.
+When the type is string also allow a pattern, using MATCH:
+
+        SWITCH line
+           CASE ""
+              RETURN Type.empty
+           MATCH "^def"
+              RETURN Type.def
+           DEFAULT
+              RETURN Type.unknown
+        }
+
+It's not efficient: every pattern will be matched, first one that matches
+wins.
+
+
+LOOPS:
+
+        WHILE cond
+           code
+           IF v
+              CONTINUE
+           }
+           IF k
+              BREAK
+           }
+        }
+
+        WHILE/top cond        # give a label to the loop
+           code
+           WHILE too
+              IF cond
+                 BREAK/top
+              ELSEIF cond
+                 CONTINUE/top
+              }
+           }
+        }
+
+        # loop over any sequence type (List, Array, etc)
+        FOR var IN iterable
+           block
+        }
+        FOR var IN 1 TO 100  # var = 1, 2, ... , 99, 100
+           block
+        }
+        FOR var IN 100 TO 8  # var = 100, 99, ... 9, 8
+           block
+        }
+
+        FOR var IN 0 UNTIL array.size()
+        }
+
+
+The variable of the FOR loop usually is only used for that purpose.  Adding a
+separate declaration adds complexity, thus should be avoided.  How to specify
+the type?
+
+1. With VAR or a specific type:
+        FOR VAR arg IN arglist
+        FOR string arg IN arglist
+        FOR int arg IN arglist
+
+        - Statement becomes a bit difficult to understand
+        - Would very often use "FOR VAR arg"
+
+2. With implied type:
+        FOR arg IN arglist
+
+        + much easier to read
+        - implied type may cause errors?
+        - sometimes "arg" is used after the loop
+
+3. With implied type, unless declared earlier:
+        FOR arg IN arglist
+        string arg
+        FOR arg IN arglist
+
+        + much easier to read
+        + allow for implied type and explicit type
+        - mistakes with using previously defined "arg" unintentionally
+
+4. With implied type, unless USE is prepended:
+        FOR arg IN arglist  # declares new "arg", error if already exists
+        string arg
+        FOR USE arg IN arglist  # uses existing "arg", error if type wrong
+
+        + much easier to read
+        + allow for implied type and explicit type
+        + no mistakes with using previously defined "arg" unintentionally
+
+Choice: 4.
+
+
+Need some way to loop with a condition at the end:
+
+        DO
+           code
+        UNTIL cond
+
+Can't use WHILE, it would be ambiguous.
+
+
+Use "REPEAT" or "FOREVER" instead of "WHILE TRUE" ?
+
+        + a bit shorter
+        - another statement that needs to be learned
+
+Choice: REPEAT looks nice, but it's another statement to learn, just use
+        WHILE TRUE, everybody understands that.
+
+
+INIT-LOOP-CONTINUE
+
+Also need a way to put code that is executed when doing the next round,
+equivalent of C for loop:
+        for (int i = first; i < last; next(i)) {
+          do(i);
+        }
+Written in Zimbu as:
+        i = first
+        WHILE i < last
+          do(i)
+          next(i)
+        }
+
+Problem: CONTINUE doesn't go to next(i), noticable in more complicated C:
+        for (i = first; i < last; next(i)) {
+          doOne(i);
+          if (yes(i))
+            continue;
+          if (not(i))
+            break;
+          doTwo(i);
+        }
+
+So we basically have a three part loop:
+
+        LOOP_INIT
+           init
+        LOOP_CONDITION cond
+           statements
+        LOOP_FINALLY
+           statements
+        }
+
+What keywords to use?
+
+1. overloading:
+
+        REPEAT
+           init
+        WHILE cond
+           statements
+        FINALLY
+           statements
+        }
+
+   - can't use WHILE in init
+   - FINALLY sounds more like it's used after looping is done.
+
+2. Use unique words starting with LOOP
+
+        LOOPINIT
+           init
+        LOOPWHILE cond
+           ...
+           CONTINUE  # goes to LOOPTAIL
+           ...
+        LOOPTAIL
+           statements
+        }
+
+   + much nicer
+   - not really shorter than using WHILE:
+        {
+           init
+           WHILE cond
+             ...
+             CONTINUE  # goes to WHILETAIL
+             ...
+           WHILETAIL
+              statements
+           }
+        }
+
+3. The tail part is also useful in other loops, such as FOR.  Let's use
+   TAIL, and use GOTAIL to jump there.
+
+        FOR i IN mylist
+           ...
+           GOTAIL  # go to TAIL
+           ...
+        TAIL
+           statements
+        }
+
+        init
+        WHILE cond
+           ...
+           GOTAIL  # go to TAIL
+           ...
+        TAIL
+           statements
+        }
+
+   + Useful way to implement "for (;;)" loop
+
+Choice: 3
+
+Also use TAIL at the end of a function?  Useful for common code before
+returning.
+
+        FUNC int doSomething()
+           int result
+           ...
+           IF somecond
+             result = -1
+             GOTAIL
+           }
+           ...
+        TAIL
+           cleanup()
+           RETURN result
+        }
+
+Better written with try/finally:
+
+        FUNC int doSomething()
+          TRY
+            int result
+            ...
+            IF somecond
+              RETURN -1
+            }
+            ...
+            RETURN result
+          FINALLY
+            cleanup()
+          }
+        }
+
+
+Used very often:
+        REPEAT
+           c = getChar()
+           IF c == File.eof
+             BREAK
+           }
+           IF c == 0
+             CONTINUE
+           }
+           handle(c)
+        }
+
+Should we write it shorter?
+        REPEAT
+           c = getChar()
+           WHEN c == File.eof BREAK
+           WHEN c == 0 CONTINUE
+           handle(c)
+        }
+
+Choice: Stick with the normal IF, it's better to be a bit verbose than to have
+two ways to do the same thing, requiring the programmer to make a choice.
+
+
+Python also has an "else" for loops.  Its statements are executed when break
+was used in the loop.  We could do this explicitly:
+
+        WHILE cond
+           ...
+           BREAK  # goes to BREAKUSED
+           ...
+        BREAKUSED
+           statements
+        }
+
+This is only useful when there are several BREAK statements with some common
+code to be executed.
+All together:
+
+        int loopcount = 0
+        WHILE continue(loopcount)
+           ...
+           BREAK  # goes to BREAKUSED
+           ...
+           BREAK  # goes to BREAKUSED
+           ...
+        TAIL
+           loopcount++
+        BREAKUSED
+           IO.print("list corrupted")
+        }
+        IO.print("looped " .. loopcount .. " times")
+
+   - This doesn't look very useful, while adding keyword BREAKUSED.
+
+When giving the loop a label, it's possible to get the way the loop was exited
+later:
+
+        int loopcount = 0
+        WHILE/loop continue(loopcount)
+          ...
+          BREAK
+          ...
+          BREAK
+          ...
+        TAIL
+          loopcount++
+        }
+        IF loop.breakUsed
+          IO.print("list corrupted")
+        ELSE
+          IO.print("looped " .. loopcount .. " times")
+         }
+
+   + easy to check how loop was exited without special statements.
+
+
+
+USE NULL OR NIL
+
+Choice: NIL, it's shorter.
+
+
+OBJECT EQUALITY
+
+The "==" operator compares values.  When comparing two objects their members
+are compared for equal values.
+        CLASS Foo
+          int x
+          string y
+        }
+        Foo a
+        Foo b
+        ...
+        IF a == b  # equivalent to (a.x == b.x) && (a.y == b.y)
+
+To compare two object references for referring to the same object use IS:
+
+        IF a IS b     # TRUE when a and b refer to the same object
+        IF a ISNOT b  # FALSE when a and b refer to the same object
+
+Exception: when left or right side of == is NIL, it works like IS.
+
+A class can overrule the default equality check by defining the EQUAL method:
+
+        CLASS Foo
+          string msg
+          ...
+          EQUAL(Foo other)
+            RETURN msg == other.msg
+          }
+
+Similarly there is the COMPARE() method, used for sorting and operators like
+">" and "<".
+
+Status: "==", "IS" and "EQUAL" are implemented.   COMPARE() isn't.
+
+
+BOOLEAN EXPRESSIONS
+
+It's very common to check a variable against a few values.  How to do this?
+
+1. The normal way:
+        var == val1 || var == val2 || var == val3
+
+2. Use a List with implied type:
+        [val1, val2, val3].contains(var)
+
+3. Use a special operator, like Python
+        var IN [val1, val2, val3]
+
+Choice: support 1. and 3.
+
+Perhaps:
+        var ?? < 0 : "negative", 0 : "zero", DEFAULT : "positive"
+
+No, too hard to read.
+
+
+FUNCTION DEFINITIONS
+
+How to recognize a function definition and how to define a type for a function
+reference (has to be consistent):
+
+1. Like C, using a {} block:
+
+        int add(int a, int b)
+        {
+          RETURN a + b
+        }
+     - not consistent with other block constructs
+     - more difficult to parse
+     + what programmers are used to
+
+2. Use the "FUNC" keyword (or "F" or "FUNCTION")
+
+        FUNC int add(int a, int b)
+          RETURN a + b
+        }
+        func<int, int, int> add = FUNC int (int a, int b); RETURN a + b; }
+
+        FUNC void add(int a, int b)
+          _a = a + b
+        }
+        func<void, int> add = FUNC void (int a, int b); _a = a + b; }
+
+     + consistent with all other constructs
+     - nasty "void" type
+     - quite different from C, Java, etc.
+
+3. Use the "FUNC" keyword when a value is returned, "PROC" when not
+
+        FUNC int add(int a, int b)
+          RETURN a + b
+        }
+        func<int, int, int> add = FUNC int (int a, int b); RETURN a + b; }
+
+        PROC add(int a, int b)
+          _a = a + b
+        }
+        proc<int> add = PROC (int a, int b); _a = a + b; }
+
+     + consistent with all other constructs
+     + avoids the strange VOID keyword
+     - quite different from C, Java, etc.
+
+4. Put the return type after the arguments, so that name of function is always
+   in same place; always use FUNC:
+
+        FUNC add(int a, int b): int
+          RETURN a + b
+        }
+        func<int, int: int> add = FUNC (int a, int b): int; RETURN a + b; }
+
+        FUNC add(int a, int b)
+          _a = a + b
+        }
+        func<int, int> add = FUNC (int a, int b); _a = a + b; }
+
+     + consistent with all other constructs
+     + avoids the strange VOID keyword
+     + easier to spot the function name
+     - using ): before the return type is a bit obscure
+     - quite different from C, Java, etc.
+
+5. Like 4, but use FUNC or PROC:
+
+        FUNC add(int a, int b) int
+          RETURN a + b
+        }
+        func<int, int: int> add = FUNC (int a, int b) int; RETURN a + b; }
+
+        PROC add(int a, int b)
+          _a = a + b
+        }
+        proc<int, int> add = PROC (int a, int b); _a = a + b; }
+
+     + consistent with all other constructs
+     + avoids the strange VOID keyword
+     + easier to spot the function name
+     + FUNC/PROC is easier to see than the colon after the arguments
+     - quite different from C, Java, etc.
+
+Choice: 5  Looks better overal
+
+
+VARIABLE DECLARATIONS
+
+Just like functions, a declaration need to be distinguished from other
+statements.
+
+1. Use the "VAR" keyword (or "V" or "VARIABLE")
+
+        VAR int add = 4
+        VAR Modi.Type add
+
+     + consistent with all other constructs
+     - quite different from C, Java, etc.
+     - verbose
+
+2. Without the keyword
+
+        int add = 4
+        Modi.Type add
+
+     - a bit more difficult to parse
+     + what programmers are used to
+
+Choice: 2  Avoiding verbosity is more important
+
+
+DATA ATTRIBUTES
+
+immutable: cannot be changed
+
+storage: number of 8-bit bytes used to store the data
+
+Nice summary of using contst: http://www.digitalmars.com/d/2.0/const-faq.html
+
+
+STATIC VARIABLES
+
+In C we can do this:
+
+        void somefunc()
+           static int entered = FALSE;
+           if (entered)
+             return;
+           entered = TRUE;
+           ...
+           entered = FALSE;
+         }
+
+How to do this in Zimbu?
+
+1. Require to put the variable in the SHARED section or in the module.
+  - variable is far away from where it's used.
+  - variable is accessible from many other scopes.
+
+2. Use a SHARED section in the function:
+
+            PROC someFunc()
+              SHARED
+                bool entered
+              }
+              IF entered
+                RETURN
+              }
+              entered = TRUE
+              ...
+              entered = FALSE
+            }
+
+Choice: 2.
+
+
+MULTIPLE RETURN VALUES
+
+Return more than one item from a function, not using a tuple:
+
+        FUNC doSomething() int result, string error
+          result = 5
+          error = ""
+          RETURN
+        }
+        ...
+        int val
+        VAR msg
+        val, msg = doSomething()
+
+Implementation: return first value normally, following ones pass a pointer as
+an argument. (check callbacks for where to put it).
+Typedef:    func< => int, string>
+
+   Can leave out the return names:
+        FUNC doSomething() int, string
+          RETURN val, ""
+        }
+   And a mix of both:
+        FUNC doSomething() int, string error
+          error = ""
+          RETURN val
+        }
+
+But question is: what do we require for the RETURN statement?
+        FUNC doSomething() int result, string error
+1. Always put all return values there:
+          RETURN val, ""
+2. Always put all the return names there:
+          RETURN result, error
+3. Allow leaving out named return values:
+          RETURN
+4. Require returning the first value, others are optional
+          RETURN val
+          RETURN val, "wrong"
+5. Require returning the first value only, others must be named
+          error = "wrong"
+          RETURN val
+
+Since consistency is important, 5 is best:
+    - If there are multiple return values, the second and further ones must be
+      names.
+    - The RETURN statement always returns the first return value
+    - Giving the first return value a name is optional
+
+Where it is used:
+- Normal method is to assign to variables: a, b = func()
+- Automatic conversion to a tuple: VAR tup = func()
+- Chaining is not possible
+        funcA().funcB()     # does not work
+  Need to use conversion to tuple, then take an item:
+        funcA()[0].funcB()  # looses values after the first
+  Use by-refeference arguments instead:
+        string error
+        funcA(&error).funcB(&error)
+
+
+VISIBILITY and ACCESS
+
+The toplevel item of a file is visible in its directory and subdirectories.
+This way packages can be formed by organizing files in a directory tree.
+
+By default variables and functions below the toplevel item are visible in the
+same file.  If you change the type, name or arguments it's easy to find all
+the code that needs to be changed.  It doesn't really help to further reduce
+the visibility.
+
+Alternate naming ideas:
+
+1. PRIVATE, PROTECTED, PUBLIC
+   These are used by most languages.
+
+        + most people understand this
+        - not all that clear
+
+2. Specify where items are visible:
+   CLASS     this specific class only
+   SUBCLASS  this class and subclasses
+   FILE      this file (default)
+   DIR       this directory and sub-directories
+   WORLD     everywhere
+
+        + more specific about what's meant
+        - What about abstract superclass?  CLASSTREE?
+
+3. Like 2, but simpler:
+   CLASS     this class, subclasses and super classes (similar to PROTECTED)
+   FILE      this file (default)
+   DIR       this directory and sub-directories
+   WORLD     everywhere
+
+        + more specific about what's meant
+
+4. Like 3, but use more common names:
+
+   PRIVATE   this class only
+   PROTECTED this class, subclasses and super classes
+   PUBLIC    everywhere
+   FILE      this file (default)
+   DIR       this directory and sub-directories
+
+        + more specific about what's meant
+        + most people will understand this
+
+
+ATTRIBUTE KEYWORDS
+
+When we use all-upper for attributes, it's going to look like:
+
+        PROTECTED  int $a
+        PUBLIC     int $b
+        DIR        int $c
+
+This is very verbose.  Can we make it shorter?
+
+1. Use all-upper names but put them after the declaration
+
+      int $one   FILE         # visible in this file
+      int $two   PRIVATE      # only visible in this class
+      int $three PUBLIC       # world visible
+
+  - stands out too much
+  - less flexible, need to fit in with all keywords
+
+2. Use symbols:
+
+        @- int $a
+        @+ int $b
+        @= int $c
+
+  - Too obscure
+
+3. Use attributes:
+
+      @private     # only visible in this class
+      @protected   # only visible in this class and children
+      @public      # world visible, "public"
+      @file        # visible in this file (default)
+      @directory   # visible in this directory and below
+
+   Put them before the item:
+
+      @private int $one
+      @protected int $two = 2
+      @public FUNC int foo()
+      @public CLASS Foo
+
+   For readability can put the visibility in a separate line (like it's usual
+   in Java):
+      @private
+      int $one
+      @protected
+      int $two = 2
+      @public
+      FUNC int foo()
+      @public
+      CLASS Foo
+
+  - Adding visibility changes the layout of the basic declaration.
+
+3a. Like 3, but put it after the type.
+
+      int @private $one
+      int @protected $two = 2
+      FUNC @public int foo()
+      CLASS @public Foo
+
+  + Less obtrusive
+  - not what programmers are used to
+  - must move attribute such as @abstract to before CLASS or PROC item
+
+3b. Like 3, but put it after the declaration.
+
+      int $one @private
+      int $two @protected = 2
+      FUNC int foo() @public
+      CLASS Foo @public
+
+  + Least obtrusive
+  + consistent
+  - a bit strange with assignment
+
+3c. Like 3, but put it after the declaration.
+
+      int $one @private
+      int $two = 2 @protected
+      FUNC int foo() @public
+      CLASS Foo @public
+
+  + Least obtrusive
+  - conflict with expression attributes?
+
+3d. Like 3, but put it after the declaration for PROC and CLASS
+
+      int @private $one
+      int @protected $two = 2
+      FUNC int foo() @public
+      CLASS Foo @public
+
+  + Less obtrusive
+  - not very consistent
+
+Choice: 3b.
+
+
+DIFFERENT READ VISIBILITY
+
+Often it's useful to allow getting a value without any restrictions.  But when
+setting it the value needs to be checked or side-effects handled.
+
+1. Use normal way for write visibility, @read=xxx for reading:
+
+      int $one @public                # read-write allowed everywhere
+      int $two @private @read=public  # write in the class, read everywhere
+      int $three @read=public         # write in the file, read everywhere
+
+2. Use properties, like C#
+   - ugly, need to define get() and omit set() instead of assignment
+
+3. Use both @read= and @write=.
+      int $one @public                      # read-write allowed everywhere
+      int $two @write=private @read=public  # write in class, read everywhere
+   - not better than 1.
+
+Choice: 1.
+
+
+DEFAULT ITEM VISIBILITY
+
+Depending on what a module or class is to be used for, it can be useful to
+give most items a specific visibility, different from the default @file.  This
+can be done with the @items= attribute on module and class:
+
+        CLASS Pos @items=public
+          int  $lnum
+          string  $filename
+        }
+
+        MODULE TestStuff @items=private
+          PROC test() @public
+            testSome()
+          }
+          PROC testSome()  # private
+          }
+        }
+
+Then only items with a different visibility need to be marked as such.  For
+example, in a test module everything is private, except one method that is to
+be called from outside.
+
+
+AUTOMATIC GET AND SET METHODS
+
+In OO programming it's often recommended to use get and set methods.
+This leads to lots of code that looks like this:
+        PRIVATE SomeType $someMember
+        public $setSomeMember(SomeType val) {
+          $someMember = val;
+        }
+        public SomeType $getSomeMember() {
+          return $someMember;
+        }
+Note that "SomeType" is given three times and the member name is given three
+times.  This is inefficient.
+
+The original thought behind the get and set methods is that one might want to
+change the way the member is stored, add assertions, etc., without changing
+the code that uses the object.
+
+1. Use @get and @set with visibility:
+
+      int $one @get                   # adds public get method
+      int $two @set:protected @get    # write in the class, read everywhere
+      int $three @get @set            # adds public get and set methods
+      int $four @private @get         # class access, public get method
+
+   Later the attributes can be removed and an explicit get or set method
+   implemented.
+
+        + short to write
+        - callers must use get and set methods, but they don't appear
+          anywhere.
+
+2. Let the caller access the field as usual, but optionally intercept the read
+   and/or write.
+
+   At first define the member publicly accessible:
+        CLASS Name
+          string $name @public
+          ...
+        }
+
+   Now we decide we want to count the number of times the name is read, and
+   limit the size to 100 when it's set.  This is how it's done:
+        CLASS Name
+          int $readCount @private @read=public
+          string $name @public
+            GET()
+              $readCount++
+              RETURN $name
+            }
+            SET(value)
+              IF value.size() > 100
+                $name = value.substring(100)
+              ELSE
+                $name = value
+              }
+            }
+          ...
+        }
+
+   + Easy to add an assertion:
+        Original:
+                int $count
+        New version:
+                int $count
+                  SET(n)
+                    CHECK.positive(n)
+                    $count = n
+                  }
+
+   ? Also allow setting from a different type:
+        string $zipcode
+          SET(string s)
+            $zipcode = s
+          }
+          SET(int n)
+            CHECK.positive(n)
+            $zipcode = n.toString()
+          }
+    No, this require repeating the type and can be done with method.
+
+    + The mechanism can also be used for lazy initialization:
+
+       list<string> $names
+         GET()
+           IF $names == NIL
+             $names = NEW()
+           }
+           RETURN $names
+         }
+
+Choice 2, obviously
+
+
+
+BLOCK VISIBILITY
+
+Use attributes on a block to apply them to all items in the block:
+
+       { @rw:world
+         int $one                # read=world write=world
+         { @write=file
+           int $two              # read=world write=file
+           int $three @read=dir  # read=dir write=file
+         }
+       }
+
+No, not very useful and harder to understand.
+
+
+HOW TO MAKE AN ITEM VISIBLE FOR TESTING ONLY?
+
+1. Put testing code inside the same file
+        - messy
+
+2. Make item visible with comment that it's for testing
+        + works
+        - can be abused
+
+3. Use SHARED.test and PUBLIC.test.
+        + nice
+
+4. Mark tests specifically, and allow access to everything from that
+        + simple
+
+Choice: 4
+
+
+ADDING A METHOD TO A CLASS
+
+The traditional way of extending an existing class with a new method is to
+subclass it.  However, this creates a lot of boiler plate code for no good
+reason.
+
+So long as the new method is only used if few places, so that you can define
+or import it explicitly, it should be possible to add it directly:
+
+     foo.zu:
+         CLASS Foo
+            int[] $values
+            ...
+         }
+
+     foosort.zu:
+         PROC Foo.sort()
+           sort(TRUE)
+         }
+         PROC Foo.sort(bool ascending)
+           THIS.values.sort(ascending)
+         }
+
+This does not work for adding member variables, because instantiating the
+object will change.  For this you do need to use the subclass mechanism.
+
+
+INDEXER ACCESS
+
+C# uses a special mechanism to allow container objects to use the var[i]
+access notation.  Do we want that?
+
+1. Yes, use a special mechanism to allow object index access.
+        - introduces a new mechanism.
+
+2. No, use an interface
+        INTERFACE I_Index<Titem>
+           PROC setAt(int i, Titem value)
+           FUNC Titem getAt(int i)
+           FUNC int size()
+        }
+        CLASS Foo IMPLEMENTS I_index<SomeThing>
+           List<SomeThing> values
+           PROC setAt(int i, SomeThing value)
+              values[i] = value
+           }
+           FUNC SomeThing getAt(int i)
+              RETURN values[i]
+           }
+           FUNC int size()
+              RETURN values.size()
+           }
+           ...
+        }
+
+        + uses existing mechanisms
+
+Choice: 2.
+
+
+SIMPLE INTERFACE
+
+This doesn't use a type:
+
+        INTERFACE I_SortByIndex
+          #= Return the number of elements
+          FUNC int size()
+
+          #= Return 1 if elem[a] > elem[b]
+          #= Return 0 if elem[a] == elem[b]
+          #= Return -1 if elem[a] < elem[b]
+          FUNC int compare(int a, int b)
+
+          #= Swap elem[z] with elem[b]
+          PROC swap(int a, int b)
+        }
+
+
+ITERATOR
+
+Any class should be usable in a "FOR v IN expr".  This can best be defined
+with an interface:
+        INTERFACE I_Itererable<T>
+           FUNC I.iter<T> newIter()
+        }
+        INTERFACE I_Iter<T>
+           FUNC bool hasNext()
+           FUNC T getNext()
+        }
+        CLASS Foo IMPLEMENTS I.itererable<SomeThing>
+           List<SomeThing> $values
+           FUNC I.iter<SomeThing> newIter()
+             RETURN FooIter.NEW($values)
+           }
+        CLASS FooIter IMPLEMENTS I.iter<SomeThing>
+           List<SomeThing> _values
+           int             index = -1
+           NEW(List<SomeThing> values)
+             $values = values
+           }
+           FUNC bool hasNext()
+              RETURN index + 1 < $values.size()
+           }
+           FUNC SomeThing getNext()
+              index++
+              RETURN $values[index]
+           }
+           ...
+        }
+
+This allows having two iterators over the same container.  If this is not
+needed the class can implement both I.itererable and I.iter:
+        CLASS Foo IMPLEMENTS I.itererable<SomeThing>, I.iter<SomeThing>
+           List<SomeThing> $values
+           int             $index
+           FUNC I.iter<SomeThing> newIter()
+             $index = -1
+             RETURN THIS
+           }
+           FUNC bool $hasNext()
+              RETURN $index + 1 < $values.size()
+           }
+           FUNC SomeThing $getNext()
+              $index++
+              RETURN $values[$index]
+           }
+           ...
+        }
+
+This is simpler, the class doesn't need to store the position:
+
+        INTERFACE I_IndexIter<T>
+          #= Return the number of elements
+          FUNC int size()
+
+          #= Return elem[i]
+          FUNC T getAt(i)
+        }
+
+NOTE: in reality a List iterator should handle deleting items before the
+current position without moving the position.
+
+TODO: an iterator where it's possible to change the value, e.g., when looping
+through a list one can change the list item.  Use it like this:
+
+        VAR myList = ["bah", "boo", "beh"]
+        FOR &arg IN myList
+          IF arg == "boo"
+            arg = "boo!"
+          }
+        }
+
+
+PREDEFINED METHODS
+
+NEW() - see elsewhere
+
+Use SIZE() or size()?  There does not appear a reason to make these names
+all-upper.  Let's use normal method names when possible.  Only use all-upper
+when the method has a special meaning without specifying this with an
+implemented interface.
+
+Similarly for COPY() and copy().
+
+Use ".size()" on just about everything:
+
+        int n.size()     # number of bytes in an int
+        string s.size()  # number of characters (not bytes!) in string s
+        List l.size()    # number of items in List l
+
+".empty()"  is equivalent of ".size() == 0" (but may be implemented more
+efficiently).  If the class doesn't define empty() this is done automatically.
+
+".Equal()" defined by class to check if it's equal to another object of the
+same class (if there is no EQUAL() then "==" and "!=" cannot be used on
+objects):
+
+        CLASS Foo
+          int    $x
+          string $y
+
+          FUNC bool EQUAL(Foo other)
+            RETURN other.x == $x && other.y.foldCase() == $y.foldCase()
+          }
+        }
+
+".Compare()" returns -1, 0, 1 for <=, ==, >, etc.
+        CLASS Foo
+          int    $x
+          string $y
+
+          # Ignore case for "y"
+          FUNC COMPARE(Foo other) int
+            int r = $x.COMPARE(other.x)
+            IF r == 0
+              r = $y.foldCase().COMPARE(other.y.foldCase())
+            }
+            RETURN r
+          }
+        }
+
+".Type()" returns "type" object with members:
+        string ToString()            string representation
+                                     "int", "string", "list<string>", etc.
+        list<type> members()         members (for a class and object)
+
+
+OBJECT STORAGE
+
+Always using allocated memory for objects is inefficient.
+Objects on the stack are helpful, but cause a allocated/free problem.
+1. Use counter to keep track of whether an object is still in use when a
+   function returns, move it to allocated memory if it is.  How to fix pointers
+   then?
+2. Every invoked function has an attribute about whether passed arguments are
+   stored or not.  If they are then the compiler puts the object in allocated
+   memory.  Example:
+        {
+          obj = somefunc()
+          print(obj)              # obj not stored
+        }
+
+        {
+          obj = new_obj()
+          add_to_list(list, obj)  # obj stored
+        }
+
+
+MEMORY MANAGEMENT
+
+See manage.txt
+
+
+THREAD LOCAL DATA
+
+It should be really easy to use data that is local to a thread.  D defaults to
+this.  This data doesn't require locking.
+
+1. Default all global data to be thread-local
+
+        - it's not what most people expect
+        + safe
+        - initialize all modules when a new thread starts?
+
+2. Mark a MODULE and CLASS has being thread-local.
+
+        + simple method
+        + allows initializing data when a thread starts.
+        - how about having some data in the MODULE thread-local
+
+3. Mark each data item thread-local
+
+        + what most programmers expect
+        - mistakes accessing global data from multiple threads.
+
+4. Mix of 2 and 3: mark a module/class as thread-local to change when it is
+   initialized and default for all shared variables.  Allow changing to global
+   or thread-local for individiaul variables.
+
+        + default is what most programmers expect
+        + allows initializing data when a thread starts.
+        - less safe
+
+Choice: 4
+
+
+DATA TYPE DECLARATIONS, TYPE CHECKING
+
+Are variable and function argument types to be declared?
+
+        ++ Compile time checking is needed for reliability.
+        -  Need declarations, code can get messy
+
+Choice: Yes.  Reliability is most important.
+        Also allow "ANY" type for when a declaration is not wanted.
+        Also allow "VAR" type for when the type can be deducted from the
+        context.
+
+Alternative: Boo leaves out the declaration.  But this creates another choice
+to make, most declarations can either declared explicitly or inferred.  This
+can easily create mistakes when a name is mistyped:
+                al = 4
+                IF cond
+                  a1 = 5   # no error, declares new variable
+                }
+
+How to do declarations: Mostly like Java.
+
+       list<string> words  # list containing words
+       words.add("yes").add("no")
+
+       list<ANY> some
+       some.add(1.0).add("dollars").add([1, 2])
+
+       list<tuple<string, string, int>>  entries
+       entries.add(["John", "Doe", 24])
+
+Status: ANY not implemented yet
+
+Avoid many declarations by using their first assignment:
+
+        VAR foo = getFoo()
+        VAR list = [1, 2, 3, 4]
+        VAR dict = ['a': 1, 'b': 2]
+        VAR x            # type yet unknown
+          IF blah
+             x = "foo"    # sets the type
+          ELSE
+             x = "bar"    # much match type of first assignment
+          }
+
+Type of "getFoo()" must be known by the compiler its type will be used for
+"foo".
+
+Using VAR and NEW() there are two short ways to declare a variable:
+          Token t = Token.NEW()  # verbose way 
+          VAR t = Token.NEW()    # type comes from assignment
+          Token t = NEW()        # destination type used for NEW()
+Do we care?
+
+Status: VAR is implemented, not tested much
+
+
+MORE THAN ONE INTERFACE
+
+Sometimes we need an object that implements two interfaces or more.
+For example I.Iterable and I.Resettable.  How do we express that?
+
+Scala: Cloneable with Resetable
+
+        I.Iterable && I.Resettable obj
+        I.Iterable WITH I.Resettable obj
+        and<I.Iterable, I.Resettable> obj
+
+
+
+
+DEEP TYPE CHECKING
+
+When using numbers (float or int) there is no way to check that they are used
+in a way that it makes sense.  Adding units would make this possible:
+
+        float length        @unit=m
+        float massPerMeter  @unit=kg/m
+        float mass          @unit=kg
+
+        mass = length * massPerMeter  // correct
+        mass = length / massPerMeter  // error!
+        length = mass / massPerMeter  // correct
+        length = mass * massPerMeter  // error!
+
+
+TUPLE
+
+Implement tuple in a module:
+- class template with variable number of types:
+   CLASS Tuple<Titem ...> @public
+     GENERATE_FOR i IN 0 TO Titem.size() - 1
+       Titem[i]  $item@{i}
+     }
+
+     PROC NEW() @public
+     }
+   }
+
+
+GENERATE
+
+Perhaps rename GENERATE to COMPILE?
+
+Code in WriteCommon is not nice, need a way to evaluate code at compile time:
+    GENERATE_EVAL bool debug = TRUE
+    GENERATE_IF debug
+    }
+
+Or use COMPILE as a modifier, so that later we can do:
+    COMPILE bool debug = TRUE
+    COMPILE IF debug
+    }
+    COMPILE FUNC isDebug(int level) bool
+      RETURN level > 2
+    }
+    COMPILE IF isDebug(1)
+    }
+
+
+
+DYN TYPES
+
+How about passing a reference (pointer) without knowing what it points to?
+It's like "dyn" but only allowing not-value types.
+To make it consistent, also allow passing a value of any type.
+
+        dyn     any type
+        ref     any reference type
+        val     any value type
+
+Are ref and val really that useful once we have dyn?
+        Useful for templated types: Can generate once for a ref or val.
+                PROC check<ref Titem>(Titem p)
+                  IF p = NIL
+                    error
+                  }
+                }
+
+--> Looks not useful, just implement "dyn".
+    Restrictions on template types should be more specific.
+
+
+HOLDER
+
+Sometimes it is useful to pass around a reference to an object reference, but
+handle it like it is the object itself.
+
+It's a bit like a Future.
+
+        holder<Button.I> button = NEW()  # creates a holder for a Widget
+        list<Widget.I> widgets = NEW()
+        widgets.add(button)              # Add the empty holder somewhere
+
+        IF fancy
+          button.set(Button.NEW())      # fill the holder 
+        ELSE
+          button.set(FancyButton.NEW()) # fill the holder 
+        }
+        button.setText("OK")            # use Button.I interface
+
+The holder passes on the interface of the object it contains.  Additionally it
+implements:
+        PROC set(T o)       # Set the object.
+        FUNC get() T        # Get the object, returns NIL when not set.
+
+Testing if an object is a holder:
+        button ISA Z.holder  # TRUE
+        button ISA Button    # also TRUE!
+
+Trying to access the object before it is set throws an exception, like:
+
+        IF button ISA Z.holder && button.get() == NIL
+          THROW "holder object not set"
+        }
+
+
+AUTOMATIC CONVERSION
+
+When using multiple types, it's nice to automatically convert the used type to
+the expected type.  However, this can also lead to mistakes that go
+undetected.  Therefore only do it where it is obviously desired.
+
+One place where conversion to string is expected is for string concatenation.
+This will allow:
+
+        int value = 1234
+        IO.print("value: " .. value)
+
+Automatic conversion for function arguments may lead to mistakes.  For
+example:
+        func('c')
+uses 'c' as a number.  If "func()" expects a string it would be called as:
+        func("99")
+without any warning.
+
+
+VALUES
+
+Before a value is assigned to a variable with a type, the value doesn't really
+have a type.  We can use generic types such as "number", "stringval",
+"listval", "dictval", etc.  When doing the assignment the compiler can check
+for obvious mistakes, such as:
+        int i = 0.1   # error, precision lost
+        int i = [1]   # errror, can't assign listval to int
+
+
+TUPLE
+
+A tuple is like a class with members that are accessed by index.
+Assigning a value can be done from a list.  The types are checked when doing
+the assignment:
+        tuple<int, string> mytuple = [5, "five"]
+        IO.print("number: " .. mytuple[0]
+        IO.print("text: " .. mytuple[1]
+
+A tuple can be unpacked at assignment to a list of variables:
+        [number, text] = mytuple
+
+There is a special method to unpack into the individual members in a context
+that uses a comma separated list (function arguments, list initializer):
+        PROC setValue(int nr, string text, bool show) ...
+        setValue(UNPACK(mytuple), TRUE)
+
+        tuple<int, string, int, string> doubletuple =
+                            [UNPACK(mytuple), UNPACK(mytuple)]
+
+
+TYPE CASTS
+
+Here and there we need to explicitly cast one type to another.  E.g. to
+convert a list of interface type Type.I to a list of class FooType, so that
+FooType.toString() can be called on it:
+        some.get() returns list<Type.I>
+        toString() wants   list<FooType>
+        FooType is a subclass of Type.I
+
+1.  Like C and Java
+        (Z.list<FooType>)(some.get()).toString()
+
+        o works
+        - need Z.list to avoid type/var confusion
+
+2.  Different
+        <List<FooType>>(some.get()).toString()
+
+        + <> is usually put around the type
+        - operator precedence not clear, need parenthesis
+        o any parsing conflicts?
+
+3.  Like C++, but always check the type
+        CAST<List<FooType>>(some.get()).toString()
+
+        + easier to see what is being cast 
+        + <> is usually put around the type
+        - verbose
+
+4.  make it look like a function call
+        some.get().CAST(List<FooType>).toString()
+
+        + looks more like other operations
+        + simpler sequence: from left to right
+        - verbose
+
+5.  Different
+        Z.list<FooType>(some.get()).toString()
+
+        + easier to see what is being cast 
+        - need Z.list to avoid type/var confusion
+        -- looks like like a function call, requires "Z."
+
+6.  Different
+        FooType{some.get()}.toString()
+
+        + easier to see what is being cast 
+        - when editing the expression } needs to be moved
+
+7.  Different
+        FooType<some.get()>.toString()
+
+        - <> is usually put around the type, looks strange
+
+8.  Put the type cast after the value:
+        some.get().<list<FooType>>.toString()
+
+        + uses chaining just like any other operator
+        + no parenthesis needed, easy to see what it applies to
+        o not what programmers expect, do we care?
+        ? can we leave out the dot?
+
+Choice: 8.
+
+
+CONSTRUCTORS
+
+1. Like Java: always need to explicitly create the object.
+
+2. Like C++: implicit constructor.
+        - side effects are very hard to control
+
+3. Automatic constructor: Space reserved at compile time for simple types
+   (e.g. string).  Otherwise object is constructed at first use (where we
+   would crash otherwise).
+        
+        + Avoids Null pointer exceptions.
+        - Need null pointer checks all over the place.
+        - Cannot do "IF name == NIL" checks.
+
+Choice: 1  And make the compiler warn for possibly using a NIL.
+
+
+DEFINING CONSTRUCTORS
+
+1. like Java: use the name of the class
+        CLASS ClassName
+          ClassName(Type _arg)
+            arg = _arg
+          }
+        }
+
+        - have to repeat the class name
+        - have to change the method name when the class name changes
+
+2. use NEW
+        CLASS ClassName
+          PROC NEW(Type _arg)
+            arg = _arg
+          }
+        }
+
+        + clearly separate from other methods
+
+Choice: 2  shorter is better
+
+
+INVOKING CONSTRUCTORS
+
+1. like Java:
+        ClassName obj = NEW ClassName(args)
+        func(NEW ClassName(args))
+
+        - inconsistent use of keyword
+        - class name can often be derived from context
+
+2. Use NEW plus class name:
+        ClassName obj = ClassName.NEW(args)
+        func(ClassName.NEW(args))
+
+        + consistent with class and module calls
+        - class name can often be derived from context
+
+3. just use class name:
+        ClassName obj = ClassName(args)
+        func(ClassName(args))
+
+        - No similarity with constructor definition
+        - class name can often be derived from context
+
+4. imply class from destination:
+        ClassName obj = NEW(args)
+        func(NEW(args))
+
+        - does not work when class cannot be derived form context
+
+Choice: 2 and 4.  offer both verbose and short version
+
+
+SPECIFIC CONSTRUCTORS
+
+Overloading allows more than one NEW() method.  However, sometimes it's
+desirable to have two constructors taking the same type of argument for
+different purposes.  Overloading then doesn't work.  This requires specifying
+which constructor to use:
+
+        PROC NEW(string last)
+          $lastName = last
+        }
+
+        PROC NEW.withFirst(string first)
+          $firstName = first
+        }
+
+And use it like this:
+
+        var one = Class.NEW(lastName)
+        var two = Class.NEW.withFirst(firstName)
+
+[this idea comes from Vala]
+
+
+AUTOMATIC CONSTRUCTION
+
+When an object is declared, is it automatically constructed or does it start
+with a NIL reference?
+
+1. Always construct an object.  Let the optimizer remove the code when it's
+   not needed.  Like in C++.
+
+        FooBar  f           # will work like f = NEW()
+        f.doit()            # works
+        FooBar  b = NIL     # avoids the construction
+
+        + avoids NIL references
+        - fails unexpectedly when there is no constructor without arguments
+        - construction of object members may have side effect
+
+2. No automatic construction, reference starts with NIL value.  Like in Java.
+
+        FooBar  f    # will work like f = NIL
+        f.doit()     # crash!
+
+        + straightforward
+        - more problems with NIL pointers
+
+Choice: 2.  NIL pointers can happen anyway, it's more important to keep it
+            consistent: all variables start with zero or NIL value.
+
+
+FUNCTION ARGUMENTS: BY VALUE OR REFERENCE
+
+Pass by value or pass by reference?
+Normally an argument is passed by value.  For objects the value is a reference
+to the object, so changes to the argument are changes to the original object:
+
+         PROC inc(Node n)
+           n.count++
+         }
+         Node n
+         n.count = 3
+         inc(n)
+         IO.write(n)  # gives 4
+
+Since passing by value can be confusing (many beginning Java programmers make
+mistakes), disallow changing the argument.  This won't compile:
+          PROC advance(Node n)
+            n = n.next     # ERROR: Can't change argument "n"
+          }
+
+Sometimes it's useful to pass by reference, how to do that?
+
+1. Don't support it, force using another solution:
+       passing a container object:
+         PROC advance(Node[] nl)
+           nl[0] = nl[0].next                         # array dereference
+         }
+         Node theListBeingUsed
+         advance([theListBeingUsed])                   # inefficient, strange
+       using return value:
+         FUNC Node advance(Node l)
+           return l.next
+         }
+         Node theListBeingUsed
+         theListBeingUsed = advance(theListBeingUsed)  # name appears twice
+
+     + avoids another mechanism
+     - clumsy and verbose
+
+2. Use references:
+         PROC advance(Node &l)
+           l = l.next
+         }
+         Node l
+         advance(&l)
+
+     + effective
+     + explicit about what the intention is
+     o an extra mechanism, but still easy to understand
+
+Choice: 2  shorter/simpler method invocation is more important
+
+
+FUNCTION ARGUMENTS: COMMAS
+
+Allow comma after last func argument?
+	func(one,
+	     two,
+	     three,
+	    )
+
+        + easier to move arguments around
+        - looks like an error that may go unnoticed, since adding an argument
+          may result in using another method.
+        - maybe we want to support empty arguments later (like Python)
+
+Choice: Don't allow it
+
+Can we leave out commas in function argument list?
+	func(one two three)
+
+        - more difficult to parse, both for humans and compilers
+        + less typing
+
+Choice: require commas
+
+
+POLYMORPHISM
+
+Aka function overloading: Can a function appear more than once with a
+different signature for arguments?
+
+For example, a method that can take a string, an int or both.
+        doIt("once")
+        doIt(111)
+        doIt("twice", 222)
+
+1. Yes, like Java:
+
+        PROC doIt(string s)
+           doIt(s, 999)
+        }
+        PROC doIt(int n)
+           doIt("none", n)
+        }
+        PROC doIt(string s, int n)
+           name = s
+           nr = n
+        }
+
+        - Several closely related functions
+        - Can't have two with the same signature
+        + simple
+        o To avoid scattering can require they are all put together
+
+2. No, only one type for each argument, use ANY where needed, use optional
+   arguments.
+
+        PROC doIt(ANY x, int n = 999)
+          IF x ISA string
+             name = x
+             nr = n
+          ELSEIF x ISA int
+             name = "none"
+             nr = x
+          ELSE
+             ERROR
+          }
+        }
+
+        - Too many "IF"
+        - No compile time error for mistakes
+
+3. Allow multiple types for an argument and optional arguments:
+
+        PROC doIt((string, int) x, int n = 999)
+          IF x ISA string
+             name = x
+             nr = n
+          ELSE
+             name = "none"
+             nr = x
+          }
+        }
+
+        o Still a few "IF"
+
+4. Use optional arguments only:
+
+        PROC doIt(string x = "none", int n = 999)
+          name = x
+          nr = n
+        }
+
+        - Can't specify at least one argument is required
+
+5. Do multiple signatures at once:
+
+        PROC doIt(string s) (int n) (string s1, int n1)
+          IF s.DEF
+             name = s
+             nr = 999
+          ELSEIF n.DEF
+             name = "none"
+             nr = n
+          ELSE
+             name = s1
+             nr = n1
+          }
+        }
+
+        - too many IF
+
+6. Require different method names
+
+        PROC doItString(string s)
+           doIt(s, 999)
+        }
+        PROC doItInt(int n)
+           doIt("none", n)
+        }
+        PROC doIt(string s, int n)
+           name = s
+           nr = n
+        }
+
+        - Several closely related functions, but with different names
+        - Cannot require they are all put together
+        + simple
+
+Choice: 1.  Avoiding IFs is more useful than the rest.
+            4. is also possible.
+
+
+OPTIONAL FUNCTION ARGUMENTS
+
+Having to specify a separate function for every possible way arguments can be
+used is tedius.
+
+1. Don't allow optional function arguments
+                PROC addEntry(string name)
+                  addEntry(name, 0)
+                }
+                PROC addEntry(string name, int val)
+                  addEntry(name, val, Type.nop)
+                }
+                PROC addEntry(string name, Type type)
+                  addEntry(name, 0, type)
+                }
+                PROC addEntry(string name, int val, Type type)
+                  ...
+                }
+                addEntry("foo")
+                addEntry("foo", 99, Type.foo)
+                addEntry("foo", 77)
+                addEntry("bar", Type.bar)
+                addEntry("xyz", -1, Type.xyz)  # cannot change order
+
+        + simple
+        - need to define multiple functions to get the effect
+        - inefficient when implemented as-is
+
+2. Optional arguments, like Python:
+                PROC addEntry(string name, int val = 0, Type type = Type.nop)
+                  ...
+                }
+                addEntry("foo")
+                addEntry("foo", 77)
+                addEntry("foo", 77, Type.foo)
+                addEntry("bar", type = Type.bar)
+                addEntry("xyz", type = Type.xyz, val = -1)
+
+        + define one function instead of four
+        + default values are automatically in one place
+        + when an existing function is extended, it's very convenient to add
+          an optional argument.
+        - changing order of arguments is not very useful
+        o becomes confusing with polymorphism?
+        - can be confusing when implementing an interface
+        - the value can be a complex expression, this offers ways to make ugly
+          code
+
+Choice: 2.  Having it all in one place is better.
+            But remove it when it tuns out to be ugly
+
+Useful application of optional arguments: declarative syntax (like Ceylon):
+        See testdir\Arguments.zu
+
+
+VARIABLE NUMBER OF FUNCTION ARGUMENTS
+
+1. Only allow fixed arguments and variable arguments (varargs) like Java:
+                FUNC string format(string format, ANY ... args)
+                  # i = next % in THIS, c = type of %
+                  IF i >= args.size()
+                    THROW "not enough arguments"
+                  ELSEIF c == 'd'
+                    IF args[i].type != T.int
+                      THROW "expected int argument at index " .. i
+                    ELSE
+                      result ..= args[i].value
+                    }
+                  ELSE
+                    THROW "Conversion %" .. c .. " not supported"
+                  }
+                }
+                format("Hello %s/%d!", "world", 3)
+
+        + looks good
+
+        Additionally, could provide a function for static type checking.
+
+        Instead of list of arguments can also pass an array, so that this
+        is possible:
+                PROC writeFormat(string format, ANY ... args)
+                  write(string.format(format, args))
+                }
+
+2. Require using a List:
+                FUNC string format(string format, List<ANY> args)
+                }
+                format("Hello %s!", ["world"])
+        - more special characters
+        - function could modify the list (accidentally)
+        - no difference with actually passing a list argument
+        - only positional arguments, not by name
+
+Choice: 1.
+Status: not implemented
+
+
+TYPE SPECIFICATION
+
+   ANY foo
+   foo.name: "foo"
+   foo.value
+   foo.type:
+	T.int
+	T.string
+	T.func
+	etc.
+	T.list
+	T.dict
+   foo.typespec  list<ANY> for array, list and dict
+	T.object
+   foo.class.name          (See Java Class, Field, etc.)
+   foo.class.members
+   foo.class.members[0].name
+   foo.class.members[0].type
+
+T.intType(foo.type) TRUE for int, int8, int32, etc.
+
+
+ARRAY DECLARATION
+
+Declaration of an Array differs from others:
+	dict<Type> foo
+	list<Type> foo
+	Type[]     foo
+	Type[][]   foo
+
+Should we use:
+	array<Type>        foo  # array of Type, dynamic size
+	array<Type, 4>     foo  # array of Type, 4 items
+	array<Type, 4, 8>  foo  # array of Type, 4 x 8 items
+	array<array<Type>> foo  # two dimensional jagged array of Type
+
+Less exceptions, but not so nice, e.g.:
+
+	ChessPiece[8][8]         chessBoard = NEW()
+	array<ChessPiece, 8, 8>  chessBoard = NEW()
+
+Choice: Use array<>, consistency is more important.
+
+The different type and size info in the <> is not nice.  How about:
+
+	array<Type | 4>     foo  # array of Type, 4 items
+	array<Type | 4, 8>  foo  # array of Type, 4 x 8 items
+
+We can also do this for functions:
+
+        func<RetType | ArgType1, ArgType2>
+
+Choice: yes, looks better.
+
+
+SPECIAL CHARACTERS IN STRINGS
+
+        "" strings have \n, \r, \e, etc.
+        R"" strings are literal.  Double " to get one.
+
+Also multi-line strings, like in Python:
+        '''-''' strings are literal
+
+
+LONG STRINGS
+
+A string continues in the next line if the next line starts with a string:
+
+        s = "first "                # comment
+                .. "second"
+
+This does NOT work:
+        s = "first " "second"   # error!
+Should be:
+        s = "first " .. "second"
+
+Rationale: Avoid mistakes with quotes embedded in strings.
+
+
+SLICE INDICES
+
+Is the second index inclusive or exclusive?
+Python does it exclusive.  Unfortunately it means you can't get the last byte
+of a string:
+        "123".slice(-1, -1) == ""
+        "123".slice(-2, -1) == "2"
+
+You could use a large number or MAX for the second one:
+        "123".slice(-1, MAX) == "3"
+
+When using the index inclusive it's easier:
+        "123".slice(-1, -1) == "3"
+
+This gets the slice in characters.  To get the slice as bytes first convert it
+to bytes:
+        "123".asBytes.slice(-1, -1)
+
+
+EXCEPTIONS
+
+Mostly like Python.  Exception is an object with this interface:
+        .message
+        .stack
+The module containing the predefined exceptions is "E".  The names are similar
+to Java, but lack the long word "Exception":
+        E.outOfMemory
+        E.nullPointer
+
+        TRY
+          code
+          f = File.fileReader(name)
+          code
+        CATCH E.outOfMemory, E.nullPointer e
+          IO.write(e.message)
+        FINALLY
+          f.close()
+        }
+
+
+THROW
+
+The THROW statement has an argument and can't be followed by another
+statement.  Much like EXIT and RETURN.  To put in a THROW temporarily use:
+        IF TRUE
+          THROW "something"
+        }
+        # This code is not executed, but the compiler doen't complain.
+
+Possible arguments, these three are equivalent:
+       THROW "some string"
+       THROW NEW("some string")
+       THROW E.Exception.NEW("some string")
+
+Including the position of the calling function:
+       THROW NEW("some string", Z.callerPos())
+
+
+BLOCK WITH SETUP AND RELEASE
+
+Quite often code has to be executed with a lock obtained, and one must make
+sure the lock is released when leaving the code block.  It is possible to do
+this with a TRY-FINALLY block, but it requires putting the release command
+separately:
+
+        TRY
+          lock.begin()
+          # do something that requires the lock
+        FINALLY
+          lock.end()
+        }
+
+There is no check if the release is actually there, this is up to the
+programmer and needs to be tested.  This is a simpler and better way:
+
+        WITH lock
+          # do something that requires the lock
+        }
+
+This works with any object that implements the Z.I_With interface:
+
+  INTERFACE I_With
+    #= Block on waiting for the lock.
+    PROC begin()
+
+    #= Try obtaining the lock, return OK when obtained, FAIL when not.
+    FUNC tryBegin() status
+
+    #= Release the lock.
+    PROC end()
+  }
+
+WITH guarantees that the lock is obtained before entering the block and will
+be released when leaving the block.
+
+An advantage is that several objects can be used:
+
+      WITH lock1, lock2
+        # do something that requires both lock1 and lock2
+      }
+
+Which would have to be written with TRY as:
+
+      TRY
+        lock1.begin()
+        TRY
+          lock2.begin()
+          # do something that requires lock1 and lock2
+        FINALLY
+          lock2.end()
+        }
+      FINALLY
+        lock.end()
+      }
+
+However, we don't want to keep lock1 while waiting for lock2.  That makes it
+a lot more complicated.  The actual code is hard to represent like this.
+
+It does mean that begin() and end() may be called several times before the
+block is actually entered.  Also, the order in which the WITH arguments are
+locked is undefined.
+
+Should a nested WITH release the outer locks while waiting for its locks?
+Example:
+
+      WITH readlock  # multiple threads can read, no changes allowed
+        # find item
+        IF item_found
+          WITH writelock  # changes allowed, requires readlock
+            #delete item
+          }
+        }
+      }
+
+In this case the readlock must not be released, another might get the
+writelock first and delete the item.  On the other hand, if there is another
+thread doing the same thing, this results in a DEADLOCK.
+
+1. WITH never keeps a lock while waiting, to avoid deadlocks.  The code must
+   always check for changed situation inside the WITH.
+
+  The example becomes:
+
+        WITH readlock
+          # find item
+          IF item_found
+            WITH writelock
+              # find item again
+              IF item_found
+                # delete item
+              }
+            }
+          }
+        }
+
+  Problem: the nested WITH may appear in a method, the caller may be unaware
+  of the possibility that the lock is released for a while.
+
+2. Disallow nested WITH for related locks.
+
+   The example becomes:
+
+        WITH readlock
+          # find item
+        }
+        IF item_found
+          WITH writelock
+            # find item again
+            IF item_found
+              # delete item
+            }
+          }
+        }
+
+Alternative: Use a locklist object and USING:
+
+        USING
+         locklist l = NEW(readlock)
+        TRY
+          # find item
+          IF item_found
+            l.add(writelock)  # frees readlock while writelock is not locked
+            # find item again
+            IF item_found
+              # delete item
+            }
+          }
+        }
+
+Or the simpler solution:
+
+        USING
+          locklist l = NEW([readlock, writelock])
+        TRY
+          # find item
+          IF item_found
+            # delete item
+          }
+        }
+
+
+AUTO CLOSE
+
+Executing a block of code and making sure that streams are closed in the end.
+You would think that this works:
+
+        Input in = NEW()
+        Output out = NEW()
+        TRY
+          # read from in, write to out
+        FINALLY
+          in.close()
+          out.close()
+        }
+
+When this fails:
+- if creating "out" throws an exception, "in" is not closed.
+- if closing "in" throws an exception, "out" is not closed
+
+You might be tempted to write it like this:
+
+        TRY
+          Input in = NEW()
+          Output out = NEW()
+          # read from in, write to out
+        FINALLY
+          TRY
+            in.close()
+          FINALLY
+            out.close()
+          }
+        }
+
+When this fails:
+- When opening "out" throws an exception out.close() will fail.
+
+So it would have to be:
+
+        TRY
+          Input in = NEW()
+          Output out = NEW()
+          # read from in, write to out
+        FINALLY
+          TRY
+            in.close()
+          FINALLY
+            IF out != NIL
+              out.close()
+            }
+          }
+        }
+
+That gets messy.  Java has this solution:
+
+        TRY (Input in = NEW()
+             Output out = NEW())
+          # read from in, write to out
+        }
+
+It's strange to have statements inside ().  Also, unless one knows about it,
+it's a mystery what is going on here.  It's better to put the declarations in
+a separate block:
+
+        USING
+          Input in = NEW()
+          Output out = NEW()
+        TRY
+          # read from in, write to out
+        }
+
+Or, if exceptions need to be handled:
+
+        USING
+          Input in = NEW()
+          Output out = NEW()
+        TRY
+          # read from in, write to out
+        CATCH E.Exception e
+          # handle exception
+        }
+
+All variables declared in the USING block need to have the Close() method.
+        PROC Close()
+
+This can also be used for locks:
+
+        USING
+          locklist locks = NEW([readlock, writelock])
+          Input in = NEW()
+          Output out = NEW()
+        TRY
+          # read from in, write to out
+        }
+
+
+IMPORT
+
+System functions are available without any imports.  Other things can be
+imported:
+
+        IMPORT "some/dir/parser.zu"
+        VAR p = Parser.new()
+
+The file can define a module and/or class.  They appear in the namespace.
+The file cannot define global variables or functions.  All items in the
+imported file must be part of a module or class.
+
+The directory and file name characters must be valid on all systems:
+    - letters and numbers (also multi-byte)
+    - one of: '_', '-'
+    - space
+
+There is a default path where to look for imports:
+        1. relative to directory of input file
+        2. library path, e.g. "/usr/local/zimbu/lib"
+        3. path defined in build file
+
+Implementation: each import only needs to be read and parsed once.
+
+
+WHERE TO PUT IMPORTS
+
+1. Always at the start of the file, before any other statements
+   + clear, simple
+   - can't put imports just before where they are used
+
+2. Anywhere
+   + flexible
+   - harder to see what the dependencies are
+
+Choice: 1.  In practice this works better
+
+
+VISIBILITY OF IMPORTS
+
+1. When a file is imported, all files imported by that file are used as well
+   + any dependent classes and types will be automatically declared
+   - may cause unexpected name clashes, as the first import may not be able to
+     tell the other files what they can import
+
+2. When a file is imported, only the items defined by it are used.
+   + no name clashes
+   - When other types are needed, e.g., returned by a function, this requires
+     more imports.
+
+Choice 2.  Avoiding unexpected name clashes is more important.
+
+
+SYNTAX OF IMPORTS
+
+1. No quotes
+        IMPORT name
+   + simple
+   - can't have special things
+
+2. String
+        IMPORT "this dir/file.zu"
+   + can have spaces inside
+
+3. Expression
+         IMPORT rootDir + "subdir/file.zu"
+   + shorter when lots of imports below one dir
+   - difficult for tools to find out where files are
+
+4. Mix
+        Import libraries with a simple name
+                IMPORT url
+                IMPORT testing/assert
+        Import local files with double quotes
+                IMPORT "util/parse.zu"
+        Import special files with full name
+                IMPORT <images/pdf.png> AS pdfImage
+
+Choice: 4
+
+
+PATH OF IMPORTS
+
+1. Only relative paths, use search path to find them
+          IMPORT google/util/string.zu  # library stuff
+          IMPORT fancyfile.zu           # program stuff
+   - not always clear where file should be found
+
+2. Explicitly use search path to find them
+          IMPORTLIB  google/util/string.zu   # library stuff
+          IMPORT fancyfile.zu                # program stuff
+   + no unexpected name clashes with some lib path
+
+3. Use search path and allow absolute dir
+          IMPORTLIB google/util/string.zu   # library stuff
+          IMPORT ~/mylib/fancyfile.zu       # program stuff
+   + no unexpected name clashes with some lib path
+   + don't need to set path when building
+
+4. Like C: "file" for direct, <file> for using lib search path.
+          IMPORT <google/util/string.zu>    # library stuff
+          IMPORT "fancyfile.zu"             # program stuff
+          IMPORT "~/mylib/fancyfile.zu"     # program stuff
+   + no unexpected name clashes with some lib path
+   + don't need to set path when building
+
+Choice: 4.  A name without "" or <> is handled like <.zu>:
+                IMPORT url
+            equivalent to:
+                IMPORT <url.zu>
+
+
+SCOPE OF SYMBOLS DEFINED IN IMPORT
+
+When imported file A imports file B, are the symbols from B visible in the
+current scope?
+
+1. No. 
+        + Allows symbols from B conflicting with current scope
+        - Requires importing B in current scope if symbols in B are used
+
+2. Yes
+        + Less imports required
+        - May lead to unsolvable conflicts of unexpected imports
+
+Choice: 1.  It's more important to keep control over what happens and avoid
+            unexpected conflicts than reducing the number fo imports needed.
+
+
+WHAT CAN BE DEFINED IN AN IMPORT
+
+1. Multiple modules and classes
+        + flexible
+        - when something is added this may cause unexpected name conflicts in
+          other files
+
+2. Only define one Module and/or Class name, like Java
+        + clear and simple
+        - requires more files
+
+Choice: 2.  Avoiding unexpected name conflicts is very important.
+
+
+FILE NAME MATCHES MODULE NAME
+
+1. No required relation between module/class name and file name
+        + flexible
+        - up to the user to use good names
+
+2. Require the file name to start with the class/module name.  Something else
+   may follow.  E.g., the Module "Foobar" can be in the file "foobar.zu",
+   "foobar_v2.zu", "foobar_alt.zu", but not in "barfoo.zu" or "foobarbar.zu".
+   Case is ignored.
+        + can see from import statement where items are most likely defined
+        - less flexible
+
+3. Require the file name to be exactly the same as the class/module name.
+        - No way to make a copy of a class in another file
+        - Mistakes in case cause useless problems.
+
+Choice: 2.  Reasonable balance between flexibility and predictability.
+
+
+IMPORT WITH NAME CONFLICT
+
+It may happen that two imported files define a module or class with the same
+name.  E.g., when using two versions of the same file.
+
+1. Use IMPORT - UNDER
+        IMPORT "mymodule.zu"
+        IMPORT "mymodule_old.zu" UNDER old
+        IMPORT "mymodlue_tryout.zu" UNDER try
+
+        VAR x = MyModule.create("foo")
+        VAR y = old.MyModule.create("bar")
+        VAR z = try.MyModule.create("abc")
+
+2. Use IMPORT - AS
+        IMPORT "mymodule.zu"
+        IMPORT "mymodule_old.zu" AS MyModuleOld
+        IMPORT "mymodule_tryout.zu" AS MyModuleTry
+
+        VAR x = MyModule.create("foo")
+        VAR y = MyModuleOld.create("bar")
+        VAR z = MyModuleTry.create("abc")
+
+        + Allows using one name instead of a name with dot
+
+Choice: 2.
+Status: implemented
+
+
+IMPORTING OTHER KINDS OF CODE FILES
+
+For example: protocol buffers (http://code.google.com/apis/protocolbuffers)
+
+1. Require an external tool to convert to a Zimbu file, use the IMPORT command.
+
+        + generic, flexible
+        - dependency on external tool
+
+2. Import each type with a specific command:
+
+        IMPORT.proto "api/message.proto"
+
+        + easy build
+        + makes it part of the language
+        - very specific for one type of file
+
+3. Use Class with specific interface to do the conversion.
+        
+        IMPORT <proto.zu>
+        IMPORT.Proto "api/message.proto"
+
+        + flexible
+        - requires building the class before parsing, unclear how
+          this would work
+
+4. Use Plugins with specific interface to do the conversion.
+        
+        PLUGIN Proto <proto.zu>
+        IMPORT.Proto "api/message.proto"
+
+        + flexible
+        + clearly separates a normal import from using a plugin
+        + can compile the plugin separately
+        - requires another keyword
+
+Choice: 4.  When proto support is part of the languages it becomes
+            IMPORT.PROTO.
+
+
+IMPORTING OTHER KINDS OF FILES
+
+It should be easy to use images and embed them in the program.
+
+        IMPORT.BYTES "images/docOpen.png" AS openImage
+
+This reads the file into a bytes variable "openImage".
+
+        IMPORT.STRING "disclaimer.txt" AS disclaimer
+
+This reads the file into a string variable "disclaimer".
+
+Other types can be used with a plugin:
+
+        PLUGIN Icon <iconreader.zu>
+        IMPORT.Icon "icons/slides.ico" UNDER slideIcon
+
+
+PLUGINS FOR FILE-LIKE I/O
+
+A module should be able to register a plugin for a protocol.  Something like:
+
+        # File plugin for "dash:" files.
+        MODULE Dash
+
+          FUNC Init() status
+            IO.registerPlugin(NEW("dash:")
+                              .setOpen(DashOpen)
+                              .setRead(DashRead)
+                              .setWrite(DashWrite)
+                              .setInfo(DashInfo))
+            RETURN OK
+          }
+
+          CLASS DashInfo
+            type  name  # extra info for dash: files
+          }
+          FUNC status DashOpen(IO.File file)
+            DashInfo info = file.getExtra("dash:")
+            # do something with "info"
+          }
+          FUNC status DashRead(IO.File file)
+            ...
+          }
+          FUNC status DashWrite(IO.File file)
+            ...
+          }
+        }
+
+
+INCLUDING FILES HALFWAY
+
+If a module gets big it needs to be split up over several files.  But users of
+the module don't need to know.  How to do this?
+An example is lib/zwtmodule.zu
+
+1. use INCLUDE
+
+        MODULE Foo
+          INCLUDE "foo/part1.zu"  # defines class Part1
+          INCLUDE "foo/part2.zu"  # defines function part2()
+        }
+
+        + flexible, works for everything
+        - It's not clear what the included file defines.
+        - The included files cannot be used separately (think testing)
+
+2. use ALIAS
+
+        IMPORT "foo/onepart.zu"   # defines class OnePart
+        IMPORT "foo/parttwo.zu"   # defines function PartTwo.theFunc()
+        MODULE Foo
+          ALIAS OnePart         OnePart  # now usable as Foo.OnePart
+          ALIAS PartTwo.theFunc theFunc  # now usable as Foo.theFunc()
+        }
+
+        + imported files are complete
+        + also allows making items available under another name.
+        - need to list every item
+
+Choice: 2.  It's important to know what is where
+
+Also use ALIAS for defining types:
+
+        ALIAS tuple<string, int> KeyValue
+
+This doesn't create a new type, it really is an alias.
+
+Can also use ALIAS for connecting methods with a MIXIN:
+
+        CLASS BorderLabel EXTENDS Label
+          INCLUDE Border $border
+          ALIAS $border.draw $draw @replace
+          ALIAS $draw $border.draw @replace
+        }
+
+However, we need a kind of typedef to really define a new type:
+
+        TYPE int Meter
+        TYPE int Gram
+        TYPE int Weight
+        TYPE tuple<int, int>  Coordinate
+        TYPE tuple<int, int>  Position
+
+The first three are three separate types, even though they use the same value
+types.
+
+
+FILTERING
+
+Many simple programs read input and produce output.  E.g. to trim white space,
+replace one word for another, etc.
+
+To make this simple we can provide an alternative to Main: FILTER
+
+        FILTER
+          WHILE !IO.eof()
+            IO.write(IO.readLine().substitute(" *$", ""))
+          }
+        }
+
+Special handling of the arguments:
+    prog [-o outfile] [--] [infile]
+                -o outfile            output file name
+                --                    end of options
+                infile                input file name
+        read from infile (stdin when omitted)
+        write to outfile (stdout when omitted)
+
+    prog --inplace fname
+    prog -i fname
+        read from fname
+        write to tempfile, rename tempfile to fname when done
+
+
+CALLBACKS AND CLOSURES
+
+Especially for asynchronous code we need a way to pass a function or method to
+be called back later.
+
+A reference (pointer) to the method can be used when calling back a function.
+This requires the argument types to match.  This can be checked by the
+compiler.
+
+There are two situations where the function gets more arguments on top of what
+the caller provides:
+- For a closure: uses variables in the context of where the method was
+  defined.
+- For a callback: uses variables in the context of where the callback was
+  defined.
+
+We need to store more than a pointer to the function.  The code invoking the
+callback does not know about these arguments.  Thus we need to store the extra
+arguments with the function pointer.  It's like an object with one function.
+
+When calling back a method on an object this also requires a reference to the
+object.  Just like the extra argument, the code invoking the callback usually
+doesn't need to know about the object, just the arguments for the method.
+This is like passing the object as an argument, but it changes the way the
+method is invoked.
+
+To be able to pass the callback with the object and/or arguments we need it to
+have two interfaces:
+1. What the code invoking the callback expects, with the specified arguments.
+2. What the invoked function expects, with zero or more additional arguments
+   and/or an object reference.
+
+In other words:
+1. The arguments required by the code invoking the callback.
+2. The extra arguments passed from where the callback is created to the method
+   being invoked.
+
+So a callback is a type that is defined with:
+
+        callback<invoker_interface, extra_arg1, extra_arg2, ...>
+
+A callback is compatible when the invoker_interface matches.
+This is used for the function invoking the callback:
+
+        PROC getMonth(callback<proc<string>> cb)
+          string month = ...
+          cb(month)
+        }
+        PROC printSome(string month, string lead)
+          ...write(lead .. ": " .. month)
+        }
+        callback<proc<string>, string> cb = NEW(printSome, "one")
+        getMonth(cb)
+
+Putting callback<> around every method reference is bothersome and means
+there are two incompatible ways in passing method references.  We can drop
+this if a method reference always is a callback.  In its simplest form without
+any extra arguments.
+
+        PROC getMonth(proc<string> cb)
+          string month = ...
+          cb(month)
+        }
+
+Implementation: It's easy to create a static struct for the callback with the
+method pointer and a zero (to indicate there are no extra arguments).  The
+overhead is to check the zero arguments, which is small compared to making a
+function call.
+
+E.g.:
+        MODULE Gen
+          PROC sort(array<string> names, func<string, string : int> cmp)
+            ...
+              r = cmp(names[i], names[j])
+            ...
+          }
+        }
+
+        (in another file)
+
+        FUNC compare(string left, string right, int &count) int
+          count++
+          RETURN left.Compare(right)
+        }
+
+        array<string> names
+        int count
+        callback<func<string, string : int>, int &> cb = NEW(compare, &count)
+        Gen.sort(names, cb)
+        IO.print("compare() called " .. count .. " times")
+
+An object method is different from a function, how to we specify a method, it
+requires an extra object argument.  Perhaps specify the class as the first
+extra argument:
+
+          callback<func<string, string : int>, Foo, int>
+
+When a method is invoked the second argument must be an object of the class.
+Very often THIS will be used, as in this example:
+
+        CLASS DemoCallback
+          array<string> $names
+          int $count
+
+          FUNC compare(string left, string right) int
+            $count++
+            RETURN left.compare(right)
+          }
+
+          PROC sort()
+            callback<func<string, string : int>, DemoCallback> cb = NEW(compare, THIS)
+            Gen.sort($names, cb)
+          }
+        }
+
+
+Implementation
+
+In C a function pointer is invoked just like a normal function, thus we need
+to put the arguments in () for the generated code.  Since we don't know the
+arguments until runtime we need some tricks to make this work.
+
+When "sizeof(Ti) == sizeof(char *)" we only need to match the number of
+arguments, they will be passed correctly no matter what the type is.  The
+method invoking the callback must call a ZdoCallback method with the number of
+arguments:
+               ZdoCallback0(db);
+               ZdoCallback1(db, arg1);
+               ZdoCallback2(db, arg1, arg2);
+               etc.
+
+The ZdoCallbackN() function must add the extra arguments, which again can be
+an arbitrary number:
+                Ti ZdoCallback0(Zcallback *db) {
+                  switch (db->narg) {
+                    case 0: return db->fp();
+                    case 1: return db->fp(db->arg[0]);
+                    case 2: return db->fp(db->arg[0], db->arg[1]);
+                    etc.
+                  }
+                }
+                Ti ZdoCallback1(Zcallback *db, Ti arg1) {
+                  switch (db->narg) {
+                    case 0: return db->fp(arg1);
+                    case 1: return db->fp(arg1, db->arg[0]);
+                    case 2: return db->fp(arg1, db->arg[0], db->arg[1]);
+                    etc.
+                  }
+                }
+                etc.
+
+Then we need another variant for when there is no return value (for effiency
+and to avoid compiler warnings).
+                void ZdoCallback0(Zcallback *db) {
+                  switch (db->narg) {
+                    case 0: db->fp(); return;
+                    case 1: db->fp(db->arg[0]); return;
+                    case 2: db->fp(db->arg[0], db->arg[1]); return;
+                    etc.
+                  }
+                }
+
+When "sizeof(Ti) != sizeof(char *)" we need to take the return and argument
+type into account:
+        return type: void, Ti, char *
+        callback arg 1: Ti, char *
+        callback arg 2: Ti, char *
+        etc.
+        extra arg 1: Ti, char *
+        extra arg 2: Ti, char *
+        etc.
+
+Obviously the amount of code will explode, thus we must only generate the ones
+that can actually be used.  For the function name use a sequence of letters
+indicating the argument type:
+        I  Ti
+        P  pointer
+        F  float
+        V  void
+
+Also use this for the return type:
+
+        void ZVCallbackF(Zcallback *db, double arg1)
+        Ti ZICallbackIP(Zcallback *db, Ti arg1, char *arg2)
+        etc.
+
+For efficiency we should avoid the extra ZdoCallbackN() function call for most
+often used cases.  Especially when there are no extra arguments:
+                if (db->narg == 0) {
+                   db->fp(arg1);
+                } else {
+                   ZdoCallback1(db, (Ti)arg1);
+                }
+
+
+INVOKING A METHOD/CALLBACK ON AN OBJECT
+
+A normal object method call looks like:
+
+        o.method(a, b, c)
+
+If we have a method reference, how to declare it?
+
+1. Class name first:
+
+        func<Obj, int, int, int : int> methodRef
+
+    - confuses argument type and class
+
+2. Class name separate:
+
+        Obj.func<int, int, int : int> methodRef
+
+    + does not confuse return type and class
+
+Choice: 2
+
+
+If we have a method reference, how to call it?
+
+	Obj o
+	ret = methodRef(o, a, b, c)        # confuses object and return val.
+	ret = methodRef(o)(a, b, c)        # weird
+	ret = o.methodRef(a, b, c)         # confusing scope of "methodRef"
+	ret = o.(methodRef)(a, b, c)       # OK
+	ret = CALL(o, methodRef(a, b, c))  # ?
+	ret = o.CALL(methodRef, a, b, c))  # OK?
+	ret = o.CALL(methodRef(a, b, c))   # better?
+
+It's probably best to keep it as close to a normal method call:
+
+	ret = o.(methodRef)(a, b, c)
+
+Since this way of invoking a function ref in parens also works:
+
+        func<int, int, int : int> funcRef
+	ret = (funcRef)(a, b, c)
+
+Choice:  o.(methodRef)(a, b, c)
+
+
+LAMBDA FUNCTIONS, CLOSURES
+
+It should be possible to define code to be executed in a simple way and pass
+a reference to it around.  This is sometimes refered to as a lambda function
+or a closure.  In C and C++ this would be done with the preprocessor, but
+that's messy.
+
+Using PROC and FUNC without a method name.
+
+        func< : string> myExpr = FUNC () string
+                                   RETURN "today is " .. Date.now()
+                                 }
+        IO.print(myExpr())
+
+        proc<int> myProc = PROC(int arg)
+                             IO.write("count: " .. arg)
+                           }
+        myProc(123)
+
+        func<int : string> myFunc = FUNC (int score) string
+                                      RETURN score > 5 ? "good" : "bad"
+                                    }
+        IO.print(myFunc(getScore()))
+
+        # Make all strings in a dictionary upper case
+        dict<int, string> d = ...
+        d.map(FUNC (string s) string
+                RETURN s.toUpper()
+              })
+
+Martin Fowler writes: http://www.martinfowler.com/bliki/Closure.html
+Essential is that a closure can use variables from the scope where it is
+defined into the scope where it is executed.
+
+Use the keyword USE to pass variables from the current scope and pass them as
+an argument.  Like in a callback, they are extra arguments that the invoker of
+the callback doesn't know about.
+
+"USE var" obtains the current value of the variable.  If the variable changes
+later it won't affect the value.  The value can't be set.
+
+"USE &var" obtains a reference to the variable.  If the variable changes later
+the value will change as well.  The value can be set to return a result.  Just
+like passing a reference as a method argument.
+
+        # Evaluate an expression in a separate thread
+        list<int> input = ...
+        func< : int> doSum = FUNC (USE input) int
+                               RETURN sum(input)
+                             }
+        pipe<int> rp = THREAD.eval(doSum)
+        # ... do something else
+        int result = rp.read()
+
+        string msgGood = catalog.get("good")
+        string msgBad = catalog.get("bad")
+        ProcessScore(text,
+                     FUNC (int score USE msgGood, msgBad) string
+                       RETURN score > 5 ? msgGood : msgBad
+                     })
+
+
+Alternatives for shorter way to define the code:
+
+1. Put it inside { }
+        dict<string> d
+        d.map({ RETURN V.toUpper() })
+
+	pipe<int> input = ...
+        THREAD.eval({ RETURN sum(input) })
+
+    - where does V come from?
+    - It's unclear what is obtained from the context, leads to mistakes
+    - Type of returned value is not specified
+
+2. Use => short form for evaluating an expression.  This only works when the
+   types of the arguments and the return value can be obtained from the
+   context:
+
+        dict<string, string> d
+        string sep = " = "
+        d.map({ val => val.toUpper() })
+        d.dictMap({ key, val USE sep => key .. sep .. val }).join(", ")
+
+	pipe<int> input = ...
+	pipe<int> p = Z.thread.eval({ USE input => sum(input) })
+
+   + nicely compact
+
+3. Like 2, but require type spec for arguments:
+
+        d.map({ string val => val.toUpper() })
+        d.dictMap({ string key, string val USE sep => key .. sep .. val }).join(", ")
+
+   - not consistent with USE that doesn't specify a type
+   - not often needed, can use nameless PROC/FUNC when type spec is needed
+
+4. Like 2, but use backticks.  There can be no arguments, only predefined ones:
+
+        dict<string, string> d
+        string sep = " = "
+        d.map(`VAL.toUpper()`)
+        d.dictMap(`KEY .. sep .. VAL`).join(", ")
+
+	pipe<int> input = ...
+	pipe<int> p = THREAD.eval(`sum(input)`)
+
+   + even more compact
+   - pick up vars from the context without declaration
+   - using predefined arguments is inflexible.
+   o backticks are hard to spot
+
+Choice: 2
+
+
+Also need to be able to assign the code to a variable.  Could do something
+like this:
+
+        func<int : int> f = FUNC (int x) int
+                              RETURN x * x
+                            }
+        IO.print(f(5))  # results in 25, result of 5 * 5
+
+
+And with the short form:
+
+        func<int : int> f = { x => x * x }
+
+Also allow a similar thing without returning a value:
+
+        proc<string> log = PROC(string msg)
+                             IF Log.toFile
+                               Log.print(msg)
+                             ELSE
+                               IO.print(msg)
+                             }
+                           }
+
+    Short form:
+        proc<string> log = { msg => Log.toFile ? Log.print(msg) : IO.print(msg) }
+
+    Usage:
+        log("starting computations...")
+        ...
+        log("done")
+
+
+DEFINE AN OBJECT WITHOUT A CLASS
+
+        # Define an object to iterate over.
+        # NOTE: this isn't quite right, need to separate the position in the
+        # list from the list itself.
+        iterator.I myObject
+        counts = OBJECT IMPLEMENTS iterable
+                     list<string> counts = ["first", "second", "third"]
+                     FUNC bool hasNext(int idx)
+                       RETURN idx < counts.size()
+                     }
+                     FUNC string get(idx)
+                       RETURN counts[idx]
+                     }
+                     FUNC int advance(idx)
+                       return idx + 1
+                     }
+                   }
+         FOR x IN counts
+
+
+EXTENDING CLASSES ELSEWHERE
+
+Make it possible to add a method to an existing class, without creating a new
+class?
+
+      EXTEND IO.File
+        PROC $writeHeader()
+          $write("# this is the header")
+	}
+      }
+
+Problems:
+- What is the scope of this extension?
+- How to avoid name clashes?  We could use theInt.X.incFive() to avoid name
+  clashes with the original class, but what if there are two places where
+  writeHeader() is added?  Also, there is no way to make clear where the
+  extension comes from.
+
+Choice: Let's not do it like this.
+
+You can always define a module with extra methods:
+
+        MODULE MyInt
+          PROC $incFive(int &i)
+            i += 5
+          }
+        }
+
+        MyInt.incFive(&theInt)
+
+But that disallows chaining and requires passing by reference.
+
+We can extend a class and explicitly state that it only adds methods, does not
+change the data stored in it:
+
+        CLASS MyFile ISA IO.File
+          PROC $writeHeader()
+            $write("# this is the header")
+          }
+        }
+
+Now MyFile can be used anywhere IO.File is used, and provide the extra method:
+
+        MyFile f = IO.fileWriter("tmp")
+        f.writeHeader()
+        f.close()
+
+
+EXTENDING BUILTIN VALUE TYPES
+
+This would work:
+        CLASS MyInt ISA T.int
+          PROC $incFive()
+            THIS += 5
+          }
+        }
+        ...
+        MyInt i = 3
+        i.incFive()
+
+Tricky thing is that THIS is a value type, not a reference.
+
+
+EXTENDING ENUM
+
+        ENUM Foo
+           one
+           two
+        }
+        ENUM FooPlus EXTENDS Foo
+           three
+           four
+        }
+
+Looks fine, we can support this.
+
+
+ENUM as a CLASS
+
+Java supports this:
+
+        public enum Planet {
+           MERCURY (3.303e+23, 2.4397e6),
+           VENUS   (4.869e+24, 6.0518e6)
+        }
+
+This is weird, the types in parens is not specified.  How do we do this in
+Zimbu?
+
+        ENUM Planet
+          mercury
+          venus
+        }
+        dict<Planet, tuple<float, float>> planets = [
+          Planet.mercury: [3.303e+23, 2.4397e6],
+          Planet.venus:   [4.869e+24, 6.0518e6],
+        ]
+
+OR:
+
+        CLASS Planet
+           float mass
+           float radius
+           NEW(float m, float r)
+             mass = m
+             radius = r
+           }
+           INSTANCES
+             mercury = NEW(3.303e+23, 2.4397e6)
+             venus   = NEW(4.869e+24, 6.0518e6)
+           }
+        }
+
+We could put this into one:
+
+        ENUMDICT Planet<float, float>
+          mercury: [3.303e+23, 2.4397e6],
+          venus:   [4.869e+24, 6.0518e6],
+        }
+
+Too complicated, let's not do this.
+
+We can add methods to an enum:
+
+        ENUM Planet
+          mercury
+          venus
+
+          FUNC string color()
+            SWITCH THIS
+              CASE mercury
+                   RETURN "green"
+              CASE venus
+                   RETURN "blue"
+            }
+          }
+        }
+
+This looks useful and simple, let's support it.
+
+
+LAZY EVALUATION
+
+In many places you see code like this:
+
+        PROC log(string msg)
+           IF logging
+             logFile.write(msg)
+           }
+        }
+        ...
+        log("foo=" .. foo .. ", bar=" .. bar.ToString())
+
+When "logging" is FALSE, the argument gets evaluated but is never used.
+That's a waste of time.
+
+1. Lazy as an argument type, like D
+        PROC log(LAZY string msg)
+        ...
+
+        - At the place where log() is called it's not at all clear that the
+          expression won't be evaluated.  That can be unexpected, esp. if the
+          expression has side effects.
+        - It's not easy to implement without side effects.
+
+2. Use an inline function:
+        PROC log(func< : string> getMsg)
+           IF logging
+             logFile.write(getMsg())
+           }
+        }
+        ...
+        log(FUNC(string foo, Msg bar)
+              RETURN "foo=" .. foo .. ", bar=" .. bar.ToString()
+            })
+
+        - Too verbose.
+
+3. Use an expression in backticks:
+
+        FUNC log(func< : string> msg)
+           IF logging
+             logFile.write(msg())
+           }
+        }
+        ...
+        log(`"foo=" .. foo .. ", bar=" .. bar.ToString()`)
+
+        + Nice.
+        - No type checking for foo and bar
+
+        Implementation: Compile as a function call with "foo" and "bar" as
+        arguments.
+
+4. Use a closure:
+
+        FUNC log(func< : string> msg)
+           IF logging
+             logFile.write(msg())
+           }
+        }
+        ...
+        log({ USE foo, USE bar => "foo=" .. foo .. ", bar=" .. bar.ToString() })
+
+        + Consistent with closures
+        - more verbose
+
+5. Use a conditional call.  The defined function has a condition function
+   which is called to decide whether to call the actual function:
+
+        PROC log_IF(string msg)
+           CALL_IF
+             RETURN $logging
+           }
+           logFile.write(msg)
+        }
+        ...
+        log("foo=" .. foo .. ", bar=" .. bar.ToString())
+       
+   Basically works like:
+
+       IF log_IF.CALL_IF()
+         log_IF("foo=" .. foo .. ", bar=" .. bar.ToString())
+       }
+
+        + Closest to what is intended.
+        + No clutter at the call side.
+        + Easy to implement.
+        - Can't see the condition at the call side.  Enforce the name ending
+          in _IF ?
+
+Choice: 4, it's short enough and more generally useful
+          Do 5 also?
+
+
+THREADS
+
+Main items:
+
+      THREAD module   base of most things
+      thread class    one for every thread
+      lock class      generic lock
+      cond class      generic condition
+      pipe class      stream between threads
+
+Run a procedure or expression asynchronously:
+
+        THREAD.run({ someProc(arg1, arg2) })
+    OR:
+        THREAD.new({ someProc(arg1, arg2) }).start()
+    OR:
+        THREAD.call(someProc, arg1, arg2)
+
+Similar to:
+        THREAD.NEW(NEW callback(someProc, arg1, arg2)).start()
+
+- Name of the thread will be "someProc__N" where N is a number.
+- Does not provide an easy way to wait for completion or make any settings.
+
+  THREAD.threads()  list of all existing thread objects
+  THREAD.current()  currently active thread
+  THREAD.data       dict for thread-local things
+
+  thread t = NEW()
+  thread t = NEW(proc)   
+  thread t = NEW(callback)   
+  t.name     string
+  t.state    THREAD.State.new, running, finished
+  t.type     THREAD.Type.main, daemon, normal
+  t.keep     TRUE to keep thread when finished
+
+  t.kill()       if thread is running, it will stop asap
+  t.wait()       blocks until thread is finished
+  t.remove()     remove from THREAD.threads() list
+  t.setDaemon()  make thread a deamon (can't be undone)
+
+  t.setProc(proc)  proc to invoke when started
+  t.setCallback(cb)  callback to invoke when started
+  t.run()        overrule to have the thread execute this when started
+                 default invokes proc passed by creation or setProc()
+  t.start()      prepared the thread and runs t.run() in it
+
+TODO: run() and start() are confusing.  Use other name for run():
+        doit()
+        impl()
+        body()    <-- this one now
+        runbody()
+        execute()
+
+
+Threadpool concept: a set of threads that can be used to execute code.
+"Async" executes a block of code 
+
+        tp = New Threadpool(8);  # pool with 8 threads
+        For i In mylist
+          Async tp
+            process(i);          # block executed by one of the threads
+          }
+        }
+        tp.Wait();               # wait for all threads to finish
+
+
+PIPES
+
+In the Unix shell we have the concept of a pipe:  "prog1 | prog2".  This is a
+very effective way of connecting asynchronous processes.  
+
+In Zimbu the pipe class is a similar thing, although more flexible.  An
+example:
+
+        PROC echoDay(pipe<string> p)
+          FOR day IN p
+            IO.write(day + "\n")
+          }
+        }
+
+        pipe<string> p = NEW()
+        THREAD.run({ echoDay(p) })
+        FOR day IN ["Mon", "Tue", "Wed", "Thu", "Fri"]
+          p.write(day)
+        }
+        p.close()
+
+It's also possible to use both a reader and writer, and have the main thread
+wait for them to finish:
+
+        PROC writeDay(pipe<string> p)
+          FOR day IN ["Mon", "Tue", "Wed", "Thu", "Fri"]
+            p.write(day)
+          }
+          p.close()
+        }
+
+        pipe<string> p = NEW()
+        THREAD.run({ echoDay(p) })
+        THREAD.run({ writeDay(p) })
+        # do something else
+        p.wait()
+
+There can be multiple readers and writers.  This parallizes tasks, e.g. for
+message handling.  One can also specify that a new reader task is created when
+an object is available for reading:
+
+        pipe<Message> p = NEW()
+        THREAD.run({ readMessages(p) })
+        # Have 10 threads create one message
+        THREAD.Pool pool = THREAD.run(10, { createMessage(p) })
+        pool.wait()
+        p.close()
+
+By default a pipe buffers one item.  A write() will block until the item has
+been read.  The buffer size can be specified:
+
+        pipe<Message> p = NEW(100)
+
+An easy way to have a Thread compute something and return the result:
+
+        VAR p = THREAD.eval({ RETURN slowThing() })
+        # do something else...
+        int result = p.read()  # wait for result
+
+
+ADVANCED FILE ACCESS
+
+Often it is convenient to access data as if it was a file in location in a
+file system, even though it's actually accessed with a specific protocol.
+For example, accessing files over ftp.
+
+Since the number of protocols is limitless, it needs to be possible to plugin
+a module for each.  The interface for the module consists of several parts:
+        - Navigation through the file system, checking directory access,
+          listing the contents of directories.
+        - Renaming directory items, moving directory items, changing access
+          permissions, deleting directory items.
+        - Creating a file, opening an existing file, reading and writing.
+
+Usage:
+        AFile f = AFile.open("ftp", "ftp.vim.org", "/pub/vim/patches")
+        IO.write(f.dirList())
+        f.cd("..")
+        f.open("MIRRORS")
+        IO.write(f.read())
+
+"To be continued..."
+
+
+DOCUMENTATION
+
+1. Like JavaDoc:
+        /**
+         * html <tag>text</tag>
+         *
+         * @param name  text
+         * @return  text
+         */
+
+        + useful
+        - HTML is hard to ready in the source code itself
+        - no encouragement to write proper comments
+
+2. Use any comment close to an item as documentation.  Special items:
+        @argument@  - refers to an argument name
+        @return     - precedes comment about the returned value
+        @throws     - comment about when a certain exceptionis thrown
+        
+
+        # Sort the list with specified sort order @order@.
+        # @return the sorted list.
+        # @throws E.NullPointer when there are no items
+        FUNC Date sortOn(SortOrder order)
+          ...
+          RETURN THIS
+        }
+
+        + short and simple
+        + useful
+        - less formatting possible
+
+3. Like 2., but use | and > instead of @:
+        # Sort the list with specified sort order |order|.
+        # >return the sorted list.
+        # >throws E.NullPointer when there are no items
+
+        + short and simple
+        + useful
+        + easier to read than with @
+        - less formatting possible
+
+Choice: 3.  Can add more formatting later, e.g. #= for summary, wiki-like
+            lists, etc.
+
+
+STARTUP SEQUENCE
+
+Invoking functions from Main() to initialize modules has the problem that you
+need to know which modules are being used.  It's better when a module can
+initialize itself.
+
+This can be a bit tricky, because when a module is initialized it may depend
+on another module to already be initialized.  In most cases it works to do the
+initialization in any order, and as soon as a module is first used.  
+
+   1. explicit assignments to variables
+   2. call PREPARE() for each module
+	Place to add arguments to ARG.
+     	When invoking another module, that PREPARE() is called first, unless
+	already busy.
+	Cannot use threads.
+   3. invoke ARG.Init(), process command line arguments
+   4. call Init() for each module
+        can do things that depend on other modules to be initialized,
+	e.g. starting a webserver, starting threads,
+        but must call Init() on that module first.
+   5. invoke Main()
+
+
+COMPILER SETTINGS
+
+It's easy to add flags to the compiler command line for all kinds of options.
+But this makes it difficult to reliably reproduce the command.  Putting the
+command in a Makefile or shell script would work, but adds more dependencies.
+
+For those settings that are mandatory for the program to compile properly,
+they must be included inside the program.  For example, to disable Exceptions:
+
+        # Do not use exceptions, the program will crash instead of throwing an
+        # exception.  Reduces overhead of function calls.
+        Z.disableExceptions = TRUE
+
+        # Use 32 bit ints instead of 64.
+        Z.useInt32 = TRUE
+
+        # Use only standard C features, so that the produced C code can be
+        # compiled with most C compilers.
+        Z.standardC = TRUE
+
+        # User defined feature
+        Z.addFeature("foobar")
+
+This must be placed in the main file, before any IMPORTs.
+
+Other things in the Z module:
+
+        # Compile time error
+        Z.error(msg)
+
+
+FAR FUTURE IDEAS
+
+Consider all sides of creating and using computer programs.
+
+- Design with diagrams, sequence tables, etc.
+- Presenting the design and progress to the end-user or customer.
+- Prototyping
+- Developer tools: editors, documentation, debugging, profiling
+- Testing and Quality Assurance
+- Programming for speed in one part, ease of use in another.
+
+
+Foundation: Computer programming involves data, instructions and I/O.
+
+Important aspect of data: Life expectancy
+- until program ends (variables)
+- until uninstall (on harddisk)
+- until deletion (cloud or distributed system)
+
+
+Decision localisation: Try to minimize the impact of change of a choice.
+The more likely a change is, the more local it should be.
+
+
+Programming language:
+- Concentrate on interfaces, these define the building blocks.  That's more
+  important than object orientation.
+- Avoid decisions that are not important (e.g., is a square a rectangle or the
+  other way around).
+- Support for many data structures.
+- Both
+        A) compiled and executed
+        B) interpreted, used as a script language
+
+
+An alternative is to generate byte code.  The .net byte code could be used, as
+it supports managed C++.
+
+
+GLOBAL FUNCTIONS OR DATA METHODS
+
+An essential difference between old school code (such as C) and
+object-oriented code is how functions are called.  In C every function is
+called by name or by reference.  In object-oriented programs the data
+(object) defines what method to call:
+  old:        TheStructSize(myStruct)
+  new:        myStruct.size()
+
+This makes it consistent with data members, which was already possible in C:
+  old+new:    myStruct.value
+Nobody would like to define a new global method for every member:
+  not:        TheStructGetValue(myStruct)
+
+Avoiding the global name space can be solved in other ways, but it results
+in verbose code:
+              TheStruct.size(myStruct)        vs  myStruct.size()
+              TheStruct.getValue(myStruct)    vs  myStruct.getValue()
+
+Note that this is not directly coupled to object-orientation, it can be used
+without inheritance.
+
+
+TESTING
+
+When taking testing seriously, there quickly is more testing code than
+production code.  Therefore it is important that writing testing code is
+just as easy.
+
+There are two main areas:
+1. Test the production code (low level, end-to-end, test suites, etc.)
+2. Verify the tests find all mistakes.
+
+
+For the test verification we need to specify in the source code what changes
+should trigger one of the tests to fail.  How to do this?
+
+For example, we have this simple condition, making sure "a" is not larger than
+"b":
+
+        IF a > b
+          a = b
+        }
+
+We need to verify that a test breaks if the "a > b" condition was altered:
+        a > b + 1
+        a + 2 > b
+        a >= b  will actually work, so don't test this
+        TRUE
+        FALSE
+
+
+1. Use inline annotations:
+
+        IF a > @test(<) b @test(TRUE) @test(FALSE)
+          a = b
+        }
+
+        - messy
+
+2. Use comment to specify changes, these work like search & replace:
+
+        # @testFail(b, b + 1)
+        # @testFail(a, a + 2)
+        # @testFail(a > b, TRUE)
+        # @testFail(a > b, FALSE)
+        IF a > b
+          a = b
+        }
+
+        o verbose, but works
+
+3. Specify changes elsewhere, add comment with ID
+
+        IF a > b           # @testMark(AgtB)
+          a = b
+        }
+
+        in test file:
+          testChange(Module.AgtB, "b", "b + 1")
+          testChange(Module.AgtB, "a", "a + 2")
+          testChange(Module.AgtB, "a > b", "TRUE")
+          testChange(Module.AgtB, "a > b", "FALSE")
+
+        + less verbose
+        + direct connection between intention of a test and source code.
+        - dependencies between files
+
+
+DEPENDENCY INJECTION
+
+Running unit tests means you take one part of the code and test it without all
+the rest.  When this code depends on other code, mocks need to be used.
+
+The straightforward (and clumsy) way is to pass arguments to constructors for
+dependencies.  That means all callers need to create the argument, or a
+factory needs to be used.
+
+The best solution is to:
+- When the code runs normally, the dependencies are fine and can be handled
+  inside the class itself.  No need for callers to even know about the
+  dependencies.
+- When testing the dependency needs to be handled in another way, injecting
+  the mock instead of the real object.  This can be done by configuring the
+  class or module before it is used.
+
+This avoids that the normal way of using code is clogged by features added for
+testing.  Only the testing code contains the things needed for testing.
+
+How it works: The Class specifies a CONFIG() method without arguments.  This
+is called just before the first object is created.  However, when any CONFIG()
+method was already called, this is skipped.  This allows a test to inject a
+mock, while in normal operation the CONFIG() is called automatically to do the
+normal initialization.
+
+Example:
+
+        CLASS Middle
+          int $nr
+
+          PROC NEW(int nr)
+            $nr = nr
+          }
+
+          PROC store()
+            backend.store($nr)
+          }
+
+          SHARED
+            Backend_I backend
+
+            PROC CONFIG()
+              backend = NormalBackend.NEW()
+            }
+
+            PROC CONFIG(Backend_I backend)
+              backend = backend
+            }
+          }
+        }
+
+Alternative:
+
+        Backend_I backend = CONFIG(NormalBackend.NEW())
+
+TODO: what if a new object is needed for every object?  Need to be able to set
+a class to create object from (a provider or factory).
+
+Also: command line argument injection
+
+
+
+MUTABLE AND IMMUTABLE STRING
+
+A mutable string is flexible, but expensive: Since it has to be able to grow
+it always involves two pieces of (allocated) memory.
+
+An immutable string means any change on the string creates a new one.  That
+makes it difficult to pass around, requires passing the variable by reference.
+
+Choice: Since strings are used a lot, it's worth implementing both.
+
+
+CHARACTER STRINGS AND BYTE STRINGS
+
+A sequence of characters is used for handling text, in any language.  Using
+Unicode is the obvious choice, and UTF-8 is the best encoding for it.
+
+Choice: Store character strings in UTF-8 encoding
+
+Binary information is usually stored as an arbitrary sequence of 8-bit bytes.
+You can't use "tolower" on these.  Indexing works on byte numbers.
+
+For text we usually want to index by characters and allow "tolower".
+
+Choice: support both character strings and byte strings
+
+The can be stored in the same way, but their usage differs.  It should be
+possible to convert one into the other with:
+
+        string s
+        bytes b = s.asBytes()
+        s = b.asString()
+
+There are also "toBytes()" and "toString()" which make a copy.
+
+	string text                    # UTF-8 sequence of bytes
+	int ci = text.findChar('r')    # returns character index
+        CHECK.true(text[ci] == 'r')
+
+	bytes buffer                   # arbitrary sequence of bytes
+	int bi = buffer.findByte('x')  # returns byte index
+        CHECK.true(bytes[bi] == 'x')
+
+We could also support C strings: NUL terminated byte strings.  In practice we
+don't need them, if the immutable strings also have a terminating NUL.  That
+way we can just use "string" just about everywhere, and pass them to system
+calls and C libraries without conversion.
+
+
+FOUR STRING TYPES
+
+So we end up with four types.  We can name them like this:
+
+        string         immutable character string
+        varString      mutable character string
+        byteString     immutable byte string
+        varByteString  mutable byte string
+
+NUL bytes would only appear in bytes, but experience shows that they are also
+useful in character strings, NUL is also a character.
+
+Choice: like Python, allow NUL in strings.
+        this implies storing the length of the string.
+
+
+STRINGVAL AND BYTESVAL IMPLEMENTATION
+
+This implies we need to store the length of the string.  This takes up extra
+space, which matters most for the "val" strings.  Efficient implementation:
+	Byte sequence, can use "char *" in C:
+		char *s = "\005hello";
+	May contain a NUL byte:
+		char *p = "\013hello\000there";
+	Leading varint for length; uses 1 byte up to 127 byte length.
+                Use MSB first, so that length can be decremented:
+                        129 bytes: 0x81 0x01
+                        128 bytes: 0x81 0x00
+                        127 bytes: 0x80 0x7f
+	Immutable.
+	Trailing NUL byte to be able to pass it to system calls.
+		(when there is a NUL byte inside it's truncated there)
+
+
+VARSTRING AND BYTES IMPLEMENTATION
+
+For varstring and bytes we could make further variants for:
+        - appending (Java StringBuf)
+        - concatenating pieces (C++ Cord)
+        - taking a slice without copying 
+        - optimizing for 16 or 32 bit characters
+
+Instead of making separate types for this, we can create a varstring type that
+behaves like all of these and is adjusted dynamically.  This way we don't need
+to make multiple versions of methods that take varstring-like arguments.
+
+E.g., when concatenating stringvals into a varstring, the varstring can make a list
+of these stringvals without copying them.  As soon as the text is changed a
+copy is made.
+
+Also: when taking a slice, the new varstring can refer to part of the old varstring,
+using copy-on-write.
+
+Implementation:
+
+	varstring s   # s points to varstring object
+
+	struct String {
+	   void *value;  // where it's stored
+	   char type;    // C-string, length-string, slice, cord
+	}
+
+	# C-String: read-only, NUL terminated.
+	char *s = "value";
+
+	# length-string: in allocated memory, room for growth
+	struct LengthString {
+	   int len;       # length of $value
+	   int used;      # actual length
+	   char value[];
+	}
+
+Conversion of utf-8 character index to byte index is inefficient.  Cache some
+values (e.g., last used char/byte index, length in chars).
+
+
+STRING FORMATTING
+
+        varstring name = "pet"
+        varstring type = "lion"
+        IO.print(%"this %name is a %(type)")
++ allows for translations, so long as used names are the same.
+- needs %() to include espression
+
+Support formatting any double-quotes string that contains \():
+
+        int oranges = 3
+        int bananas = 5
+        string orangesText = "I have \(oranges) oranges"
+        string totalText = "I have \(oranges + bananas) pieces of fruit"
++ Allows for translations
++ No need for any special characters
+
+How to specify formatting, like in "%04d" ?  Perhaps at the start:
+        string totalText = "I have \(%04d oranges + bananas) pieces of fruit"
+Using an expression for the size:
+        int digits = 5
+        string totalText = "I have \(%0(digits)d oranges + bananas) pieces of fruit"
+
+
+GENERICS - TEMPLATES
+
+Generics means a class is defined with a generic type and at runtime the type
+is specified.  A template provides similar functionality, but takes care of
+the type at compile time.
+
+Runtime type handling makes the code inefficient and may cause runtime
+failures.  Let's go with templates, but try to avoid their disadvantages.
+
+Examples:
+
+           CLASS Collection<Titem>
+             list<Titem> thelist
+             PROC add(Titem item)
+               thelist.add(item)
+             }
+             FUNC Titem get(i)
+               IF i >= thelist.size()
+                 RETURN <Titem>0
+               }
+               RETURN thelist.get(i)
+             }
+           }
+
+           Collection<string> fooCollection = NEW()
+           fooCollection.add("foobar")
+           IO.print(fooCollection.get(0))
+
+           FUNC Titem max<Titem>(Titem a, Titem b)
+             IF a > b
+               RETURN a
+             }
+             RETURN b
+           }
+
+           int m = max(3, 7)            # will deduce type from arguments
+           float f = max<float>(3, 7)   # explicit type spec
+           Foo foo = max(foo1, foo2)    # foo1 and foo2 must be same type
+
+The straightforward implementation generates code for every used type.
+An optimization is to use the same code when possible.  E.g., all reference
+types could use the same code, so long as no methods are invoked.  The
+Collection above is one like that.  This can't be done for the max() method,
+since the COMPARE() method invoked depends on the type.
+
+TODO: look at what D does with templates.
+
+TODO: restrictions on type, e.g., what interface they must support.
+
+        INTERFACE I_Sortable
+          ...
+        }
+        CLASS SortedCollection<I_Sortable Titem>
+          ...
+        }
+
+Choice: Type names for a template need to start with a 'T'.
+
+
+AVOID NIL POINTER EXCEPTIONS
+
+Make dict.values() return NIL when dict is NIL?
+Can't do this for class, unless we do:
+
+        FUNC values() list<Titem>
+          IF THISNIL
+            RETURN NIL
+          }
+          RETURN $dict.values()
+        }
+e.g. in MultiDict.values()
+No, let's just use ?. to handle this consistently.
+
+
+LOG builtin module
+
+TODO:
+- Log only 1 in so many of a certain error.  Requires using an error number.
+- When same message repeats only show first and repeat count
+                "(repeats N times)" 
+- command line flag --log=verbose (include verbose() --log=fine (include fine())
+  --log=warning (exclude info()) --log=error (only fatal() and error())
+  --log=fatal (only fatal()
+- cmdline arg: --logfile=/tmp/adsf
+- cmdline arg: --logto=stderr  --logto=stdout (default)
+
+
+IDEAS
+
+Looking at other languages often gives ideas for how features can be
+implemnted.  Either as a nice way or show how NOT to to do it.
+
+Kotlin: http://kotlin.jetbrains.org/
+        - Need to escape $ in string literals
+        - Verbose arguments, colon between name and type.
+        - Extension functions clash with existing methods, new release may
+          break your program.
+
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

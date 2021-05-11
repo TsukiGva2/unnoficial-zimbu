@@ -1,0 +1,191 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# MultipleType class.
+#
+# A Type used for a sequence of types, as returned by a function with more
+# than one return type.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+
+CLASS MultipleType EXTENDS Type @items=public
+
+  # We keep a list of declarations, because this type is also used as a
+  # destination and then we put the LHS of the assignment in the name of the
+  # Declaration.
+  list<Declaration>       $types
+
+  # List of expressions related to the types.  Lazily created when used.
+  # Used to store information about conversion.
+  list<Zui.Expression>    $exprList
+
+  NEW(list<Declaration> types, string name)
+    PARENT.NEW(Type.Enum.multiple, name)
+    $types = types
+  }
+
+  FUNC $isValueType() bool @replace
+    RETURN TRUE  # declared and passed around by value
+  }
+
+  FUNC $typeToString() string @replace
+    string s = PARENT.typeToString()
+    string sep = ": "
+    FOR t IN $types
+      s ..= sep .. t.type.typeToString()
+      sep = ", "
+    }
+    RETURN s
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace
+    MultipleType.C ret = NEW($types, $name)
+    $copyMultipleValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyMultipleValues(MultipleType ret)
+    $copyTypeValues(ret)
+  }
+
+  # Return the name for the object declaration table.
+  # Return an empty string if this is a reference to a value that is not
+  # allocated.
+  FUNC $getTypeName(SContext ctx) string @replace
+    IF $pName == NIL
+      getTypeName(THIS, ctx)
+    }
+    RETURN $pName
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN FALSE
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace
+    string s = "mult: "
+    string sep = ""
+    FOR t IN $types
+      s ..= sep .. t.type.typeName(long)
+      sep = "+"
+    }
+    RETURN s
+  }
+
+  # Return all the types (actualy declarations).
+  FUNC $getTypes() list<Declaration>
+    RETURN $types
+  }
+
+  # Return the types as a list of types
+  FUNC $getTypeList() list<Type>
+    list<Type> ret = NIL
+    FOR t IN $types
+      ret.add(t.type)
+    }
+    RETURN ret
+  }
+
+  # Return one type.
+  FUNC $getType(int idx) Declaration
+    RETURN $types[idx]
+  }
+
+  # Return the expression related to one type.
+  FUNC $getExpr(int idx) Zui.Expression
+    IF $exprList == NIL
+      $exprList = NEW()
+      FOR i IN 0 TO $types.Size()
+        Zui.Expression expr = NEW()
+        expr.setType(Zui.ExprType.eID)
+        $exprList.add(expr)
+      }
+    }
+    RETURN $exprList[idx]
+  }
+
+  # Set the types.
+  PROC $setTypes(list<Declaration> refs)
+    $types = refs
+  }
+
+  # Turn the referenced type into a ValueType, if needed.
+  PROC $makeValueType(SContext ctx)
+  }
+
+  # For a proc, func, procRef, funcRef: return the method type.
+  # Otherwise return NIL
+  FUNC $getMethod() MethodType @replace
+    RETURN NIL
+  }
+
+  # For a method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @replace
+    RETURN NIL
+  }
+
+  # For a method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @replace
+    RETURN NIL
+  }
+
+  # Return the extra return types.
+  FUNC $getMoreReturnTypes() list<Type> @replace
+    RETURN NIL
+  }
+
+  FUNC $getTypespecType(int idx) Type @replace
+    RETURN NIL
+  }
+
+  SHARED
+    # List of all type combinations seen so far.
+    list<MultipleType> typeNames
+
+    # Get a name for |t| to be used for the type.
+    PROC getTypeName(MultipleType t, SContext ctx)
+      IF typeNames == NIL
+        typeNames = NEW()
+      ELSE
+        FOR tn IN typeNames
+          IF t.types.Size() == tn.types.Size()
+            bool differ
+            FOR i IN 0 UNTIL t.types.Size()
+              IF !Type.matchingTypes(t.types[i].type, tn.types[i].type, ctx)
+                differ = TRUE
+                BREAK
+              }
+            }
+            IF !differ
+              t.pName = tn.pName
+              RETURN 
+            }
+          }
+        }
+      }
+      t.pName = WriteCommon.getUid(ctx.scope.ToString() .. "+tn")
+      typeNames.add(t)
+    }
+  }
+
+}

@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML - Url / Css
+  TEMPLATE inHtmlUrlCss(ZUT.Css css) ZUT.Html @public
+    <a href="[=css]">here</a>
+  }
+}
+

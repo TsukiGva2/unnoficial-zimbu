@@ -1,0 +1,58 @@
+# Test file for visibility attributes
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Visibility @public @items=private
+
+  PROC test() @public
+    IO.print("testdir/Visibility.zu")
+    test1()
+  }
+
+  ##############################3
+
+  CLASS ClassOne
+    int $one @private @read=public
+    int $two @protected
+    PROC $showStack() @private
+      IO.print("nothing")
+      $one = 1
+      int x = $one
+      $two = 1
+      int y = $two
+    }
+  }
+
+  CLASS ClassTwo EXTENDS ClassOne
+    PROC $doSomething()
+      $showStack()
+#      $one = 1  # not allowed
+      int x = $one
+      $two = 1
+      int y = $two
+    }
+  }
+
+  CLASS ClassThree
+    PROC $doSomething()
+      ClassOne.C one = NEW()
+      int x = one.one
+#      one.one = 8   # not allowed
+#      int y = one.two  # not allowed
+#      one.two = 8   # not allowed
+    }
+  }
+
+  
+  PROC test1()
+    ClassOne.C one = NEW()
+    int x = one.one
+#    one.one = 8   # not allowed
+#    int y = one.two  # not allowed
+#    one.two = 8   # not allowed
+  }
+
+}

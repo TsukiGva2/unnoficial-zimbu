@@ -1,0 +1,2122 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Module used for protocol buffer code.
+#
+# This file is used by the .zu files generated from .proto files.
+# It cannot depend on files from the proto plugin.  The other way around is
+# OK.
+#
+
+IMPORT "Message.zu"
+
+#= Protocol Buffer support
+#
+#*credits
+#* This depends on the Google protocol buffer definition.
+#* http://code.google.com/p/protobuf/
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE Proto @public
+
+  # The types that can be used in a .proto file.
+  ENUM Type @public
+    unknown    # not set, unrecognized
+    bool
+    bytes
+    enum
+    fixed32
+    fixed64
+    float
+    double
+    group
+    int         # alias for int32?
+    int32
+    int64
+    message
+    sfixed32
+    sfixed64
+    sint32
+    sint64
+    string
+    uint32
+    uint64
+  }
+
+  # The types of fields used by the Zimbu code.
+  ENUM ZimbuType @public
+    bool
+    int
+    int32
+    nat
+    nat32
+    string
+    message
+    enum
+    float32
+    float
+  }
+
+  # The types encoded in the tag field of the binary.
+  # Order is fixed!
+  ENUM BinaryType @public
+    varint
+    fixed64
+    lengthDelimited
+    startGroup
+    endGroup
+    fixed32
+  }
+
+  # TODO: this should be in messagebase.zu, but inheritance does't work.
+  ENUM FileFormat @public
+    binary
+    text
+    json
+  }
+
+  # Exception thown when parsing a text or json proto fails.
+  CLASS E_ParseError EXTENDS E.Error @public
+  }
+
+  # Exception thown when writing a text or json proto fails.
+  CLASS E_ProduceError EXTENDS E.Error @public
+  }
+
+  # Exception thown when reading a binary proto fails.
+  CLASS E_BinaryError EXTENDS E.Error @public
+  }
+
+
+  # Used in the fieldSpecs list in every message to list the fields in this
+  # message.  This tells writeBinary() and mergeFromBinary() how to encode and
+  # decode every field.
+  CLASS FieldSpec @public @items=public
+    string $name       # field name from the .proto file
+    int    $nr         # field nr from the .proto file
+    Type   $type
+    bool   $repeated
+
+    NEW(string name, int nr, Type type, bool repeated)
+      $name = name
+      $nr = nr
+      $type = type
+      $repeated = repeated
+    }
+
+    FUNC $Equal(FieldSpec other) bool
+      RETURN $name == other.name
+          && $nr == other.nr
+          && $type == other.type
+          && $repeated == other.repeated
+    }
+
+    FUNC $copy(FieldSpec other) FieldSpec
+      RETURN NEW(other.name, other.nr, other.type, other.repeated)
+    }
+  }
+
+  # Class passed around when writing a message.
+  # When $derefTime is not 0 a reference to a previously written message is
+  # replaced by a number, the derefId.
+  CLASS Writer @public @items=public
+    IO.I_Writer      $writer        # used for writing Json and ToString()
+    IO.I_ByteWriter  $byteWriter    # used for writing binary
+
+    string           $indent        # used for ToString()
+    bool             $useNr         # used for ToString()
+
+    int              $derefId       # last used reference index
+    int              $derefIdSize   # last used reference index for size
+    int              $derefTime     # Unique timestamp
+    int              $derefTimeSize # Unique timestamp for size
+
+    # Used for binary format.
+    NEW(IO.I_ByteWriter writer, bool withRefs)
+      $byteWriter = writer
+      IF withRefs
+        $initDeref()
+      }
+    }
+
+    # Used for JSON format.
+    NEW(IO.I_Writer writer, bool withRefs)
+      $writer = writer
+      IF withRefs
+        $initDeref()
+      }
+    }
+
+    # Used for ToString().
+    NEW(IO.I_Writer writer, string indent, bool useNr)
+      $writer = writer
+      $indent = indent
+      $useNr = useNr
+      # Always assume references to avoid endless recursion.
+      $initDeref()
+    }
+
+    PROC $initDeref()
+      $derefTime = ++derefTime
+      $derefTimeSize = $derefTime
+    }
+
+    PROC $setDerefTimeSize()
+      $derefTimeSize = ++derefTime
+    }
+
+    SHARED
+      int    derefTime
+    }
+  }
+
+  # Interface used for reading a message from various sources, possibly with
+  # dereferencing.
+  INTERFACE I_Reader @public
+    # Return the byte reader.
+    FUNC $byteReader() IO.I_ByteReader
+    }
+    # Return the char reader.
+    FUNC $charReader() IO.CharReaderStack
+    }
+    # Return the proto reader, containing the refs.
+    FUNC $protoReader() Reader
+    }
+    # Add a message reference.
+    PROC $addRef(Message m)
+    }
+  }
+
+  # Class passed around when reading a message.
+  # When $refs is not NIL a reference to a previously read message is
+  # found by a number, the key in $refs.
+  CLASS Reader IMPLEMENTS I_Reader @public @items=public
+    IO.I_ByteReader      $theByteReader  @private   # used for reading bytes
+    IO.CharReaderStack   $theCharReader  @private   # used for reading chars
+    dict<int, Message>   $refs
+    int                  $refId  # last used reference ID
+    int                  $lnum   # for reading text
+
+    PROC $Init()
+      $lnum = 1
+    }
+
+    NEW(IO.I_ByteReader reader, bool withRefs)
+      $theByteReader = reader
+      IF withRefs
+        $refs = NEW()
+      }
+    }
+
+    NEW(IO.I_CharReader reader, bool withRefs)
+      # Create a ByteReaderStack so that we can push back bytes.
+      $theCharReader = NEW(reader)
+      IF withRefs
+        $refs = NEW()
+      }
+    }
+
+    FUNC $byteReader() IO.I_ByteReader
+      RETURN $theByteReader
+    }
+
+    FUNC $charReader() IO.CharReaderStack
+      RETURN $theCharReader
+    }
+
+    FUNC $readChar() int
+      int c = $theCharReader.readChar()
+      IF c == '\n'
+        ++$lnum
+      }
+      RETURN c
+    }
+
+    PROC $push(int c)
+      $theCharReader.push(c)
+      IF c == '\n'
+        --$lnum
+      }
+    }
+
+    FUNC $protoReader() Reader
+      RETURN THIS
+    }
+
+    PROC $addRef(Message m)
+      IF $refs != NIL
+        $refs.add(++$refId, m)
+      }
+    }
+
+    # Get message with reference number |idx|.
+    # Return NIL if not found.
+    FUNC $getRef(int idx) Message
+      RETURN $refs.get(idx, NIL)
+    }
+  }
+
+  # Tag used in Binary format
+  CLASS Tag @public @items=public
+    int        $nr     # field number
+    BinaryType $type
+  }
+
+  # Lookup table from Type to ZimbuType
+  dict<Type, ZimbuType> proto2zimbu = [
+      Type.bool: ZimbuType.bool,
+      Type.int: ZimbuType.int,
+      Type.int64: ZimbuType.int,
+      Type.int32: ZimbuType.int32,
+      Type.uint64: ZimbuType.nat,
+      Type.uint32: ZimbuType.nat32,
+      Type.string: ZimbuType.string,
+      Type.message: ZimbuType.message,
+      Type.enum: ZimbuType.enum,
+      Type.float: ZimbuType.float32,
+      Type.double: ZimbuType.float,
+  ]
+
+  # Lookup table from Type to BinaryType
+  dict<Type, BinaryType> proto2binary = [
+      Type.bool: BinaryType.varint,
+      Type.int: BinaryType.varint,
+      Type.int64: BinaryType.varint,
+      Type.int32: BinaryType.varint,
+      Type.uint64: BinaryType.varint,
+      Type.uint32: BinaryType.varint,
+      Type.string: BinaryType.lengthDelimited,
+      Type.enum: BinaryType.varint,
+      Type.message: BinaryType.lengthDelimited,
+      Type.float: BinaryType.fixed32,
+      Type.double: BinaryType.fixed64,
+  ]
+
+  # The tag values for the BinaryType
+  dict<BinaryType, int> binaryTypeValues = [
+      BinaryType.varint: 0,
+      BinaryType.fixed64: 1,
+      BinaryType.lengthDelimited: 2,
+      BinaryType.startGroup: 3,
+      BinaryType.endGroup: 4,
+      BinaryType.fixed32: 5,
+  ]
+
+  # The tag values for the BinaryType
+  dict<int, BinaryType> int2BinaryType = [
+      0: BinaryType.varint,
+      1: BinaryType.fixed64,
+      2: BinaryType.lengthDelimited,
+      3: BinaryType.startGroup,
+      4: BinaryType.endGroup,
+      5: BinaryType.fixed32,
+  ]
+
+  int kTypeBits = 3  # 3 lower bits used for field type
+  int kTypeMax = 5
+
+  # get size of the tag for field with |fspec.binType| and number |fspec.nr|.
+  FUNC getBinaryTagSize(FieldSpec fspec) int @public
+    int tag = (fspec.nr << kTypeBits)
+                                  + binaryTypeValues[proto2binary[fspec.type]]
+    RETURN getVarIntSize(tag)
+  }
+
+  # Write the tag for field with |fspec.binType| and number |fspec.nr|.
+  # Return the number of bytes written.
+  FUNC writeBinaryTag(FieldSpec fspec, IO.I_ByteWriter writer) int @public
+    int tag = (fspec.nr << kTypeBits)
+                                  + binaryTypeValues[proto2binary[fspec.type]]
+    RETURN writeVarInt(tag, writer)
+  }
+
+  # Read a binary field tag from |reader|.  Returns a tag with the field
+  # number set to -1 when something is wrong.
+  FUNC readBinaryTag(IO.I_ByteReader reader) Tag @public
+    Tag tag = NEW()
+    int v = readVarInt(reader)
+    IF v < 0 || (v & 7) > kTypeMax
+      tag.nr = -1  # end of file or error
+    ELSE
+      tag.nr = v >> kTypeBits
+      tag.type = int2BinaryType[v & 7]
+    }
+    RETURN tag
+  }
+
+  # Skip a field of type |type| by reading bytes from |reader|.
+  PROC skipField(BinaryType type, IO.I_ByteReader reader) @public
+    int len
+    SWITCH type
+      CASE BinaryType.varint
+        readVarInt(reader)
+      CASE BinaryType.fixed64
+        FOR i IN 1 TO 8
+          reader.readByte()
+        }
+      CASE BinaryType.lengthDelimited
+        len = readVarInt(reader)
+      CASE BinaryType.startGroup
+        # TODO
+        THROW E_BinaryError.NEW("not implemented: " .. type.ToString())
+      CASE BinaryType.endGroup
+        # TODO
+        THROW E_BinaryError.NEW("not implemented: " .. type.ToString())
+      CASE BinaryType.fixed32
+        FOR i IN 1 TO 4
+          reader.readByte()
+        }
+      DEFAULT
+        THROW E_BinaryError.NEW("INTERNAL: field type not supported: "
+                                                           .. type.ToString())
+    }
+    WHILE len > 0
+      reader.readByte()
+      --len
+    }
+  }
+
+  # Read a string from |reader|.  Thus can be used only just after reading a
+  # tag of type lengthDelimited.
+  FUNC readString(IO.I_ByteReader reader) string @public
+    int len = readVarInt(reader)
+    IF len <= 0
+      RETURN ""
+    }
+    IO.StringWriter writer = NEW()
+    WHILE len > 0
+      writer.writeByte(reader.readByte())
+      --len
+    }
+    RETURN writer.ToString()
+  }
+
+  # Fill in the fields of a message, reading bytes from "iReader".
+  PROC mergeFromFields(Message msg, FileFormat format,
+                 list<FieldSpec> fspecs, I_Reader iReader) @public
+    SWITCH format
+      CASE FileFormat.binary
+        mergeFromBinaryFields(msg, fspecs, iReader)
+      CASE FileFormat.text
+        mergeFromTextFields(msg, fspecs, iReader)
+      CASE FileFormat.json
+        mergeFromJsonFields(msg, fspecs, iReader)
+    }
+  }
+
+  # Fill in the fields of a message, reading bytes from "reader".
+  PROC mergeFromBinaryFields(Message msg, list<FieldSpec> fspecs,
+                                               I_Reader iReader) @public
+    IO.I_ByteReader reader = iReader.byteReader()
+    WHILE TRUE
+      Tag tag = readBinaryTag(reader)
+      IF tag.nr < 0
+        BREAK  # end of file
+      }
+      bool done
+      FOR fspec IN fspecs
+        IF fspec.nr == tag.nr
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int32
+            CASE Type.uint32
+            CASE Type.int64
+            CASE Type.uint64
+            CASE Type.bool
+                IF tag.type == BinaryType.varint
+                  int n = readVarInt(reader)
+                  IF fspec.type == Type.bool
+                    msg.boolSet(fspec.nr, n == 0 ? FALSE : TRUE)
+                  ELSEIF fspec.type == Type.int32
+                    int32 n32 = n
+                    msg.int32Set(fspec.nr, n32)
+                  ELSEIF fspec.type == Type.uint64
+                    nat n64 = n
+                    msg.uint64Set(fspec.nr, n64)
+                  ELSEIF fspec.type == Type.uint32
+                    nat32 n32 = n
+                    msg.uint32Set(fspec.nr, n32)
+                  ELSE
+                    msg.intSet(fspec.nr, n)
+                  }
+                  done = TRUE
+                }
+            CASE Type.float
+                  float32 f = readVarFloat(reader)
+                  msg.floatSet(fspec.nr, f)
+                  done = TRUE
+
+            CASE Type.double
+                  float f = readVarDouble(reader)
+                  msg.doubleSet(fspec.nr, f)
+                  done = TRUE
+
+            CASE Type.string
+                IF tag.type == BinaryType.lengthDelimited
+                  msg.stringSet(fspec.nr, readString(reader))
+                  done = TRUE
+                }
+            CASE Type.enum
+                IF tag.type == BinaryType.varint
+                  msg.enumSet(fspec.nr, readVarInt(reader))
+                  done = TRUE
+                }
+            CASE Type.message
+                IF tag.type == BinaryType.varint
+                  int key = readVarInt(reader)
+                  done = TRUE
+                  Reader pReader = iReader.protoReader()
+                  IF pReader.refs == NIL
+                    # Found a message reference while not reading with
+                    # createFromBinaryDeref().
+                    THROW E_BinaryError.NEW("Unexpected message reference")
+                  }
+                  Message m = pReader.getRef(key)
+                  IF m == NIL
+                    # Found a message reference that wasn't read yet.
+                    # Binary file does not match .proto file.
+                    THROW E_BinaryError.NEW("Message reference missing: "
+                                                                       .. key)
+                  }
+                  IF fspec.repeated
+                    msg.messageAdd(fspec.nr, m)
+                  ELSE
+                    msg.messageSet(fspec.nr, m)
+                  }
+                ELSEIF tag.type == BinaryType.lengthDelimited
+                  done = msg.mergeMessageFromReader(fspec.nr,
+                                              FileFormat.binary,
+                                              lengthReader(iReader))
+                }
+            DEFAULT
+              THROW E_BinaryError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+          }
+        }
+      }
+
+      IF !done  # unrecognized field, skip over it
+        skipField(tag.type, reader)
+      }
+    }
+  }
+
+  #= Write binary version of the message to |writer|.
+  #
+  # Return the number of bytes written.
+  FUNC writeBinary(Message msg, Writer protoWriter) int @public
+    int byteLen
+    IO.I_ByteWriter writer = protoWriter.byteWriter
+    FOR fspec IN msg.fieldSpecs()
+      IF fspec.repeated
+        int count = msg.size(fspec.nr)
+        FOR i IN 0 UNTIL count
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int64
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.intGet(fspec.nr, i), writer)
+
+            CASE Type.int32
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.int32Get(fspec.nr, i), writer)
+
+            CASE Type.uint64
+              # overflow should be OK here, writeVarInt() should handle it.
+              int v = msg.uint64Get(fspec.nr, i)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(v, writer)
+
+            CASE Type.uint32
+              int v = msg.uint32Get(fspec.nr, i)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(v, writer)
+
+            CASE Type.float
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarFloat(msg.floatGet(fspec.nr, i), writer)
+
+            CASE Type.double
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarDouble(msg.doubleGet(fspec.nr, i), writer)
+
+            CASE Type.bool
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.boolGet(fspec.nr, i) ? 1 : 0, writer)
+
+            CASE Type.string
+              byteLen += writeBinaryTag(fspec, writer)
+              byteString s = msg.stringGet(fspec.nr, i)
+              byteLen += writeVarInt(s.Size(), writer)
+              # TODO: FOR c IN s
+              FOR idx IN 0 UNTIL s.Size()
+                writer.writeByte(s[idx])
+              }
+              byteLen += s.Size()
+
+            CASE Type.enum
+              int nr = msg.enumGet(fspec.nr, i)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(nr < 0 ? 0 : nr, writer)
+
+            CASE Type.message
+              Message other = msg.messageGet(fspec.nr, i)
+              byteLen += writeMessageBinary(other, fspec, protoWriter)
+
+            DEFAULT
+              THROW E_BinaryError.NEW("INTERNAL: field type not supported: "
+                                                      .. fspec.type.ToString())
+          }
+        }
+      ELSE
+        IF msg.hasField(fspec.nr)
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int64
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.intGet(fspec.nr), writer)
+
+            CASE Type.int32
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.int32Get(fspec.nr), writer)
+
+            CASE Type.uint64
+              # overflow should be OK here, writeVarInt() should handle it.
+              int v = msg.uint64Get(fspec.nr)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(v, writer)
+
+            CASE Type.uint32
+              int v = msg.uint32Get(fspec.nr)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(v, writer)
+
+            CASE Type.bool
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(msg.boolGet(fspec.nr) ? 1 : 0, writer)
+
+            CASE Type.string
+              byteLen += writeBinaryTag(fspec, writer)
+              byteString s = msg.stringGet(fspec.nr)
+              byteLen += writeVarInt(s.Size(), writer)
+              # TODO: FOR c IN s
+              FOR idx IN 0 UNTIL s.Size()
+                writer.writeByte(s[idx])
+              }
+              byteLen += s.Size()
+
+            CASE Type.enum
+              int nr = msg.enumGet(fspec.nr)
+              byteLen += writeBinaryTag(fspec, writer)
+              byteLen += writeVarInt(nr < 0 ? 0 : nr, writer)
+
+            CASE Type.message
+              Message other = msg.messageGet(fspec.nr)
+              byteLen += writeMessageBinary(other, fspec, protoWriter)
+
+            DEFAULT
+              THROW E_BinaryError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+          }
+        }
+      }
+    }
+    RETURN byteLen
+  }
+
+  #! Write binary version of |msg| to |protoWriter|, unless it was already
+  # written, then write the reference number.
+  FUNC writeMessageBinary(Message msg, FieldSpec fspec,
+                                                 Writer protoWriter) int
+    int byteLen
+    IO.I_ByteWriter writer = protoWriter.byteWriter
+    IF msg == NIL
+      byteLen += writeBinaryTag(fspec, writer)
+      byteLen += writeVarInt(0, writer)
+    ELSE
+      bool done
+      IF protoWriter.derefTime != 0
+        IF msg.derefTime == protoWriter.derefTime
+          # Seen this message before, write the ID as a varint.
+          FieldSpec intFspec = NEW(NIL, fspec.nr, Type.int, FALSE)
+          byteLen += writeBinaryTag(intFspec, writer)
+          byteLen += writeVarInt(msg.derefId, writer)
+          done = TRUE
+        ELSE
+          # Not seen this message before, give it a unique ID.
+          msg.derefTime = protoWriter.derefTime
+          msg.derefId = ++protoWriter.derefId
+        }
+      }
+      IF !done
+        byteLen += writeBinaryTag(fspec, writer)
+        protoWriter.derefIdSize = protoWriter.derefId
+        # Change the time, so that a previously set derefIdSize is not used.
+        protoWriter.setDerefTimeSize()
+        int len = binarySize(msg, protoWriter)
+        byteLen += writeVarInt(len, writer)
+        int count = writeBinary(msg, protoWriter)
+        IF count != len
+          IO.write("INTERNAL: binarySize() returns " .. len)
+          IO.write(" but wrote " .. count)
+          IO.print(" bytes, ID is " .. msg.derefId)
+        }
+        byteLen += count
+      }
+    }
+    RETURN byteLen
+  }
+
+  #= Compute size of writing the binary version of the message.
+  #- Excludes the length field before the message.
+  #
+  # Keep in sync with writeBinary() above!
+  FUNC binarySize(Message msg, Writer protoWriter) int @public
+    int size
+    FOR fspec IN msg.fieldSpecs()
+      IF fspec.repeated
+        int count = msg.size(fspec.nr)
+        FOR i IN 0 UNTIL count
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int64
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(msg.intGet(fspec.nr, i))
+
+            CASE Type.int32
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(msg.int32Get(fspec.nr, i))
+
+            CASE Type.uint64
+              size += getBinaryTagSize(fspec)
+              int v = msg.uint64Get(fspec.nr, i)
+              size += getVarIntSize(v)
+
+            CASE Type.uint32
+              size += getBinaryTagSize(fspec)
+              int v = msg.uint32Get(fspec.nr, i)
+              size += getVarIntSize(v)
+
+            CASE Type.float
+              size += getBinaryTagSize(fspec)
+              size += 4
+
+            CASE Type.double
+              size += getBinaryTagSize(fspec)
+              size += 8
+
+            CASE Type.bool
+              size += getBinaryTagSize(fspec)
+              size += 1
+
+            CASE Type.string
+              size += getBinaryTagSize(fspec)
+              byteString s = msg.stringGet(fspec.nr, i)
+              int len = s.Size()
+              size += getVarIntSize(len) + len
+
+            CASE Type.enum
+              int nr = msg.enumGet(fspec.nr, i)
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(nr < 0 ? 0 : nr)
+
+            CASE Type.message
+              Message other = msg.messageGet(fspec.nr, i)
+              size += binaryMessageSize(msg, other, fspec, protoWriter)
+
+            DEFAULT
+              THROW E_BinaryError.NEW("INTERNAL: type not implemented: "
+                                                     .. fspec.type.ToString())
+          }
+        }
+      ELSE
+        IF msg.hasField(fspec.nr)
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int64
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(msg.intGet(fspec.nr))
+
+            CASE Type.int32
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(msg.int32Get(fspec.nr))
+
+            CASE Type.uint64
+              size += getBinaryTagSize(fspec)
+              int v = msg.uint64Get(fspec.nr)
+              size += getVarIntSize(v)
+
+            CASE Type.uint32
+              size += getBinaryTagSize(fspec)
+              int v = msg.uint32Get(fspec.nr)
+              size += getVarIntSize(v)
+
+            CASE Type.float
+              size += getBinaryTagSize(fspec)
+              size += 4
+
+            CASE Type.double
+              size += getBinaryTagSize(fspec)
+              size += 8
+
+            CASE Type.bool
+              size += getBinaryTagSize(fspec)
+              size += 1
+
+            CASE Type.string
+              size += getBinaryTagSize(fspec)
+              byteString s = msg.stringGet(fspec.nr)
+              int len = s.Size()
+              size += getVarIntSize(len) + len
+
+            CASE Type.enum
+              int nr = msg.enumGet(fspec.nr)
+              size += getBinaryTagSize(fspec)
+              size += getVarIntSize(nr < 0 ? 0 : nr)
+
+            CASE Type.message
+              Message other = msg.messageGet(fspec.nr)
+              size += binaryMessageSize(msg, other, fspec, protoWriter)
+
+            DEFAULT
+              THROW E_BinaryError.NEW("INTERNAL: type not implemented: "
+                                                     .. fspec.type.ToString())
+          }
+        }
+      }
+    }
+    RETURN size
+  }
+
+  #= Compute size of writing the binary version of a message.
+  #- Excludes the length field before the message.
+  #
+  # Keep in sync with writeMessageBinary above!
+  FUNC binaryMessageSize(Message t, Message msg, FieldSpec fspec,
+                                                       Writer protoWriter) int
+    int size
+    IF msg == NIL
+      size = getBinaryTagSize(fspec)
+      size += getVarIntSize(0)
+    ELSE
+      bool done
+      IF protoWriter != NIL && protoWriter.derefTime != 0
+        int id = -1
+        IF msg.derefTime == protoWriter.derefTime
+          id = msg.derefId
+        ELSEIF msg.derefTimeSize == protoWriter.derefTimeSize
+          id = msg.derefIdSize
+        }
+        IF id >= 0
+          # Seen this message before, write the index as a varint.
+          FieldSpec intFspec = NEW(NIL, fspec.nr, Type.int, FALSE)
+          size += getBinaryTagSize(intFspec)
+          size += getVarIntSize(id)
+          done = TRUE
+        ELSE
+          msg.derefTimeSize = protoWriter.derefTimeSize
+          msg.derefIdSize = ++protoWriter.derefIdSize
+        }
+      }
+      IF !done
+        size += getBinaryTagSize(fspec)
+        int len = binarySize(msg, protoWriter)
+        size += getVarIntSize(len)
+        size += len
+      }
+    }
+    RETURN size
+  }
+
+  #= Write a string version of proto buf to |protoWriter.writer|.
+  #- When |protoWriter.useNr| is true the field number is prepended to the
+  #- name.  This looks ugly but makes it possible to parse back the text after
+  #- changes in the specification (e.g. a roll back).
+  PROC writeText(Message msg, Writer protoWriter) @public
+    IF protoWriter.indent != NIL
+      protoWriter.writer.write(protoWriter.indent)
+    }
+    IF msg.derefTime == protoWriter.derefTime
+      protoWriter.writer.write("# reference: " .. msg.name() .. "-"
+                                                       .. msg.derefId .. "\n")
+    ELSE
+      msg.derefTime = protoWriter.derefTime
+      msg.derefId = ++protoWriter.derefId
+      protoWriter.writer.write("# " .. msg.name() .. "-" .. msg.derefId ..
+                      " size: " .. binarySize(msg, protoWriter) .. " bytes\n")
+      FOR fspec IN msg.fieldSpecs()
+        IF fspec.repeated
+          int n = msg.size(fspec.nr)
+          FOR i IN 0 UNTIL n
+            writeOneTextField(msg, fspec, i, protoWriter)
+          }
+        ELSEIF msg.hasField(fspec.nr)
+          writeOneTextField(msg, fspec, -1, protoWriter)
+        }
+      }
+    }
+  }
+
+  PROC writeOneTextField(Message msg, FieldSpec fspec, int idx,
+                                                           Writer protoWriter)
+    IO.I_Writer writer = protoWriter.writer
+    IF protoWriter.indent != NIL
+      writer.write(protoWriter.indent)
+    }
+    IF protoWriter.useNr
+      writer.write(fspec.nr .. "-")
+    }
+    writer.write(fspec.name .. ": ")
+    SWITCH fspec.type
+      CASE Type.int
+      CASE Type.int64
+        int v
+        IF idx >= 0
+          v = msg.intGet(fspec.nr, idx)
+        ELSE
+          v = msg.intGet(fspec.nr)
+        }
+        writer.write(v .. "\n")
+      CASE Type.int32
+        int v
+        IF idx >= 0
+          v = msg.int32Get(fspec.nr, idx)
+        ELSE
+          v = msg.int32Get(fspec.nr)
+        }
+        writer.write(v .. "\n")
+      CASE Type.uint64
+        int v
+        IF idx >= 0
+          v = msg.uint64Get(fspec.nr, idx)
+        ELSE
+          v = msg.uint64Get(fspec.nr)
+        }
+        writer.write(v .. "\n")
+      CASE Type.uint32
+        int v
+        IF idx >= 0
+          v = msg.uint32Get(fspec.nr, idx)
+        ELSE
+          v = msg.uint32Get(fspec.nr)
+        }
+        writer.write(v .. "\n")
+      CASE Type.float
+        float32 f
+        IF idx >= 0
+          f = msg.floatGet(fspec.nr, idx)
+        ELSE
+          f = msg.floatGet(fspec.nr)
+        }
+        writer.write(f.ToString(".9g") .. "\n")
+      CASE Type.double
+        float f
+        IF idx >= 0
+          f = msg.doubleGet(fspec.nr, idx)
+        ELSE
+          f = msg.doubleGet(fspec.nr)
+        }
+        writer.write(f.ToString(".17g") .. "\n")
+      CASE Type.bool
+        bool v
+        IF idx >= 0
+          v = msg.boolGet(fspec.nr, idx)
+        ELSE
+          v = msg.boolGet(fspec.nr)
+        }
+        writer.write((v ? "TRUE" : "FALSE") .. "\n")
+      CASE Type.string
+        string v
+        IF idx >= 0
+          v = msg.stringGet(fspec.nr, idx)
+        ELSE
+          v = msg.stringGet(fspec.nr)
+        }
+        writer.write("\"" .. v .. "\"\n")  # TODO: escape
+      CASE Type.enum
+        IF protoWriter.useNr
+          int v
+          IF idx >= 0
+            v = msg.enumGet(fspec.nr, idx)
+          ELSE
+            v = msg.enumGet(fspec.nr)
+          }
+          writer.write(v .. "-")
+        }
+        string name
+        IF idx >= 0
+          name = msg.enumNameGet(fspec.nr, idx)
+        ELSE
+          name = msg.enumNameGet(fspec.nr)
+        }
+        writer.write(name .. "\n")
+      CASE Type.message
+        writer.write("{\n")
+        string indent = protoWriter.indent
+        IF indent != NIL
+          protoWriter.indent = indent .. "  "
+        }
+        IF idx >= 0
+          writeMessageText(msg, fspec.nr, idx, protoWriter)
+        ELSE
+          writeMessageText(msg, fspec.nr, protoWriter)
+        }
+        protoWriter.indent = indent
+        IF indent != NIL
+          writer.write(indent)
+        }
+        writer.write("}\n")
+      DEFAULT
+        THROW E_ProduceError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+    }
+  }
+
+  PROC writeMessageText(Message t, int fieldNr, Writer protoWriter
+                        ) @default
+    Message msg = t.messageGet(fieldNr)
+    IF msg != NIL
+      writeText(msg, protoWriter)
+    }
+  }
+
+  PROC writeMessageText(Message t, int fieldNr, int idx, Writer protoWriter
+                       ) @default
+    Message msg = t.messageGet(fieldNr, idx)
+    IF msg != NIL
+      writeText(msg, protoWriter)
+    }
+  }
+
+  # Fill in the fields of a message, reading characters from "iReader".
+  PROC mergeFromTextFields(Message msg, list<FieldSpec> fspecs,
+                                                     I_Reader iReader) @public
+    Reader reader = iReader.protoReader()
+    WHILE TRUE
+      int c = reader.readChar()
+      IF c == IO.eof
+        # Done, normaly way to end.
+        BREAK
+      }
+
+      # Skip leading white space.
+      WHILE c == ' '
+        c = reader.readChar()
+      }
+      IF c == '\n'
+        # empty line
+        CONTINUE
+      }
+
+      IF c == '#'
+        # Comment, skip to end of line.
+        WHILE TRUE
+          c = reader.readChar()
+          IF c == IO.eof || c == '\n'
+            BREAK
+          }
+        }
+      ELSEIF c == '}'
+        # End of nested message.
+        # TODO: Error when it is not nested?
+        reader.push(c)
+        BREAK
+      ELSE
+        # {field-name}: {value}\n
+        IO.StringWriter w = NEW()
+        WHILE c != ':' && c != ' ' && c != IO.eof
+          w.writeChar(c)
+          c = reader.readChar()
+        }
+        bool missingColon
+        IF c != ':'
+          missingColon = TRUE
+        ELSE
+          c = reader.readChar()
+        }
+        IF c != ' '
+          THROW E_ParseError.NEW("line " .. reader.lnum
+                                        .. ": Missing space after field name")
+        }
+
+        string name = w.ToString()
+        bool found
+        FOR fspec IN msg.fieldSpecs()
+          IF fspec.name == name
+            found = TRUE
+            IF missingColon && fspec.type != Type.message
+              THROW E_ParseError.NEW("line " .. reader.lnum
+                                            .. ": Missing : after field name")
+            }
+
+            SWITCH fspec.type
+              CASE Type.int
+              CASE Type.int64
+              CASE Type.int32
+              CASE Type.uint32
+              CASE Type.uint64
+                int v
+                WHILE TRUE
+                  c = reader.readChar()
+                  IF !c.isDigit()
+                    BREAK
+                  }
+                  v = v * 10 + (c - '0')
+                }
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                  .. ": Invalid number or missing line break")
+                }
+                IF fspec.type == Type.int32
+                  int32 v32 = v
+                  msg.int32Set(fspec.nr, v32)
+                ELSEIF fspec.type == Type.uint64
+                  nat n64 = v
+                  msg.uint64Set(fspec.nr, n64)
+                ELSEIF fspec.type == Type.uint32
+                  nat32 n32 = v
+                  msg.uint32Set(fspec.nr, n32)
+                ELSE
+                  msg.intSet(fspec.nr, v)
+                }
+
+              CASE Type.float
+                float32 f = readFloatFromText(reader)
+                msg.floatSet(fspec.nr, f)
+
+              CASE Type.double
+                float f = readFloatFromText(reader)
+                msg.doubleSet(fspec.nr, f)
+
+              CASE Type.bool
+                bool v
+                string expect
+                c = reader.readChar()
+                IF c == 'T'
+                  expect = "TRUE"
+                  v = TRUE
+                ELSE
+                  expect = "FALSE"
+                }
+                FOR nc IN expect
+                  IF c != nc
+                    THROW E_ParseError.NEW("line " .. reader.lnum
+                                                .. ": Expected TRUE or FALSE")
+                  }
+                  c = reader.readChar()
+                }
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                              .. ": Invalid bool value or missing line break")
+                }
+                msg.boolSet(fspec.nr, v)
+
+              CASE Type.string
+                IO.StringWriter sw = NEW()
+                c = reader.readChar()
+                IF c != '"'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                 .. ": Missing start double quote for string")
+                }
+                WHILE TRUE
+                  c = reader.readChar()
+                  IF c == '"' || c == IO.eof
+                    BREAK
+                  }
+                  # TODO: escaped chars
+                  sw.writeChar(c)
+                }
+                IF c != '"'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                    .. ": Missing end double quote of string")
+                }
+                c = reader.readChar()
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                       .. ": Missing line break after string")
+                }
+                msg.stringSet(fspec.nr, sw.ToString())
+
+              CASE Type.enum
+                IO.StringWriter sw = NEW()
+                WHILE TRUE
+                  c = reader.readChar()
+                  IF c == '\n' || c == IO.eof
+                    BREAK
+                  }
+                  sw.writeChar(c)
+                }
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                                        .. ": Truncated file")
+                }
+                msg.enumNameSet(fspec.nr, sw.ToString())
+
+              CASE Type.message
+                c = reader.readChar()
+                IF c != '{'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                        .. ": Missing { for start of message")
+                }
+                c = reader.readChar()
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                            .. ": Missing line break after {")
+                }
+
+                # Read nested message
+                msg.mergeMessageFromReader(fspec.nr, FileFormat.text, iReader)
+
+                c = reader.readChar()
+                IF c != '}'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                          .. ": Missing } for end of message")
+                }
+                c = reader.readChar()
+                IF c != '\n'
+                  THROW E_ParseError.NEW("line " .. reader.lnum
+                                            .. ": Missing line break after }")
+                }
+
+              DEFAULT
+                THROW E_ParseError.NEW("line " .. reader.lnum
+                                   .. ": INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+            }
+            BREAK
+          }
+        }
+        IF !found
+          IF missingColon
+            THROW E_ParseError.NEW("line " .. reader.lnum
+                                            .. ": Missing : after field name")
+          }
+
+          # Unknown fields are ignored.  Skip over the value, string or
+          # message.
+          int depth
+          bool inString
+          WHILE TRUE
+            c = reader.readChar()
+            IF c == IO.eof
+              BREAK
+            ELSEIF c == '\\'
+              reader.readChar()
+            ELSEIF c == '"'
+              inString = !inString
+            ELSEIF c == '{' && !inString
+              ++depth
+            ELSEIF c == '}' && !inString
+              --depth
+            ELSEIF depth == 0 && c == '\n'
+              BREAK
+            }
+          }
+        }
+      }
+    }
+  }
+
+  FUNC readFloatFromText(Reader reader) float
+    IO.StringWriter w = NEW()
+    int c
+    WHILE TRUE
+      c = reader.readChar()
+      IF !((c >= '0' && c <= '9') || c == '.' || c == 'e'
+                                          || c == 'E' || c == '+' || c == '-')
+        BREAK
+      }
+      w.write(c)
+    }
+    IF c != '\n'
+      THROW E_ParseError.NEW("line " .. reader.lnum
+                      .. ": Invalid number or missing line break")
+    }
+    RETURN w.ToString().toFloat()
+  }
+
+  # Fill in the fields of a message, reading bytes from "iReader".
+  # TODO: In Javascript this can read the array with eval().
+  PROC mergeFromJsonFields(Message msg, list<FieldSpec> fspecs,
+                                                     I_Reader iReader) @public
+    IO.CharReaderStack sreader = iReader.charReader()
+    int b = sreader.readChar()
+    IF b != '['
+      THROW E_ParseError.NEW("Missing [ at start of Json message, got " .. b)
+    }
+
+    int fieldIndex = 1
+    int c = sreader.readChar()
+    IF c == IO.eof
+      THROW E_ParseError.NEW("Syntax error in Json: Unexpected EOF")
+    }
+    WHILE TRUE
+      IF c == ']'
+        BREAK  # end of the message
+      }
+      IF fieldIndex > 50
+        # Expect a field number: ,{nr},value
+        sreader.push(c)
+        fieldIndex = readJsonNumber(sreader)
+        IF fieldIndex < 0
+          THROW E_ParseError.NEW(
+                              "Syntax error in Json: can't read field number")
+        }
+        IF fieldIndex <= 50
+          THROW E_ParseError.NEW("Syntax error in Json: field number wrong: "
+                                                                .. fieldIndex)
+        }
+        c = sreader.readChar()
+        IF c != ','
+          THROW E_ParseError.NEW(
+              "Syntax error in Json: missing comma after field number "
+                                                                .. fieldIndex)
+        }
+      ELSE
+        IF c == ','
+          # Just a comma, empty field.
+          ++fieldIndex
+          c = sreader.readChar()
+          CONTINUE
+        }
+        sreader.push(c)  # push back first byte of value
+      }
+
+      bool done
+      int nextChar
+      FOR fspec IN fspecs
+        IF fspec.nr == fieldIndex
+          IF fspec.repeated
+            c = sreader.readChar()
+            IF c == '['
+              int cnt
+              WHILE TRUE
+                done = mergeOneJsonField(msg, fspec, iReader)
+                IF !done
+                  skipJsonField(sreader)
+                ELSE
+                  c = sreader.readChar()
+                  IF c == ']'
+                    BREAK
+                  }
+                  IF c != ','
+                    THROW E_ParseError.NEW(
+                        "Missing comma in repeated field, got "
+                              .. c.asString() .. " after " .. cnt .. " items")
+                  }
+                }
+                ++cnt
+              }
+              done = TRUE
+            ELSE
+              THROW E_ParseError.NEW("Expected [ at start of repeated field")
+            }
+          ELSE
+            done = mergeOneJsonField(msg, fspec, iReader)
+          }
+          BREAK
+        }
+      }
+
+      IF !done  # unrecognized field, skip over it
+        skipJsonField(sreader)
+      }
+
+      c = sreader.readChar()
+      IF c != ']'
+        IF c != ','
+          THROW E_ParseError.NEW("Syntax error in Json: missing comma")
+        }
+        c = sreader.readChar()
+      }
+      ++fieldIndex
+    }
+  }
+
+  FUNC mergeOneJsonField(Message msg, FieldSpec fspec,
+                                                I_Reader iReader) bool @public
+    IO.CharReaderStack sreader = iReader.charReader()
+    bool done
+    SWITCH fspec.type
+      CASE Type.int
+      CASE Type.int64
+        # Read int
+        int n = readJsonNumber(sreader)
+        msg.intSet(fspec.nr, n)
+        done = TRUE
+      CASE Type.int32
+        # Read int32
+        int32 n = readJsonNumber(sreader)
+        msg.int32Set(fspec.nr, n)
+        done = TRUE
+      CASE Type.uint64
+        # Read uint64
+        nat n = readJsonNumber(sreader)
+        msg.uint64Set(fspec.nr, n)
+        done = TRUE
+      CASE Type.uint32
+        # Read uint32
+        nat32 n = readJsonNumber(sreader)
+        msg.uint32Set(fspec.nr, n)
+        done = TRUE
+      CASE Type.float
+        # Read float
+        float32 f = readJsonDouble(sreader)
+        msg.floatSet(fspec.nr, f)
+        done = TRUE
+      CASE Type.double
+        # Read double
+        float f = readJsonDouble(sreader)
+        msg.doubleSet(fspec.nr, f)
+        done = TRUE
+      CASE Type.bool
+        # Read bool
+        int n = readJsonNumber(sreader)
+        msg.boolSet(fspec.nr, n == 0 ? FALSE : TRUE)
+        done = TRUE
+      CASE Type.string
+        # Read string
+        string s = readJsonString(sreader)
+        msg.stringSet(fspec.nr, s)
+        done = TRUE
+      CASE Type.enum
+        # Read int
+        int n = readJsonNumber(sreader)
+        msg.enumSet(fspec.nr, n)
+        done = TRUE
+      CASE Type.message
+        int c = sreader.readChar()
+        sreader.push(c)
+        IF c != '['
+          IF c < '0' || c > '9'
+            IF c == IO.eof
+              THROW E_ParseError.NEW("Unexpected end of Json")
+            }
+            THROW E_ParseError.NEW("Expected a number, got " .. c.asString())
+          }
+          # Read message reference number
+          int key = readJsonNumber(sreader)
+          Reader pReader = iReader.protoReader()
+          IF pReader.refs == NIL
+            # Found a message reference while not reading with
+            # createFromBinaryDeref().
+            THROW E_ParseError.NEW("Unexpected message reference")
+          }
+          Message m = pReader.getRef(key)
+          IF m == NIL
+            # Found a message reference that wasn't read yet.
+            # Binary file does not match .proto file.
+            THROW E_ParseError.NEW("Message reference missing: " .. key)
+          }
+          IF fspec.repeated
+            msg.messageAdd(fspec.nr, m)
+          ELSE
+            msg.messageSet(fspec.nr, m)
+          }
+          done = TRUE
+        ELSE
+          # Read nested message
+          done = msg.mergeMessageFromReader(fspec.nr, FileFormat.json, iReader)
+        }
+      DEFAULT
+        THROW E_ParseError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+    }
+    RETURN done
+  }
+
+  PROC writeJson(Message msg, Writer jsonWriter) @public
+    int lastProducedField = 1
+    IO.I_Writer writer = jsonWriter.writer
+    writer.write("[")
+    FOR fspec IN msg.fieldSpecs()
+      IF fspec.repeated
+        int count = msg.size(fspec.nr)
+        IF count > 0
+          writeJsonFieldLeader(fspec.nr, lastProducedField, writer)
+          lastProducedField = fspec.nr
+          writer.write("[")
+          string repComma = ""
+          FOR i IN 0 UNTIL count
+            writer.write(repComma)
+            repComma = ","
+            SWITCH fspec.type
+              CASE Type.int
+              CASE Type.int64
+                writer.write(msg.intGet(fspec.nr, i) .. "")
+              CASE Type.int32
+                writer.write(msg.int32Get(fspec.nr, i) .. "")
+              CASE Type.uint64
+                writer.write(msg.uint64Get(fspec.nr, i) .. "")
+              CASE Type.uint32
+                writer.write(msg.uint32Get(fspec.nr, i) .. "")
+              CASE Type.float
+                writer.write(msg.floatGet(fspec.nr, i).ToString(".9g"))
+              CASE Type.double
+                writer.write(msg.doubleGet(fspec.nr, i).ToString(".17g"))
+              CASE Type.bool
+                # writer.write(msg.boolGet(fspec.nr, i) ? "1" : "0")
+                IF msg.boolGet(fspec.nr, i)
+                  writer.write("1")
+                ELSE
+                  writer.write("0")
+                }
+              CASE Type.string
+                writeJsonString(msg.stringGet(fspec.nr, i), writer)
+              CASE Type.enum
+                writer.write(msg.enumGet(fspec.nr, i) .. "")
+              CASE Type.message
+                Message other = msg.messageGet(fspec.nr, i)
+                writeMessageJson(other, fspec, jsonWriter)
+              DEFAULT
+                THROW E_ProduceError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+            }
+          }
+          writer.write("]")
+        }
+      ELSE
+        IF msg.hasField(fspec.nr)
+          writeJsonFieldLeader(fspec.nr, lastProducedField, writer)
+          lastProducedField = fspec.nr
+          SWITCH fspec.type
+            CASE Type.int
+            CASE Type.int64
+              writer.write(msg.intGet(fspec.nr) .. "")
+            CASE Type.int32
+              writer.write(msg.int32Get(fspec.nr) .. "")
+            CASE Type.uint64
+              writer.write(msg.uint64Get(fspec.nr) .. "")
+            CASE Type.uint32
+              writer.write(msg.uint32Get(fspec.nr) .. "")
+            CASE Type.float
+              writer.write(msg.floatGet(fspec.nr).ToString(".9g"))
+            CASE Type.double
+              writer.write(msg.doubleGet(fspec.nr).ToString(".17g"))
+            CASE Type.bool
+              # writer.write(msg.boolGet(fspec.nr) ? "1" : "0")
+              IF msg.boolGet(fspec.nr)
+                writer.write("1")
+              ELSE
+                writer.write("0")
+              }
+            CASE Type.string
+              writeJsonString(msg.stringGet(fspec.nr), writer)
+            CASE Type.enum
+              writer.write(msg.enumGet(fspec.nr) .. "")
+            CASE Type.message
+              Message other = msg.messageGet(fspec.nr)
+              writeMessageJson(other, fspec, jsonWriter)
+            DEFAULT
+              THROW E_ParseError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+          }
+        }
+      }
+    }
+    writer.write("]")
+  }
+
+  # Write the Json text leading up to field |nr|.
+  PROC writeJsonFieldLeader(int nr, int lastProducedField, IO.I_Writer writer)
+    IF nr > 50
+      # Fields with number > 50 are written as ,{nr},value
+      IF lastProducedField > 1
+        writer.write(",")
+      }
+      writer.write(nr)
+      writer.write(",")
+    ELSE
+      # Fields with number <= 50 are written as ,value.
+      # When value is empty just write a comma.
+      FOR i IN lastProducedField UNTIL nr
+        writer.write(",")
+      }
+    }
+  }
+
+  #= Messages are read/written recursively
+  PROC writeMessageJson(Message msg, FieldSpec fspec, Writer protoWriter)
+    IF msg != NIL
+      bool done
+      IF protoWriter.derefTime != 0
+        IF msg.derefTime == protoWriter.derefTime
+          # Seen this message before, write the ID as a varint.
+          IO.I_Writer writer = protoWriter.writer
+          writer.write(msg.derefId .. "")
+          done = TRUE
+        ELSE
+          # Not seen this message before, give it a unique ID.
+          msg.derefTime = protoWriter.derefTime
+          msg.derefId = ++protoWriter.derefId
+        }
+      }
+      IF !done
+        writeJson(msg, protoWriter)
+      }
+    }
+  }
+
+  FUNC equal(Message left, Message other) bool @public
+    list<FieldSpec> specsThis = left.fieldSpecs()
+    list<FieldSpec> specsOther = other.fieldSpecs()
+    IF specsThis.Size() != specsOther.Size()
+      RETURN FALSE
+    }
+    FOR i IN 0 UNTIL specsThis.Size()
+      FieldSpec fspec = specsThis[i]
+      IF fspec != specsOther[i]
+        RETURN FALSE
+      }
+      IF fspec.repeated
+        int n = left.size(fspec.nr)
+        IF n != other.size(fspec.nr)
+          RETURN FALSE
+        }
+        FOR j IN 0 UNTIL n
+          IF !fieldEqual(left, fspec, j, other)
+            RETURN FALSE
+          }
+        }
+      ELSE
+        IF left.hasField(fspec.nr) != other.hasField(fspec.nr)
+          RETURN FALSE
+        }
+        IF left.hasField(fspec.nr) && !fieldEqual(left, fspec, -1, other)
+          RETURN FALSE
+        }
+      }
+    }
+    RETURN TRUE
+  }
+
+  FUNC fieldEqual(Message msg, FieldSpec fspec, int idx, Message other) bool
+    SWITCH fspec.type
+      CASE Type.int
+      CASE Type.int64
+        IF idx >= 0
+          RETURN msg.intGet(fspec.nr, idx) == other.intGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.intGet(fspec.nr) == other.intGet(fspec.nr)
+        }
+      CASE Type.int32
+        IF idx >= 0
+          RETURN msg.int32Get(fspec.nr, idx) == other.int32Get(fspec.nr, idx)
+        ELSE
+          RETURN msg.int32Get(fspec.nr) == other.int32Get(fspec.nr)
+        }
+      CASE Type.uint64
+        IF idx >= 0
+          RETURN msg.uint64Get(fspec.nr, idx) == other.uint64Get(fspec.nr, idx)
+        ELSE
+          RETURN msg.uint64Get(fspec.nr) == other.uint64Get(fspec.nr)
+        }
+      CASE Type.uint32
+        IF idx >= 0
+          RETURN msg.uint32Get(fspec.nr, idx) == other.uint32Get(fspec.nr, idx)
+        ELSE
+          RETURN msg.uint32Get(fspec.nr) == other.uint32Get(fspec.nr)
+        }
+      CASE Type.float
+        IF idx >= 0
+          RETURN msg.floatGet(fspec.nr, idx) == other.floatGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.floatGet(fspec.nr) == other.floatGet(fspec.nr)
+        }
+      CASE Type.double
+        IF idx >= 0
+          RETURN msg.doubleGet(fspec.nr, idx) == other.doubleGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.doubleGet(fspec.nr) == other.doubleGet(fspec.nr)
+        }
+      CASE Type.bool
+        IF idx >= 0
+          RETURN msg.boolGet(fspec.nr, idx) == other.boolGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.boolGet(fspec.nr) == other.boolGet(fspec.nr)
+        }
+      CASE Type.string
+        IF idx >= 0
+          RETURN msg.stringGet(fspec.nr, idx) == other.stringGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.stringGet(fspec.nr) == other.stringGet(fspec.nr)
+        }
+      CASE Type.enum
+        IF idx >= 0
+          RETURN msg.enumGet(fspec.nr, idx) == other.enumGet(fspec.nr, idx)
+        ELSE
+          RETURN msg.enumGet(fspec.nr) == other.enumGet(fspec.nr)
+        }
+      CASE Type.message
+        IF idx >= 0
+          RETURN messageEqual(msg, fspec.nr, idx, other)
+        ELSE
+          RETURN messageEqual(msg, fspec.nr, other)
+        }
+      DEFAULT
+        THROW E_ParseError.NEW("INTERNAL: field type not supported: "
+                                                     .. fspec.type.ToString())
+    }
+    RETURN FALSE
+  }
+
+  FUNC messageEqual(Message msg, int fieldNr, int idx, Message other) bool
+    Message left = msg.messageGet(fieldNr, idx)
+    IF left != NIL
+      # TODO: left.Equal(other)
+    }
+    RETURN FALSE
+  }
+
+  # Messages are compared for equality recursively
+  FUNC messageEqual(Message msg, int fieldNr, Message other) bool
+    Message left = msg.messageGet(fieldNr)
+    IF left != NIL
+      # TODO: left.Equal(other)
+    }
+    RETURN FALSE
+  }
+
+  # A ByteReader that only reads up to a specified number of bytes.
+  CLASS LimitedByteReader IMPLEMENTS I_Reader, IO.I_ByteReader @public
+    I_Reader        $reader
+    int             $toRead
+
+    NEW(I_Reader reader, int length)
+      $reader = reader
+      $toRead = length
+    }
+
+    FUNC $readByte() int
+      IF $toRead <= 0
+        RETURN IO.eof
+      }
+      --$toRead
+      RETURN $reader.byteReader().readByte()
+    }
+
+    FUNC $byteReader() IO.I_ByteReader
+      RETURN THIS
+    }
+
+    FUNC $charReader() IO.CharReaderStack
+      RETURN NIL
+    }
+
+    FUNC $protoReader() Reader
+      RETURN $reader.protoReader()
+    }
+
+    PROC $addRef(Message m)
+      $reader.protoReader().addRef(m)
+    }
+  }
+
+  # After reading a tag of type lengthDelimited: Return a ByteReader that will
+  # only read the number of bytes available.
+  FUNC lengthReader(I_Reader reader) I_Reader @public
+    RETURN LimitedByteReader.NEW(reader, readVarInt(reader.byteReader()))
+  }
+
+  # Read a varint from |reader|.  Returns -1 when at end of file.
+  FUNC readVarInt(IO.I_ByteReader reader) int @public
+    int c = reader.readByte()
+    IF c <= 127
+      RETURN c  # Be quick for small values.
+    }
+
+    int v = (c & 127)
+    int shift = 7
+    WHILE TRUE
+      c = reader.readByte()
+      IF c == IO.eof
+        BREAK
+      }
+      IF c <= 127
+        RETURN v + (c << shift)
+      }
+      v += ((c & 127) << shift)
+      shift += 7
+    }
+    RETURN -1
+  }
+
+  # Return the number of bytes |value| takes when written as a varInt.
+  FUNC getVarIntSize(int value) int @public
+    IF value < 0
+      # negative number: always ten bytes
+      RETURN 10
+    }
+    IF value < (1 << 7)
+      RETURN 1
+    }
+    IF value < (1 << 14)
+      RETURN 2
+    }
+    int bytes = 3
+    WHILE value >= (1 << (bytes * 7))
+      IF ++bytes == 10
+        # Catch overflow on large number.
+        BREAK
+      }
+    }
+    RETURN bytes
+  }
+
+  # Write |value| as a varint.
+  # Return the number of bytes written.
+  FUNC writeVarInt(int value, IO.I_ByteWriter writer) int @public
+    int byteLen
+    int v = value
+    IF v < 0
+      # negative number or large uint64 value: always ten bytes
+      FOR i IN 0 TO 8
+        writer.writeByte((v & 127) + 128)
+        v = v >> 7
+      }
+      writer.writeByte(v & 127)
+      byteLen = 10
+    ELSE
+      WHILE TRUE
+        IF v <= 127
+          writer.writeByte(v)
+          ++byteLen
+          BREAK
+        }
+        writer.writeByte((v & 127) + 128)
+        ++byteLen
+        v = v >> 7
+      }
+    }
+    RETURN byteLen
+  }
+
+  # Write |value| as a fixed32.
+  # Return the number of bytes written (always 4).
+  FUNC writeVarFloat(float32 value, IO.I_ByteWriter writer) int @public
+    GENERATE_IF Z.lang == "C"
+      int b0
+      int b1
+      int b2
+      int b3
+>>>
+  union {
+      char bytes[4];
+      Tf32 floatval;
+  } un;
+  un.floatval = %value%;
+  %b0% = un.bytes[0];
+  %b1% = un.bytes[1];
+  %b2% = un.bytes[2];
+  %b3% = un.bytes[3];
+<<<
+      writer.writeByte(b3)
+      writer.writeByte(b2)
+      writer.writeByte(b1)
+      writer.writeByte(b0)
+    GENERATE_ELSE
+      THROW E_BinaryError.NEW("writing float not implemented")
+    }
+    RETURN 4
+  }
+
+  # Read a fixed32 float from |reader|.
+  FUNC readVarFloat(IO.I_ByteReader reader) float32 @public
+    GENERATE_IF Z.lang == "C"
+      int b3 = reader.readByte()
+      int b2 = reader.readByte()
+      int b1 = reader.readByte()
+      int b0 = reader.readByte()
+      float32 f
+>>>
+  union {
+      char bytes[4];
+      Tf32 floatval;
+  } un;
+  un.bytes[0] = %b0%;
+  un.bytes[1] = %b1%;
+  un.bytes[2] = %b2%;
+  un.bytes[3] = %b3%;
+  %f% = un.floatval;
+<<<
+    GENERATE_ELSE
+      THROW E_BinaryError.NEW("reading float not implemented")
+    }
+    RETURN f
+  }
+
+  # Write |value| as a fixed64.
+  # Return the number of bytes written (always 8).
+  FUNC writeVarDouble(float value, IO.I_ByteWriter writer) int @public
+    GENERATE_IF Z.lang == "C"
+      int b0
+      int b1
+      int b2
+      int b3
+      int b4
+      int b5
+      int b6
+      int b7
+>>>
+  union {
+      char bytes[8];
+      Tf floatval;
+  } un;
+  un.floatval = %value%;
+  %b0% = un.bytes[0];
+  %b1% = un.bytes[1];
+  %b2% = un.bytes[2];
+  %b3% = un.bytes[3];
+  %b4% = un.bytes[4];
+  %b5% = un.bytes[5];
+  %b6% = un.bytes[6];
+  %b7% = un.bytes[7];
+<<<
+      writer.writeByte(b7)
+      writer.writeByte(b6)
+      writer.writeByte(b5)
+      writer.writeByte(b4)
+      writer.writeByte(b3)
+      writer.writeByte(b2)
+      writer.writeByte(b1)
+      writer.writeByte(b0)
+    GENERATE_ELSE
+      THROW E_BinaryError.NEW("writing double not implemented")
+    }
+    RETURN 8
+  }
+
+  # Read a fixed64 double from |reader|.
+  FUNC readVarDouble(IO.I_ByteReader reader) float @public
+    GENERATE_IF Z.lang == "C"
+      int b7 = reader.readByte()
+      int b6 = reader.readByte()
+      int b5 = reader.readByte()
+      int b4 = reader.readByte()
+      int b3 = reader.readByte()
+      int b2 = reader.readByte()
+      int b1 = reader.readByte()
+      int b0 = reader.readByte()
+      float f
+>>>
+  union {
+      char bytes[8];
+      Tf floatval;
+  } un;
+  un.bytes[0] = %b0%;
+  un.bytes[1] = %b1%;
+  un.bytes[2] = %b2%;
+  un.bytes[3] = %b3%;
+  un.bytes[4] = %b4%;
+  un.bytes[5] = %b5%;
+  un.bytes[6] = %b6%;
+  un.bytes[7] = %b7%;
+  %f% = un.floatval;
+<<<
+    GENERATE_ELSE
+      THROW E_BinaryError.NEW("reading double not implemented")
+    }
+    RETURN f
+  }
+
+  # Write a byte to |writer| that is an invalid tag, thereby forcing the
+  # reader to quit.  This can be used to separate messages in a file.
+  PROC writeEndMarker(IO.I_ByteWriter writer) @public
+    # 7 is an invalid type, see readBinaryTag().
+    writeVarInt(7, writer)
+  }
+
+  # Read a number from |reader|.  Stops reading at a non-digit.
+  FUNC readJsonNumber(IO.CharReaderStack reader) int @public
+    int v
+    WHILE TRUE
+      int c = reader.readChar()
+      IF c == IO.eof || c < '0' || c > '9'
+        reader.push(c)
+        BREAK
+      }
+      v = v * 10 + (c - '0')
+    }
+    RETURN v
+  }
+
+  # Read a float from |reader|.  Stops reading at a non-float-digit.
+  FUNC readJsonDouble(IO.CharReaderStack reader) float @public
+    IO.StringWriter w = NEW()
+    WHILE TRUE
+      int c = reader.readChar()
+      IF !((c >= '0' && c <= '9') || c == '.' || c == 'e'
+                                          || c == 'E' || c == '+' || c == '-')
+        reader.push(c)
+        BREAK
+      }
+      w.write(c)
+    }
+    # TODO: check for errors.
+    RETURN w.ToString().toFloat()
+  }
+
+  # Read a string from |reader|.  Stops at the matching double quote.
+  FUNC readJsonString(IO.CharReaderStack reader) string @public
+    IF reader.readChar() != '"'
+      RETURN ""
+    }
+    IO.StringWriter writer = NEW()
+    WHILE TRUE
+      int c = reader.readChar()
+      IF c == IO.eof
+        THROW E_ParseError.NEW("Truncated string")
+      }
+      IF  c == '"'
+        BREAK
+      }
+      IF c == '\\'
+        c = reader.readChar()
+        SWITCH c
+          CASE 'b'
+            writer.writeChar('\b')
+          CASE 'f'
+            writer.writeChar('\f')
+          CASE 'n'
+            writer.writeChar('\n')
+          CASE 'r'
+            writer.writeChar('\r')
+          CASE 't'
+            writer.writeChar('\t')
+          CASE 'u'
+            int v = reader.readChar().asString().hexToInt()
+            v = v * 16 + reader.readChar().asString().hexToInt()
+            v = v * 16 + reader.readChar().asString().hexToInt()
+            v = v * 16 + reader.readChar().asString().hexToInt()
+            writer.writeChar(v)
+          DEFAULT
+            # \\ results in \
+            writer.writeChar(c)
+        }
+      ELSE
+        writer.writeChar(c)
+      }
+    }
+    RETURN writer.ToString()
+  }
+
+  # Skip one Json item.
+  PROC skipJsonField(IO.CharReaderStack reader) @public
+    int c = reader.readChar()
+    IF c == '"'
+      reader.push(c)
+      readJsonString(reader)
+    ELSEIF c >= '0' && c <= '9'
+      readJsonNumber(reader)
+    ELSEIF c == '['
+      WHILE TRUE
+        skipJsonField(reader)
+        c = reader.readChar()
+        IF c == ']' || c == IO.eof
+          BREAK
+        }
+        IF c != ','
+          THROW E_ParseError.NEW("Missing comma in Json list")
+        }
+      }
+    ELSEIF c == '['
+      # TODO: skip message
+      THROW E_ParseError.NEW("Not implemented: skip message")
+    ELSE
+      THROW E_ParseError.NEW("Syntax error in Json")
+    }
+  }
+
+  # Write |s| as a JSON string, escaping special characters.
+  PROC writeJsonString(string s, IO.I_Writer writer) @public
+    writer.write("\"")
+    FOR c IN s
+      SWITCH c
+        CASE '"'; writer.write("\\\"")
+        CASE '\\'; writer.write("\\\\")
+        CASE '\b'; writer.write("\\b")
+        CASE '\f'; writer.write("\\f")
+        CASE '\n'; writer.write("\\n")
+        CASE '\r'; writer.write("\\r")
+        CASE '\t'; writer.write("\\t")
+        DEFAULT
+          IF c < 32 || c > 127
+            # write in \u1234 form
+            writer.write("\\u")
+            writer.write(c.toHex(4))
+          ELSE
+            # normal character
+            writer.write(c.asString())
+          }
+      }
+    }
+    writer.write("\"")
+  }
+
+  # Stores the RPC Control object plus what we use in the callback
+  CLASS Control EXTENDS RPC.Control @public
+    func<IO.I_CharReader => Message> $charCreate
+    func<IO.I_ByteReader => Message> $byteCreate
+    proc<RPC.Control, Message>   $done
+
+    NEW(func<IO.I_CharReader => Message> charCreate,
+             func<IO.I_ByteReader => Message> byteCreate,
+             proc<RPC.Control, Message> done)
+      $charCreate = charCreate
+      $byteCreate = byteCreate
+      $done = done
+    }
+
+    SHARED
+      PROC callback(RPC.Control controlArg, string response)
+        Control control = controlArg
+        IO.StringReader reader = NEW(response)
+        VAR msg = control.charCreate(reader)
+        # TODO: the next line doesn't work
+        # Message msg = control.charCreate(reader)
+
+        control.done(control, msg)
+      }
+    }
+  }
+
+  FUNC rpc(string serviceName,
+          Message request,
+          func<IO.I_CharReader => Message> charCreate,
+          func<IO.I_ByteReader => Message> byteCreate,
+          proc<RPC.Control, Message> done
+       ) RPC.Control @public
+    Control control = NEW(charCreate, byteCreate, done)
+
+    GENERATE_IF Z.lang == "JS"
+      IO.StringWriter writer = NEW()
+      request.writeJsonDeref(writer)
+      RPC.rpc(control, serviceName, writer.ToString(), Control.callback)
+    GENERATE_ELSE
+      # TODO: RPC call in C
+    }
+
+    RETURN control
+  }
+
+  # Used for the server side of an RPC call.
+  CLASS RpcInfo @public @items=public
+    string                             $name     # E.g., "Service.GetAddress"
+    func<IO.I_CharReader => Message>   $createFromJson
+    func<  => Message>                 $createResponse
+
+    NEW(string name,
+        func<IO.I_CharReader => Message> createFromJson,
+        func< => Message> createResponse)
+      $name = name
+      $createFromJson = createFromJson
+      $createResponse = createResponse
+    }
+  }
+
+}

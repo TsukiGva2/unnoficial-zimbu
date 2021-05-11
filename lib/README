@@ -1,0 +1,37 @@
+ADDING A LIBRARY MODULE
+
+You need to write two files for the module "FOO":
+- FOOLoader.zu
+- FOOModule.zu
+
+FOOLoader.zu is used the first time they keyword FOO is encountered.  It makes
+the module available to the compiler.
+
+FOOModule.zu contains the actual code of the library.  Most of this should be
+written in Zimbu and defines the interface.  C and/or JavaScript is produced to
+do the low level work.
+
+
+Steps:
+
+1. Look at the other loader and module files and copy one that comes close to
+   the new module.  Example:
+        cp HTTPLoader.zu FOOLoader.zu
+	cp HTTPModule.zu FOOModule.zu
+
+2. Change the new files to match your module.  E.g., search for HTTP and http
+   and change them to FOO and foo.  Adjust the name in the copyright notice.
+
+3. In Builtin.zu, add an IMPORT for lib/FOOLoader.zu.
+
+4. In Builtin.zu, prepare() procedure, add:
+      availableModules["FOO"] = FOOLoader.prepare()
+
+5. In Tokenize.zu, add the FOO keyword to the keywords dict:
+      "FOO": Token.Type.id,
+
+6. Add a test file in testdir.  Update test.ok for the expected output.
+
+7. In Makecommon.mak add lib/FOOLoader.zu to the SOURCES.
+   Add lib/FOOModule.zu to MOD_SOURCES and DOCINPUT.
+

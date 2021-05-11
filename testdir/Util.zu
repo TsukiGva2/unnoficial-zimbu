@@ -1,0 +1,29 @@
+# Test Utils
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Util @public
+
+  # Strip the line number from an exception:
+  # "line 234 col 5" ->  "line col 5".
+  # Also remove the full path from a file name.
+  FUNC stripLine(string origMsg) string @public
+    string msg = origMsg
+    int lineIdx = msg.find("line ")
+    int colIdx = msg.find("col ")
+    IF lineIdx > 0 && colIdx > 0
+      msg = msg.slice(0, lineIdx + 4) .. msg.slice(colIdx)
+    }
+    
+    int libIdx = msg.find("/lib/")
+    IF libIdx > 0
+      msg = msg.slice(libIdx + 1)
+    }
+
+    RETURN msg
+  }
+
+}

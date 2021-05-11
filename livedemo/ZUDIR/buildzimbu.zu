@@ -1,0 +1,293 @@
+# Generated from buildzimbu.proto
+
+IMPORT "$PLUGIN/proto/Proto.zu"
+IMPORT "$PLUGIN/proto/Message.zu"
+
+MODULE Livedemo @public @items=public
+  CLASS BuildRequest EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "BuildRequest"
+    }
+    string $f_code
+    FUNC $setCode(string v) BuildRequest @primitive
+      $f_code = v
+      RETURN THIS
+    }
+    FUNC $getCode() string @primitive
+      IF $f_code == NIL
+        RETURN ""
+      }
+      RETURN $f_code
+    }
+    FUNC $hasCode() bool @primitive
+      RETURN $f_code != NIL
+    }
+    FUNC $clearCode() BuildRequest @primitive
+      $f_code = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_code = NIL
+    }
+    FUNC $valid() bool @primitive
+      RETURN $hasCode()
+    }
+    FUNC $stringGet(int fieldNr) string @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_code
+      }
+      RETURN ""
+    }
+    PROC $stringSet(int fieldNr, string value) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; $f_code = value
+      }
+    }
+    FUNC $hasField(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $hasCode()
+      }
+      RETURN FALSE
+    }
+    FUNC $copy(bool deep) BuildRequest
+      BuildRequest ret = NEW()
+      ret.f_code = $f_code
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) BuildRequest
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) BuildRequest
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) BuildRequest
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) BuildRequest
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) BuildRequest
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) BuildRequest
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) BuildRequest
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("code", 1, Proto.Type.string, FALSE),
+      ]
+      FUNC newMessage() Message
+        RETURN BuildRequest.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) BuildRequest
+        RETURN BuildRequest.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) BuildRequest
+        RETURN BuildRequest.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) BuildRequest
+        RETURN BuildRequest.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) BuildRequest
+        RETURN BuildRequest.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) BuildRequest
+        RETURN BuildRequest.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+    }
+  }
+  CLASS BuildResult EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "BuildResult"
+    }
+    string $f_compilerMessages
+    FUNC $setCompilerMessages(string v) BuildResult @primitive
+      $f_compilerMessages = v
+      RETURN THIS
+    }
+    FUNC $getCompilerMessages() string @primitive
+      IF $f_compilerMessages == NIL
+        RETURN ""
+      }
+      RETURN $f_compilerMessages
+    }
+    FUNC $hasCompilerMessages() bool @primitive
+      RETURN $f_compilerMessages != NIL
+    }
+    FUNC $clearCompilerMessages() BuildResult @primitive
+      $f_compilerMessages = NIL
+      RETURN THIS
+    }
+    string $f_runOutput
+    FUNC $setRunOutput(string v) BuildResult @primitive
+      $f_runOutput = v
+      RETURN THIS
+    }
+    FUNC $getRunOutput() string @primitive
+      IF $f_runOutput == NIL
+        RETURN ""
+      }
+      RETURN $f_runOutput
+    }
+    FUNC $hasRunOutput() bool @primitive
+      RETURN $f_runOutput != NIL
+    }
+    FUNC $clearRunOutput() BuildResult @primitive
+      $f_runOutput = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_compilerMessages = NIL
+      $f_runOutput = NIL
+    }
+    FUNC $valid() bool @primitive
+      RETURN $hasCompilerMessages()
+    }
+    FUNC $stringGet(int fieldNr) string @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_compilerMessages
+        CASE 2; RETURN $f_runOutput
+      }
+      RETURN ""
+    }
+    PROC $stringSet(int fieldNr, string value) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; $f_compilerMessages = value
+        CASE 2; $f_runOutput = value
+      }
+    }
+    FUNC $hasField(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $hasCompilerMessages()
+        CASE 2; RETURN $hasRunOutput()
+      }
+      RETURN FALSE
+    }
+    FUNC $copy(bool deep) BuildResult
+      BuildResult ret = NEW()
+      ret.f_compilerMessages = $f_compilerMessages
+      ret.f_runOutput = $f_runOutput
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) BuildResult
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) BuildResult
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) BuildResult
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) BuildResult
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) BuildResult
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) BuildResult
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) BuildResult
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("compilerMessages", 1, Proto.Type.string, FALSE),
+        NEW("runOutput", 2, Proto.Type.string, FALSE),
+      ]
+      FUNC newMessage() Message
+        RETURN BuildResult.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) BuildResult
+        RETURN BuildResult.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) BuildResult
+        RETURN BuildResult.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) BuildResult
+        RETURN BuildResult.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) BuildResult
+        RETURN BuildResult.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) BuildResult
+        RETURN BuildResult.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+    }
+  }
+  MODULE BuildService @public @items=public
+    # rpc BuildAndRun(BuildRequest) returns BuildResult
+    FUNC callBuildAndRun(BuildRequest request, proc<RPC.Control, Message> done) RPC.Control
+      IF !request.valid()
+        RETURN NIL
+      }
+      GENERATE_IF Z.lang == "JS"
+        RETURN Proto.rpc("BuildService.BuildAndRun", request, BuildResult.createMessageFromJsonDeref, NIL, done)
+      GENERATE_ELSEIF Z.lang == "C"
+        RETURN Proto.rpc("BuildService.BuildAndRun", request, NIL, BuildResult.createMessageFromBinaryDeref, done)
+      GENERATE_ELSE
+        RETURN NIL
+      }
+    }
+    GENERATE_IF Z.lang == "C"
+      Proto.RpcInfo handleBuildAndRun = NEW("BuildService.BuildAndRun", BuildRequest.createMessageFromJsonDeref, BuildResult.newMessage)
+    }
+  }
+}

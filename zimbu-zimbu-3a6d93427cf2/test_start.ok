@@ -1,0 +1,50 @@
+Main start
+Global
+testdir/Garbage.zu
+foobarfoobarfoo
+r = 102
+got an object
+my collected
+got a bad object
+MyObject finished; exiting == FALSE
+bad collected
+got a slow object
+BadObject.Finish; exiting == FALSE
+slow collected
+Finish 1
+after GC one
+Finish 2
+after GC two
+after GC three
+0: 1
+1: 2
+2: 3
+3: 4
+total keymapped list: 10
+5: 1
+5: 2
+5: 3
+5: 4
+total mapped array: 10
+0: 1
+1: 2
+2: 3
+3: 4
+total keymapped array: 10
+6: one
+6: two
+6: three
+map concatenated array: onetwothree
+0: one
+1: two
+2: three
+keymap concatenated array: onetwothree
+8: 1
+8: 2
+8: 3
+total mapped dict: 6
+1: 1
+2: 2
+3: 3
+total keymapped dict: 6
+back in testprog.zu

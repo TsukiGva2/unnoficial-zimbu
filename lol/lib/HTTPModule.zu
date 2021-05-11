@@ -1,0 +1,866 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Builtin module HTTP.
+#
+# TODO: confirm to HTTP/1.1  http://www.w3.org/Protocols/rfc2616/rfc2616.html
+
+IMPORT "$PLUGIN/proto/Proto.zu"
+IMPORT "$PLUGIN/proto/Message.zu"
+
+#= Classes to create a simple HTTP server and other browser related
+#= functionality.
+#
+#- This is intended to serve a small number of requests.
+#- It can be used to monitor the status of a process and to run a ZWT UI.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE HTTPModule @public
+
+  #= Request type names according to HTTP/1.1. Uppercase in request.
+  ENUM RequestType @public
+    unknown
+    options
+    get
+    head
+    post
+    put
+    delete
+    trace
+    connect
+  }
+
+  #= The HTTP request fields.
+  CLASS Request @public
+    RequestType   $type @public   #= The type of request.
+                                  #- Usually this is RequestType.get or
+                                  #- RequestType.post.
+    string        $path @public   #= The path found in the request, up to
+                                  #= any '?'.
+    string        $params @public #= "?arg=val&arg=val"  without the '?'.
+                                  #- If there is no ? in the path then NIL.
+    string        $httpVersion @public #= HTTP version from the first line
+    dict<string, string> $headerItems @public #= Items found in the header.
+    byteString    $body @public        #= for a POST: the data
+    dict<string, string> $paramItems  #!
+
+    NEW() @public
+      $headerItems = NEW()
+    }
+
+    #= Get a dictionary with the parameters, the "key=value" that come after a
+    #= "?" in the URL and are separated with "&".
+    FUNC $paramDict() dict<string, string> @public
+      # $paramItems is filled only when needed.
+      IF $paramItems == NIL
+        $paramItems = NEW()
+        IF $params != NIL
+          int start
+          WHILE TRUE
+            int end = $params.find('&', start)
+            int eq = $params.find('=', start)
+            string name
+            string value
+            IF eq > 0 && (end < 0 || eq < end)
+              name = $params.slice(start, eq - 1)
+              value = $params.slice(eq + 1, end)
+            ELSE
+              name = $params.slice(start, end)
+              value = ""
+            }
+            $paramItems[name] = value  # overwrite any previous entry
+            IF end < 0
+              BREAK
+            }
+            start = end + 1
+          }
+        }
+      }
+      RETURN $paramItems
+    }
+
+    #= Return a string with all the information of this request.
+    #= To be used for debugging.
+    FUNC $ToString() string @public
+      IO.StringWriter w = NEW()
+      w.print("type: " .. $type.ToString())
+      w.print("path: " .. $path)
+      w.print("params: " .. $params)
+      w.print("HTTP version: " .. $httpVersion)
+      w.print("HEADER ITEMS:")
+      FOR i IN $headerItems.keys()
+        w.print(i .. ": " .. $headerItems[i])
+      }
+      IF $body != NIL
+        w.print("Body: " .. $body.asString())
+      }
+
+      RETURN w.ToString()
+    }
+  }
+
+  #= The HTTP response fields.
+  CLASS Response @public
+    #= 200 (OK), 404 (not found), etc.
+    int       $code @public
+
+    #= human readable message related to "code"
+    #- Must not contain a line break.
+    string    $msg @public
+
+    #= Items to be added to the response header.
+    dict<string, string> $headerItems @public
+
+    #= Body of the response, e.g., the HTML page.
+    #- TODO: this should be byteString.
+    string    $body @public
+
+    #= Create default header with OK code and HTML type.
+    NEW() @public
+      $code = 200
+      $msg = "OK"
+      $headerItems = NEW()
+      $setType("text/html; charset=UTF-8")
+      $body = "empty\n"
+    }
+
+    #= Set header item "Content-Length" to |length|.
+    PROC $setLength(int length) @public
+      $headerItems["Content-Length"] = length .. ""
+    }
+
+    #= Set header item "Content-Type" to |type|.
+    PROC $setType(string type) @public
+      $headerItems["Content-Type"] = type
+    }
+  }
+
+  #= Stores the Server, Request and Response, so that we only need to pass one
+  #= argument to $serve methods.
+  CLASS Context @public @items=public
+    Server    $server
+    Request   $request
+    Response  $response
+
+    NEW(Server server, Request request, Response response)
+      $server = server
+      $request = request
+      $response = response
+    }
+  }
+
+  #= Base class for all Servlets.
+  CLASS Servlet @abstract @public
+    string       $name      #!
+    list<string> $paths     #! TODO: also add patterns.
+    string       $mimeType  #!
+
+    #= Add a path that this servlet will serve for.
+    PROC $addPath(string path) @public
+      IF $paths == NIL
+        $paths = NEW()
+      }
+      $paths.add(path)
+    }
+
+    #= Check if this servlet wants to serve the |req|.
+    #- If so, put the result in |resp| and return TRUE.
+    #- If not return FALSE.
+    FUNC $handle(Context context) bool @public
+      IF $paths != NIL
+        FOR p IN $paths
+          IF p == context.request.path
+            IF $mimeType != NIL
+              context.response.setType($mimeType)
+            }
+            IF $serve(context)
+              RETURN TRUE
+            }
+          }
+        }
+      }
+      RETURN FALSE
+    }
+
+    #= Set the MIME type to be used in the response for this Servlet.
+    PROC $setMimeType(string type) @public
+      $mimeType = type
+    }
+
+    #= Serve the |req|, put the reply in |resp|.
+    #= Return TRUE when the request was handled.
+    #- This is invoked from the handle() method.
+    #- Servlet implementations usually only need to implement this method.
+    FUNC $serve(Context context) bool @abstract @public
+    }
+  }
+
+  #= Generate a 301 redirect.
+  CLASS RedirectServlet EXTENDS Servlet @public
+    string $toURL   #!
+    int    $code    #!
+
+    #= Create a new redirect to URL |to|.
+    NEW(string to) @public
+      $name = "RedirectServlet"
+      $toURL = to
+      $code = 301
+    }
+
+    #= Change the default 301 response code into |code|.
+    PROC $setResponseCode(int code) @public
+      $code = code
+    }
+
+    #= Handle a redirect request.
+    FUNC $serve(Context context) bool @define @public
+      context.response.body = "<html><head><title>Moved</title></head><body>"
+                  .. "<h1>Moved</h1>This page has moved to <a href='"
+                  .. context.server.base .. $toURL .. "'>"
+                  .. context.server.base .. $toURL .. "</a></body></html>"
+      context.response.code = $code
+      context.response.msg = "Moved Permanently"
+      context.response.headerItems["Location"] = $toURL
+      RETURN TRUE
+    }
+  }
+
+  #= Get the page body from a file.
+  # TODO: Caching
+  CLASS FileServlet EXTENDS Servlet @public
+    string $fileName       #!
+
+    #= Create a new FileServlet that reads |fileName|.
+    NEW(string fileName) @public
+      $name = "FileServlet"
+      $fileName = fileName
+    }
+
+    #= Set the file to read to |fileName|.
+    PROC $setFile(string fileName) @public
+      $fileName = fileName
+      # TODO: detect MIME type from file name, call setMimeType()
+    }
+
+    #= Handle a request by reading the file and putting it in the response.
+    FUNC $serve(Context context) bool @define @public
+      # Add file contents to context.response.
+      IO.print("reading " .. context.server.fileRoot .. "/" .. $fileName)
+      context.response.body = IO.readFile(context.server.fileRoot
+                                                          .. "/" .. $fileName)
+      # TODO: stat file
+      # context.response.headerItems["Last-Modified"] = stat.time
+      RETURN TRUE
+    }
+  }
+
+  #= A Servlet that gets the page body from a string.
+  CLASS StringServlet EXTENDS Servlet @public
+    string $body  #!
+
+    #= Create a new StringServlet that puts |body| in the response.
+    NEW(string body) @public
+      $name = "StringServlet"
+      $body = body
+    }
+
+    #= Set the response string to |body|.
+    PROC $setBody(string body) @public
+      $body = body
+    }
+
+    #= Handle a request by putting the string in the response.
+    FUNC $serve(Context context) bool @define @public
+      context.response.body = $body
+      RETURN TRUE
+    }
+  }
+
+  #= The type used for a FunctionServlet.
+  #- The first argument is HTTP.Context.
+  TYPE func<Context => string> ServletFunc @public
+
+  #= A Servlet that generates the page body with a function.
+  CLASS FunctionServlet EXTENDS Servlet @public
+    ServletFunc $serveFunc #!
+
+    #= Create a new FunctionServlet that calls |func| to create a response.
+    NEW(ServletFunc func) @public
+      $name = "FunctionServlet"
+      $serveFunc = func
+    }
+
+    #= Set the function to call to |func|.
+    PROC $setProc(ServletFunc func) @public
+      $serveFunc = func
+    }
+
+    #= Handle a request by invoking the function and putting its result in the
+    #= response.
+    FUNC $serve(Context context) bool @define @public
+      context.response.body = $serveFunc(context)
+      RETURN TRUE
+    }
+  }
+
+  #= A Servlet that handles RPC requests.
+  #- Requests normally come in at "/rpc?ServiceName.Method".
+  CLASS RpcServlet EXTENDS Servlet @public
+    #!
+    CLASS Handler
+      Proto.RpcInfo                             $rpcInfo #!
+      func<Context, Message, Message => status> $handler #!
+    }
+
+    dict<string, Handler> $services #!
+
+    #= Create a new RpcServlet.
+    NEW() @public @default
+      $init()
+    }
+
+    PROC $init() @public
+      $name = "RpcServlet"
+      $addPath("/rpc")
+      $services = NEW()
+    }
+
+    #= Set the handler function to call for RPC call |rpc|
+    PROC $addHandler(Proto.RpcInfo rpcInfo,
+                  func<Context, Message, Message => status> handler) @public
+      IF $services.has(rpcInfo.name)
+        THROW "Adding already existing service: " .. rpcInfo.name
+      }
+      Handler h = NEW()
+      h.rpcInfo = rpcInfo
+      h.handler = handler
+      $services.add(rpcInfo.name, h)
+    }
+
+    #= Handle a request:
+    #= Check that it starts with "rpc?name=ServiceName.method"
+    #= Check that the service name matches "ServiceName"
+    #= Find a handler for "method" and call it.
+    FUNC $serve(Context context) bool @define @public
+      Request req = context.request
+      IF req.paramDict().has("name")
+        string name = req.paramDict()["name"]
+        IF $services.has(name)
+          Handler h = $services[name]
+          Message request = h.rpcInfo.createFromJson(
+                                     IO.StringReader.NEW(req.body.asString()))
+          Message response = h.rpcInfo.createResponse()
+
+          # Invoke the handler.
+          h.handler(context, request, response)
+
+          # Encode response in context.response
+          IO.StringWriter writer = NEW()
+          response.writeJsonDeref(writer)
+          context.response.body = writer.ToString()
+          context.response.setType("binary/octet-stream; charset=UTF-8")
+          RETURN TRUE
+        }
+      }
+      RETURN FALSE
+    }
+  }
+
+  #= Verbosity of the server:
+  #- |off|: Be very silent, only error messages.
+  #
+  #- |low|: Report major activity, such as receiving a request and sending
+  #- back a response.
+  #
+  #- |high|: Report details.
+  ENUM Verbosity @public
+    off
+    low
+    high
+  }
+
+  #= The actual HTTP server.
+  #- The defaults are set to use URL "http://localhost" and low verbosity.
+  CLASS Server EXTENDS thread @public
+    int             $port                 #!
+    int             $listenQueueLen = 50  #!
+    list<Servlet>   $servlets = NEW()     #!
+    string          $fileRoot             #!
+    string          $base = "http://localhost"  #!
+    Verbosity       $verbosity = Verbosity.low
+
+    # The server stops when TRUE is written to $quitPipe.
+    pipe<bool>      $quitPipe = NEW()     #!
+    bool            $didQuit              #!
+    bool            $busy                 #!
+
+    #= Create a new HTTP server on port |port|.
+    NEW(int port) @public
+      $port = port
+      IF $port != 80
+        $base ..= ":" .. $port     # add port if it's not the default "80"
+      }
+
+      # Compiled ZWT pages end up in the ZUDIR of the executable, use that as
+      # the default directory.
+      $fileRoot = ARG.getExeDir() .. "/ZUDIR"
+    }
+
+    #= Set the verbosity for the server to |level|.
+    PROC $setVerbosity(Verbosity level) @public
+      $verbosity = level
+    }
+
+    #= Setting the base URL allows servlets to use it.
+    PROC $setBase(string base) @public
+      $base = base
+    }
+
+    #= Set the directory where files for FileServlet can be found.
+    PROC $setFileRoot(string root) @public
+      $fileRoot = root
+    }
+
+    #= Add a servlet.  The server will ask each servlet if it can handle a
+    #= request.
+    PROC $addServlet(Servlet servlet) @public
+      $servlets.add(servlet)
+    }
+
+    #= Add a ZUT page.  This will create the page according to the |page|
+    #= argument and create a servlet for it.
+    PROC $addPage(ZUT.Page page) @public
+      # Serve the page, it is created on request.
+      callback<ServletFunc, ZUT.Page> cb = NEW(ZUT.createPage, page)
+      HTTP.Servlet servlet = FunctionServlet.NEW(cb)
+      FOR path IN page.pathList
+        servlet.addPath(path)
+      }
+      $servlets.add(servlet)
+
+      # Serve the Javascript files.
+      FOR file IN page.jsFiles
+        servlet = FileServlet.NEW(file)
+        servlet.addPath("/" .. file)
+        servlet.setMimeType("text/javascript; charset=UTF-8")
+        $servlets.add(servlet)
+      }
+    }
+
+    #= Generate a "301 moved permanently" response.
+    #- A simple way to add a RedirectServlet and set the |from| and |to| URLs.
+    PROC $redirect(string from, string to) @public
+      RedirectServlet servlet = NEW(to)
+      servlet.addPath(from)
+      $addServlet(servlet)
+    }
+
+    #! Open TCP server socket on "port", start listening.
+    #! TODO: The server socket stuff should be moved elsewhere.
+    PROC $body() @replace @public
+      string reqString
+      int listenArg = $listenQueueLen
+      IO.initSockets()
+>>> uses(sys_types, socket, unistd) blockgc
+#if defined(__MINGW32__) || defined(_MSC_VER)
+      {
+        static int did_init = 0;
+        if (did_init == 0) {
+          WSADATA wsadata;
+          did_init = 1;
+          if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+            fprintf(stderr, "Error in WSAStartup()\n");
+            return;
+          }
+        }
+      }
+#endif
+      int serv_fd;
+      serv_fd = socket(AF_INET, SOCK_STREAM, 0);
+      if (serv_fd == -1) {
+        perror("HTTP.Server socket()");
+        return;
+      }
+      {
+        int on = 1;
+        if (setsockopt(serv_fd, SOL_SOCKET, SO_REUSEADDR,
+                                                     &on, sizeof(on)) == -1) {
+          perror("HTTP.Server setsockopt()");
+          return;
+        }
+      }
+      {
+        struct sockaddr_in serv_addr;
+        memset(&serv_addr, 0, sizeof(struct sockaddr_in));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
+        serv_addr.sin_port = htons((int)%$port%);
+        if (bind(serv_fd, (struct sockaddr *)&serv_addr,
+                                                   sizeof(serv_addr)) == -1) {
+          perror("HTTP.Server bind()");
+          return;
+        }
+      }
+
+      if (listen(serv_fd, %listenArg%) == -1) {
+        perror("HTTP.Server listen()");
+        return;
+      }
+      while (!%$didQuit%) {
+        struct sockaddr_in client_addr;
+        int fd;
+#define MAX_HEADER_SIZE 9100
+        char req_string[MAX_HEADER_SIZE];
+        socklen_t addr_len = sizeof(client_addr);
+        int len;
+<<<
+        # Allow running GC here, interrupt accept().
+>>>
+
+        fd = accept(serv_fd, (struct sockaddr *)&client_addr, &addr_len);
+        if (fd == -1) {
+          if (errno != EINTR) perror("HTTP.Server accept()");
+          if (errno == EBADF || errno == EFAULT || errno == EINVAL) break;
+          continue;
+        }
+        len = sckt_read(fd, req_string, MAX_HEADER_SIZE - 1);
+        if (len <= 0) {
+          if (len < 0) perror("HTTP.Server read header");
+          continue;
+        }
+<<<
+>>> blockgc
+        req_string[len] = 0;
+        %reqString% = Zstr(req_string);
+<<<
+        Request req = NEW()
+
+        # Parse the first line:
+        # <Method> SP <Request-URI> SP <HTTP-Version> CRLF
+        int si = reqString.find(' ')
+        IF si < 0
+>>>
+          continue;
+<<<
+        }
+        string method = reqString.slice(0, si - 1).toLower()
+        FOR t IN RequestType
+          IF t.ToString() == method
+            req.type = t
+            BREAK
+          }
+        }
+
+        # The standard specifies one space, we skip multiple anyway.
+        WHILE reqString[si] == ' '
+          si++
+        }
+
+        # Isolate the URI
+        int ei = si
+        WHILE reqString[ei] != ' ' && reqString[ei] != 0
+          ei++
+        }
+        req.path = reqString.slice(si, ei - 1)
+        int qi = req.path.find('?')
+        IF qi >= 0
+          # separate out ?arg=val&arg=val
+          req.params = req.path.slice(qi + 1)
+          req.path = req.path.slice(0, qi - 1)
+        }
+
+        # The standard specifies one space, we skip multiple anyway.
+        WHILE reqString[ei] == ' '
+          ei++
+        }
+
+        # Isolate the HTTP version, upto CRLF (optional CR).
+        # |eol| is set to the index of the last byte in the first line.
+        # |bol| is set to the index of the first byte in the second line.
+        int eol = reqString.find('\n', ei)
+        int bol
+        IF eol < 0
+          eol = reqString.Size() - 1  # truncated request
+          bol = eol
+        ELSE
+          bol = eol + 1
+          --eol
+          IF reqString[eol] == '\r'
+            --eol
+          }
+        }
+        req.httpVersion = reqString.slice(ei, eol)
+
+        IF $verbosity != Verbosity.off
+          string params = ""
+          IF req.params != NIL
+            params = " params: '" .. req.params .. "'"
+          }
+          string vers = ""
+          IF req.httpVersion != "HTTP/1.1"
+            # Only report the version if it's not the usual one.
+            vers = " version: '" .. req.httpVersion .. "'"
+          }
+          IO.print("Received HTTP request " .. req.type.ToString().toUpper()
+                       .. " '" .. req.path .. "'"
+                       .. params
+                       .. vers)
+          IF $verbosity == Verbosity.high
+            IO.print("Request so far: '" .. reqString .. "'")
+          }
+        }
+
+        # Parse the header lines until encountering an empty line.
+        # |bol| will point to the first byte of the body.
+        WHILE TRUE
+          eol = reqString.find('\n', bol)
+          IF eol < 0
+            # Truncated.  TODO: if at MAX_HEADER_SIZE read more.
+            IO.print("Warning: Request header too big")
+            bol = reqString.Size()
+            BREAK
+          }
+          IF eol == bol || (eol == bol + 1 && reqString[bol] == '\r')
+            # Empty line, end of header.
+            bol = eol + 1
+            BREAK
+          }
+
+          # Put the header item in req.headerItems
+          int colon = reqString.find(':', bol)
+          IF colon > 0
+            string fieldName = reqString.slice(bol, colon - 1).toLower()
+            string fieldValue = ""
+            int fieldStart = colon + 1
+            WHILE TRUE
+              int fieldEnd = eol - 1
+              IF reqString[fieldEnd] == '\r'
+                --fieldEnd
+              }
+              # Trim white space before the value.
+              WHILE isWhite(reqString[fieldStart]) && fieldStart <= fieldEnd
+                ++fieldStart
+              }
+              # Trim white space after the value.
+              WHILE isWhite(reqString[fieldEnd]) && fieldEnd >= fieldStart
+                --fieldEnd
+              }
+              fieldValue ..= reqString.slice(fieldStart, fieldEnd)
+              IF !isWhite(reqString[eol + 1])
+                BREAK
+              }
+              # Continuation line.
+              bol = eol + 1
+              eol = reqString.find('\n', bol)
+              IF eol < 0
+                # Truncated.  TODO: if at MAX_HEADER_SIZE read more.
+                BREAK
+              }
+              fieldStart = bol + 1
+              fieldValue ..= " "  # TODO: is this right?
+            }
+            IF req.headerItems.has(fieldName)
+              # Multiple occurrences of the same field are concatenated,
+              # separated with a comma
+              fieldValue = req.headerItems[fieldName] .. ", " .. fieldValue
+            }
+            req.headerItems[fieldName] = fieldValue
+          }
+
+          bol = eol + 1
+        }
+        IF $verbosity == Verbosity.high
+          IO.print("Header fields: " .. req.headerItems.ToString())
+        }
+
+        # Read more if we don't have the whole body.
+        int bodySize = 0
+        IF req.headerItems.has("content-length")
+          bodySize = req.headerItems.get("content-length").toInt()
+          IF $verbosity != Verbosity.off
+            IO.print("Body size = " .. bodySize)
+          }
+        }
+        IF bodySize > 0
+          # Read the rest of the request and put it in req.body.
+          # TODO: use byteString instead of string
+          IO.StringWriter writer = NEW()
+          writer.write(reqString.slice(bol))
+
+          # TODO: make portable
+          # Can find ideas in http://www.gnu.org/software/libmicrohttpd/
+          WHILE writer.byteSize() < bodySize
+            int len
+            IF $verbosity == Verbosity.high
+              IO.print("Reading more")
+            }
+>>>
+            %len% = sckt_read(fd, req_string, MAX_HEADER_SIZE - 1);
+            if (%len% > 0) {
+              req_string[%len%] = 0;
+<<<
+>>> blockgc
+              %reqString% = Zstr(req_string);
+            }
+<<<
+            IF $verbosity == Verbosity.high
+              IO.print("Read size: " .. len)
+            }
+            IF len <= 0
+              BREAK
+            }
+            writer.write(reqString)
+          }
+          req.body = writer.ToString()
+          IF $verbosity == Verbosity.high
+            IO.write("Body: " .. req.body.Size() .. " bytes: '")
+            IF req.body.Size() > 1000
+              IO.print(req.body.asString().slice(0, 500))
+              IO.print(" ... ")
+              IO.write(req.body.asString().slice(-500))
+            ELSE
+              IO.write(req.body.asString())
+            }
+            IO.print("'")
+          }
+        ELSE
+          req.body = ""
+        }
+
+        $busy = TRUE
+
+        # Request received, find servlet to serve it.
+        Response resp = NEW()
+        bool done
+        Context context = NEW(THIS, req, resp)
+        TRY
+          FOR servlet IN $servlets
+            IF servlet.handle(context)
+              done = TRUE
+              BREAK
+            }
+          }
+        CATCH E.Exception e
+          IF $verbosity == Verbosity.high
+            IO.print("Servlet failed: " .. e.toString(TRUE))
+          ELSE
+            IO.print("Servlet failed: " .. e.ToString())
+          }
+        }
+        IF !done
+          resp.code = 404
+          resp.msg = "Page not found."
+          resp.body = "Sorry, this page is not available.\n"
+        }
+        resp.setLength(resp.body.Size())
+
+        # Send response.
+        # TODO: encode special characters
+        string respString = "HTTP/1.1 " .. resp.code .. " "
+                                                         .. resp.msg .. "\r\n"
+        int respLen
+        FOR key IN resp.headerItems.keys()
+          respString ..= key .. ": " .. resp.headerItems.get(key) .. "\r\n"
+        }
+        respLen = respString.Size()
+        # TODO: logging
+        IF $verbosity != Verbosity.off
+          IO.print("Sending HTTP response " .. resp.code)
+          IF $verbosity == Verbosity.high
+            IO.print("Header fields: " .. resp.headerItems.ToString())
+            IO.write("Body: '")
+            IF resp.body.Size() > 1000
+              IO.print(resp.body.slice(0, 500))
+              IO.print(" ... ")
+              IO.write(resp.body.slice(-500))
+            ELSE
+              IO.write(resp.body)
+            }
+            IO.print("'")
+          }
+        }
+>>>
+        /* dummy loop so that we can use "break" to get to sckt_close() */
+        for (;;) {
+<<<
+>>> uses(getCstring) blockgc
+          char *s = ZgetCstring(%respString%);
+<<<
+>>>
+          if (sckt_write(fd, s, (size_t)%respLen%) <= 0)
+          {
+            perror("HTTP.Server write header");
+            break;
+          }
+<<<
+          IF req.type != RequestType.head
+            respString = resp.body
+            respLen = respString.Size()
+>>>
+            if (sckt_write(fd, "\r\n", 2) != 2) {
+              perror("HTTP.Server write separator");
+              break;
+            }
+<<<
+>>> uses(getCstring) blockgc
+            char *s = ZgetCstring(%respString%);
+<<<
+>>>
+            if (%respLen% > 0 && sckt_write(fd, s, (size_t)%respLen%) <= 0)
+            {
+              perror("HTTP.Server write body");
+              break;
+            }
+<<<
+          }
+>>>
+          break;
+        }
+        sckt_close(fd);
+<<<
+        $busy = FALSE
+        IF $didQuit
+          $quitPipe.write(TRUE)
+        }
+>>>
+     }  /* while */
+<<<
+    }
+
+    #= Open |page| in a browser, for localhost and the port number of the
+    #= server.
+    #- This has the effect of invoking SYS.openInBrowser() for
+    #- http://localhost:{port}/{page}
+    FUNC $openInBrowser(string page) status @public
+      RETURN SYS.openInBrowser("http://localhost:" .. $port .. "/" .. page)
+    }
+
+    #= Tell the server to quit.
+    PROC $quit() @public
+      $didQuit = TRUE
+      IF !$busy
+        # When busy writing to the pipe is done when $busy is reset.
+        # This gives the servlet a chance to send back a reply.
+        $quitPipe.write(TRUE)
+      }
+    }
+
+    #= Wait until the server exits.
+    PROC $waitForExit() @public
+      WHILE $quitPipe.read() == FALSE && !$didQuit
+        # do nothing
+      }
+    }
+  }
+
+  #! Return TRUE if |c| is a space or Tab.
+  FUNC isWhite(int c) bool
+    RETURN c == ' ' || c == '\t'
+  }
+
+}

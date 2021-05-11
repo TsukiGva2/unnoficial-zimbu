@@ -1,0 +1,39 @@
+# Live demo for Zimbu: type code and immediately see the results
+# Main server part of the code.
+
+# Include the UI, this will be produced as Javascript to be loaded by a
+# browser.
+IMPORT.ZWT "liveDemoPage.zu"
+
+# The handler for build requests from the UI.
+IMPORT "BuildZimbuServlet.zu"
+
+ARG.Int port = NEW("p", "port", 8889, "Port for the HTTP server")
+
+
+# The main function sets up the HTTP server.
+# It runs until killed.
+FUNC Main() int
+  string indexPath = "index.html"
+  HTTP.Server server = NEW(port.value())
+  ZWT.createPage(server, indexPath, "Zimbu live demo", LiveDemoPage.Type())
+
+  # Redirect / to /index.html.
+  server.redirect("/", "/" .. indexPath)
+
+  # Handle build and run RPC requests.
+  server.addServlet(BuildZimbuServlet.NEW("dummy"))
+
+  # Run the HTTP server in a separate thread.
+  server.start()
+
+  # Open the page in a browser.
+  string page = "http://localhost:" .. port.value() .. "/" .. indexPath
+  IO.print("Opening " .. page)
+  server.openInBrowser(indexPath)
+
+  # Run until the application stops.
+  server.waitForExit()
+
+  RETURN 0
+}

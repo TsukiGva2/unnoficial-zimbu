@@ -1,0 +1,157 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Dialogs
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE DialogModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A dialog with one Widget only.  It has a background that covers the whole
+  #= page, only interaction with the dialog is possible.
+  #- The widget must have a way to close the dialog, otherwise the UI is stuck
+  #- with the dialog visible.
+  CLASS NoButtonDialog EXTENDS ZWT.PopupPanel @public
+    ZWT.Table        $table      #! used to position the widgets
+    ZWT.Widget       $widget     #!
+    ZWT.Element      $bgElem     #! background DIV covering the page
+    ZWT.PopupPanel   $background #!
+
+    #= Create a dialog containing |widget|.
+    #- While the dialog is displayed no other events are handled.
+    NEW(ZWT.Widget widget) @default @public
+      $setWidget(widget)
+    }
+
+    #!
+    PROC $Init()
+      $table = NEW()
+      $table.setStyle(NEW().setFullWidth().setFullHeight())
+      $table.setCellStyle(0, 0, NEW()
+          .setFullHeight()
+          .setHorAlign(ZWT.HorAlign.middle)
+          .setPadding(10))
+      $add($table)
+    }
+
+    #= Show the dialog.
+    PROC $show() @replace @default @public
+      # Create a PopupPanel to cover the whole window, add the dialog to that.
+      $background = NEW()
+      $background.setHorizontalPosition(0)
+      $background.setVerticalPosition(0)
+      $background.setWidth(ZWT.root().getWidth())
+      $background.setHeight(ZWT.root().getHeight())
+      $background.setStyle(NEW().setBGColorName(ZWT.ColorName.white)
+                                                              .setOpacity(70))
+      $background.show()
+
+      PARENT.show()
+    }
+
+    #= Close the dialog.
+    #- Do not call $hide(), the background would remain.
+    PROC $close() @public
+      $hide()
+      $background.hide()
+    }
+
+    #= Set the widget displayed in the dialog.
+    PROC $setWidget(ZWT.Widget widget) @default @public
+      $widget = widget
+      $table.setWidget(0, 0, widget)
+    }
+
+  }
+
+  #= A Dialog with one Widget and an OK button.
+  #- Can be used to display a text on top of the whole page:
+  #% ZWT.SimpleDialog dialog = NEW(ZWT.Label.NEW("Hello"))
+  #% dialog.show()
+  CLASS SimpleDialog EXTENDS NoButtonDialog @public
+    list<ZWT.Button> $buttons    #!
+    proc<status>     $handler    #!
+
+    #= Create a dialog containing |widget| and an OK button.
+    #- While the dialog is displayed no other events are handled.
+    #
+    #- |handler| is invoked with an OK argument after the OK button has been
+    #- pressed.
+    NEW(ZWT.Widget widget, proc<status> handler)
+      NEW(widget)
+      $handler = handler
+    }
+
+    #= Returns the list of buttons.  Can be replaced to use different buttons.
+    FUNC $getButtons() list<ZWT.Button> @default @public
+      list<ZWT.Button> buttons = NEW()
+      buttons.add(NEW("OK", $handleOk))
+      RETURN buttons
+    }
+
+    #!
+    PROC $Init()
+      $buttons = $getButtons()
+      ZWT.HorizontalPanel buttonPanel = NEW()
+      FOR button IN $buttons
+        buttonPanel.add(button)
+      }
+      buttonPanel.setStyle(NEW().setMarginBottom(10)
+                                            .setHorAlign(ZWT.HorAlign.middle))
+      $table.setWidget(1, 0, buttonPanel)
+      $table.setCellStyle(1, 0, NEW().setFullWidth())
+    }
+
+    #= Replace the method to be called after the OK button has been pressed.
+    PROC $setHandler(proc<status> handler) @default @public
+      $handler = handler
+    }
+
+    #! Click on OK button hides the dialog.
+    PROC $handleOk(ZWT.Event e)
+      $close()
+      IF $handler != NIL
+        $handler(OK)
+      }
+    }
+
+  }
+
+  #= A Dialog with one Widget and two buttons: OK and Cancel.
+  CLASS OkCancelDialog EXTENDS SimpleDialog @public
+
+    #= Create a dialog containing |widget| and an OK and Cancel button.
+    #- While the dialog is displayed no other events are handled.
+    NEW(ZWT.Widget widget) @replace @default @public
+      $setWidget(widget)
+    }
+
+    #= Returns the list of buttons.  Can be replaced to use different buttons.
+    FUNC $getButtons() list<ZWT.Button> @replace @default @public
+      list<ZWT.Button> buttons = NEW()
+      ZWT.Button ok = NEW("OK", $handleOk)
+      ZWT.Style style = NEW().setMarginLeft(20).setMarginRight(20)
+      ok.setStyle(style)
+      buttons.add(ok)
+      ZWT.Button cancel = NEW("Cancel", $handleCancel)
+      cancel.setStyle(style)
+      buttons.add(cancel)
+      RETURN buttons
+    }
+
+    #! Click on Cancel button hides the dialog.
+    PROC $handleCancel(ZWT.Event e)
+      $close()
+      IF $handler != NIL
+        $handler(FAIL)
+      }
+    }
+
+  }
+
+ }
+}

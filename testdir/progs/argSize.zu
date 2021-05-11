@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.print(ARG.Size())
+  RETURN 0
+}

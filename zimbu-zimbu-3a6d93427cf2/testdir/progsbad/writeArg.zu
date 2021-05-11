@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+FUNC Main() int
+  test(3)
+  RETURN 0
+}
+
+PROC test(int n)
+  n = 3
+}

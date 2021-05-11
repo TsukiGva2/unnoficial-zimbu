@@ -1,0 +1,53 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# SET module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+
+MODULE SETLoader @public @items=public
+  Declaration moduleDecl
+  Declaration setDecl
+
+  # Prepare for using the builtin SET module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "SETModule"
+    b.fileName = "SETModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the SET module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("SET", builtin)
+
+      IF LOG.errorCount == 0
+        # Define the "set" class as an alias for SET.Set.
+        setDecl = moduleDecl.type.findMember("Set", NIL)
+        IF setDecl == NIL || setDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find SET.Set")
+          EXIT 2
+        }
+        # TODO: this doesn't work for inheritance
+        # setSymbol = setSymbol.copy()
+        # setSymbol.name = "set"
+      }
+    }
+  }
+
+  FUNC getSetDecl() Declaration
+    RETURN setDecl
+  }
+
+}

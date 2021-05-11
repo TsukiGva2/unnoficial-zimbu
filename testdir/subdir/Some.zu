@@ -1,0 +1,9 @@
+# Test file for a subdirectory
+
+IMPORT "../Something_2.zu"
+
+MODULE Some @public
+  PROC print() @public
+    IO.write("Some in testdir\n")
+  }
+}

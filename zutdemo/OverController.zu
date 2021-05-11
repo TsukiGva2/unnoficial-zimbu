@@ -1,0 +1,20 @@
+#
+# ZUT (Zimbu Templates) demo controller: mouse over/out
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS OverController
+
+  FUNC $over(ZUT.Event event) bool
+    IO.print(">>>over")
+    RETURN FALSE
+  }
+
+  FUNC $out(ZUT.Event event) bool
+    IO.print("out<<<")
+    RETURN FALSE
+  }
+}

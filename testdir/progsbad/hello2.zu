@@ -1,0 +1,5 @@
+# Small test program: Verify that this does not compile.
+FUNC Main() int
+  IO.write("Hello World!")
+  # RETURN 0
+}

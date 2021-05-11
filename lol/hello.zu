@@ -1,0 +1,6 @@
+#!/usr/bin/env zimbush
+
+FUNC Main() int
+  IO.print("Hello World!")
+  RETURN 0
+}

@@ -1,0 +1,29 @@
+#
+# ZUT (Zimbu Templates) demo page
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "MyController.zu"
+
+MODULE ZutDemoPage @public
+
+  CSS
+    body {
+      font-family: arial,sans-serif;
+    }
+  }
+
+  HTML demoBody(string text) @public
+    [string helloId = ZUT.uid()]
+    <div zcontroller="MyController"
+         zaction="click: clicked"
+         data-id="[=helloId]">
+      [=text]
+    </div>
+    <div id="[=helloId]">  # Place holder for a HelloMessage
+    </div>
+  }
+}

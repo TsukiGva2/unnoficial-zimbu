@@ -1,0 +1,763 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Annotator module: Goes through the code and adds annotations.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "CodeProperties.zu"
+IMPORT "Conversion.zu"
+IMPORT "Declaration.zu"
+IMPORT "FileScope.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodScope.zu"
+IMPORT "MethodType.zu"
+IMPORT "ModuleScope.zu"
+IMPORT "NoAllocType.zu"
+IMPORT "Output.zu"
+IMPORT "PieceScope.zu"
+IMPORT "Resolve.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "TopScope.zu"
+IMPORT "Type.zu"
+IMPORT "TupleType.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+IMPORT "ZuiMethodTypeExt.zu"
+IMPORT "ZuiStatementExt.zu"
+IMPORT "ZuiForStatementExt.zu"
+
+IMPORT "genC/WriteC.zu"
+
+MODULE Annotator
+
+  Output.Group %outs = NEW()
+
+  # Go through the code, recursing into imported files.
+  # Figure out properties of statements and expressions.
+  # The properties are stored with the statement/expression, to be used when
+  # generating code.
+  # Also reserves temporary variables where needed.
+  PROC annotate(UsedFile usedFile, TopScope topScope, WriteC gen) @public
+    # Annotate the main file.
+    getScopeProps(topScope, usedFile.scope(), gen)
+
+    # Annotate the imported files.
+    FOR zimbuFile IN topScope.usedImports
+      getScopeProps(topScope, zimbuFile.fileScope, gen)
+    }
+
+    # Annotate the builtins modules.
+    FOR builtin IN topScope.usedBuiltins
+      IF builtin != NIL && builtin.usedFile != NIL
+        getScopeProps(topScope, builtin.usedFile.scope(), gen)
+      }
+    }
+  }
+
+  PROC getScopeProps(TopScope topScope, FileScope scope, WriteC gen)
+    LOG.info("Annotating \(scope.zimbuFile.filename)")
+    SContext ctx = NEW(topScope, scope, gen, %outs)
+    getProps(scope.statements, ctx)
+  }
+
+  PROC getProps(list<Zui.Statement> statements, SContext ctx)
+    Zui.Statement saveStmt = ctx.stmt
+    FOR stmt IN statements
+      ctx.stmt = stmt
+
+      ZuiStatementExt.get(stmt).props = getProps(stmt, ctx)
+
+      releaseTemps(stmt)
+    }
+    ctx.stmt = saveStmt
+  }
+
+  # Release the temp variables.
+  PROC releaseTemps(Zui.Statement stmt)
+    FOR decl IN ZuiStatementExt.get(stmt).tempDecl
+      decl.temp = FALSE
+    }
+  }
+
+  # Get properties for |stmt|.  Only methodCall matters.
+  # Inspect expressions and nested statements.
+  FUNC getProps(Zui.Statement stmt, SContext ctx) CodeProperties
+    CodeProperties props
+
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eALIAS_DECL
+      CASE Zui.StatementType.eTYPE_DECL
+      CASE Zui.StatementType.eCONTINUE
+      CASE Zui.StatementType.eBREAK
+      CASE Zui.StatementType.eCBLOCK
+      CASE Zui.StatementType.eBITS_DECL
+      CASE Zui.StatementType.eENUM_DECL
+        BREAK  # no expression or nested statement
+
+      CASE Zui.StatementType.eASSIGN
+        Zui.Assignment ass = stmt.getAssign()
+        Zui.Expression lhs = ass.getLhs()
+        Zui.Expression rhs = ass.getRhs()
+        IF lhs.getType() == Zui.ExprType.eLIST
+          addTemp(rhs, ZuiExpressionExt.get(rhs).resultType?.getTtype()
+                                                   == Type.Enum.multiple, ctx)
+
+          IF rhs.getType() == Zui.ExprType.eLIST
+            # Not going to create an actual list, only handle each item
+            # separately.
+            FOR itemExpr IN rhs.getListItemList()
+              IF getProps(itemExpr, ctx).methodCall
+                props.methodCall = TRUE
+              }
+            }
+          ELSE
+            props = getProps(rhs, ctx)
+          }
+
+          FOR e IN lhs.getListItemList()
+            props = props | getProps(e, ctx)
+          }
+        ELSE
+          props = getProps(lhs, ctx) | getProps(rhs, ctx)
+          IF ass.hasType() && ass.getType() == Zui.ExprType.eCONCAT
+            props.allocMem = TRUE
+          ELSEIF rhs.getType() == Zui.ExprType.eNIL
+            # Assigning NIL to a not allocated object may call Finish().
+            # Otherwise setting the allocMem flag won't hurt.
+            props.allocMem = TRUE
+          ELSE
+            Type.Enum rightTtype =
+                              ZuiExpressionExt.get(rhs).resultType?.getTtype()
+            IF (rightTtype == Type.Enum.object
+                    || rightTtype == Type.Enum.iobject)
+                && rhs.getType() != Zui.ExprType.eNIL
+              # Might require conversion using Zao() or allocating Pos.
+              props.allocMem = TRUE
+            }
+          }
+        }
+
+      CASE Zui.StatementType.eCALL
+      CASE Zui.StatementType.eNEWCALL
+        props = getProps(stmt.getMethodCall(), ctx)
+
+      CASE Zui.StatementType.eVAR_DECL
+        Zui.Declaration zuiDecl = stmt.getDeclaration()
+        IF zuiDecl.hasInit()
+          Zui.Expression init = zuiDecl.getInit()
+          props = getProps(init, ctx)
+          Type.Enum initTtype =
+                             ZuiExpressionExt.get(init).resultType?.getTtype()
+          IF initTtype == Type.Enum.object || initTtype == Type.Enum.iobject
+            # Might require conversion using Zao() or allocating Pos.
+            props.allocMem = TRUE
+          }
+        }
+
+      CASE Zui.StatementType.eINC
+      CASE Zui.StatementType.eDEC
+      CASE Zui.StatementType.eRETURN
+      CASE Zui.StatementType.eEXIT
+      CASE Zui.StatementType.eTHROW
+      CASE Zui.StatementType.eDEFER
+      CASE Zui.StatementType.eGENERATEERROR
+        IF stmt.hasExpr()
+          props = getProps(stmt.getExpr(), ctx)
+        }
+
+      CASE Zui.StatementType.eMODULE_DECL
+        Zui.Declaration zuiDecl = stmt.getDeclaration()
+        Zui.ModuleType module = zuiDecl.getType().getModuleDecl()
+        getProps(module.getStatementList(), ctx)
+
+      CASE Zui.StatementType.eCLASS_DECL
+        Zui.Declaration zuiDecl = stmt.getDeclaration()
+        Zui.ClassType class = zuiDecl.getType().getClassDecl()
+        # A templated class itself is not generated.
+        IF class.hasTemplateTypeName()
+          ClassType classType = ZuiStatementExt.get(stmt).typeObj
+          FOR template IN classType.templateList
+            Zui.ClassType tclass = template.stmt.getDeclaration()
+                                               .getType().getClassDecl()
+            getProps(tclass, ctx)
+          }
+        ELSE
+          getProps(class, ctx)
+        }
+
+      CASE Zui.StatementType.eINCLUDE
+        FOR incStmt IN stmt.getInclude().getStatementList()
+          IF incStmt.getType() == Zui.StatementType.eVAR_DECL
+            # For every delcaration a copy of the included PIECE or CLASS is
+            # made and needs to be annotated.
+            Zui.Declaration zuiDecl = incStmt.getDeclaration()
+            VAR declExt = ZuiDeclarationExt.get(zuiDecl)
+            PieceScope pieceScope = declExt.pieceScope
+            IF pieceScope != NIL
+              getProps(pieceScope.statements, ctx)
+              IF pieceScope.sharedBlock != NIL
+                getProps(pieceScope.sharedBlock.getStatementList(), ctx)
+              }
+            }
+          }
+        }
+
+      CASE Zui.StatementType.eMETHOD_DECL
+        Zui.Declaration zuiDecl = stmt.getDeclaration()
+        Zui.MethodType method = zuiDecl.getType().getMethodDecl()
+        IF method.hasTemplateTypeName()
+          MethodType methodType = ZuiDeclarationExt.get(zuiDecl).decl?.type
+          FOR template IN methodType?.templateList
+            Zui.MethodType tmethod = template.zuiDecl
+                                              .getType().getMethodDecl()
+            props = getProps(tmethod, ctx)
+          }
+        ELSE
+          props = getProps(method, ctx)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+      CASE Zui.StatementType.eCASE
+      CASE Zui.StatementType.eDEFAULT
+      CASE Zui.StatementType.eTRYELSE
+        IF stmt.hasBlock()
+          getProps(stmt.getBlock().getStatementList(), ctx)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+      CASE Zui.StatementType.eIF
+      CASE Zui.StatementType.eIFNIL
+      CASE Zui.StatementType.eWHILE
+      CASE Zui.StatementType.eDO
+      CASE Zui.StatementType.eUNTIL
+      CASE Zui.StatementType.eSWITCH
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasCond()
+          props = getProps(cond.getCond(), ctx)
+        }
+        releaseTemps(stmt)
+
+        IF cond.hasBlock() && cond.getBlock().hasStatement()
+          getProps(cond.getBlock().getStatementList(), ctx)
+        }
+        IF cond.hasElseif()
+          FOR c IN cond.getElseifList()
+            props = props | getProps(c.getCond(), ctx)
+            releaseTemps(stmt)
+
+            IF c.getBlock().hasStatement()
+              getProps(c.getBlock().getStatementList(), ctx)
+            }
+          }
+        }
+        IF cond.hasElse()
+          getProps(cond.getElse().getStatementList(), ctx)
+        }
+
+      CASE Zui.StatementType.eFOR
+        Zui.ForStatement for = stmt.getFor()
+        FOR iter IN for.getIterList()
+          props = props | getProps(iter, ctx)
+        }
+        IF for.hasTo()
+          props = props | getProps(for.getTo(), ctx)
+        }
+        IF for.hasUntil()
+          props = props | getProps(for.getUntil(), ctx)
+        }
+        releaseTemps(stmt)
+
+        IF for.hasBody()
+          getProps(for.getBody().getStatementList(), ctx)
+        }
+
+        IF ZuiForStatementExt.get(for).info.multiExpr != NIL
+          # Need a temp variable to store the result of a KeyIterator.
+          addTemp(ZuiForStatementExt.get(for).info.multiExpr, TRUE, ctx)
+        }
+
+      CASE Zui.StatementType.eTRY
+        Zui.TryStatement try = stmt.getTry()
+        IF try.hasBody()
+          getProps(try.getBody().getStatementList(), ctx)
+        }
+        IF try.hasCatch()
+          FOR catch IN try.getCatchList()
+            IF catch.hasBody()
+              getProps(catch.getBody().getStatementList(), ctx)
+            }
+          }
+        }
+        IF try.hasFinally()
+          getProps(try.getFinally().getStatementList(), ctx)
+        }
+        BREAK
+
+      DEFAULT
+        ctx.error("INTERNAL: Annotator.getProps(): Statement type not handled: "
+            .. stmt.getType().ToString(), ctx.zcPos(stmt.getPos()))
+    }
+    RETURN props
+  }
+
+  # Return TRUE if |expr| has a conversion that allocates memory.
+  FUNC exprConversionAlloc(Zui.Expression expr) bool
+    STATIC set<Conversion> %allocatingConversions = [
+        Conversion.object2iobject,
+        Conversion.iobject2object,
+        Conversion.string2varString,
+        Conversion.varString2string,
+        Conversion.int2string,
+        Conversion.nat2string,
+        Conversion.float2string,
+        Conversion.bool2dyn,
+        Conversion.status2dyn,
+        Conversion.int2dyn,
+        Conversion.int82dyn,
+        Conversion.int162dyn,
+        Conversion.int322dyn,
+        Conversion.nat2dyn,
+        Conversion.byte2dyn,
+        Conversion.nat162dyn,
+        Conversion.nat322dyn,
+        Conversion.float2dyn,
+        Conversion.enum2dyn,
+        Conversion.bits2dyn,
+        Conversion.tuple2dyn,
+        Conversion.type2dyn,
+        Conversion.object2dyn,
+        Conversion.iobject2dyn,
+        Conversion.string2dyn,
+        Conversion.byteString2dyn,
+        Conversion.array2dyn,
+        Conversion.list2dyn,
+        Conversion.dict2dyn,
+        Conversion.dyn2bool,
+        Conversion.dyn2status,
+        Conversion.dyn2int,
+        Conversion.dyn2int8,
+        Conversion.dyn2int16,
+        Conversion.dyn2int32,
+        Conversion.dyn2nat,
+        Conversion.dyn2byte,
+        Conversion.dyn2nat16,
+        Conversion.dyn2nat32,
+        Conversion.dyn2float,
+        Conversion.dyn2enum,
+        Conversion.dyn2tuple,
+        Conversion.dyn2type,
+        Conversion.dyn2object,
+        Conversion.dyn2iobject,
+        Conversion.dyn2string,
+        Conversion.dyn2byteString,
+        Conversion.dyn2array,
+        Conversion.dyn2list,
+        Conversion.dyn2dict,
+      ]
+
+    RETURN %allocatingConversions.has(ZuiExpressionExt.get(expr).conversion)
+  }
+
+  FUNC getProps(Zui.MethodType method, SContext ctx) CodeProperties
+    VAR methodExt = ZuiMethodTypeExt.get(method)
+    IF method.hasBody() && methodExt.scope != NIL
+      Scope saveScope = ctx.scope
+      ctx.scope = methodExt.scope
+      getProps(method.getBody().getStatementList(), ctx)
+      ctx.scope = saveScope
+    }
+    RETURN 0
+  }
+
+  FUNC getProps(Zui.ClassType class, SContext ctx) CodeProperties
+    Scope saveScope = ctx.scope
+    ctx.scope = NIL
+    getProps(class.getMemberList(), ctx)
+    IF class.hasShared()
+      getProps(class.getShared().getStatementList(), ctx)
+    }
+    ctx.scope = saveScope
+    RETURN 0
+  }
+
+  # Method call, either as a statement or part of an expression.
+  FUNC getProps(Zui.MethodCall call, SContext ctx) CodeProperties
+    IF call.hasName()
+      getProps(call.getName(), ctx)
+    }
+
+    list<CodeProperties> %propList = NEW()
+    int methodCall
+    FOR arg IN call.getArgumentList()
+      CodeProperties props = getProps(arg, ctx)
+      IF props.methodCall
+        ++methodCall
+      }
+      %propList.add(props)
+    }
+    IF methodCall > 0 && call.sizeArgument() >= 2
+      # A temp var is needed when the argument is in allocated memory and
+      # another argument has a method call.  The GC needs to be able to find
+      # that allocated memory when it's run in that method call.
+      int i
+      FOR arg IN call.getArgumentList()
+        CodeProperties props = %propList[i]
+        IF props.inAllocMem && (methodCall > 1 || !props.methodCall)
+          addTemp(arg, ctx)
+        }
+        ++i
+      }
+    }
+
+    ZuiMethodCallExt ext = ZuiMethodCallExt.get(call)
+    IF ext.firstVararg > 0
+      # Need a temp var for the varargs argument.  The type is a tuple on the
+      # stack.
+      VAR arg = call.newVararg()
+      arg.setType(Zui.ExprType.eID)
+      arg.setPos(call.getPos())
+
+      # Use the argument type of the called method.
+      IF ext.method != NIL
+        Type tupleType = ext.method.varargsTuple
+        addTemp(arg, NoAllocType.NEW(tupleType, "vararg"), TRUE, ctx)
+      }
+    }
+
+    CodeProperties ret
+    ret.methodCall = TRUE
+    RETURN ret
+  }
+
+  FUNC getProps(Zui.Expression expr, SContext ctx) CodeProperties @public
+    CodeProperties props
+    CodeProperties propsLeft
+    CodeProperties propsRight
+    VAR exprExt = ZuiExpressionExt.get(expr)
+
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eTYPESPEC
+      CASE Zui.ExprType.eCCODE
+        # No expression below.
+        BREAK
+
+      CASE Zui.ExprType.eNOT
+      CASE Zui.ExprType.eMINUS
+      CASE Zui.ExprType.eTILDE
+      CASE Zui.ExprType.ePRE_INC
+      CASE Zui.ExprType.ePRE_DEC
+      CASE Zui.ExprType.ePOST_INC
+      CASE Zui.ExprType.ePOST_DEC
+      CASE Zui.ExprType.ePARENS
+        # Unary operator.  Never use a temp value.
+        props = getProps(expr.getRight(), ctx)
+
+      CASE Zui.ExprType.eEQUAL
+      CASE Zui.ExprType.eNOTEQUAL
+      CASE Zui.ExprType.eIS
+      CASE Zui.ExprType.eISNOT
+      CASE Zui.ExprType.eISA
+      CASE Zui.ExprType.eISNOTA
+      CASE Zui.ExprType.eGREATER
+      CASE Zui.ExprType.eGREATER_EQUAL
+      CASE Zui.ExprType.eLESS
+      CASE Zui.ExprType.eLESS_EQUAL
+      CASE Zui.ExprType.eMATCH
+      CASE Zui.ExprType.eNOMATCH
+      CASE Zui.ExprType.eCONCAT
+      CASE Zui.ExprType.eSUBSCRIPT
+        # Binary operator where left and right may need a temp value.
+        propsLeft = getProps(expr.getLeft(), ctx)
+        propsRight = getProps(expr.getRight(), ctx)
+        IF propsLeft.methodCall && propsRight.inAllocMem
+          #  func() == expr  ->  func() == (t = expr)
+          addTemp(expr.getRight(), ctx)
+        }
+        IF propsRight.methodCall && propsLeft.inAllocMem
+          #  expr == func()  ->  (t = expr) == func()
+          addTemp(expr.getLeft(), ctx)
+        }
+        props.methodCall = propsLeft.methodCall || propsRight.methodCall
+        props.inAllocMem = exprExt.resultType?.isManaged()
+        props.allocMem = propsLeft.allocMem || propsRight.allocMem
+
+        # String concatenation uses a function, unless it's a constant.
+        IF expr.getType() == Zui.ExprType.eCONCAT
+          IF Generate.resultType(expr, ctx) == Type.Enum.stringval
+            # Constant is not allocated.
+            props = 0
+          ELSE
+            props.methodCall = TRUE
+          }
+        }
+
+        # Subscript may throw an exception, thus allocate memory.
+        IF expr.getType() == Zui.ExprType.eSUBSCRIPT
+          props.allocMem = TRUE
+        }
+
+      CASE Zui.ExprType.eMEMBER
+      CASE Zui.ExprType.eBIT_AND
+      CASE Zui.ExprType.eBIT_OR
+      CASE Zui.ExprType.eBIT_XOR
+      CASE Zui.ExprType.eMULTIPLY
+      CASE Zui.ExprType.eDIVIDE
+      CASE Zui.ExprType.eREMAINDER
+      CASE Zui.ExprType.eSHIFT_RIGHT
+      CASE Zui.ExprType.eSHIFT_LEFT
+      CASE Zui.ExprType.eSUBTRACT
+      CASE Zui.ExprType.eADD
+      CASE Zui.ExprType.eIFNIL
+      CASE Zui.ExprType.eAND
+      CASE Zui.ExprType.eOR
+      CASE Zui.ExprType.eEXPRMETHOD
+        # Binary operator, no temp values.
+        propsLeft = getProps(expr.getLeft(), ctx)
+        propsRight = getProps(expr.getRight(), ctx)
+        props.methodCall = propsLeft.methodCall || propsRight.methodCall
+        props.inAllocMem = exprExt.resultType?.isManaged()
+        props.allocMem = propsLeft.allocMem || propsRight.allocMem
+
+      CASE Zui.ExprType.eTERNARY
+        # cond ? expr : expr, no temp values
+        props = getProps(expr.getCond(), ctx)
+        propsLeft = getProps(expr.getLeft(), ctx)
+        propsRight = getProps(expr.getRight(), ctx)
+        props.methodCall = props.methodCall || propsLeft.methodCall
+                                                      || propsRight.methodCall
+        props.inAllocMem = exprExt.resultType?.isManaged()
+        props.allocMem = propsLeft.allocMem || propsRight.allocMem
+
+      CASE Zui.ExprType.eCALL
+        props = getProps(expr.getMethodCall(), ctx)
+        props.inAllocMem = exprExt.resultType?.isManaged()
+
+      CASE Zui.ExprType.eNEWCALL
+        props = getProps(expr.getMethodCall(), ctx)
+        props.allocMem = TRUE
+        props.inAllocMem = TRUE
+
+      CASE Zui.ExprType.eTYPECAST
+        props = getProps(expr.getLeft(), ctx)
+
+      CASE Zui.ExprType.eID
+      CASE Zui.ExprType.eREF
+        props.inAllocMem = exprExt.resultType?.isManaged()
+
+      CASE Zui.ExprType.eSTRING
+        # String contstants are in static memory.
+        BREAK
+
+      CASE Zui.ExprType.eLIST
+        # When there are items, need a temp variable to store the pointer to
+        # the list.
+        IF expr.sizeListItem() > 0
+          # Need a temp variable to hold the list pointer.  Unless it's
+          # resulting in a tuple.
+          IF exprExt.resultType?.ttype != Type.Enum.tuple
+            addTemp(expr, ctx)
+          }
+
+          # Go over the list values.
+          FOR itemExpr IN expr.getListItemList()
+            propsLeft = getProps(itemExpr, ctx)
+            IF propsLeft.methodCall
+              props.methodCall = TRUE
+            }
+          }
+        }
+        props.allocMem = TRUE
+        props.inAllocMem = TRUE
+
+
+      CASE Zui.ExprType.eDICT
+        # When there are items, need a temp variable to store the pointer to
+        # the list.
+        IF expr.sizeDictItem() > 0
+          # Need a temp variable to hold the list pointer.
+          addTemp(expr, ctx)
+
+          # Go over the dict keys and values.
+          FOR exprPair IN expr.getDictItemList()
+            CodeProperties keyProps = getProps(exprPair.getKey(), ctx)
+            CodeProperties valueProps = getProps(exprPair.getValue(), ctx)
+            IF keyProps.methodCall || valueProps.methodCall
+              props.methodCall = TRUE
+            }
+          }
+        }
+        props.allocMem = TRUE
+        props.inAllocMem = TRUE
+
+      CASE Zui.ExprType.eINIT
+        # Using a temp var for the new object.
+        addTemp(expr, ctx)
+        FOR kv IN expr.getInitItemList()
+          propsLeft = getProps(kv.getValue(), ctx)
+          IF propsLeft.methodCall
+            props.methodCall = TRUE
+          }
+        }
+        props.allocMem = TRUE
+        props.inAllocMem = TRUE
+
+      CASE Zui.ExprType.eBITSASSIGN
+      CASE Zui.ExprType.eTRUE
+      CASE Zui.ExprType.eFALSE
+      CASE Zui.ExprType.eNAT
+      CASE Zui.ExprType.eINT
+      CASE Zui.ExprType.eFLOAT
+      CASE Zui.ExprType.eOK
+      CASE Zui.ExprType.eFAIL
+      CASE Zui.ExprType.eNIL
+      CASE Zui.ExprType.eINF
+      CASE Zui.ExprType.eNINF
+      CASE Zui.ExprType.eNAN
+      CASE Zui.ExprType.ePARENT
+      CASE Zui.ExprType.eTHIS
+        # props allocMem and methodCall both FALSE
+        BREAK
+
+      CASE Zui.ExprType.eMETHOD
+      CASE Zui.ExprType.eLAMBDA
+        IF exprExt.decl != NIL
+          MethodType method = exprExt.decl.type.getMethod()
+          IF method != NIL
+            IF method.hasUseArguments()
+              # A method with USE arguments will allocate a Tcb.  Without USE
+              # arguments it is a constant.
+              props.allocMem = TRUE
+            }
+
+            # Annotate the statements inside the method.
+            Scope saveScope = ctx.scope
+            ctx.scope = method.scope
+            getProps(method.scope?.statements, ctx)
+            ctx.scope = saveScope
+          }
+        }
+
+      CASE Zui.ExprType.eASSIGN
+        # "name = expr" only depends on "expr"
+        props = getProps(expr.getRight(), ctx)
+
+      DEFAULT
+        ctx.error("Expression type not handled: " .. expr.getType().ToString(),
+                                                     ctx.zcPos(expr.getPos()))
+    }
+
+    IF exprExt.conversion == Conversion.object2iobject
+      # Need an object to store the result.
+      # TODO: not needed for an assignment to a variable.
+      addTemp(expr, TRUE, ctx)
+    ELSEIF exprConversionAlloc(expr)
+      # Calling Zao() allocates memory.  String conversions too.
+      props.allocMem = TRUE
+    }
+
+    exprExt.props = props
+    RETURN props
+  }
+
+  # Use a temp variable for the result of |expr|.
+  PROC addTemp(Zui.Expression expr, SContext ctx)
+    addTemp(expr, FALSE, ctx)
+  }
+
+  PROC addTemp(Zui.Expression expr, bool force, SContext ctx)
+    addTemp(expr, ZuiExpressionExt.get(expr).resultType, force, ctx)
+  }
+
+  PROC addTemp(Zui.Expression expr, Type resultType, bool force, SContext ctx)
+    # If the expression is the name of a variable or a constant there is no
+    # need for a temp variable.
+    # TODO: also for global variables in a module or class.
+    IF !force && (expr.getType() == Zui.ExprType.eID
+               || expr.getType() == Zui.ExprType.eTHIS
+               || expr.getType() == Zui.ExprType.eNIL)
+      RETURN
+    }
+
+    # Return if we can't use a temp var or use another var.
+    # And return if there already is a temp var.
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF ctx.stmt == NIL || exprExt.toplevelVar != NIL || exprExt.tempDecl != NIL
+      RETURN
+    }
+
+    # A declaration "Foo %var = initExpr" will be initialized in the global
+    # scope or the module init function, not in the current method scope.
+    bool isShared = ctx.stmt.getType() == Zui.StatementType.eVAR_DECL
+                     && (ctx.stmt.getDeclaration().getPercent()
+                                     || ctx.stmt.getDeclaration().getShared())
+
+    # When inside a method assign the result to a temp variable in that method.
+    # When in the module or file scope use a temp variable in the
+    # initialization method.
+    MethodScope ms
+    IF !isShared
+      ms = ctx.scope?.methodScope
+    }
+    IF ms == NIL && ctx.scope != NIL
+         && (ctx.scope ISA ModuleScope || ctx.scope ISA FileScope || isShared)
+      ZimbuFile top = ctx.scope.topZimbuFile()
+      IF top.initScope == NIL
+        top.initScope = NEW(NIL, NIL)
+      }
+      ms = top.initScope
+    }
+
+    IF ms != NIL
+      Type type = resultType
+      IF expr.getType() == Zui.ExprType.eLIST
+              && (type?.getClassType(ctx) != NIL
+                  || type?.getTtype() == Type.Enum.dyn)
+        # When the target is an object and the expression is a list the temp
+        # var will hold the list pointer.  "multiDict<> md = [values]"
+        # When the target is a dyn the temp var holds a list pointer.
+        type = Type.aList
+      }
+      IF type != NIL && (force || type.isManaged()
+                                     || type.getTtype() == Type.Enum.multiple)
+        string typeName = type.getTypeName(ctx)
+        Declaration.C decl
+        FOR d IN ms.tempVars
+          IF d.type.getTypeName(ctx) == typeName && !d.temp
+            decl = d
+            BREAK
+          }
+        }
+        IF decl == NIL
+          decl = NEW("temp")
+          decl.pName = "t" .. ms.tempVars.Size()
+          decl.zuiPos = expr.getPos()
+          decl.type = type
+          IF ms.tempVars == NIL
+            ms.tempVars = NEW()
+          }
+          ms.tempVars.add(decl)
+          Generate.mayPutDeclInMethodScope(decl, ctx)
+        }
+        decl.temp = TRUE  # mark it as being used now
+        exprExt.tempDecl = decl
+        VAR ctxStmtExt = ZuiStatementExt.get(ctx.stmt)
+        IF ctxStmtExt.tempDecl == NIL
+          ctxStmtExt.tempDecl = NEW()
+        }
+        ctxStmtExt.tempDecl.add(decl)
+      }
+    }
+  }
+
+}

@@ -1,0 +1,32 @@
+#!/usr/bin/env zimbush
+# Zimbu example program: Unix style "echo"
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+FUNC Main() int
+  bool    writeNewline = TRUE
+  string  sep = ""
+  bool    didFirst
+
+  FOR arg IN ARG.getRawList()  # Iterate over the unprocessed arguments.
+    IF !didFirst && arg == "-n"
+      writeNewline = FALSE
+    ELSE
+      IO.write(sep .. arg)   # The string concatenation operator is "..".
+      sep = " "
+    }
+    didFirst = TRUE
+  }
+  IF writeNewline
+    IO.print()   # Same as IO.write("\n")
+  }
+  RETURN 0
+}
+
+# Completely disable command line processing, because we don't want "--help"
+# or any other flag to be handled.
+# ARG.Status is marked with @earlyInit, therefore this initialization is done
+# before command line flags are processed.
+ARG.Status argStatus = ARG.disable()

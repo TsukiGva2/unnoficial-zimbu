@@ -1,0 +1,21 @@
+# Just a module that can be imported from testzui.zu
+
+IMPORT "TestAnother.zu"
+
+MODULE TestSome @items=public
+  PROC doNothing()
+    IO.print("still nothing")
+    TestAnother.doNothing()
+
+    int n
+    IF TRUE
+      n = 1
+    ELSEIF n == 2
+      n = 2
+    ELSEIF n == 3
+      n = 3
+    ELSE
+      n = 4
+    }
+  }
+}

@@ -1,0 +1,132 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for threads and locks
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Ticker.zu"
+
+MODULE ThreadTest @public
+
+  PROC test() @public
+    IO.print("testdir/ThreadTest.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    testAutoLock()
+  }
+
+  Ticker testTicker
+
+  ###############################################################
+
+  PROC threadOneFunc()
+    Ticker.Reader tr = testTicker.getTickReader()
+    IO.print("threadOneFunc(0)")
+    tr.waitForTick(5)
+    IO.print("threadOneFunc(1)")
+    tr.waitForTick(10) # gets killed here
+    IO.print("threadOneFunc(2)")
+  }
+
+  PROC threadTwoFunc()
+    Ticker.Reader tr = testTicker.getTickReader()
+    tr.waitForTick(3)
+    IO.print("threadTwoFunc(0)")
+    tr.waitForTick(7)
+    IO.print("threadTwoFunc(1)")
+    tr.done()
+  }
+
+  PROC test1()
+    testTicker = NEW(2)
+    thread t1 = NEW(threadOneFunc)
+    t1.name = "One"
+    t1.start()
+    thread t2 = NEW()
+    t2.name = "Two"
+    t2.setProc(threadTwoFunc)
+    t2.start()
+    testTicker.produceTicks(8)
+    t1.kill()
+    #t1.wait()  Mac OS 10.4 hangs here
+    t2.wait()
+  }
+
+  ###############################################################
+
+  PROC simpleFunc()
+    Ticker.Reader tr = testTicker.getTickReader()
+    tr.waitForTick(2)
+    IO.print("simpleFunc()")
+    tr.done()
+  }
+
+  PROC test2()
+    testTicker = NEW(1)
+    T.thread.NEW(simpleFunc).start()
+    IO.print("started simpleFunc()")
+    testTicker.produceTicks(4)
+  }
+
+  ###############################################################
+
+  CLASS Server EXTENDS thread
+    PROC $body() @replace
+      int tick = 0
+      Ticker.Reader tr = testTicker.getTickReader()
+      WHILE TRUE
+        tick += 3
+        tr.waitForTick(tick)
+        IO.print("still alive " .. tick)
+      }
+    }
+  }
+
+  PROC test3()
+    IO.print("test3()")
+    testTicker = NEW(1)
+    Server t = NEW()
+    t.name = "nice"
+    t.start()
+    testTicker.produceTicks(7)
+    t.kill()
+  }
+
+  ###############################################################
+ 
+  # Test in-line methods.
+  PROC test4()
+    thread t = T.thread.NEW({ => IO.print("in the test4 thread") })
+    t.start()
+    t.wait()
+
+    thread tt = T.thread.NEW(PROC (); IO.print("from test4 thread"); })
+    tt.start()
+    tt.wait()
+  }
+
+  ###############################################################
+
+  PROC testAutoLock()
+    lock theLock = NEW()
+    {
+      autoLock %al = NEW(theLock)
+      IO.print("got the lock")
+    }
+    IO.print("released the lock")
+    {
+      autoLock %al = NEW(theLock)
+      IO.print("got the lock again")
+    }
+    IO.print("released the lock again")
+  }
+
+  ###############################################################
+
+}

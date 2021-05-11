@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Simplistic way to compile and run a Zimbu program.
+# Needed because "env" doesn't accept command line arguments.
+
+zufile=$1
+shift
+zimbu "$zufile" -x "$@"

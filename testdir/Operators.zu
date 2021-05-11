@@ -1,0 +1,53 @@
+# Testing various operators.
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Operators @public
+
+  PROC test()  @public
+    test1()
+  }
+
+  CLASS FooBar
+    bool    $b
+    string  $s
+    int     $i
+    FooBar  $fb
+
+    FUNC $ToString() string
+      RETURN "string"
+    }
+  }
+
+  PROC test1()
+    FooBar foo
+
+    FOR i IN 1 TO 2
+      IO.print("foo?.b: " .. foo?.b)
+      string s = foo?.s
+      IO.print("foo?.s: " .. (s ?: "NIL"))
+      IO.print("foo?.i: " .. foo?.i)
+      FooBar fb = foo?.fb
+      IO.print("foo?.fb: " .. (fb == NIL ? "NIL" : fb.ToString()))
+
+      foo = NEW()
+      foo.b = TRUE
+      foo.s = "yes"
+      foo.i = 42
+      foo.fb = foo  # circular reference
+    }
+
+    string isNil
+    string alsoNil
+    string asdf = "asdf"
+    string bar = "bar"
+
+    IO.print("is asdf: " .. (isNil ?: alsoNil ?: asdf))
+    IO.print("is asdf: " .. (asdf ?: alsoNil ?: bar))
+    IO.print("is bar: " .. (isNil ?: bar ?: asdf))
+  }
+
+}

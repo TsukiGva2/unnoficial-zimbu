@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.print(IO.dirList("lib").Size() > 0)
+  RETURN 0
+}

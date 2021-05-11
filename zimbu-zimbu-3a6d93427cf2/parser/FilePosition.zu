@@ -1,0 +1,35 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# FilePosition module: manipulating a file position
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT.PROTO zui.proto
+
+# NOTE: Don't add imports here that drag in parts of the compiler.
+
+MODULE FilePosition @public @items=public
+
+  # Create a Zui position from a Z.Pos.
+  FUNC createPosition(Z.Pos pos) Zui.Position
+    IF pos == NIL
+      RETURN NIL
+    }
+    Zui.Position zpos = NEW()
+    zpos.setLine(pos.lnum)
+    zpos.setColumn(pos.col)
+    zpos.setFilename(pos.filename)
+    RETURN zpos
+  }
+
+  # Copy the values of a Z.Pos to a Zui position.
+  PROC copyPosition(Z.Pos pos, Zui.Position zpos)
+    zpos.setLine(pos.lnum)
+    zpos.setColumn(pos.col)
+    zpos.setFilename(pos.filename)
+  }
+
+}

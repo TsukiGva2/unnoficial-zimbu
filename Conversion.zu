@@ -1,0 +1,83 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Conversion class: conversions between types
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+ENUM Conversion
+  none
+  bool2string
+  bool2varString
+  # byteString2string  # no automatic conversion
+  # byteString2varString  # no automatic conversion
+  # byteString2varByteString
+  int2string
+  nat2string
+  float2string
+  int2varString
+  iobject2iobject
+  iobject2noalloc
+  iobject2object
+  object2iobject
+  status2string
+  status2varString
+  string2varString
+  # string2byteString
+  # string2varByteString
+  # varByteString2string  # no automatic conversion
+  # varByteString2varString  # no automatic conversion
+  # varByteString2byteString
+  varString2string
+  # varString2byteString
+  # varString2varByteString
+  callback2method
+
+  bool2dyn
+  status2dyn
+  int2dyn
+  int82dyn
+  int162dyn
+  int322dyn
+  nat2dyn
+  byte2dyn
+  nat162dyn
+  nat322dyn
+  float2dyn
+  enum2dyn
+  bits2dyn
+  string2dyn
+  byteString2dyn
+  tuple2dyn
+  type2dyn
+  iobject2dyn
+  object2dyn
+  array2dyn
+  list2dyn
+  dict2dyn
+
+  dyn2bool
+  dyn2status
+  dyn2int
+  dyn2int8
+  dyn2int16
+  dyn2int32
+  dyn2nat
+  dyn2byte
+  dyn2nat16
+  dyn2nat32
+  dyn2float
+  dyn2enum
+  dyn2string
+  dyn2byteString
+  dyn2tuple
+  dyn2type
+  dyn2iobject
+  dyn2object
+  dyn2array
+  dyn2list
+  dyn2dict
+}

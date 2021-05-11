@@ -1,0 +1,399 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module TEST
+#
+
+#= Methods for running tests and checking for success.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE TESTModule @items=public @public
+
+  string previousFileName
+  int testCount
+  int failCount
+  int fileTestCount
+  int fileFailCount
+
+  #! Function used internally to run a test.
+  #  |pName| is actually a pointer to a C function.
+  #  |setUp| and |tearDown| are optional, NULL if not used.
+  FUNC runTest(string fileName, string testMethodName, func< => bool> pName,
+                           func< => int> setUp, func< => int> tearDown) status
+    IF fileName != previousFileName
+      reportFile()
+
+      IF !LOG.isInfoLog()
+        LOG.report("Testing \(fileName)")
+      }
+      previousFileName = fileName
+      fileTestCount = 0
+      fileFailCount = 0
+    }
+    LOG.info("Testing \(fileName) - \(testMethodName)")
+    ++testCount
+    ++fileTestCount
+
+    int errorCount = LOG.errorCount
+    status result
+    TRY
+      GENERATE_IF Z.lang == "C"
+>>>
+  if (%setUp%) ((void (*)())%setUp%)();
+  %result% = ((int (*)())%pName%)();
+<<<
+      GENERATE_ELSEIF Z.lang == "Java"
+>>>
+  if (%setUp% != null) %setUp%.call();
+  %result% = %pName%.call();
+<<<
+      GENERATE_ELSE
+>>>
+  if (%setUp%) %setUp%();
+  %result% = %pName%();
+<<<
+      }
+    CATCH E.Exception e
+      # Log the exception on a separate line, so that it starts with the file
+      # name.  Parsing the file position is easier then.
+      LOG.error("Caught exception while executing \(testMethodName):")
+      LOG.error("\(e.toString(TRUE))")
+      result = FAIL
+    FINALLY
+      GENERATE_IF Z.lang == "C"
+>>>
+  if (%tearDown%) ((void (*)())%tearDown%)();
+<<<
+      GENERATE_ELSEIF Z.lang == "Java"
+>>>
+  if (%tearDown% != null) %tearDown%.call();
+<<<
+      GENERATE_ELSE
+>>>
+  if (%tearDown%) %tearDown%();
+<<<
+      }
+    }
+
+    # If LOG.error() was called the test failed.
+    IF LOG.errorCount != errorCount
+      result = FAIL
+    }
+    IF result == FAIL
+      ++failCount
+      ++fileFailCount
+    }
+
+    RETURN result
+  }
+
+  PROC reportFile()
+    IF previousFileName != NIL
+      IF fileTestCount == 0
+        LOG.report("No tests in \(previousFileName)")
+      ELSEIF fileFailCount == 0
+        LOG.report("\(fileTestCount) test\(fileTestCount == 1 ? "" : "s") passed")
+      ELSE
+        LOG.report("\(fileFailCount) of \(fileTestCount) FAILED! :-(")
+      }
+    }
+  }
+
+  #! Report test summary.
+  PROC report(status r)
+    reportFile()
+
+    string optionalS = testCount == 1 ? "" : "s"
+    IF testCount == 0
+      LOG.report("No tests were executed...")
+    ELSEIF failCount == 0
+      IF r == FAIL
+        LOG.internal("No tests failed but status is FAIL")
+      }
+      LOG.report("All \(testCount) test\(optionalS) PASSED! :-)")
+    ELSE
+      LOG.report("Executed \(testCount) test\(optionalS), \(failCount) FAILED! :-(")
+    }
+  }
+
+  #! Handle an optional message.
+  FUNC maybeMsg(string msg) string
+    IF msg == NIL
+      RETURN ""
+    }
+    RETURN "; " .. msg
+  }
+
+  #= Logs error |msg| always.
+  #- Example:
+  #%    TEST.fail("should not be reached")
+  PROC fail(string msg) @backtrace=no
+    LOG.error("TEST.fail(): \(msg)", Z.callerPos())
+  }
+
+  #= Logs an error when |actual| is FALSE.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  #- Examples:
+  #%    TEST.true(value > 0)
+  #%    TEST.true(hasWord())
+  #%    TEST.true(hasWord(), "word should be there")
+  PROC true(bool actual, string msg = NIL) @backtrace=no
+    IF !actual
+      LOG.error("TEST.true() failed\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |actual| is TRUE.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  #- Examples:
+  #%    TEST.false(value > 0)
+  #%    TEST.false(hasWord())
+  #%    TEST.false(hasWord(), "word should not be there")
+  PROC false(bool actual, string msg = NIL) @backtrace=no
+    IF actual
+      LOG.error("TEST.false() failed\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |p| is NIL
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC notNil<Tp>(Tp p, string msg = NIL) @backtrace=no
+    IF p == NIL
+      LOG.error("TEST.notNil() failed\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |p| is not NIL
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC isNil<Tp>(Tp p, string msg = NIL) @backtrace=no
+    IF p != NIL
+      LOG.error("TEST.isNil() failed\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |p| is an empty string.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  #- Also checks for a NIL value of |p|.
+  PROC notEmpty(string p, string msg = NIL) @backtrace=no
+    IF p == NIL
+      LOG.error("TEST.notEmpty() failed: NIL string\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+    IF p == ""
+      LOG.error("TEST.notEmpty() failed: empty string\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(int expected, int actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      LOG.error("TEST.equal() failed: expected \(expected), actual: \(actual)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(nat expected, nat actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      LOG.error("TEST.equal() failed: expected \(expected), actual: \(actual)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(string expected, string actual, string msg = NIL) @backtrace=no
+    IF expected == actual
+      RETURN
+    }
+    LOG.error("TEST.equal() failed, expected: '\(expected)', actual: '\(actual)'\(maybeMsg(msg))",
+              Z.callerPos())
+    IF expected == NIL || actual == NIL
+      RETURN
+    }
+    string expectedDiff, string actualDiff = shortDiff(expected, actual)
+    LOG.error("Difference: expected: '\(expectedDiff)', actual: '\(actualDiff)'",
+              Z.callerPos())
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(byteString expected, byteString actual, string msg = NIL) @backtrace=no
+    equal(expected.asString(), actual.asString(), msg)
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(varString expected, varString actual, string msg = NIL) @backtrace=no
+    equal(expected.ToString(), actual.ToString(), msg)
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(varByteString expected, varByteString actual, string msg = NIL) @backtrace=no
+    equal(expected.ToString(), actual.ToString(), msg)
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(bool expected, bool actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      LOG.error("TEST.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Logs an error when |expected| and |actual| are not equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(status expected, status actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      LOG.error("TEST.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+  #= Verify that |expected| and |actual| are equal.
+  #- Both the types and the values must be equal.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC equal(dyn expected, dyn actual, string msg = NIL) @backtrace=no
+    type expectedType = expected.Type()
+    type actualType = actual.Type()
+    IF expected != NIL && expectedType.ToString().startsWith("enum ")
+             && actualType != NIL && actualType.ToString().startsWith("enum ")
+      # TEST.equal(SubEnum.val, d[123]): from dictionary get SuperEnum but
+      # value only exists in SubEnum, thus we must accept SuperEnum even
+      # though SubEnum is expected.
+      # TODO: use Type.isSubType(other)
+      actualType = expectedType
+    }
+
+    IF expected != NIL && expectedType != actualType
+      LOG.error("TEST.equal() failed: types differ; expected: \(expected.Type()), actual: \(actual.Type())\(maybeMsg(msg))",
+                Z.callerPos())
+    ELSE
+      # TODO: check value if possible
+      string expectedString = expected.ToString()
+      string actualString = actual.ToString()
+      IF expectedString != actualString
+        LOG.error("TEST.equal() failed, expected: '\(expectedString)', actual: '\(actualString)'\(maybeMsg(msg))",
+                  Z.callerPos())
+      }
+    }
+  }
+
+  #= Verify that |expected| is present somewhere in |actual|.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC contains(string expected, string actual, string msg = NIL) @backtrace=no
+    IF actual == NIL
+      LOG.error("TEST.contains() failed: actual is NIL\(maybeMsg(msg))",
+          Z.callerPos())
+    ELSEIF actual.find(expected) < 0
+      LOG.error("TEST.contains() failed: '\(expected)' not found in '\(actual)'\(maybeMsg(msg))",
+          Z.callerPos())
+    }
+  }
+
+  #= Returns a short summary of the difference between |expected| and
+  #= |actual|.
+  #- Square brackets are inserted to indicate the difference between the
+  #- strings.  Text longer than 10 characters is truncated and "..." is put in
+  #- place of the removed text.
+  #
+  #- When |expected| or |actual| is NIL then the string "NIL" is returned and
+  #- the other string shortened to about 20 characters.
+  FUNC shortDiff(string expected, string actual) string, string
+    IF expected == NIL || actual == NIL
+      string shortExpected = expected ?: "NIL"
+      string shortActual = actual ?: "NIL"
+      IF shortExpected.Size() > 20
+        shortExpected = shortExpected.slice(0, 8) .. "..."
+                                               .. shortExpected.sliceWrap(-10)
+      }
+      IF shortActual.Size() > 20
+        shortActual = shortActual.slice(0, 8) .. "..."
+                                                 .. shortActual.sliceWrap(-10)
+      }
+      RETURN shortExpected, shortActual
+    }
+
+    # Make a summary of the difference to make it easier to spot.
+    int leadEqual
+    WHILE leadEqual < expected.Size() && leadEqual < actual.Size()
+          && expected[leadEqual] == actual[leadEqual]
+      ++leadEqual
+    }
+    int tailEqualExpected = expected.Size()
+    int tailEqualActual = actual.Size()
+    WHILE tailEqualExpected > 0 && tailEqualActual > 0
+          && expected[tailEqualExpected - 1] == actual[tailEqualActual - 1]
+          && tailEqualActual > leadEqual
+          && tailEqualExpected > leadEqual
+      --tailEqualExpected
+      --tailEqualActual
+    }
+
+    string expectedDiff
+    string actualDiff
+    IF leadEqual > 10
+      expectedDiff = "..." .. expected.slice(leadEqual - 9, leadEqual - 1)
+    ELSEIF leadEqual > 0
+      expectedDiff = expected.slice(0, leadEqual - 1)
+    ELSE
+      expectedDiff = ""
+    }
+    expectedDiff ..= "["
+    actualDiff = expectedDiff
+
+    IF leadEqual < tailEqualExpected - 20
+      expectedDiff ..= expected.slice(leadEqual, leadEqual + 9) .. "..."
+             .. expected.slice(tailEqualExpected - 9, tailEqualExpected - 1)
+    ELSEIF tailEqualExpected > 0
+      expectedDiff ..= expected.slice(leadEqual, tailEqualExpected - 1)
+    }
+    expectedDiff ..= "]"
+
+    IF leadEqual < tailEqualActual - 20
+      actualDiff ..= actual.slice(leadEqual, leadEqual + 9) .. "..."
+             .. actual.slice(tailEqualActual - 9, tailEqualActual - 1)
+    ELSEIF tailEqualActual > 0
+      actualDiff ..= actual.slice(leadEqual, tailEqualActual - 1)
+    }
+    actualDiff ..= "]"
+
+    string tail
+    IF tailEqualExpected < expected.Size() - 10
+      tail = expected.slice(tailEqualExpected, tailEqualExpected + 9) .. "..."
+    ELSE
+      tail = expected.slice(tailEqualExpected)
+    }
+    expectedDiff ..= tail
+    actualDiff ..= tail
+    RETURN expectedDiff, actualDiff
+  }
+
+  #= Logs an error when |n| < |min| and when |n| > |max|.
+  #= Adds |msg| to the error message if it is present and not NIL.
+  PROC inRange(int n, int min, int max, string msg = NIL) @backtrace=no
+    IF n < min
+      LOG.error("TEST.inRange() failed: \(n) < \(min)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+    IF n > max
+      LOG.error("TEST.inRange() failed: \(n) > \(max)\(maybeMsg(msg))",
+                Z.callerPos())
+    }
+  }
+
+}

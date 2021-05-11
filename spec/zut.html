@@ -1,0 +1,530 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Zimbu Language Specification</title>
+<meta name="Generator" content="Vim/7.4">
+<style type="text/css">
+<!--
+body {
+  font-family: arial,sans-serif;
+  color: #000000;
+  background-color: #ffffff;
+}
+pre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  color: #000000;
+  font-size: 1em;
+  padding: 4px;
+}
+hr {
+  border-color: #eeeeee;
+  border-width: 3px;
+}
+table {
+  border-collapse: collapse;
+}
+ul, ol {
+  margin-top: -1em;
+}
+a:link {
+  color: #0000ff;
+  text-decoration: none;
+}
+a:visited {
+  color: #0000ff;
+}
+a:hover {
+  color: #800080;
+  text-decoration: underline;
+}
+.topItem, .topItem a:link, .topItem a:visited {
+  color: #000000;
+  font-size: 24px;
+}
+.topItem a:hover {
+  color: #800080;
+}
+.contItem {
+  color: #0000ff;
+  margin-left: 20px;
+}
+.contLead {
+  line-height: 12px;
+  margin-bottom: 5px;
+  margin-left: 60px;
+}
+.contSub {
+  color: #000000;
+  font-size: 12px;
+  margin-right: 12px;
+}
+.contSub a:link, .contSub a:visited {
+  color: #000000;
+  font-size: 12px;
+}
+.contSub a:hover {
+  color: #800080;
+}
+.vimCodeElement {
+  background-color: #eeffcc;
+  border-color: #88aa66;
+  border-style: solid none;
+  border-width: 1px medium;
+}
+h3 {
+  display: inline-block;
+}
+h4 {
+  display: inline-block;
+}
+h5 {
+  display: inline-block;
+}
+.rationale {
+  background-color: #ddddff;
+  border-color: #6666dd;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 0 8px;
+}
+.openclose {
+  display: inline-block;
+  font-size: 12px;
+  margin-left: 20px;
+}
+.firstrow {
+  font-weight: bold;
+}
+.firstcol {
+}
+.col {
+  padding-left: 10px;
+}
+.Type { color: #008000; }
+.Ignore { color: #ffffff; }
+.Statement { color: #8b0000; }
+.Comment { color: #0000c0; }
+.Constant { color: #c00000; }
+.PreProc { color: #c000c0; }
+.Todo { color: #000000; background-color: #ffff00; padding-bottom: 1px; }
+-->
+</style>
+<script>
+function showHide(name) {
+  var el = document.getElementById(name);
+  if (el.style.display == "none") {
+    el.style.display = "block";
+  } else {
+    el.style.display = "none";
+  }
+}
+</script>
+</head>
+<body>
+<a name="Zimbu%32Templates%32Specification"></a><h1>Zimbu Templates Specification</h1>
+
+<p>Last Change: 2014 Nov 17
+</p>
+
+<img src="underconstruction.png">&nbsp;UNDER CONSTRUCTION
+
+<p>This page contains both an informal explanation and a formal specification of
+Zimbu Templates or ZUT.<br>
+</p>
+
+<p>Zimbu Templates are used to generate Html pages.  Zimbu Templates can be used
+both on the server and on the client (in the browser).  On the server they are
+compiled into efficient binary code.  For the client they are compiled into
+Javascript.
+</p>
+
+
+<hr>
+<h2>Contents</h2>
+<div class="topItem"><a href="#Zimbu%32Templates%32Specification">Zimbu Templates Specification</a></div>
+<div class="topItem"><a href="#ZUT%32File">ZUT File</a></div>
+<div class="contItem"><a href="#Preprocessing">Preprocessing</a></div>
+<div class="contItem"><a href="#File%32Level">File Level</a></div>
+<div class="contItem"><a href="#Comments">Comments</a></div>
+<div class="topItem"><a href="#CSS">CSS</a></div>
+<div class="topItem"><a href="#HTML">HTML</a></div>
+<div class="topItem"><a href="#ZUT%32items">ZUT items</a></div>
+<div class="contItem"><a href="#ZUT%32statements">ZUT statements</a></div>
+<div class="contItem"><a href="#ZUT%32expressions">ZUT expressions</a></div>
+<div class="topItem"><a href="#ZUT%32controller">ZUT controller</a></div>
+<div class="contItem"><a href="#zcontroller%32attribute">zcontroller attribute</a></div>
+<div class="contItem"><a href="#zaction%32attribute">zaction attribute</a></div>
+<div class="contItem"><a href="#action%32method">action method</a></div>
+<div class="contItem"><a href="#Passing%32data">Passing data</a></div>
+<div class="topItem"><a href="#Copyright">Copyright</a></div>
+
+
+<hr>
+<a name="ZUT%32File"></a><h1>ZUT File</h1>
+
+<p>A Zimbu Template is specified in a ZUT file.
+</p>
+
+<p>A ZUT file is always UTF-8 encoded.
+</p>
+
+<p>The file name must end in ".zut".
+</p>
+
+<p>The file name up to ".zut" must match the module in the file.
+</p>
+
+
+<hr>
+<a name="Preprocessing"></a><h2>Preprocessing</h2>
+
+<p>This is the same as for a Zimbu file, see zimbu.html.
+Note that Tab characters are not allowed.
+</p>
+
+
+<hr>
+<a name="File%32Level"></a><h2>File Level</h2>
+
+<p>The ZUT file toplevel is equal to a Zimbu file for a module.
+</p>
+
+<p>Inside the module there are two special items that do not appear in a Zimbu
+file: CSS and HTML.
+</p>
+
+<p>Example:
+<pre class='vimCodeElement'>
+<span class="Comment"># Description of what this template is for.</span>
+<span class="Comment"># Copyright, license.</span>
+
+<span class="Comment"># A template often uses a controller, which is written in Zimbu.</span>
+<span class="Statement">IMPORT</span> <span class="Constant">&quot;MyController.zu&quot;</span>
+
+<span class="Statement">MODULE</span> MyTemplate
+
+  <span class="Comment"># Methods and declarations go here.</span>
+  <span class="Type">string</span> color = <span class="Constant">&quot;blue&quot;</span>
+
+  <span class="Statement">CSS</span>
+  <span class="Comment">  # CSS specifications that apply to the HTML below.</span>
+    <span class="Identifier">.</span><span class="Identifier">hello</span> <span class="Identifier">{</span>
+      <span class="Type">color</span>: [=color];
+    <span class="Identifier">}</span>
+  <span class="Statement">}</span>
+
+  <span class="Statement">HTML</span> message(<span class="Type">string</span> text)
+    <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier"> </span><span class="Type">class</span><span class="Identifier">=</span><span class="Constant">&quot;hello&quot;</span><span class="Identifier">&gt;</span>
+      <span class="PreProc">[=</span>text<span class="PreProc">]</span>
+    <span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+  <span class="Statement">}</span>
+<span class="Statement">}</span>
+</pre>
+</p>
+
+
+<hr>
+<a name="Comments"></a><h2>Comments</h2>
+
+<p>The Zimbu-style comment, starting with # and continuing until the end of the
+line, can be used anywhere.  They are stripped out before producing the
+generated CSS and HTML.
+</p>
+
+<p>To avoid # to be recognized as the start of a comment accidentally, it is
+required to have two spaces before it, or have the # appear as the first
+non-white character in the line.
+</p>
+
+<p>To insert a literal # in the html where it would be recognized as a comment use
+[#].
+</p>
+
+<p>CSS and HTML comments can also be used, these are kept in the generated CSS and HTML.
+</p>
+
+
+<hr>
+<a name="CSS"></a><h1>CSS</h1>
+
+<p>A CSS block defines the Cascading Style Sheets used for the templates in this
+module. It ends at the matching }.
+</p>
+
+<p>The syntax is just like CSS, with the addition of the ZUT items in square
+brackets, and the Zimbu style comments. 
+</p>
+
+<p>When a template is used the CSS is automatically added to the page.  On the
+server all the CSS of all the used templates is concatenated and results in one
+"script" element.  On the client every CSS block is added as a separate
+"script" element.  Each CSS block is added only once.
+</p>
+
+
+<hr>
+<a name="HTML"></a><h1>HTML</h1>
+
+<p>A HTML block defines a template.  The syntax is similar to a Zimbu method, with
+a name and arguments inside parenthesis, followed by optional attributes.
+It ends at the matching }.
+</p>
+
+<p>Example:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> show(<span class="Type">string</span> text) <span class="PreProc">@public</span>
+    <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier"> </span><span class="Type">class</span><span class="Identifier">=</span><span class="Constant">&quot;hello&quot;</span><span class="Identifier">&gt;</span>
+      <span class="PreProc">[=</span>text<span class="PreProc">]</span>
+    <span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>The syntax of the contents is just like Html, with the addition of the ZUT
+items in square brackets, the Zimbu style comments, and the special meaning of
+"zcontroller" and "zaction" attributes. 
+</p>
+
+<p>The name of the template must start with a lower case letter, just like a Zimbu
+method.
+</p>
+
+<p>The arguments are specified with their type. Optional arguments are allowed,
+again just like with Zimbu methods.
+</p>
+
+<p>Unlike Zimbu methods, no return type is specified.  However, the generated
+method will actually return a string with the produced Html.  This matters for
+where a template is called.
+</p>
+
+<p>The generated code will have an extra argument prepended:
+"ZUT.Context context".  The context is passed down all templates. On the server
+it provides information about the Http request.  On the client it provides
+information about the browser.
+</p>
+
+
+<hr>
+<a name="ZUT%32items"></a><h1>ZUT items</h1>
+
+<hr>
+<a name="ZUT%32statements"></a><h2>ZUT statements</h2>
+
+<p>In CSS and HTML blocks Zimbu statements can be used in square brackets.  For example, to get a unique ID to use:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> message()
+    <span class="PreProc">[</span><span class="Type">string</span> helloId = <span class="PreProc">ZUT</span>.uid()<span class="PreProc">]</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>An IF statement can be used to select what Html to produce:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> message(<span class="Type">bool</span> useDiv)
+    <span class="PreProc">[</span><span class="Statement">IF</span> useDiv<span class="PreProc">]</span>
+      <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier">&gt;</span>Hello<span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+    <span class="PreProc">[</span><span class="Statement">ELSE</span><span class="PreProc">]</span>
+      <span class="Identifier">&lt;</span><span class="Statement">span</span><span class="Identifier">&gt;</span>Hello<span class="Identifier">&lt;/</span><span class="Statement">span</span><span class="Identifier">&gt;</span>
+    <span class="PreProc">[</span><span class="Statement">}</span><span class="PreProc">]</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>Although there are no restrictions on what statements you can use here, avoid
+putting to much functionality into the template.  It is best restricted to
+method calls which are implemented in a Zimbu file.
+</p>
+
+
+<hr>
+<a name="ZUT%32expressions"></a><h2>ZUT expressions</h2>
+
+<p>In CSS and HTML blocks a ZUT expression can be used to insert the result of
+that expression.  It has the form "[=expr]".  The type of the result must be a
+string.
+</p>
+
+<p>A typical form of such an expression is invoking a template.  Example:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> button(<span class="Type">bool</span> big, <span class="Type">string</span> text) <span class="PreProc">@public</span>
+    <span class="PreProc">[</span><span class="Statement">IF</span> big<span class="PreProc">]</span>
+      <span class="PreProc">[=</span>MyButtons.bigButton(context, text)<span class="PreProc">]</span>
+    <span class="PreProc">[</span><span class="Statement">ELSE</span><span class="PreProc">]</span>
+      <span class="PreProc">[=</span>MyButtons.smallButton(context, text)<span class="PreProc">]</span>
+    <span class="PreProc">[</span><span class="Statement">}</span><span class="PreProc">]</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>TODO: Escaping rules.
+</p>
+
+
+<hr>
+<a name="ZUT%32controller"></a><h1>ZUT controller</h1>
+
+<p>To make it easier to write Html that interacts with the user a controller can
+be used.  The name of the controller is put into the HTML with a "zcontroller"
+attribute.  The element it is in and all its children are then considered to be
+under control of this controller.
+</p>
+
+<p>Example:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> okButton()
+    <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier"> zcontroller=</span><span class="Constant">&quot;OkController&quot;</span><span class="Identifier">&gt;</span>
+      <span class="Identifier">&lt;</span><span class="Statement">button</span><span class="Identifier"> zaction=</span><span class="Constant">&quot;click: okClicked&quot;</span><span class="Identifier">&gt;</span>OK<span class="Identifier">&lt;/</span><span class="Statement">button</span><span class="Identifier">&gt;</span>
+    <span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>Actions on elements are assigned to a controller with a "zaction" attribute.
+The ZUT system will intercept events, such as a mouse click, and find the
+matching "zaction".  The specified method will then be invoked on the nearest
+controller, found upwards in the element tree.
+</p>
+
+<p>When an action is recognized and the controller is indentified, the ZUT runtime
+code will instantiate a controller and invoke the specified action method.
+When a controller was previously created it will be re-used,
+</p>
+
+<p>The controller code is compiled into Javascript.  It is either included in the
+page, or loaded at a later time, latest when the controller is actually used.
+</p>
+
+<p>The compiler will verify the action handler actually exists.  Thus a missing
+action handler results in a compilation error.
+</p>
+
+
+<hr>
+<a name="zcontroller%32attribute"></a><h2>zcontroller attribute</h2>
+
+<p>The zcontroller attribute specifies the name of a class.  That class must have
+been imported in the template.  E.g., when using 'zcontroller="MyController"'
+there should be an 'IMPORT "MyController.zu"' statement (possibly with a path).
+</p>
+
+
+<hr>
+<a name="zaction%32attribute"></a><h2>zaction attribute</h2>
+
+<p>The zaction attribute is a comma separated list of items.  Each item specifies
+an action type and the method to call. They are separted by a colon.  For
+example, "mouseDown: down, mouseUp: up".
+</p>
+
+<p>The list of action types:
+</p>
+<ul>
+<li>click: a mouse click (triggers when the mouse button is released)
+</li>
+<li>mouseUp: pressing the mouse button
+</li>
+<li>mouseDown: releasing the mouse button
+</li>
+<li>keyDown: a keyboard key press
+</li>
+<li>keyUp: a keyboard key release
+</li>
+</ul>
+
+<p>TODO: more action types, explain what they mean.
+</p>
+
+<p>Note: Most actions will work on most browsers, but there can be slight
+differences, especially with older brosers.
+</p>
+
+
+<hr>
+<a name="action%32method"></a><h2>action method</h2>
+
+<p>The controller class must define the methods for the actions used.
+The method signature must be like this:
+<pre class='vimCodeElement'>
+  <span class="Statement">FUNC</span> $clicked(<span class="PreProc">ZUT</span>.Event event) <span class="Type">bool</span>
+</pre>
+</p>
+
+<p>The ZUT.Event contains all the relevant information about the event.
+For example, event.element is the Html element where the event was detected.
+</p>
+
+<p>The function must return TRUE if the event bubbles up.  That means it is passed
+on to action handlers up in the Html tree.  If the function returns FALSE no
+other action handler will be invoked.
+</p>
+
+<p>Keep in mind that the action methods are always executed in the client, they
+are produced as Javascript.
+</p>
+
+<p>The action method may in turn use a template to generate Html and update the
+page to show it.  See the zutdemo program for examples.
+</p>
+
+
+<hr>
+<a name="Passing%32data"></a><h2>Passing data</h2>
+
+<p>A controller can be instantiated many times, e.g. one for every button.  It
+must then be able to know what button in the page it's controlling.  A good
+practice is to use data attributes.  These have the form "data-name", where
+"name" can be freely chosen.
+</p>
+
+<p>Example ZUT template:
+<pre class='vimCodeElement'>
+  <span class="Statement">HTML</span> demo(<span class="Type">string</span> text) <span class="PreProc">@public</span>
+    <span class="PreProc">[</span><span class="Type">string</span> helloId = <span class="PreProc">ZUT</span>.uid()<span class="PreProc">]</span>
+    <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier"> zcontroller=</span><span class="Constant">&quot;MyController&quot;</span>
+<span class="Identifier">         zaction=</span><span class="Constant">&quot;click: clicked&quot;</span>
+<span class="Identifier">         </span><span class="Type">data</span><span class="Identifier">-</span><span class="Type">id</span><span class="Identifier">=</span><span class="Constant">&quot;</span><span class="PreProc">[=</span>helloId<span class="PreProc">]</span><span class="Constant">&quot;</span><span class="Identifier">&gt;</span>
+      <span class="PreProc">[=</span>text<span class="PreProc">]</span>
+    <span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+    <span class="Identifier">&lt;</span><span class="Statement">div</span><span class="Identifier"> </span><span class="Type">id</span><span class="Identifier">=</span><span class="Constant">&quot;</span><span class="PreProc">[=</span>helloId<span class="PreProc">]</span><span class="Constant">&quot;</span><span class="Identifier">&gt;</span><span class="Identifier">&lt;/</span><span class="Statement">div</span><span class="Identifier">&gt;</span>
+  <span class="Statement">}</span>
+</pre>
+</p>
+
+<p>With this code in the action handler:
+<pre class='vimCodeElement'>
+    <span class="Type">string</span> id = <span class="PreProc">ZUT</span>.getAttribute(event.element, <span class="Constant">&quot;data-id&quot;</span>)
+    <span class="Type">callback</span>&lt;<span class="PreProc">ZUT</span>.HtmlFunc, <span class="Type">string</span>&gt; cb = <span class="PreProc">NEW</span>(MyTemplate.message, <span class="Constant">&quot;Hello World!&quot;</span>)
+    <span class="PreProc">ZUT</span>.fillElement(id, cb)
+</pre>
+</p>
+
+<p>In this example, a unique ID is created with ZUT.uid().  It is used as the id
+in the element that needs to be changed.  It is passed to the action handler
+with the "data-id" attribute on the element that is clicked on.
+</p>
+
+
+<hr>
+<a name="Copyright"></a><h1>Copyright</h1>
+
+<p>Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</p>
+
+<p>Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+The License can be found it in the LICENSE file, or you may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0
+</p>
+
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+License for the specific language governing permissions and limitations
+under the License.
+</p>
+
+</body>
+</html>

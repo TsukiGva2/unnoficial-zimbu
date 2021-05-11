@@ -1,0 +1,52 @@
+# A Zimbu program for doing basic compiler tests.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT testdir/Common.zu       # tests shared with jstestprog.zu
+IMPORT testdir/ExitTest.zu
+
+# Tests that only make sense for C
+IMPORT testdir/Garbage.zu      # check garbage collector
+IMPORT.CHEADER testdir/testheader1.h
+IMPORT.CHEADER testdir/testheader2.h
+
+string xyz
+
+
+FUNC Main() int
+  # Try to free up memory when there is nothing yet.
+  GC.run()
+
+  IO.print("Main start")
+
+  xyz = "Global\n"
+  IO.write(xyz)
+
+  # Free up memory.
+  GC.run()
+
+  # Test GC
+  Garbage.test()
+
+  IO.print("back in testprog.zu")
+
+  # Free up memory.
+  GC.run()
+
+  # Run most tests.
+  Common.test()
+
+  # Free up memory.
+  GC.run()
+
+  GC.writeRunInfo(IO.stderr)
+
+  # This must be last, it tests EXIT.
+  ExitTest.exit()
+
+  IO.print("Not reached")
+
+  RETURN 0
+}

@@ -1,0 +1,275 @@
+# Test protocol buffers
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "prototest.proto"
+
+IMPORT "$PLUGIN/proto/Proto.zu"
+
+MODULE ProtoTest @public
+
+  PROC test() @public
+    testAllFields()
+    testRequired()
+    testParseErrors()
+    testRecurse()
+  }
+
+  PROC testAllFields()
+    IO.StringReader reader = NEW(
+           "one_bool: TRUE\n"
+        .. "one_enum: two\n"
+        .. "one_int: 8\n"
+        .. "one_int32: 32\n"
+        .. "one_int64: 123456789012\n"
+        .. "one_message: {\n"
+        .. "  name: \"name\"\n"
+        .. "  number: 42\n"
+        .. "}\n"
+        .. "one_string: \"asdf\"\n"
+
+        .. "req_bool: FALSE\n"
+        .. "req_enum: three\n"
+        .. "req_int: 12\n"
+        .. "req_int32: 132\n"
+        .. "req_int64: 234567890123\n"
+        .. "req_message {\n"
+        .. "  name: \"reqname\"\n"
+        .. "  number: 43\n"
+        .. "}\n"
+        .. "req_string: \"foo\"\n"
+
+        .. "rep_bool: FALSE\n"
+        .. "rep_bool: TRUE\n"
+        .. "rep_enum: one\n"
+        .. "rep_enum: two\n"
+        .. "rep_enum: three\n"
+        .. "rep_enum: xxx\n"
+        .. "rep_int: 18\n"
+        .. "rep_int: 19\n"
+        .. "rep_int32: 133\n"
+        .. "rep_int32: 134\n"
+        .. "rep_int64: 345678901234\n"
+        .. "rep_int64: 456789012345\n"
+        .. "rep_message: {\n"
+        .. "  name: \"repname\"\n"
+        .. "  number: 44\n"
+        .. "}\n"
+        .. "rep_message: {\n"
+        .. "  name: \"reppname\"\n"
+        .. "  number: 45\n"
+        .. "}\n"
+        .. "rep_string: \"foobar\"\n"
+        .. "rep_string: \"barfoo\"\n"
+        )
+    Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    IO.print("fromtext: " .. all.ToString())
+    IO.print("valid: " .. all.valid())
+
+    # Convert to binary.
+    IO.ByteWriter writer = NEW()
+    all.writeBinary(writer)
+
+    # Read from binary.
+    IO.BytesReader breader = NEW(writer.toByteString())
+    Test.AllTypes ball = Test.AllTypes.createFromBinary(breader)
+    IO.print("tobin/frombin: " .. all.ToString())
+  }
+
+  PROC testRequired()
+    IO.StringReader reader = NEW(
+           "req_bool: FALSE\n"
+        .. "req_enum: three\n"
+        .. "req_int: 12\n"
+        .. "req_int32: 132\n"
+        .. "req_int64: 234567890123\n"
+        .. "req_message {\n"
+        .. "  name: \"reqname\"\n"
+        .. "  number: 43\n"
+        .. "}\n"
+        .. "req_string: \"foo\"\n"
+        )
+    Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    IO.print("valid all: " .. all.valid())
+
+    all.clearReq_bool()
+    IO.print("not valid bool: " .. all.valid())
+    all.setReq_bool(TRUE)
+    IO.print("valid bool: " .. all.valid())
+
+    all.clearReq_enum()
+    IO.print("not valid enum: " .. all.valid())
+    all.setReq_enum(Test.AnEnum.ezero)
+    IO.print("valid enum: " .. all.valid())
+
+    all.clearReq_int()
+    IO.print("not valid int: " .. all.valid())
+    all.setReq_int(99)
+    IO.print("valid int: " .. all.valid())
+
+    all.clearReq_int32()
+    IO.print("not valid int32: " .. all.valid())
+    all.setReq_int32(99)
+    IO.print("valid int32: " .. all.valid())
+
+    all.clearReq_int64()
+    IO.print("not valid int64: " .. all.valid())
+    all.setReq_int64(99)
+    IO.print("valid int64: " .. all.valid())
+
+    Test.AMessage msg = all.getReq_message()
+    all.clearReq_message()
+    IO.print("not valid msg: " .. all.valid())
+    all.setReq_message(msg)
+    IO.print("valid msg: " .. all.valid())
+
+    all.clearReq_string()
+    IO.print("not valid string: " .. all.valid())
+    all.setReq_string("nop")
+    IO.print("valid string: " .. all.valid())
+  }
+
+  PROC testParseErrors()
+    # Missing : in unkown field
+    IO.StringReader reader = NEW("blah ")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Missing :
+    reader = NEW("one_int: 33\none_string ")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Missing space
+    reader = NEW("one_int:88")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Invalid number: missing line break
+    reader = NEW("one_int: 88x")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Invalid bool value
+    reader = NEW("one_bool: YES\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Bool value with trailing chars
+    reader = NEW("one_bool: TRUEx\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # String not starting with "
+    reader = NEW("one_string: asdf\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # String not ending with "
+    reader = NEW("one_string: \"asdf\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Something after string.
+    reader = NEW("one_string: \"asdf\"x\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Truncated enum
+    reader = NEW("one_enum: one")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Message without {
+    reader = NEW("one_message: one\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Message with something after {
+    reader = NEW("one_message: {ne\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Message with missing }: no field name
+    reader = NEW("one_message: {\n"
+        .. "  name: \"name\"\n"
+        .. "  number: 42\n"
+        .. "\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Message with someting after }
+    reader = NEW("one_message: {\n"
+        .. "  name: \"name\"\n"
+        .. "  number: 42\n"
+        .. "}x\n")
+    TRY
+      Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    CATCH Proto.E_ParseError e
+      IO.print(e.getMessage())
+    }
+
+    # Unknown field name ignored.
+    reader = NEW("two_message: {\n"
+        .. "  name: \"name\"\n"
+        .. "  number: 42\n"
+        .. "}\n"
+        .. "one_int: 34\n")
+    Test.AllTypes all = Test.AllTypes.createFromText(reader)
+    IO.print("ignored field: " .. all.ToString())
+  }
+
+  # Test that using ToString() on a message that refers to itself does not
+  # hang.
+  PROC testRecurse()
+    Test.Top top = NEW()
+    top.setName("top 1")
+    Test.Bot bot = top.newBot()
+    bot.setName("bot 1")
+    bot.setTop(top)
+    IO.print(top.ToString())
+  }
+
+}

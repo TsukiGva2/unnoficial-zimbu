@@ -1,0 +1,62 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module BYTE - byte support
+#
+
+#= Methods for the builtin byte type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE BYTEModule @public
+
+  #= The builtin type byte: 8 bit natural number.
+  #- Although this is a separate type, the methods for nat are used.
+  #- Listed here are only the methods that differ from the nat methods.
+  #
+  #- NOTE: When compiled to Javascript a byte is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTbyte @public
+    # For Zudocu: start of byte class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in a byte.
+  #- Always returns 1, since a byte is 8 bits
+  FUNC Size(byte this) int @public
+    ###### Only for generating documentation.
+    RETURN 1
+  }
+
+  #= Return the number in decimal form.
+  #- For example, b.ToString() returns "123" when b has this value.
+  FUNC ToString(byte this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number in the specified |format|.
+  #- See nat.ToString(format) for the possible formats.
+  FUNC ToString(byte this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #! For Zudocu: end of byte class.
+  CLASS ENDbyte
+  }
+
+  #= Maximum value of a byte.
+  #- Used as T.byte.max
+  int max @public
+          = 0xff
+
+  #= Minimum value of a byte.
+  #- Used as T.byte.min
+  int min @public
+          = 0
+}

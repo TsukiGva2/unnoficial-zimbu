@@ -1,0 +1,190 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TupleType class.
+#
+# A Type used for a tuple
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "TargetLang.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+
+CLASS TupleType EXTENDS ReferenceType @items=public
+  list<Declaration.C>  $types
+
+  TargetLang         $written     # Languages for which this item was written.
+
+  # Other TupleType with same types but different names.
+  TupleType          $other
+
+  Declaration        $toStringDecl  # only used to mark ToString() as used.
+
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    TupleType ret = NEW($ttype, $name)
+    $copyTupleValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyTupleValues(TupleType ret) @default
+    $copyReferenceValues(ret)
+    ret.types = $types
+    ret.written = $written
+    ret.other = $other
+  }
+
+  # For a method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @replace @default
+    RETURN NIL
+  }
+
+  # For a method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @replace @default
+    RETURN NIL
+  }
+
+  # Return the types as they are used in a typespec.
+  FUNC $getTypespecType(int idx) Type @replace @default
+    IF $types != NIL && idx < $types.Size()
+      RETURN $types[idx].type
+    }
+    RETURN NIL
+  }
+
+  # Return "tuple<type1, type2>".
+  FUNC $typeName(bool long) string @replace @default
+    IO.StringWriter w = NEW()
+    w.write("tuple<")
+    string comma = ""
+    FOR t IN $types
+      w.write(comma)
+      w.write(t.type.typeName(long))
+      comma = ", "
+    }
+    w.write(">")
+    RETURN w.ToString()
+  }
+
+  # Return the name for the object declaration table.
+  # Return NIL if this is not an object.
+  FUNC $getTypeName(SContext ctx) string @replace
+    RETURN $pName
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN TRUE
+  }
+
+  # Called when "ToString" is called in this tuple.
+  PROC $usingToString(SContext ctx)
+    IF $other != NIL
+      $other.usingToString(ctx)
+    ELSE
+      IF $toStringDecl == NIL
+        $toStringDecl = NEW("ToString")
+      }
+      ctx.addUsedItem($toStringDecl)
+    }
+  }
+
+  SHARED
+
+    # Get a TupleType for a varargs of type |argType|.
+    FUNC getVarargsTuple(Type argType, Zui.Position pos, SContext ctx) TupleType
+      ContainerType names = NEW(Type.Enum.array, Type.aString, "vararg.names")
+      ContainerType values = NEW(Type.Enum.array, argType, "vararg.values")
+      Declaration.C namesDecl = NEW("names", names)
+      Declaration.C valuesDecl = NEW("values", values)
+      RETURN getTupleType([namesDecl, valuesDecl], pos, ctx)
+    }
+
+    # TODO: when there are item names we can use the same basic type but a
+    # separate set of item names.
+    FUNC getTupleType(list<Declaration.C> types, Zui.Position pos, SContext ctx
+                     ) TupleType
+      TupleType other
+      IF ctx.topScope.allTuples == NIL
+        ctx.topScope.allTuples = NEW()
+      ELSE
+        # Re-use an existing tuple with identical argument types.
+        FOR tt IN ctx.topScope.allTuples
+          IF tt.types.Size() == types.Size()
+            bool nameMismatch
+            bool typeMismatch
+            FOR i IN 0 UNTIL tt.types.Size()
+              IF !Type.matchingTypes(tt.types[i].type, types[i].type, ctx)
+                typeMismatch = TRUE
+                BREAK
+              }
+              IF tt.types[i].name != types[i].name
+                nameMismatch = TRUE
+              }
+            }
+            IF !nameMismatch && !typeMismatch
+              RETURN tt
+            }
+            IF !typeMismatch && tt.other == NIL
+              # All TupleType with the same types but different names point to
+              # the same base TupleType, which will be generated.  The
+              # generated code works on index, not name.
+              other = tt
+            }
+          }
+        }
+      }
+
+      IF ctx.out.writing
+        ctx.error("INTERNAL: adding tuple type too late", pos)
+      }
+
+      TupleType tt = NEW(Type.Enum.tuple, "tuple")
+      tt.types = types
+      FOR t IN types
+        tt.addDependsOn(t.type)
+      }
+      tt.zuiPos = pos
+      IF other != NIL
+        # Use the same pName as the base TupleType.
+        tt.other = other
+        tt.addDependsOn(other)
+        tt.pName = other.pName
+      ELSE
+        tt.pName = WriteCommon.getUid(ctx.scope.ToString() .. "/tt")
+      }
+      ctx.topScope.allTuples.add(tt)
+
+      # This will only be encountered while resolving.
+      ctx.gen.writeTupleDecl(tt, tt.zuiPos, ctx)
+      RETURN tt
+    }
+
+    PROC generateTuples(SContext ctx)
+      FOR tt IN ctx.topScope.allTuples
+        IF ctx.gen.isDeclUsed(tt) && tt.other == NIL
+          # Declare the structure to store the info and produce an alloc
+          # function.
+          ctx.gen.writeTupleDecl(tt, tt.zuiPos, ctx)
+        }
+      }
+    }
+  }
+
+}

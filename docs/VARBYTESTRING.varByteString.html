@@ -1,0 +1,297 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>VARBYTESTRING.varByteString class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='VARBYTESTRING.html'>up:&nbsp;VARBYTESTRING</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.varByteString
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type varByteString.
+</p>
+<p class='ptext'> The varByteString is a sequence of bytes (octets), including NUL.
+<p class='ptext'> This uses the same storage as varString.  Making mutations is done in an
+ efficient way, avoiding too many reallocations and copying.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the size of the varByteString, the number of bytes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varByteString as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$toVarString'><b>$toVarString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varByteString as a varString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$asVarString'><b>$asVarString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varByteString as a varString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$toByteString'><b>$toByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varByteString as a byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$toVarByteString'><b>$toVarByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varByteString as-is, this is a no-op.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$find'><b>$find</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where varByteString <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$find'><b>$find</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$find'><b>$find</b></a>(<small>s, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where the varByteString <b>s</b> appears at or after
+ <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$find'><b>$find</b></a>(<small>c, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$findLast'><b>$findLast</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index where varByteString <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$findLast'><b>$findLast</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$startsWith'><b>$startsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the varByteString starts with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$endsWith'><b>$endsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the varByteString ends with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$hash'><b>$hash</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a number that is a hash value of the varByteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$add'><b>$add</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Append a byteString to the varByteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$slice'><b>$slice</b></a>(<small>start</small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varByteString, starting at index <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varByteString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$split'><b>$split</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the varByteString split into pieces, split at white space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARBYTESTRING.varByteString.html#$split'><b>$split</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the varByteString split into pieces, split at <b>sep</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the size of the varByteString, the number of bytes.
+</p>
+<p class='ptext'> The size is stored thus this method is efficient.  It does not go over
+ the characters to find the end.
+<p class='ptext'> The empty varByteString returns zero.
+ When used on NIL Size() returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varByteString as a string.
+</p>
+<p class='ptext'> When the varByteString is NIL this returns NIL
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> s) <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Append a byteString to the varByteString.
+</p>
+<p class='ptext'> Returns the modified varByteString.
+<p class='ptext'> When the varByteString is NIL throws a NilAccess exception, also when using
+ ?.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asVarString'><b>$asVarString</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varByteString as a varString.
+</p>
+<p class='ptext'> This does not do any conversion, it only changes the type of the object.
+ Also works on a NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$endsWith'><b>$endsWith</b></A>(<span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the varByteString ends with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where varByteString <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+ When not found returns -1.
+ When <b>s</b> is longer than this varByteString it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?.find() and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span> s, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where the varByteString <b>s</b> appears at or after
+ <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(s).
+ When not found returns -1.
+ When found returns <b>start</b> or more.
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(c).
+<p class='ptext'> When <b>c</b> is found returns <b>start</b> or more.
+<p class='ptext'> When <b>c</b> is not found returns -1.
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index where varByteString <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+<p class='ptext'> When not found returns -1.
+ When <b>s</b> is longer than this varByteString it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hash'><b>$hash</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a number that is a hash value of the varByteString.
+</p>
+<p class='ptext'> A varByteString value always results in the same hash value.
+ Two different varByteString can result in the same hash value, but the
+ chance of this happening is small.
+<p class='ptext'> The hash method is fast and has a reasonable distribution.
+<p class='ptext'> TODO: this should return a nat
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varByteString, starting at index <b>start</b>.
+</p>
+<p class='ptext'> A negative index is relative to the end of the varByteString, <span class='commentcode'>slice(-1)</span>
+ returns a varByteString with only the last character.
+<p class='ptext'> This counts characters, not bytes.  To count bytes first use
+ $asByteString().
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the varByteString an empty
+ varByteString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the
+ varByteString size the whole varByteString is returned.
+<p class='ptext'> When using ?.slice() on a NIL varByteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varByteString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</p>
+<p class='ptext'> A negative index is relative to the end of the varByteString. <span class='commentcode'>slice(0, -1)</span>
+ returns the whole varByteString. <span class='commentcode'>slice(-1, -1)</span> only the last character.
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the varByteString an empty
+ varByteString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the returned
+ varByteString starts at index zero.
+ If the <b>start</b> character is after the <b>end</b> character an empty
+ varByteString is
+ returned.
+<p class='ptext'> When using ?.slice() on a NIL varByteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the varByteString split into pieces, split at white space.
+</p>
+<p class='ptext'> Empty parts are omitted.
+<p class='ptext'> Example:  "foo  bar ".split() returns ["foo", "bar"].
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> sep) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the varByteString split into pieces, split at <b>sep</b>.
+</p>
+<p class='ptext'> The matches with the <b>sep</b> byteString are omitted.
+<p class='ptext'> <b>sep</b> must match exactly.
+<p class='ptext'> When there are no characters between two <b>sep</b> matches, or at the end or
+ start of the varByteString, the list will contain an empty byteString item.
+<pre class='example'> "one, two,three".split(", ")
+ # result: ["one", "two,three"]
+</pre>
+<p class='ptext'>
+ When using ?.split() on a NIL varByteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$startsWith'><b>$startsWith</b></A>(<span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the varByteString starts with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the varByteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toByteString'><b>$toByteString</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varByteString as a byteString.
+</p>
+<p class='ptext'> When the varByteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarByteString'><b>$toVarByteString</b></A>() <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varByteString as-is, this is a no-op.
+</p>
+<p class='ptext'> Also works on NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarString'><b>$toVarString</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varByteString as a varString.
+</p>
+<p class='ptext'> This does not do any conversion, it only changes the type of the object.
+ Also works on a NIL.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

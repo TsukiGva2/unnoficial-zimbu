@@ -1,0 +1,30 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.MethodCall message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "MethodType.zu"
+IMPORT "Type.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiMethodCallExt @items=public
+  Type       $typeObj
+  int        $firstVararg
+  MethodType $method
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.MethodCall, ZuiMethodCallExt> $ext
+  }
+
+  SHARED
+    int undefinedInit = 85
+  }
+}

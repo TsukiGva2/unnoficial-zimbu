@@ -1,0 +1,6 @@
+SYS says hello
+testing IO
+before returning
+doIt()
+deferred
+call Finish on exit; exiting == TRUE

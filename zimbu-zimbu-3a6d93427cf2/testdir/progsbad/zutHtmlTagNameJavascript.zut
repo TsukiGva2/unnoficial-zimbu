@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML tag name / Javascript
+  TEMPLATE inTagNameJavascript(ZUT.Javascript text) ZUT.Html @public
+    <[=text]>foo</div>
+  }
+}
+

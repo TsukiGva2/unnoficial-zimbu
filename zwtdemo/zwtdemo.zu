@@ -1,0 +1,34 @@
+# Simplistic demo for GWT.
+
+IMPORT.ZWT "zwtDemoPage.zu"   # this will be produced as Javascript
+
+IMPORT "AddressBookServlet.zu"
+
+ARG.Int port = NEW("p", "port", 8888, "Port for the HTTP server")
+
+
+FUNC Main() int
+  string path = "index.html"
+
+  HTTP.Server server = NEW(port.value())
+  # server.setVerbosity(HTTP.Verbosity.high)
+
+  ZWT.createPage(server, path, "Zimbu ZWT demo", ZwtDemoPage.Type())
+
+  # Redirect / to /index.html.
+  server.redirect("/", "/" .. path)
+
+  # Handle RPC requests for the Addressbook demo.
+  server.addServlet(AddressBookServlet.NEW(ARG.getExeDir() .. "/book"))
+
+  server.start()
+
+  string page = "http://localhost:" .. port.value() .. "/" .. path
+  IO.print("Opening " .. page)
+  server.openInBrowser(path)
+
+  # Exit when the application stops.
+  server.waitForExit()
+
+  RETURN 0
+}

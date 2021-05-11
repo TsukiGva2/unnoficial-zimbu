@@ -1,0 +1,1068 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module ARG
+
+#= Methods for command line flags.
+#
+#- The list of all arguments is processed and flags (arguments starting with a
+#- dash) are separated from the others.
+#
+#- The flag objects can be created at the module level or in the SHARED
+#- section of a class.  The command line is processed during startup, after
+#- which the flag values are available for use.
+#- See the
+#- @http://www.zimbu.org/documentation/startup-sequence@startup sequence@
+#- for details.
+#
+#- For example, with these flags:
+#% ARG.Usage usage = NEW("Usage: %0% [flags] filename ...")
+#% ARG.Bool verbose = NEW("v", "verbose", FALSE, "verbose messages")
+#% ARG.Int number = NEW("n", "number", -1, "some number")
+#% ARG.String text = NEW("t", "text", "not set", "some text").enableRepeat()
+#
+#- These command lines could be used:
+#% prog -v -n123 -t foo -t bar someFile
+#% prog -n=999 someFile otherFile
+#
+#- To see all the flags and usage the --help flag is supported by default:
+#% prog --help
+#% Usage: prog [flags] filename ...
+#% Command line flags:
+#% --morehelp           show more verbose help
+#% -n {number} 
+#% --number {number}    some number
+#% -t {string} ...
+#% --text {string} ...  some text
+#% -v --verbose ...     verbose messages
+#
+#- Arguments after "--" are not
+#- recognized as a flag, even when they start with a dash.  The "--" itself is
+#- not included.  For example, using "--help" as a file name:
+#% prog -- --help
+#
+#- The dash by itself is handled like a non-flag argument.  It is sometimes
+#- used for a file name to indicate stdin or stdout.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE ARGModule @public
+  string rawName @public    #= The executable name as given
+                            #- Not necessarily valid utf-8.
+
+  string exeName @public    #= The executable name with path and symbolic links
+                            #= resolved.
+                            #- Equivalent to IO.findExe(ARG.rawName).
+                            #- On MS-Windows backslashes are replaced with
+                            #- forward slashes.
+
+  list<string> rawArgs      #! all arguments as given
+                            # Not necessarily valid utf-8.
+  list<string> cleanArgs    #! non-flag arguments
+
+  bool         stopFlag    #! stop at first non-flag
+  bool         disabled    #! don't process arguments at all
+  bool         disableGiveHelp  #! do not support --help argument
+  bool         disableCompactVal  #! do not allow compact arguments
+  int          exitVal = 1 @earlyInit
+                            #! exit value when encountering --help
+  Usage        theUsage     #! the Usage object created or NIL
+
+  #! Return the status of whether initialization has been done.
+  #! This is used to set ARG.Ready
+  FUNC Init() status
+    RETURN cleanArgs == NIL ? FAIL : OK
+  }
+
+  #= Return the number of arguments that are not flags.
+  #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+  FUNC Size() int @public @backtrace=no
+    initCheck()
+    RETURN cleanArgs.Size()
+  }
+
+  #!
+  FUNC size() int @public @backtrace=no
+    RETURN Size()
+  }
+
+  #= Return a list with arguments that are not flags.
+  #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+  FUNC getList() list<string> @public @backtrace=no
+    initCheck()
+    RETURN cleanArgs
+  }
+
+  #= Return non-flag argument |index|.
+  #- The first argument is at index zero.
+  #- When |index| is out of range return NIL.
+  #
+  #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+  FUNC get(int index) string @public @backtrace=no
+    initCheck()
+    IF index < 0 || index >= cleanArgs.Size()
+      RETURN NIL
+    }
+    RETURN cleanArgs[index]
+  }
+
+  #= Return the total number of arguments, including flags.
+  FUNC rawSize() int @public
+    RETURN rawArgs.Size()
+  }
+
+  #= Return a list with all arguments, including flags.
+  FUNC getRawList() list<string> @public
+    RETURN rawArgs
+  }
+
+  #= Replace the list with all arguments, including flags.
+  #- Can be used to remove arguments that should not be parsed.
+  #
+  #- This must be invoked in EarlyInit() or earlier.
+  PROC replaceRawList(list<string> argList) @public @backtrace=no
+    IF cleanArgs != NIL
+      THROW E.Init.NEW(Z.callerPos(),
+                        "Setting command line arguments after initialization")
+    }
+    rawArgs = argList
+  }
+
+  #= Return argument |index|.  Includes flags.
+  #- The first argument is at index zero.
+  #- When |index| is out of range return NIL.
+  FUNC getRaw(int index) string @public
+    IF index < 0 || index >= rawArgs.Size()
+      RETURN NIL
+    }
+    RETURN rawArgs[index]
+  }
+
+  #= Set whether to stop looking for flags at the first non-flag argument.
+  #- The default is FALSE: also find flags after a non-flag argument.
+  #
+  #- This must be invoked in EarlyInit() or earlier.
+  #
+  #- Returns a Status object, so that it can be used at the module level like
+  #- this:
+  #% ARG.Status stop = ARG.stopAtNonFlag(TRUE)
+  FUNC stopAtNonFlag(bool stop) Status @public @backtrace=no
+    notInitCheck()
+    stopFlag = stop
+    RETURN NEW()
+  }
+
+  #= Dummy class, returned by methods that need to be invoked before command
+  #= line flags are parsed.
+  #- This works because the class has the @earlyInit attribute.
+  CLASS Status @earlyInit @public
+  }
+
+  #= Disable procesing command line flags.
+  #- No Flag definitions are allowed.
+  #
+  #- This must be invoked in EarlyInit() or earlier.
+  #
+  #- The get(), getFlag() and getRaw() methods can still be used.
+  #
+  #- Returns a Status object, so that it can be used at the module level like
+  #- this:
+  #% ARG.Status argStatus = ARG.disable()
+  FUNC disable() Status @public @backtrace=no
+    notInitCheck()
+    disabled = TRUE
+    RETURN NEW()
+  }
+
+  #= When |on| is TRUE display help and exit when the "--help" flag is found.
+  #- When FALSE the --help flag is not recognized.
+  #
+  #- Returns a Status object, so that it can be used at the module level like
+  #- this:
+  #% ARG.Status help = ARG.giveHelp(FALSE)
+  FUNC disableHelp() Status @public
+    disableGiveHelp = TRUE
+    RETURN NEW()
+  }
+
+  #= Disable the compact form of flag values.
+  #- The compact form is giving a value to a flag without an "=".  For
+  #- example, when "-n" is a Int flag, "-n123" uses value "123".
+  #
+  #- The compact form is allowed by default.  It can also be disabled for each
+  #- individual flag.
+  #
+  #- Returns a Status object, so that it can be used at the module level like
+  #- this:
+  #% ARG.Status help = ARG.disableCompact()
+  FUNC disableCompact() Status @public
+    disableCompactVal = TRUE
+    RETURN NEW()
+  }
+
+  #= Set the EXIT value used after displaying the flags for --help.
+  #- The default EXIT value is 1.
+  #
+  #- Returns a Status object, so that it can be used at the module level like
+  #- this:
+  #% ARG.Status exitv = ARG.setExitValue(256)
+  FUNC setExitValue(int value) Status @public
+    exitVal = value
+    RETURN NEW()
+  }
+
+  #!
+  PROC initCheck() @backtrace=no
+    IF cleanArgs == NIL
+      THROW E.Init.NEW(Z.callerPos(),
+                          "Using command line flag before they are available")
+    }
+  }
+
+  #!
+  PROC notInitCheck() @backtrace=no
+    IF cleanArgs != NIL
+      THROW E.Init.NEW(Z.callerPos(),
+                   "Changing command line flag behavior after initialization")
+    }
+  }
+
+  #! Init $exeName from $rawName.
+  #Invoked from main() after $rawName was set.
+  PROC initExeName()
+    # TODO: catch error for invalid utf-8.
+    exeName = IO.findExe(rawName)
+  }
+
+  #= Returns the directory of the executed program.
+  #- Equal to exeName with the program name and trailing slash removed.
+  #- Can be used like this:
+  #% configFile = ARG.getExeDir() .. "/prog.conf"
+  #
+  #- Returns "." when exeName does not have a directory.
+  FUNC getExeDir() string @public
+    int tailIndex = IO.tailIndex(exeName)
+    IF tailIndex <= 0
+      # No slash, no directory name: use current directory.
+      RETURN "."
+    }
+    RETURN exeName.slice(0, tailIndex - 2)
+  }
+
+  #! Init cleanArgs from rawArgs.
+  #Invoked from ZglobInit() after the early inits.
+  PROC init()
+    IF cleanArgs == NIL
+      IF shortFlags == NIL
+        # No flags were defined, make the dicts empty
+        shortFlags = NEW()
+        longFlags = NEW()
+      }
+      IF disabled && (shortFlags.Size() > 0 || longFlags.Size() > 0)
+        THROW E.Init.NEW("ARG.disable() used but command line flags were defined")
+      }
+      FOR k IN shortFlags.keys()
+        shortFlags[k].setToDefault()
+      }
+      FOR k IN longFlags.keys()
+        longFlags[k].setToDefault()
+      }
+
+      cleanArgs = []
+      bool doFlags = !disabled
+      bool skip
+      FOR i IN 0 TO rawArgs.Size() - 1
+        IF skip
+          # already used as flag argument
+          skip = FALSE
+          CONTINUE
+        }
+
+        string arg = rawArgs[i]
+        IF !doFlags || arg[0] != '-' || arg == "-"
+          cleanArgs.add(arg)
+          IF stopFlag
+            doFlags = FALSE
+          }
+        ELSE
+          IF arg == "--"  # end of flags
+            doFlags = FALSE
+          ELSE
+            Flag flag
+            string value
+
+            IF arg.slice(0, 1) == "--"
+              string flagname = arg.slice(2)
+              IF !disableGiveHelp && (flagname == "help"
+                          || flagname == "morehelp" || flagname == "helpmore")
+                # display help and exit
+                displayHelp(flagname != "help")
+              }
+
+              # Detect "--name=foobar".
+              int idx = flagname.find('=')
+              IF idx > 0
+                value = flagname.slice(idx + 1)
+                flagname = flagname.slice(0, idx - 1)
+              }
+
+              flag = longFlags.get(flagname, NIL)
+
+              # Detect "--noverbose".
+              IF flag == NIL && flagname.slice(0, 1) == "no"
+                flag = longFlags.get(flagname.slice(2), NIL)
+                IF flag != NIL
+                  IF flag ISA Bool
+                    # "--noverbose" works like "--verbose=no"
+                    flagname = flagname.slice(2)
+                    value = "no"
+                  ELSE
+                    # --noname only accepted for Bool flags
+                    flag = NIL
+                  }
+                }
+              }
+
+            ELSE
+              string flagname = arg.slice(1)
+
+              # Detect "-n=foobar".
+              int idx = flagname.find('=')
+              IF idx > 0
+                value = flagname.slice(idx + 1)
+                flagname = flagname.slice(0, idx - 1)
+              ELSE
+                WHILE flagname.Size() > 1
+                  # could be "-abc" for "-a -b -c" or "-a" with value "bc"
+                  flag = shortFlags.get(flagname.slice(0, 0), NIL)
+                  IF flag == NIL
+                    BREAK
+                  ELSE
+                    IF flag ISA Bool
+                      # "-abc" with "-a" boolean flag.
+                      ++flag.setCount
+                      Bool bflag = flag
+                      bflag.current = !bflag.default
+                      flagname = flagname.slice(1)
+                      flag = NIL
+                    ELSEIF flag ISA StringList
+                      # "-xbc" with "-x" StringList flag
+                      BREAK
+                    ELSEIF !disableCompactVal && !flag.noCompactVal
+                      # "-xbc" with "-x" Int or String flag, value is "bc"
+                      value = flagname.slice(1)
+                      flagname = flagname.slice(0, 0)
+                    }
+                  }
+                }
+              }
+
+              IF flagname.Size() != 1
+                error("Invalid argument: " .. arg)
+              ELSEIF flag == NIL
+                flag = shortFlags.get(flagname, NIL)
+              }
+            }
+            IF flag == NIL
+              IF !disabled
+                error("Unknown command line flag: " .. arg)
+              }
+            ELSE
+              IF flag.setCount > 0 && !flag.canRepeat
+                error("Duplicate command line flag: " .. arg)
+              }
+              ++flag.setCount
+              IF flag ISA Bool
+                Bool bflag = flag
+                IF value != NIL
+                  IF value == "yes" || value == "true"
+                    bflag.current = TRUE
+                  ELSEIF value == "no" || value == "false"
+                    bflag.current = FALSE
+                  ELSE
+                    error("Expected 'yes', 'no', 'true' or 'false': " .. arg)
+                  }
+                ELSE
+                  bflag.current = !bflag.default
+                }
+              ELSEIF flag ISA StringList
+                IF value != NIL
+                  error("Unexpected = in: " .. arg)
+                }
+                StringList sflag = flag
+                sflag.current = []
+                FOR j IN i + 1 TO rawArgs.Size() - 1
+                  sflag.current.add(rawArgs[j])
+                }
+                BREAK
+              ELSE
+                IF !flag.argOpt && value == NIL
+                  # value is in next argument
+                  skip = TRUE
+                  IF i == rawArgs.Size() - 1
+                    error("Missing argument for flag " .. arg)
+                  }
+                  value = rawArgs[i + 1]
+                }
+                IF flag ISA Int
+                  Int iflag = flag
+                  IF value == NIL
+                    # "-n" without value: back to default value
+                    iflag.current = iflag.default
+                    iflag.theValueList.add(iflag.default)
+                  ELSE
+                    # TODO: check for invalid value
+                    # TODO: accept "0x234"
+                    # TODO: accept "2k", "2K", "3m", etc.
+                    # TODO: simple calculations "60*60*24"
+                    int intVal = value.toInt()
+                    iflag.current = intVal
+                    iflag.theValueList.add(intVal)
+                  }
+                ELSEIF flag ISA String
+                  String sflag = flag
+                  IF value == NIL
+                    # "-n" without value: back to default value
+                    sflag.current = sflag.default
+                    sflag.theValueList.add(sflag.default)
+                  ELSE
+                    sflag.current = value
+                    sflag.theValueList.add(value)
+                  }
+                ELSE
+                  THROW E.Internal.NEW("INTERNAL: unknown flag type")
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  #! Fatal error in the command line.
+  PROC error(string msg)
+    IO.stderr.print(msg)
+    IF theUsage != NIL
+      IO.print(theUsage.get())
+    }
+    IF !disableGiveHelp
+      IO.stderr.print("To list flags use: '" .. rawName .. " --help'")
+    }
+    EXIT 1
+  }
+
+  #! List all the possible flags and exit.
+  PROC displayHelp(bool verbose)
+    IF theUsage != NIL
+      IO.print(theUsage.get())
+    }
+    IO.print("Command line flags:")
+
+    # Go over the longFlags and find the ones that don't have a short flag.
+    dict<string, Flag> allFlags = shortFlags
+    FOR key IN longFlags.keys()
+      Flag flag = longFlags[key]
+      IF flag.shortName == NIL
+        allFlags[flag.longName] = flag
+      }
+    }
+
+    # Display the flags alphabetically.
+    # First make a round to compute the maximum lead length.
+    int maxLeadLen
+    FOR display IN [FALSE, TRUE]
+      IF display
+        writeLead("--morehelp ", maxLeadLen)
+        IO.print("show more verbose help")
+      }
+
+      FOR key IN allFlags.keys().sort()
+        Flag flag = allFlags[key]
+
+        string argText = ""
+        bool opt
+        IF flag ISA Int
+          IF flag.argName == NIL
+            argText = "number"
+          ELSE
+            argText = flag.argName
+          }
+          opt = flag.argOpt
+        ELSEIF flag ISA String
+          IF flag.argName == NIL
+            argText = "string"
+          ELSE
+            argText = flag.argName
+          }
+          opt = flag.argOpt
+        ELSEIF flag ISA StringList
+          IF flag.argName == NIL
+            argText = "string ..."
+          ELSE
+            argText = flag.argName .. " ..."
+          }
+          opt = TRUE
+        }
+        IF argText != ""
+          IF opt
+            argText = " [" .. argText .. "]"
+          ELSE
+            argText = " {" .. argText .. "}"
+          }
+        }
+
+        string lead = ""
+        IF flag.shortName != NIL
+          lead = "-" .. flag.shortName .. argText .. " "
+        }
+        IF flag.longName != NIL
+          IF lead != "" && argText != ""
+            # display the short name in a separate line when it has an argument
+            IF display
+              IF flag.canRepeat
+                lead ..= "..."
+              }
+              IO.print(lead)
+            }
+            lead = ""
+          }
+          lead ..= "--" .. flag.longName .. argText .. " "
+        }
+
+        IF flag.canRepeat
+          lead ..= "... "
+        }
+
+        IF display
+          IF flag.doc != NIL
+            writeLead(lead, maxLeadLen)
+            IO.print(flag.doc)
+          ELSE
+            IO.print(lead)
+          }
+          IF verbose
+            writeLead("", maxLeadLen)
+            IO.print("Defined in " .. flag.pos.ToString())
+          }
+        ELSE
+          IF maxLeadLen < lead.Size()
+            maxLeadLen = lead.Size()
+          }
+          IF maxLeadLen > 30
+            maxLeadLen = 30   # use a maximum of 30 chars
+            BREAK
+          }
+        }
+      }
+    }
+
+    EXIT exitVal
+  }
+
+  #!  Write the lead part with trailing spaces.
+  PROC writeLead(string lead, int maxLeadLen)
+    IO.write(lead)
+    # minimally two spaces before doc string
+    FOR i IN lead.Size() TO maxLeadLen
+      IO.write(" ")
+    }
+  }
+
+  #= The Usage message to be displayed when there is a flag error and for
+  #= --help.
+  #- The first "%0%" in the text is replaced with the name of the program.
+  #
+  #- Example:
+  #% ARG.Usage usage = NEW("Usage: %0% [flags] filename")
+  CLASS Usage @earlyInit @public
+    string $text  #!
+
+    #= Create a Usage text.
+    #- The first "%0%" in |text| will be replaced with the name of the program.
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    NEW(string text) @public
+      $text = text
+      IF theUsage != NIL
+        THROW E.Init.NEW("Duplicate ARG.Usage")
+      }
+      theUsage = THIS
+    }
+
+    #= Return the text.
+    #- The first "%0%" in the text has been replaced with the name of the
+    #- program.
+    FUNC $get() string @public
+      int idx = $text.find("%0%")
+      IF idx < 0
+        RETURN $text
+      }
+      RETURN $text.slice(0, idx - 1) .. rawName .. $text.slice(idx + 3)
+    }
+
+    #= Return the text.
+    #- The first "%0%" in the text has been replaced with the name of the
+    #- program.
+    FUNC $value() string @public
+      RETURN $get()
+    }
+  }
+
+  dict<string, Flag> shortFlags #!
+  dict<string, Flag> longFlags  #!
+
+  #= The abstract base class of all flags.
+  #- All flags must be created in EarlyInit() or earlier.  Initializing them
+  #- in a declaration at the module level or SHARED section in a class will
+  #- work.
+  #
+  #- See the @ARG.html@ARG module@ for examples.
+  CLASS Flag @abstract @earlyInit @public
+    string $shortName  #!
+    string $longName   #!
+    string $doc        #!
+    string $argName    #!
+    int    $setCount   #!
+    bool   $canRepeat  #! flag allowed multiple times.
+    bool   $noCompactVal  #! don't allow compact form
+    bool   $argOpt     #! optional argument
+    Z.Pos  $pos        #!
+
+    #!
+    NEW(string shortName, string longName, string doc, Z.Pos pos) @public
+      IF cleanArgs != NIL
+        THROW E.Init.NEW("Adding command line flag after using one")
+      }
+      IF (shortName == NIL || shortName == "")
+                                        && (longName == NIL || longName == "")
+        THROW E.Init.NEW("Command line flag must have a short or long name")
+      }
+      IF shortName != ""
+        $shortName = shortName
+      }
+      IF longName != ""
+        $longName = longName
+      }
+      $doc = doc
+
+      # We init the dicts here, because a NEW() at the module level may or may
+      # not be done before another builtin module adds a flag.
+      IF shortFlags == NIL
+        shortFlags = NEW()
+        longFlags = NEW()
+      }
+
+      IF longName != NIL && longName != ""
+        IF longFlags.has(longName)
+          $throwDuplicate(longName, longFlags.get(longName), pos)
+        }
+        longFlags.add(longName, THIS)
+      }
+      IF shortName != NIL && shortName != ""
+        IF shortName.Size() > 1
+          THROW E.Init.NEW("short command line flag name must be one character")
+        }
+        IF shortFlags.has(shortName)
+          $throwDuplicate(shortName, shortFlags.get(shortName), pos)
+        }
+        shortFlags.add(shortName, THIS)
+      }
+      $pos = pos
+    }
+
+    #! Throw an exception with information about a duplicate flag.
+    PROC $throwDuplicate(string name, Flag flag, Z.Pos pos)
+      string onePos = flag.pos?.ToString() ?: "unknown"
+      E.Init e = NEW(pos, "Duplicate command line flag: '" .. name
+                                               .. "' also used at " .. onePos)
+      THROW e
+    }
+
+    #= Set the text used in the --help output for the argument.
+    #- Not used for a @Bool flag.
+    #
+    #- Returns the Flag, so that it can be used in a declaration like this:
+    #% ARG.String name = NEW("n", "name", "", "the name").setArgName("name")
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $setArgName(string argName) Flag @public @backtrace=no
+      notInitCheck()
+      $argName = argName
+      RETURN THIS
+    }
+
+    #= Disable the compact form of flag values.
+    #- Compact form is giving a value to a flag without an "=".  For example,
+    #- when "-n" is a Int flag, "-n123" uses value "123".
+    #
+    #- The compact form is allowed by default.  It can also be disabled for each
+    #- individual flag.
+    #
+    #- Returns the Flag, so that it can be used in a declaration like this:
+    #% ARG.String name = NEW("n", "name", "", "the name").disableCompact()
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $disableCompact() Flag @public @backtrace=no
+      notInitCheck()
+      $noCompactVal = TRUE
+      RETURN THIS
+    }
+
+    #= Make the flag argument optional.
+    #- Returns the Flag, so that it can be used in a declaration like this:
+    #% ARG.String name = NEW("n", "name", "", "the name").optionalArg()
+    #
+    #- Valid flags are then "-n" "-nfoobar", "-n=foobar", "--name=foobar".
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $optionalArg() Flag @public @backtrace=no
+      notInitCheck()
+      $argOpt = TRUE
+      RETURN THIS
+    }
+
+    #= Return the number of times the command line flag was encountered.
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $presentCount() int @public @backtrace=no
+      initCheck()
+      RETURN $setCount
+    }
+
+    #= Return TRUE if the command line flag was encountered.
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $present() bool @public @backtrace=no
+      initCheck()
+      RETURN $setCount > 0
+    }
+
+    #! Set the Flag back to its default value.
+    PROC $setToDefault() @abstract @public
+    }
+  }
+
+  #= A @Flag that has no argument, it's presence is noted.
+  #- For example, with this flag:
+  #% ARG.Bool verbose = NEW("v", "verbose", FALSE, "verbose messages")
+  #- These arguments can be used:
+  #% prog --verbose
+  #% prog --noverbose
+  #% prog -v
+  #% prog -vvv
+  #% prog --verbose=yes
+  #
+  #- When the flag is present the value becomes the inversion of the default
+  #- value.
+  #
+  #- The value can be set to TRUE with "--verbose=yes" and "--verbose=true".
+  #
+  #- The value can be set to FALSE with "--verbose=no" and "--verbose=false"
+  #- and "--noverbose".
+  #
+  #- "--noverbose" only works as "--verbose=no" when there is no flag called
+  #- "noverbose".
+  #
+  #- By default the flag is allowed to be used more than once, use
+  #- @ARG.Flag.html#presentCount@presentCount()@ to obtain the number of times.
+  #- Use disableRepeat() to disable this.
+  #
+  #- Using the argument:
+  #% IF verbose.get()
+  #%   IO.print("verbose output")
+  #%   IF verbose.presentCount() >= 3
+  #%     IO.print("VERY verbose")
+  #%   }
+  #% }
+  CLASS Bool EXTENDS Flag @public
+    bool $current #!
+    bool $default #!
+
+    #= Create a @Bool @Flag.
+    #- |shortName| is the one-character name, can be NIL.
+    #- |longName| is the longer name, to be used after "--", can be NIL
+    #- |shortName| and |longName| can't both be NIL.
+    #- |default| is the default value.  When the flag is encountered the
+    #- opposite of this value will become the current value.
+    #- |doc| is displayed for this flag with the --help argument.
+    NEW(string shortName, string longName, bool default, string doc)
+                                                                       @public
+      NEW(shortName, longName, doc, Z.callerPos())
+      $current = default
+      $default = default
+      $canRepeat = TRUE
+    }
+
+    #! Set the Flag back to its default value.
+    PROC $setToDefault() @define @public
+      $current = $default
+    }
+
+    #= Disable repeating the flag.
+    #- Returns the Flag, so that it can be used in a declaration like this:
+    #% ARG.Bool  = NEW("v", "verbose", FALSE, "verbose messages").disableRepeat()
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $disableRepeat() Bool @public @backtrace=no
+      notInitCheck()
+      $canRepeat = FALSE
+      RETURN THIS
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default,
+    #- otherwise the opposite.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $get() bool @public @backtrace=no
+      initCheck()
+      RETURN $current
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default,
+    #- otherwise the opposite.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $value() bool @public
+      RETURN $get()
+    }
+  }
+
+  #= A @Flag that has one number argument.
+  #- For example, with this flag:
+  #% ARG.Int retry = NEW("r", "retry", 3, "retry count")
+  #- These arguments can be used:
+  #% prog --retry 20
+  #% prog --retry=8
+  #% prog -r 4
+  #% prog -r1
+  #
+  #- By default the flag is not allowed to be used more than once.
+  #- Use enableRepeat() to allow it.
+  CLASS Int EXTENDS Flag @public
+    int $current #!
+    int $default #!
+    list<int> $theValueList #!
+
+    #= Create an @Int @Flag.
+    #- |shortName| is the one-character name, can be NIL.
+    #- |longName| is the longer name, to be used after "--", can be NIL
+    #- |shortName| and |longName| can't both be NIL.
+    #- |default| is the default value, used when the flag is not present.
+    #- |doc| is displayed for this flag with the --help argument.
+    NEW(string shortName, string longName, int default, string doc) @public
+      NEW(shortName, longName, doc, Z.callerPos())
+      $current = default
+      $default = default
+      $theValueList = NEW()
+    }
+
+    #! Set the current value back to the default value.
+    PROC $setToDefault() @define @public
+      $current = $default
+    }
+
+    #= Allow the flag to appear more than once.
+    #- Returns THIS, so that it can be used in a declaration like this:
+    #% ARG.String name = NEW("n", "name", "", "the name").enableRepeat()
+    #- The value of the last flag will then
+    #- be stored and can be obtained with get() and value(),
+    #- getList() and valueList() return a list with all the values and
+    #- presentCount() returns the number of times the flag appears.
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $enableRepeat() Int @public @backtrace=no
+      notInitCheck()
+      $canRepeat = TRUE
+      RETURN THIS
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $get() int @public @backtrace=no
+      initCheck()
+      RETURN $current
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $value() int @public
+      RETURN $get()
+    }
+
+    #= Return the list of values.
+    #- When the flag was not encountered it will be an empty list
+    #- Otherwise the list contains all the values encountered.
+    #- When a flag doesn't have a value, the default value is used.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $getList() list<int> @backtrace=no
+      initCheck()
+      RETURN $theValueList
+    }
+
+    #= Return the list of values.
+    #- When the flag was not encountered it will be an empty list
+    #- Otherwise the list contains all the values encountered.
+    #- When a flag doesn't have a value, the default value is used.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $valueList() list<int>
+      RETURN $getList()
+    }
+  }
+
+  #= A @Flag that has one string argument.
+  #- For example, with this flag:
+  #% ARG.String name = NEW("n", "name", "", "the name")
+  #- These arguments can be used:
+  #% prog --name foobar
+  #% prog --name=foobar
+  #% prog -n foobar
+  #% prog -nfoobar
+  #
+  #- By default the flag is not allowed to be used more than once.
+  #- Use enableRepeat() to enable it.
+  CLASS String EXTENDS Flag @public
+    string $current #!
+    string $default #!
+    list<string> $theValueList #!
+
+    #= Create a @String @Flag.
+    #- |shortName| is the one-character name, can be NIL.
+    #- |longName| is the longer name, to be used after "--", can be NIL
+    #- |shortName| and |longName| can't both be NIL.
+    #- |default| is the default value, used when the flag is not present.
+    #- |doc| is displayed for this flag with the --help argument.
+    NEW(string shortName, string longName, string default, string doc) @public
+      NEW(shortName, longName, doc, Z.callerPos())
+      $current = default
+      $default = default
+      $theValueList = NEW()
+    }
+
+    #! Set the current value back to the default value.
+    PROC $setToDefault() @define @public
+      $current = $default
+    }
+
+    #= Allow the flag to appear more than once.
+    #- Returns the Flag, so that it can be used in a declaration like this:
+    #% ARG.String name = NEW("n", "name", "", "the name").enableRepeat()
+    #
+    #- The value of the last flag will then
+    #- be stored and can be obtained with value(),
+    #- getList() and valueList() return a list with all the values and
+    #- presentCount() returns the number of times the flag appears.
+    #
+    #- This must be invoked in EarlyInit() or earlier.
+    FUNC $enableRepeat() String @public @backtrace=no
+      notInitCheck()
+      $canRepeat = TRUE
+      RETURN THIS
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $get() string @public @backtrace=no
+      initCheck()
+      RETURN $current
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $value() string @public
+      RETURN $get()
+    }
+
+    #= Return the list of values.
+    #- When the flag was not encountered it will be an empty list
+    #- Otherwise the list contains all the values encountered.
+    #- When a flag doesn't have a value, the default value is used.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $getList() list<string> @backtrace=no
+      initCheck()
+      RETURN $theValueList
+    }
+
+    #= Return the list of values.
+    #- When the flag was not encountered it will be an empty list
+    #- Otherwise the list contains all the values encountered.
+    #- When a flag doesn't have a value, the default value is used.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $valueList() list<string>
+      RETURN $getList()
+    }
+  }
+
+  #= A Flag that includes all following arguments.
+  #- The argument values are available as a list of strings.
+  #
+  #- For example, with this flag:
+  #% ARG.StringList args = NEW("a", "args", [], "the list of arguments")
+  #- These arguments can be used:
+  #% prog --args one -two three
+  #% prog -a one -two three
+  #
+  #- And will result in ["one", "-two", "three"].
+  #
+  #- The flag cannot be used more than once, because it consumes all the
+  #- remaining arguments.
+  CLASS StringList EXTENDS Flag @public
+    list<string> $current #!
+    list<string> $default #!
+
+    #= Create a Flag that is followed by any number of arguments.
+    #
+    #- |shortName| is the one-character name, can be NIL.
+    #
+    #- |longName| is the longer name, to be used after "--", can be NIL
+    #
+    #- |shortName| and |longName| can't both be NIL.
+    #
+    #- |default| is the default value, used when the flag is not present.
+    #
+    #- |doc| is displayed for this flag with the --help argument.
+    NEW(string shortName, string longName, list<string> default,
+                                                           string doc) @public
+      NEW(shortName, longName, doc, Z.callerPos())
+      $current = default
+      $default = default
+    }
+
+    #! Set the Flag back to its default value.
+    PROC $setToDefault() @define @public
+      $current = $default
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $get() list<string> @public @backtrace=no
+      initCheck()
+      RETURN $current
+    }
+
+    #= Return the value.
+    #- When the flag was not encountered it will be the specified default.
+    #
+    #- Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+    FUNC $value() list<string> @public
+      RETURN $get()
+    }
+  }
+
+}

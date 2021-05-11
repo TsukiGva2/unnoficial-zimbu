@@ -1,0 +1,48 @@
+#
+# ZUT (Zimbu Templates) main page
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE MainPage @public
+
+  HTML page(ZUT.Page zutPage) @public
+    # First render the body and keep the result, so that the collected CSS
+    # scripts can be put in the head.
+    [string bodyHtml = zutPage.renderBody(context)]
+
+    # Specify the type of HTML.
+    [IF zutPage.html5]
+      <!DOCTYPE html>
+    [ELSE]
+      <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    [}]
+
+    <html>
+      <head>
+        # Defining charset must be done very early.
+        [IF zutPage.html5]
+          <meta charset="UTF-8">
+        [ELSE]
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        [}]
+        <title>[=zutPage.title]</title>
+        <style type="text/css">
+        [=zutPage.getAllCss()]
+        [FOR css IN context.cssEntries]
+          [=css]
+        [}]
+        </style>
+        [FOR js IN zutPage.jsFiles]
+          <script type="text/javascript" src="[=js]"></script>
+        [}]
+      </head>
+      <body>
+        [=bodyHtml]
+        [=context.activateEventListeners()]
+      </body>
+    </html>
+  }
+}

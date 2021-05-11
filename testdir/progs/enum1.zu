@@ -1,0 +1,11 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  Nr nr = Nr.two
+  string nrs = "blah" .. nr.ToString()
+  IO.print(nrs)
+  RETURN 0
+}
+
+ENUM Nr
+  one two three
+}

@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML - Url / Javascript
+  TEMPLATE inHtmlUrlJavascript(ZUT.Javascript js) ZUT.Html @public
+    <a href="[=js]">here</a>
+  }
+}
+

@@ -1,0 +1,733 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>STRING.string class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='STRING.html'>up:&nbsp;STRING</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.string
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type string.
+</p>
+<p class='ptext'> The string can be any sequence of Unicode characters, including NUL.
+<p class='ptext'> The characters are UTF-8 encoded.
+ Illegal byte sequences may appear but cause an exception for some
+ operations.  Finding a character by index requires going over the string
+ from the start, since UTF-8 is a variable width encoding.  It might be
+ faster to use indexes on the result of toArray().
+<p class='ptext'> The object methods can be used on a string literal:
+<pre class='example'> string s = "foobar".slice(3)
+ # s == "bar"
+</pre>
+ Besides the methods there is the concatenation operator:
+<pre class='example'> string s = "left" .. " and " .. "right"
+ # s == "left and right"
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#NEW'><b>NEW</b></a>(<small>array</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a string from the characters in <b>array</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#NEW'><b>NEW</b></a>(<small>array, start</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a string from the characters in <b>array</b> starting at index <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#NEW'><b>NEW</b></a>(<small>array, start, end</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a string from the characters in <b>array</b> starting at index <b>start</b>
+ and ending at index <b>end</b> (inclusive).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the size of the string in characters.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string itself, a no-op.  Also works on a NIL.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$ToString'><b>$ToString</b></a>(<small>formatSpec</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a formatted version of the string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$Compare'><b>$Compare</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return -1 when <b>other</b> sorts after this string, zero when <b>other</b> is
+ equal to this string, and 1 when <b>other</b> sorts before this string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$Equal'><b>$Equal</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when <b>other</b> is equal to this string, FALSE otherwise.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$asByteString'><b>$asByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string as a byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toByteString'><b>$toByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string as a byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toVarString'><b>$toVarString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string converted to a varString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toArray'><b>$toArray</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;nat32&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return an array with the characters of the string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$format'><b>$format</b></a>(<small>arguments</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Replace placeholders in the string with argument values.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toInt'><b>$toInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the string converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toInt'><b>$toInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the string converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedToInt'><b>$quotedToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the string converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedToInt'><b>$quotedToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the string converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$hexToInt'><b>$hexToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the string converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$hexToInt'><b>$hexToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the string converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedHexToInt'><b>$quotedHexToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the string converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedHexToInt'><b>$quotedHexToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the string converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$binToInt'><b>$binToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the string converted to a
+ number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$binToInt'><b>$binToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the string converted to a
+ number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedBinToInt'><b>$quotedBinToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the string converted to a
+ number, ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$quotedBinToInt'><b>$quotedBinToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the string converted to a
+ number, ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toFloat'><b>$toFloat</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number at the start of the string converted to a float.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toFloat'><b>$toFloat</b></a>(<small>length</small>) <small><span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number at the start of the string converted to a float.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$find'><b>$find</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where string <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$find'><b>$find</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$find'><b>$find</b></a>(<small>s, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where the string <b>s</b> appears at or after <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$find'><b>$find</b></a>(<small>c, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$findLast'><b>$findLast</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index where string <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$findLast'><b>$findLast</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$startsWith'><b>$startsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the string starts with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$endsWith'><b>$endsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the string ends with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$hash'><b>$hash</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a number that is a hash value of the string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$padLeft'><b>$padLeft</b></a>(<small>minSize, pad</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string with padding added on the left.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$padRight'><b>$padRight</b></a>(<small>minSize, pad</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string with padding added on the right.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$reverse'><b>$reverse</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string with all characters in reverse order.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$replace'><b>$replace</b></a>(<small>from, to</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Replace the first occurrence of the <b>from</b> character with <b>to</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$replaceAll'><b>$replaceAll</b></a>(<small>from, to</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Replace all occurrences of the <b>from</b> character with <b>to</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$escape'><b>$escape</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Double all backslashes and put a backslash before a double quote.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toLower'><b>$toLower</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string with all characters lower-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toLowerAscii'><b>$toLowerAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string with all ASCII characters lower-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toUpper'><b>$toUpper</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string with all characters upper-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$toUpperAscii'><b>$toUpperAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string with all ASCII characters upper-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$slice'><b>$slice</b></a>(<small>start</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string, starting at index <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the string, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$split'><b>$split</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the string split at white space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$split'><b>$split</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the string split into pieces, split at <b>sep</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$splitAnyOf'><b>$splitAnyOf</b></a>(<small>charSet</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the string split at the characters in <b>charSet</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='STRING.string.html#$trim'><b>$trim</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string with leading and trailing white space removed.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;<A class='typehref' href='INT.int.html'>int</A>&gt;</span> array)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a string from the characters in <b>array</b>.
+</p>
+<p class='ptext'> The array item type can be any int or nat number.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;<A class='typehref' href='INT.int.html'>int</A>&gt;</span> array, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a string from the characters in <b>array</b> starting at index <b>start</b>.
+</p>
+<p class='ptext'> The array item type can be any int or nat number.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;<A class='typehref' href='INT.int.html'>int</A>&gt;</span> array, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a string from the characters in <b>array</b> starting at index <b>start</b>
+ and ending at index <b>end</b> (inclusive).
+</p>
+<p class='ptext'> The array item type can be any int or nat number.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Compare'><b>$Compare</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> other) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return -1 when <b>other</b> sorts after this string, zero when <b>other</b> is
+ equal to this string, and 1 when <b>other</b> sorts before this string.
+</p>
+<p class='ptext'> When using ?.Compare() on a NIL string and <b>other</b> is NIL it returns
+ zero.  When <b>other</b> is not NIL it returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Equal'><b>$Equal</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> other) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when <b>other</b> is equal to this string, FALSE otherwise.
+</p>
+<p class='ptext'> When using ?.Equal() on a NIL string and <b>other</b> is NIL it returns
+ TRUE.  Otherwise when <b>other</b> is NIL returns FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the size of the string in characters.
+</p>
+<p class='ptext'> Note that this is different from the number of bytes if there are
+ multi-byte characters.
+<p class='ptext'> The method has to go over the text to count the characters, this may be
+ slow for a very long string.
+<p class='ptext'> The empty string returns zero.
+ A NIL string also returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string itself, a no-op.  Also works on a NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> formatSpec) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a formatted version of the string.
+</p>
+<p class='ptext'> The format must end in "s".  The minimum and maximum width of the result
+ can be specified and optionally ellipses can indicate truncated text.
+<p class='ptext'> Use "{min}s" to specify a minimum width.  {min} is the width in decimal
+ form.  When the string is longer than the minimum it is returned
+ unchanged.  When the string is shorter spaces are inserted on the left:
+<pre class='example'> "some".ToString("6s")   # "  some"
+</pre>
+ Use a minus sign to align the text on the left, added spaces are put
+ after the text:
+<pre class='example'> "some".ToString("-6s")   # "some  "
+</pre>
+<p class='ptext'>
+ Use ".{max}s" to specify a maximum width.  {max} is the width in decimal
+ form. When the text is longer it is truncated:
+<pre class='example'> "something".ToString(".4s")  # "some"
+</pre>
+ Use a minus sign to keep the rightmost part of the text:
+<pre class='example'> "something".ToString(".-4s")  # "hing"
+</pre>
+<p class='ptext'>
+ The minimum and maximum can be combined as "{min}.{max}s".  This only
+ makes sense when the minimum is larger than the maximum.  The text will
+ first be truncated to the maximum size, then filled with spaces to the
+ minimum size:
+<pre class='example'> "something".ToString("5.4s")  # " some"
+ "something".ToString("-5.4s")  # "some "
+ "something".ToString("-5.-4s")  # "hing "
+</pre>
+<p class='ptext'>
+ When the string must be truncated ellipses can be added.  Use two or
+ three dots instead of one for the maximum width.  These dots will be put
+ where the string was truncated. Use a plus sign to put
+ ellipses at the right, no sign to put ellipses in the middle, and a minus
+ sign to put ellipses at the left. The ellipses are included in the
+ maximum width, thus the width must be at least 3 or 4 to make sense.
+<pre class='example'> "something great".ToString("...+8s")  # "somet..."
+ "something great".ToString("..10s")  # "some..reat"
+ "something great".ToString("...-8s")  # "...great"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asByteString'><b>$asByteString</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string as a byteString.
+</p>
+<p class='ptext'> This does not do any conversion, it only changes the type of the object.
+ Also works on a NIL.
+<p class='ptext'> Example: get the number of bytes in a string:
+<pre class='example'> int byteSize = text.asByteString().Size()
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$binToInt'><b>$binToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the string converted to a
+ number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"010101".binToInt()</span> returns 21.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a 0 or
+ 1.
+<p class='ptext'> When using ?.binToInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$binToInt'><b>$binToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the string converted to a
+ number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"010101".binToInt()</span> returns 21.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a 0 or 1.
+ Also returns <b>default</b> when the string is NIL and ?.binToInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$endsWith'><b>$endsWith</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the string ends with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$escape'><b>$escape</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Double all backslashes and put a backslash before a double quote.
+</p>
+<p class='ptext'> This turns an arbitrary string into a string that can be put in double
+ quotes.
+<p class='ptext'> When no escaping is done returns the string unmodified.
+<p class='ptext'> When using ?.escape() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where string <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+ When not found returns -1.
+ When <b>s</b> is longer than this string it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?.find() and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where the string <b>s</b> appears at or after <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(s).
+ When not found returns -1.
+ When found returns <b>start</b> or more.
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(c).
+<p class='ptext'> When <b>c</b> is found returns <b>start</b> or more.
+<p class='ptext'> When <b>c</b> is not found returns -1.
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index where string <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+<p class='ptext'> When not found returns -1.
+ When <b>s</b> is longer than this string it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$format'><b>$format</b></A>(<span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> arguments) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Replace placeholders in the string with argument values.
+</p>
+<p class='ptext'> A placeholder starts with a { and ends with a }.  To get a literal { use
+ {{.  A trailing { is also passed on as-is.
+<p class='ptext'> Placeholders can use a number, which is the index in <b>arguments</b>: {0}
+ refers to the first argument, {1} to the second, etc.
+<p class='ptext'> Placeholders can use a name, in which case the arguments must be passed
+ by name: {xyz} refers to argument xyz in format(xyz = value).
+<p class='ptext'> Without further specification ToString() is invoked on the argment before
+ it replaces the placeholder.  Optionally a format can be specified right
+ after the {, e.g. {04x nr} (the integer argument "nr" formatted as four
+ hex digits).  The format and the argument number/name must be separated
+ by exactly one space.
+<p class='ptext'> Errors are reported in the resulting string.  To throw an exception
+ instead insert {THROW} before any placeholders.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hash'><b>$hash</b></A>() <span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a number that is a hash value of the string.
+</p>
+<p class='ptext'> A string value always results in the same hash value.
+ Two different strings can result in the same hash value, but the chance
+ of this happening is small.
+<p class='ptext'> The hash method is fast and has a reasonable distribution.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hexToInt'><b>$hexToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the string converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"a2b4".hexToInt()</span> returns 0xa2b4.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a hex
+ digit.  Also when it starts with "-".
+<p class='ptext'> When using ?.hexToInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hexToInt'><b>$hexToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the string converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"a2b4".hexToInt()</span> returns 0xa2b4.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a hex digit.  That
+ includes "-".
+ Also returns <b>default</b> when the string is NIL and ?.hexToInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$padLeft'><b>$padLeft</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> minSize, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> pad) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string with padding added on the left.
+</p>
+<p class='ptext'> The resulting string is at least <b>minSize</b> characters long.  If the
+ current string is shorter the <b>pad</b> character is added as many times as
+ needed.
+<p class='ptext'> Example: <span class='commentcode'>"foo".padLeft(5, '-')</span> returns "--foo".
+<p class='ptext'> When using ?.padLeft() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$padRight'><b>$padRight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> minSize, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> pad) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string with padding added on the right.
+</p>
+<p class='ptext'> The resulting string is at least <b>minSize</b> characters long.  If the
+ current string is shorter the <b>pad</b> character is added as many times as
+ needed.
+<p class='ptext'> Example: <span class='commentcode'>"foo".padRight(5, '-')</span> returns "foo--".
+<p class='ptext'> When using ?.padRight() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedBinToInt'><b>$quotedBinToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the string converted to a
+ number, ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"1001'0101".quotedBinToInt()</span> returns 149.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a 0 or
+ 1.
+<p class='ptext'> When using ?.quotedBinToInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedBinToInt'><b>$quotedBinToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the string converted to a
+ number, ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"1001'0101".quotedBinToInt()</span> returns 149.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a 0 or 1 and
+ when using ?.quotedBinToInt() on a NIL string.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedHexToInt'><b>$quotedHexToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the string converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"ffff'ffff".quotedHexToInt()</span> returns 16777215.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a hex
+ digit.  That includes "-".
+<p class='ptext'> When using ?.quotedHexToInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedHexToInt'><b>$quotedHexToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the string converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"ffff'ffff".quotedHexToInt()</span> returns 16777215.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a hex digit.  That
+ includes "-".
+ Also returns <b>default</b> when the string is NIL and ?.quotedHexToInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedToInt'><b>$quotedToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the string converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"100'000".quotedToInt()</span> returns 100000.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a
+ digit or a minus sign.
+<p class='ptext'> When using ?.quotedToInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedToInt'><b>$quotedToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the string converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"100'000".quotedToInt()</span> returns 100000.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a digit or a minus
+ sign.  When using ?.quotedToInt() also when the string is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$replace'><b>$replace</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> from, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> to) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Replace the first occurrence of the <b>from</b> character with <b>to</b>.
+</p>
+<p class='ptext'> When <b>from</b> is not found returns the string unmodified.
+<p class='ptext'> When using ?.replace() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$replaceAll'><b>$replaceAll</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> from, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> to) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Replace all occurrences of the <b>from</b> character with <b>to</b>.
+</p>
+<p class='ptext'> When <b>from</b> is not found returns the string unmodified.
+<p class='ptext'> When using ?.replaceAll() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reverse'><b>$reverse</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string with all characters in reverse order.
+</p>
+<p class='ptext'> Example: <span class='commentcode'>"foobar".reverse()</span> returns "raboof".
+<p class='ptext'> When using ?.reverse() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string, starting at index <b>start</b>.
+</p>
+<p class='ptext'> A negative index is relative to the end of the string, <span class='commentcode'>slice(-1)</span>
+ returns a string with only the last character.
+<p class='ptext'> This counts characters, not bytes.  To count bytes first use
+ $asByteString().
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the string an empty
+ string is returned.
+ If <b>start</b> is negative and the absolute value is larger than the string
+ size the whole string is returned.
+<p class='ptext'> When using ?.slice() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</p>
+<p class='ptext'> A negative index is relative to the end of the string. <span class='commentcode'>slice(0, -1)</span>
+ returns the whole string. <span class='commentcode'>slice(-1, -1)</span> only the last character.
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the string an empty
+ string is returned.
+ If <b>start</b> is negative and the absolute value is larger than the returned
+ string starts at index zero.
+ If the <b>start</b> character is after the <b>end</b> character an empty string is
+ returned.
+<p class='ptext'> When using ?.slice() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the string split at white space.
+</p>
+<p class='ptext'> Empty strings are omitted.
+<p class='ptext'> Example: <span class='commentcode'>"foo  bar ".split()</span> returns ["foo", "bar"].
+<p class='ptext'> When using ?.split() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> sep) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the string split into pieces, split at <b>sep</b>.
+</p>
+<p class='ptext'> The matches with the <b>sep</b> string are omitted.
+<p class='ptext'> <b>sep</b> must match exactly.
+<p class='ptext'> When there are no characters between two <b>sep</b> matches, or at the end or
+ start of the string, the list will contain an empty string item.
+<pre class='example'> "one, two,three".split(", ")
+ # result: ["one", "two,three"]
+</pre>
+<p class='ptext'>
+ When using ?.split() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$splitAnyOf'><b>$splitAnyOf</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> charSet) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the string split at the characters in <b>charSet</b>.
+</p>
+<p class='ptext'> Empty strings are omitted.
+<p class='ptext'> Example: <span class='commentcode'>"foo/bar: yes ".split("/: ")</span> returns ["foo", "bar", "yes"].
+<p class='ptext'> When using ?.split() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$startsWith'><b>$startsWith</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the string starts with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the string is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toArray'><b>$toArray</b></A>() <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;nat32&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return an array with the characters of the string.
+</p>
+<p class='ptext'> Looking up characters by index will be much faster in the array.
+<p class='ptext'> Throws an E.IllegalByte exception if a character uses more than 4 bytes.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toByteString'><b>$toByteString</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string as a byteString.
+</p>
+<p class='ptext'> Equivalent to $asByteString()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toFloat'><b>$toFloat</b></A>() <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number at the start of the string converted to a float.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"1.234".toFloat()</span> returns 1.234.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a
+ digit or a minus sign.
+<p class='ptext'> Using toFloat() on a NIL string throws an E.NilAccess exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toFloat'><b>$toFloat</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A> &</span>length) <span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number at the start of the string converted to a float.
+</p>
+<p class='ptext'> Sets the <b>length</b> argument to the number of characters used.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a
+ digit or a minus sign.
+<p class='ptext'> Using toFloat() on a NIL string throws an E.NilAccess exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toInt'><b>$toInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the string converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"1234".toInt()</span> returns 1234.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the string does not start with a
+ digit or a minus sign.
+<p class='ptext'> When using ?.toInt() on a NIL string the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toInt'><b>$toInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the string converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"1234".toInt()</span> returns 1234.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the string does not start with a digit or a minus
+ sign.
+ Also returns <b>default</b> when the string is NIL and ?.toInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toLower'><b>$toLower</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string with all characters lower-cased.
+</p>
+<p class='ptext'> TODO: Currently only works for latin1 characters
+<p class='ptext'> When using toLower() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toLowerAscii'><b>$toLowerAscii</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string with all ASCII characters lower-cased.
+</p>
+<p class='ptext'> This only handles ASCII letters and leaves all other characters
+ unchanged.
+<p class='ptext'> When using toLowerAscii() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toUpper'><b>$toUpper</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string with all characters upper-cased.
+</p>
+<p class='ptext'> TODO: Currently only works for latin1 characters
+<p class='ptext'> When using toUpper() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toUpperAscii'><b>$toUpperAscii</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the string with all ASCII characters upper-cased.
+</p>
+<p class='ptext'> This only handles ASCII letters and leaves all other characters
+ unchanged.
+<p class='ptext'> When using toUpperAscii() on a NIL string the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarString'><b>$toVarString</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string converted to a varString.
+</p>
+<p class='ptext'> Returns NIL when the string is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$trim'><b>$trim</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string with leading and trailing white space removed.
+</p>
+<p class='ptext'> Returns an empty string if the string contains only white space.
+ Example: <span class='commentcode'>"  foo bar ".trim()</span> returns "foo bar".
+<p class='ptext'> When using ?.trim() on a NIL string the result is NIL.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

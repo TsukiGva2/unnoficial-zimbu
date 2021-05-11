@@ -1,0 +1,105 @@
+#
+# Try out protocol buffers.
+#
+
+IMPORT.PROTO "zwtdemo/addressbook.proto"
+
+string bookFileName = "zwtdemo/book"
+string newbookFileName = "newbook"
+
+FUNC Main() int
+  # Create an AddressBook, fill it with a few addresses and display the text
+  # version.
+  Tutorial.AddressBook book = NEW()
+  addPersons(book)
+  IO.write(book.ToString())
+
+  IO.print()
+  IO.print("And now with numbers, no indent:")
+  book.writeText(NIL, IO.stdout)
+
+  # Create another AddressBook |newbook| from a binary file.
+  IO.print()
+  IO.print("Parsed from an existing file:")
+  IO.File reader = IO.fileReader(bookFileName)
+  IF reader == NIL
+    IO.print("Cannot open file")
+  ELSE
+    Tutorial.AddressBook newbook = Tutorial.AddressBook.createFromBinary(reader)
+    IO.write(newbook.ToString())
+    reader.close()
+  }
+
+  # Write AddressBook |book| to a file in binary form.
+  IO.print()
+  IO.print("Writing to a file...")
+  IO.File writer = IO.fileWriter(newbookFileName)
+  IF writer == NIL
+    IO.print("Cannot open file for writing")
+  ELSE
+    book.writeBinary(writer)
+  }
+  writer.close()
+  IO.print("Done...")
+
+  # Read back the file just written.
+  IO.print()
+  IO.print("Parsed from the written file:")
+  reader = IO.fileReader(newbookFileName)
+  IF reader == NIL
+    IO.print("Cannot open file")
+  ELSE
+    book = Tutorial.AddressBook.createFromBinary(reader)
+    IO.write(book.ToString())
+  }
+  reader.close()
+
+  # Restore object references
+  book = NEW()
+  addPersons(book)
+
+  # Display the JSON version of AddressBook |book|.
+  IO.print("\nWritten as JSON:")
+  IO.StringWriter swriter = NEW()
+  book.writeJsonDeref(swriter)
+  string jsonBook = swriter.ToString()
+  IO.print(jsonBook)
+
+  # Parse that JSON back.
+  IO.print("\nParsed back from JSON:")
+  IO.StringReader sreader = NEW(jsonBook)
+  book = Tutorial.AddressBook.createFromJsonDeref(sreader)
+  IO.write(book.ToString())
+
+  RETURN 0
+}
+
+PROC addPersons(Tutorial.AddressBook book)
+  Tutorial.Person person = NEW()
+  person.setName("John Doe")
+  person.setId(1234)
+  person.setEmail("John@doe.org")
+  Tutorial.Person.PhoneNumber theDoes = person.addNewPhone()
+  theDoes.setNumber("044-99-1234")
+  person.addNewPhone()
+      .setNumber("078-69-4444")
+      .setType(Tutorial.Person.PhoneType.eMOBILE)
+  book.addPerson(person)
+
+  person = NEW()
+  person.setName("Elizabeth Doe")
+  person.setId(1235)
+  person.addPhone(theDoes)
+  person.addNewPhone()
+      .setNumber("078-96-68923-c3")
+      .setType(Tutorial.Person.PhoneType.eWORK)
+  book.addPerson(person)
+
+  person = NEW()
+  person.setName("Daffy Duck")
+  person.setId(4242)
+  person.setEmail("Daffy.Duck@disney.com")
+  person.addNewPhone()
+      .setNumber("044-99-1234")
+  book.addPerson(person)
+}

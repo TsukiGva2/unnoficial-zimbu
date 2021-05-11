@@ -1,0 +1,167 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tests for the builtin module RE, regex, regular expressions.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+FUNC test_basicMatch() status
+  regex re = RE("hello")
+  TEST.true(re.matches("hello there"))
+  TEST.equal("hello", re.match("hi hello"))
+
+  re = RE("h.*e")
+  TEST.true(re.matches("hello there"))
+  TEST.equal("hello there", re.match("hello there"))
+  TEST.equal("hello he", re.match("hello hello"))
+
+  RETURN OK
+}
+
+FUNC test_firstAlternative() status
+  regex re = RE("a|ab")
+  TEST.equal("a", re.match("ab"))
+  re = RE("ab|a")
+  TEST.equal("ab", re.match("ab"))
+
+  RETURN OK
+}
+
+FUNC test_wordMatch() status
+  regex re = RE(R"\b(Telephone|Tel)\b")
+  TEST.equal("Tel", re.match("Telep noTel Tel"))
+  TEST.equal("Telephone", re.match("Telep noTel Telephone Tel"))
+  TEST.equal("Tel", re.match("Telep noTel telephone Tel"))
+  TEST.equal(NIL, re.match("Telep noTel Telephones"))
+
+  RETURN OK
+}
+
+FUNC test_ignoreCase() status
+  regex re = NEW("pat", :ignoreCase)
+  TEST.true(re.matches("Pat"))
+  TEST.true(re.matches("PAT"))
+  TEST.true(re.matches("pat"))
+
+  re = NEW("PAT", :ignoreCase)
+  TEST.true(re.matches("Pat"))
+  TEST.true(re.matches("PAT"))
+  TEST.true(re.matches("pat"))
+
+  RETURN OK
+}
+
+FUNC test_multiLine() status
+  regex re = NEW("^pat$")
+  TEST.true(re.matches("pat"))
+  TEST.false(re.matches("pat\nnot"))
+  TEST.false(re.matches("not\npat"))
+
+  re = NEW("^pat$", :multiLine)
+  TEST.true(re.matches("pat"))
+  TEST.true(re.matches("pat\nnot"))
+  TEST.true(re.matches("not\npat"))
+
+  RETURN OK
+}
+
+FUNC test_ignoreCaseMultiLine() status
+  regex re = NEW("^pat$", :ignoreCase + :multiLine)
+  TEST.true(re.matches("Pat"))
+  TEST.true(re.matches("PAT\nnot"))
+  TEST.true(re.matches("not\npAt"))
+
+  RETURN OK
+}
+
+FUNC test_matchGroups() status
+  regex re = NEW("^pat$")
+  TEST.equal(["pat"], re.matchGroups("pat"))
+  re = NEW("a(b+)")
+  TEST.equal(["abb", "bb"], re.matchGroups("an abbrev"))
+  # up to 20 groups supported
+  re = NEW("a(b+)(c+)(d+)(e+)(f+)(g+)(h+)(i+)(j+)(k+)(b+)(c+)(d+)(e+)(f+)(g+)(h+)(i+)(j+)(k+)")
+  TEST.equal(["abbcddeffghhijjkbbcddeffghhijjk", "bb", "c", "dd", "e", "ff",
+              "g", "hh", "i", "jj", "k", "bb", "c", "dd", "e", "ff", "g",
+              "hh", "i", "jj", "k"],
+             re.matchGroups("an abbcddeffghhijjkbbcddeffghhijjk"))
+
+  RETURN OK
+}
+
+FUNC test_matchStart() status
+  regex re = NEW("p.t")
+  TEST.equal(0, re.matchStart("pat"))
+  TEST.equal(-1, re.matchStart("Pat"))
+  TEST.equal(3, re.matchStart("tátpat"))
+
+  RETURN OK
+}
+
+FUNC test_matchAll() status
+  regex re = NEW("pat")
+  TEST.equal(["pat", "pat"], re.matchAll("pattern apat"))
+  re = RE("ab+")
+  TEST.equal(["ab", "abb"], re.matchAll("ab in abbrev"))
+  re = RE("\\w+")
+  TEST.equal(["ab", "cd", "ef", "gh", "ij", "kl", "mn", "op", "qr", "st"],
+             re.matchAll("ab cd ef gh ij kl mn op qr st"))
+
+  re = NEW("^pat$")
+  list<string> sl = []
+  TEST.equal(sl, re.matchAll("pat pat"))
+
+  RETURN OK
+}
+
+FUNC test_replace() status
+  regex re = RE("ab+")
+  TEST.equal("an ABrev", re.replace("an abrev", "AB"))
+  TEST.equal("an ABrev", re.replace("an abbbrev", "AB"))
+  TEST.equal("an abbbrev", re.replace("an abbbrev", "$&"))
+  TEST.equal("an -abbb-rev", re.replace("an abbbrev", "-$&-"))
+  TEST.equal("an -$-rev", re.replace("an abbbrev", "-$$-"))
+  TEST.equal("an -an -rev", re.replace("an abbbrev", "-$`-"))
+  TEST.equal("an -rev-rev", re.replace("an abbbrev", "-$'-"))
+
+  TEST.equal("an -$0-rev", re.replace("an abbbrev", "-$0-"))
+  TEST.equal("an -$.-rev", re.replace("an abbbrev", "-$.-"))
+  TEST.equal("an -$x-rev", re.replace("an abbbrev", "-$x-"))
+  
+  re = RE("[ae]")
+  TEST.equal("Xn XbbrXv", re.replaceAll("an abbrev", "X"))
+  TEST.equal("'a'n 'a'bbr'e'v", re.replaceAll("an abbrev", "'$&'"))
+
+  re = RE("(a+)(b+)")
+  TEST.equal("bbaa ab", re.replace("aabb ab", "$2$1"))
+  TEST.equal("bbaa baa bba", re.replaceAll("aabb aab abb", "$2$1"))
+
+  re = NEW("a(b+)(c+)(d+)(e+)(f+)(g+)(h+)(i+)(j+)(k+)(b+)(c+)(d+)(e+)(f+)(g+)(h+)(i+)(j+)(k+)")
+  TEST.equal("an k,jj,i,hh,g,15:ff,e,dd,c,bb,10:k,jj,i,hh,g,5:ff,e,dd,c,bb",
+             re.replace("an abbcddeffghhijjkbbcddeffghhijjk", "$20,$19,$18,$17,$16,15:$15,$14,$13,$12,$11,10:$10,$9,$8,$7,$6,5:$5,$4,$3,$2,$1"))
+  RETURN OK
+}
+
+
+FUNC test_operators() status
+  TEST.true("foobar" =~ "foo")
+  TEST.false("asdfasdf" =~ "foo")
+  TEST.false("foobar" !~ "foo")
+  TEST.true("asdfasdf" !~ "foo")
+
+  TEST.true("hello" =~ "[ex][ql][rl]")
+  TEST.false("hello" !~ "[ex][ql][rl]")
+
+  TEST.false("Pat" =~ "pat")
+  TEST.true("Pat" =~? "pat")
+
+  TEST.true("Pat" !~ "pat")
+  TEST.false("Pat" !~? "pat")
+
+  RETURN OK
+}

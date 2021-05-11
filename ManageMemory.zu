@@ -1,0 +1,90 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Manage Memory module: memory management stuff
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Config.zu"
+IMPORT "Declaration.zu"
+IMPORT "Resolve.zu"
+
+IMPORT "genC/WriteC.zu"
+
+MODULE ManageMemory
+
+  ARG.String manageFlag = NEW(NIL, "manage", "default",
+                "Memory management method; one of: default, none, linked")
+
+  ARG.Bool exitclean = NEW(NIL, "exitclean", FALSE,
+                      "Run the garbage collector on exit")
+
+  # The kinds of memory management that are available.
+  ENUM ManageType
+    none              # leak all memory
+    linked            # lazy garbage collection using a linked list
+  }
+
+  ManageType manage
+
+  FUNC Init() status
+    IF manageFlag.get() == "none"
+      manage = ManageType.none
+    ELSEIF manageFlag.get() == "linked"
+        || manageFlag.get() == "default"
+      manage = ManageType.linked
+    ELSE
+      THROW "Invalid value for --manage: " .. manageFlag.get()
+    }
+
+    RETURN OK
+  }
+
+  # Return TRUE if using threads and GC doesn't work with threads.
+  FUNC cannotManageMemory(Resolve gen) bool
+    RETURN !Config.gcWithThreads && gen.isDeclUsed(WriteC.pthread)
+  }
+
+  # To be called after we know whether threads are used.
+  PROC checkForThreads(Resolve gen) @public
+    # If using threads and GC doesn't work with threads: disable GC.
+    IF cannotManageMemory(gen) && (manage != ManageType.none || exitclean.get())
+      manage = ManageType.none
+      IO.print("Warning: Garbage collection disabled "
+            .. "(does not work with threads)")
+    }
+  }
+
+  # Return TRUE when possibly doing linked list garbage collection.
+  # If this actually happends depends on what is used, see $manageMemory()
+  FUNC manageLinked() bool @public
+    RETURN manage == ManageType.linked
+  }
+
+  # Return TRUE when managing memory.  Returns FALSE when GC.run() is never
+  # invoked and there are no Finish() methods.
+  FUNC manageMemory(Resolve gen) bool @public
+    # Always manage memory for --exitclean, but not when disabled for
+    # threads.
+    IF exitclean.get() && !cannotManageMemory(gen)
+      RETURN TRUE
+    }
+
+    IF !gen.didMarkUsed
+      # Stay on the safe side: assume relevant items are used.
+      RETURN manage == ManageType.linked
+    }
+
+    RETURN manage == ManageType.linked
+            && (gen.isDeclUsed(Declaration.gcRun)
+                || gen.isDeclUsed(Declaration.hasFinish))
+  }
+
+  FUNC isExitclean() bool @public
+    RETURN exitclean.get()
+  }
+
+}

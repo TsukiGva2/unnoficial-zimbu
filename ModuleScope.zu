@@ -1,0 +1,75 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ModuleScope class.
+#
+# A Scope used for the toplevel of a module.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Builtin.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+
+CLASS ModuleScope EXTENDS Scope @items=public
+
+  bool                 $builtin   # TRUE for module in lib/
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @define
+    RETURN FALSE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @define
+    RETURN TRUE
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @define
+    RETURN TRUE
+  }
+
+  # Can there be statements in this Scope?
+  FUNC $hasStatements() bool @define
+    RETURN FALSE
+  }
+
+  PROC $initPass(Scope outer)
+    $fillFromOuter(outer)
+
+    # Don't copy the return symbol from the outer scope.
+    $returnType = NIL
+  }
+
+  # Set the $needPass flag in this scope and outer scopes.
+  PROC $setNeedPass(SContext ctx) @replace
+    $needPass = TRUE
+    IF $outer != NIL
+      $outer.setNeedPass(ctx)
+    }
+
+    # If at the scope of a builtin module, make sure it appears in the list of
+    # builtin modules for the current topscope. It may have been in another
+    # topscope only.
+    IF $builtin
+      Builtin.useModule($name, ctx)
+    }
+  }
+
+  # Return TRUE if this scope or an outer scope is a builtin module scope.
+  FUNC $insideBuiltin() bool @replace
+    IF $builtin
+      RETURN TRUE
+    }
+    IF $outer != NIL
+      RETURN $outer.insideBuiltin()
+    }
+    RETURN FALSE
+  }
+}

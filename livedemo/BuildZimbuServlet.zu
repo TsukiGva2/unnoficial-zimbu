@@ -1,0 +1,128 @@
+# RPC servlet to handle build and run requests from the UI.
+
+# Include the protocol buffer, defines the BuildRequest and BuildResult
+# messages.
+IMPORT.PROTO "buildzimbu.proto"
+
+IMPORT "$PLUGIN/proto/Message.zu"  # defines Message
+
+CLASS BuildZimbuServlet EXTENDS HTTP.RpcServlet
+
+  # This servlet handles the buildAndRun RPC method, as defined in the
+  # protocol buffer.
+  # TODO: should not require an argument
+  NEW(string dummy)
+    $init()
+    $addHandler(Livedemo.BuildService.handleBuildAndRun, buildAndRun)
+  }
+
+  SHARED
+    ARG.Bool tcc = NEW("t", "tcc", FALSE, "Use the tcc C compiler")
+    ARG.Bool clang = NEW("c", "clang", FALSE, "Use the clang C compiler")
+
+    # This method is invoked by the HTTP server to handle the RPC.
+    FUNC buildAndRun(HTTP.Context context,
+                     Message requestArg,
+                     Message responseArg
+         ) status
+      string dir = ARG.getExeDir()
+
+      # name of the Zimbu demo code file
+      string demoZuName = dir .. "/demo.zu"
+
+      # name of the compiler output file
+      string demoCompName = dir .. "/demo.comp"
+
+      # name of the demo executable
+      string demoExeName = IO.modifyExeName(ARG.exeName, "demo")
+      # some shells have a problem with a relative path
+      demoExeName = IO.fullPath(demoExeName)
+
+      # name of the zimbu compiler, one directory up
+      string zimbuExeName = IO.modifyExeName(ARG.exeName, "zimbu")
+      int idx = IO.tailIndex(zimbuExeName)
+      zimbuExeName = (idx > 0 ? zimbuExeName.slice(0, idx - 1) : "")
+                                           .. "../" .. zimbuExeName.slice(idx)
+      # Some shells have a problem with the double dot, turn the name into a
+      # full path.
+      zimbuExeName = IO.fullPath(zimbuExeName)
+
+      Livedemo.BuildRequest request = requestArg
+      Livedemo.BuildResult response = responseArg
+      # IO.print("Request: " .. request.ToString())
+
+      # Write the typed code in the file demo.zu.
+      IO.File writer = IO.fileWriter(demoZuName)
+      writer.write(request.getCode())
+      writer.write("\n")  # compiler doesn't like unterminated lines
+      writer.close()
+
+      # Delete any old demo binary and compile the new one.
+      IO.delete(demoExeName)
+
+      string args
+      IF tcc.get()
+        # This works on Ubuntu when tcc has been installed.
+        args = "--cc tcc --ccarg=\"-Wall -g -L/usr/lib/i386-linux-gnu\""
+      ELSEIF clang.get()
+        args = "--cc clang"
+      ELSE
+        args = ""
+      }
+      SYS.shell("\(zimbuExeName) \(args) \(demoZuName) >\(demoCompName)")
+
+      # Read any output from the compiler.
+      IO.File reader = IO.fileReader("\(demoCompName)")
+      string msg = reader.readAll()
+      reader.close()
+      IF msg == ""
+        msg = "compilation succeeded"
+      }
+      response.setCompilerMessages(msg)
+
+      # If a binary was produced, run it and read the output.
+      IF IO.isExecutable(demoExeName)
+        IO.print("starting demo process")
+        string killed = ""
+        string outputFile = "\(dir)/demo.out"
+        IO.delete(outputFile)
+
+        GENERATE_IF Z.have("fork")
+          # Process can be interrupted.
+          SYS.Process proc = NEW(demoExeName)
+              .writeTo(outputFile)
+              .writeErrorsToOut(TRUE)
+              .start()
+          IF proc.wait(2'000'000) == FAIL
+            IO.print("KILLING demo process")
+            proc.kill()
+            killed = "\n[program killed]"
+          }
+        GENERATE_ELSE
+          # Fall back to shell(), will get stuck if the program hangs.
+          SYS.shell("\(demoExeName) >\(outputFile)")
+        }
+
+        IO.print("demo process finished")
+        reader = IO.fileReader(outputFile)
+        list<string> lines = reader.readAllLines(40)
+        reader.close()
+        string output = lines.join("\n")
+        IF lines.Size() >= 40
+          output ..= "\n[truncated]"
+        }
+        output ..= killed
+        IF output == ""
+          output = "[empty]"
+        }
+        response.setRunOutput(output)
+      ELSE
+        response.setRunOutput("[no output]")
+      }
+
+      # IO.print("Response: " .. response.ToString())
+
+      RETURN OK
+    }
+  }
+}

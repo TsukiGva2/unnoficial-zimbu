@@ -1,0 +1,8 @@
+MODULE Testing
+  # CSS / Html
+  TEMPLATE inCssHtml(ZUT.Html text) ZUT.Css @public
+    p {
+     color: [=text];
+    }
+  }
+}

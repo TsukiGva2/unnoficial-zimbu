@@ -1,0 +1,414 @@
+# The Zimbu compiler written in Zimbu
+#
+# Parser for the protocol buffer plugin
+#
+# This is used for the pluginproto program.  It must be usable in other
+# programs as well, thus do not add any dependencies on the write code.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "EnumItem.zu"
+IMPORT "MessageItem.zu"
+IMPORT "Proto.zu"
+IMPORT "ProtoFile.zu"
+IMPORT "FieldItem.zu"
+IMPORT "I_ProtoItem.zu"
+IMPORT "OptionItem.zu"
+IMPORT "ServiceItem.zu"
+IMPORT "RpcItem.zu"
+IMPORT "PToken.zu"
+IMPORT "PTokenInput.zu"
+
+MODULE ParseProto @items=directory
+
+  #= Parse .proto file |fname|.
+  #- Returns a ProtoFile with the parsed items.
+  #
+  #- There is no formal documentation of the format, the source code from
+  #- Google is the "better than nothing" reference:
+  #- http://code.google.com/p/protobuf/source/browse/trunk/src/google/protobuf/compiler/parser.cc
+  FUNC parse(string fname) ProtoFile
+    ProtoFile pfile = NEW()
+
+    IO.File fd = IO.fileReader(fname)
+    IF fd == NIL
+      IO.print("Cannot open for reading: " .. fname)
+      EXIT 1
+    }
+    PTokenInput in = NEW(fd, fname, "")
+    in.input.allowTabs = TRUE
+
+    IO.flush()
+    WHILE TRUE
+      PToken token = in.getToken()
+      IF token.type == PToken.Type.eof
+        BREAK
+      }
+      # TODO: import
+      SWITCH token.type
+        CASE PToken.Type.package
+          parsePackage(in, pfile)
+
+        CASE PToken.Type.option
+          pfile.addOption(parseOption(in))
+
+        CASE PToken.Type.service
+          pfile.addItem(parseService(in, pfile))
+
+        CASE PToken.Type.message
+          MessageItem msg = parseMessage(in)
+          msg.parent = pfile
+          pfile.addItem(msg)
+
+        CASE PToken.Type.enum
+          pfile.addItem(parseEnum(in))
+
+        DEFAULT
+          LOG.error("Unrecognized item: \(token.value)", token.startPos)
+      }
+    }
+
+    fd.close()
+
+    RETURN pfile
+  }
+
+  # parse "package name;"
+  PROC parsePackage(PTokenInput in, ProtoFile pfile)
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected package name", t.startPos)
+    ELSEIF pfile.package != NIL
+      LOG.error("Only one package name allowed", t.startPos)
+    ELSE
+      pfile.package = t.value
+    }
+    checkSemiColon(in)
+  }
+
+  # parse "option name = value;"
+  # or    "option name;"
+  FUNC parseOption(PTokenInput in) OptionItem
+    OptionItem option = NEW()
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected option name", t.startPos)
+    ELSE
+      option.pos = t.startPos
+      option.name = t.value
+
+      t = in.getToken()
+      IF t.type == PToken.Type.equal
+        t = in.getToken()
+        IF t.type != PToken.Type.string && t.type != PToken.Type.id
+          LOG.error("Expected string value or ID", t.startPos)
+        ELSE
+          option.type = t.type
+          option.value = t.value
+          checkSemiColon(in)
+        }
+      ELSEIF t.type != PToken.Type.semicolon
+        LOG.error("Missing semicolor or equal sign", t.startPos)
+      }
+    }
+    RETURN option
+  }
+
+  # parse:
+  #   service name {
+  #     rpc Name (RequestName) returns (ResponseName);
+  #   }
+  # There appears to be an old syntax around that we don't support:
+  #   service {
+  #     name: "name"
+  #     method {
+  #       name: "Name"
+  #       input_type: "RequestName"
+  #       output_type: "ResponseName"
+  #     }
+  #   }
+  FUNC parseService(PTokenInput in, ProtoFile pfile) I_ProtoItem
+    ServiceItem service = NEW()
+
+    # parse "service name {"
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected service name", t.startPos)
+    ELSE
+      service.name = t.value
+      t = in.getToken()
+      IF t.type != PToken.Type.c_open
+        LOG.error("Missing {", t.startPos)
+      ELSE
+        WHILE TRUE
+          t = in.getToken()
+          IF t.type == PToken.Type.c_close
+            BREAK
+          }
+          IF checkEof(t)
+            BREAK
+          }
+          # parse "rpc name"
+          IF t.type != PToken.Type.rpc
+            LOG.error("Expected \"rpc\"", t.startPos)
+          ELSE
+            t = in.getToken()
+            IF t.type != PToken.Type.id
+              LOG.error("Expected rpc name", t.startPos)
+            ELSE
+              RpcItem rpc = NEW(t.value)
+              service.add(rpc)
+
+              # parse "(RequestName)"
+              t = in.getToken()
+              IF t.type != PToken.Type.p_open
+                LOG.error("Expected (", t.startPos)
+              }
+              t = in.getToken()
+              IF t.type != PToken.Type.id
+                LOG.error("Expected request name", t.startPos)
+              ELSE
+                rpc.requestName = t.value
+              }
+              IF t.type != PToken.Type.p_close
+                t = in.getToken()
+                IF t.type != PToken.Type.p_close
+                  LOG.error("Expected )", t.startPos)
+                }
+              }
+              t = in.getToken()
+              IF t.type != PToken.Type.returns
+                LOG.error("Expected \"returns\"", t.startPos)
+              }
+
+              # parse "(ResponseName)"
+              # We make the parens optional, I see no reason why they must
+              # be there.
+              t = in.getToken()
+              bool hadOpenParen
+              IF t.type == PToken.Type.p_open
+                hadOpenParen = TRUE
+                t = in.getToken()
+              }
+              IF t.type != PToken.Type.id
+                LOG.error("Expected response name", t.startPos)
+              ELSE
+                rpc.responseName = t.value
+              }
+              IF hadOpenParen
+                t = in.getToken()
+                IF t.type != PToken.Type.p_close
+                  LOG.error("Expected )", t.startPos)
+                }
+              }
+
+              checkSemiColon(in)
+            }
+          }
+        }
+      }
+    }
+    RETURN service
+  }
+
+  # parse "message name { ... }"
+  FUNC parseMessage(PTokenInput in) I_ProtoItem
+    MessageItem item = NEW()
+
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected message name", t.startPos)
+    ELSE
+      item.name = t.value
+      t = in.getToken()
+      IF t.type != PToken.Type.c_open
+        LOG.error("Missing {", t.startPos)
+      ELSE
+        WHILE TRUE
+          t = in.getToken()
+          IF t.type == PToken.Type.c_close
+            BREAK
+          }
+          IF checkEof(t)
+            BREAK
+          }
+          SWITCH t.type
+            CASE PToken.Type.required
+            CASE PToken.Type.optional
+            CASE PToken.Type.repeated
+              item.fields.add(parseField(t, in))
+
+            CASE PToken.Type.message
+              MessageItem msg = parseMessage(in)
+              msg.parent = item
+              item.items.add(msg)
+
+            CASE PToken.Type.enum
+              item.items.add(parseEnum(in))
+
+            CASE PToken.Type.option
+              item.addOption(parseOption(in))
+
+            DEFAULT
+              LOG.error("Unexpected item: \(t.value)", t.startPos)
+          }
+        }
+      }
+      item.checkErrors()
+    }
+    
+    RETURN item
+  }
+
+  # parse "token.type type name = nr [default = value];"
+  FUNC parseField(PToken token, PTokenInput in) FieldItem
+    FieldItem field = NEW()
+    field.pos = token.startPos
+    SWITCH token.type
+      CASE PToken.Type.required
+        field.required = TRUE
+      CASE PToken.Type.repeated
+        field.repeated = TRUE
+    }
+
+    # parse "type name = nr [default = value];"
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected type name", t.startPos)
+    ELSE
+      field.type = FieldItem.getType(t.value)
+      field.typeName = t.value
+    }
+
+    t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected field name", t.startPos)
+    ELSE
+      field.name = t.value
+      IF field.name.startsWith("_has")
+        # We use the _has prefix for flags in the output.
+        LOG.error("Field name cannot start with _has", t.startPos)
+      }
+    }
+
+    t = in.getToken()
+    IF t.type != PToken.Type.equal
+      LOG.error("Expected equal sign", t.startPos)
+    }
+
+    field.nr = parseNumber(in)
+
+    t = in.getToken()
+    IF t.type == PToken.Type.s_open
+      # parse "[default = value];"
+      t = in.getToken()
+      IF t.type != PToken.Type.default
+        LOG.error("Expected 'default'", t.startPos)
+      }
+      t = in.getToken()
+      IF t.type != PToken.Type.equal
+        LOG.error("Expected equal sign", t.startPos)
+      }
+      t = in.getToken()
+      IF t.type != PToken.Type.id
+        LOG.error("Expected default value", t.startPos)
+      ELSE
+        field.default = t.value
+
+        IF field.type == Proto.Type.bool
+          field.default = field.default.toUpper()
+          IF field.default != "FALSE" && field.default != "TRUE"
+            LOG.error("Expected 'false' or 'true'", t.startPos)
+          }
+        }
+      }
+      t = in.getToken()
+      IF t.type != PToken.Type.s_close
+        LOG.error("Missing ]", t.startPos)
+      ELSE
+        t = in.getToken()
+      }
+    }
+
+    in.pushToken(t)
+    checkSemiColon(in)
+
+    RETURN field
+  }
+
+  # parse "enum name { ... }"
+  FUNC parseEnum(PTokenInput in) I_ProtoItem
+    EnumItem item = NEW()
+
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id
+      LOG.error("Expected enum name", t.startPos)
+    ELSE
+      item.name = t.value
+      t = in.getToken()
+      IF t.type != PToken.Type.c_open
+        LOG.error("Missing {", t.startPos)
+      ELSE
+        WHILE TRUE
+          # parse "name = nr;"
+          t = in.getToken()
+          IF t.type == PToken.Type.c_close
+            BREAK
+          }
+          IF checkEof(t)
+            BREAK
+          }
+          IF t.type != PToken.Type.id
+            LOG.error("Expected name", t.startPos)
+          }
+          string name = t.value
+
+          t = in.getToken()
+          IF t.type != PToken.Type.equal
+            LOG.error("Expected equal sign", t.startPos)
+          }
+
+          int nr = parseNumber(in)
+          item.addValue(name, nr, t.startPos)
+
+          checkSemiColon(in)
+        }
+
+        item.checkErrors()
+      }
+    }
+    
+    RETURN item
+  }
+
+  # Consume a semicolon, give an error if there isn't one.
+  PROC checkSemiColon(PTokenInput in)
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.semicolon
+      LOG.error("Missing semicolon", t.startPos)
+      in.pushToken(t)
+    }
+  }
+
+  # When |t| is Type.eof give an error and return TRUE.
+  FUNC checkEof(PToken t) bool
+    IF t.type == PToken.Type.eof
+      LOG.error("Unexpected end of file", t.startPos)
+      RETURN TRUE
+    }
+    RETURN FALSE
+  }
+
+  # Consume token from |in| and return the integer value.
+  # Give an error if the token is not a number.
+  FUNC parseNumber(PTokenInput in) int
+    PToken t = in.getToken()
+    IF t.type != PToken.Type.id || !(t.value[0] >= '0' && t.value[0] <= '9')
+      LOG.error("Expected number", t.startPos)
+    }
+    RETURN t.value.toInt()
+  }
+}

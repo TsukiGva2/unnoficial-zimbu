@@ -1,0 +1,632 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tokenizer module: Reads input and produces one token at a time.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "TokenInput.zu"
+IMPORT "Token.zu"
+IMPORT "ZuiFile.zu"
+
+MODULE Tokenizer @items=public   # TODO: restrict visibility
+
+  FUNC isIdChar(int c) bool
+    RETURN (c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z')
+        || (c >= '0' && c <= '9')
+        || c == '_'
+  }
+
+  # We use Token.Type a lot, define an alias.
+  ALIAS Token.Type TType
+
+  dict<string, TType> %nonKeywords = [
+      "...": TType.threeDots,
+      "..=": TType.stringassign,
+      "<<=": TType.lshiftassign,
+      ">>=": TType.rshiftassign,
+      ">>>": TType.copy_start,
+      "<<<": TType.copy_end,  # actually recognized in copyCode()
+      "!=": TType.notequal,
+      "!~": TType.nomatch,
+      "--": TType.minmin,
+      "-=": TType.minassign,
+      "++": TType.plusplus,
+      "+=": TType.plusassign,
+      "*=": TType.multassign,
+      "/=": TType.divassign,
+      "%=": TType.percentassign,
+      "~=": TType.tildeassign,
+      "&=": TType.andassign,
+      "|=": TType.orassign,
+      "^=": TType.xorassign,
+      "==": TType.isis,
+      "=>": TType.gives,
+      "=~": TType.match,
+      "<<": TType.lshift,
+      ">>": TType.rshift,
+      "<=": TType.lte,
+      ">=": TType.gte,
+      "&&": TType.and,
+      "||": TType.or,
+      "..": TType.concat,
+      "?:": TType.colonnil,
+      "?.": TType.dotnil,
+      "!": TType.not,
+      "$": TType.dollar,
+      "%": TType.percent,
+      "&": TType.amp,
+      "(": TType.p_open,
+      ")": TType.p_close,
+      "*": TType.star,
+      "+": TType.plus,
+      ",": TType.comma,
+      "-": TType.minus,
+      ".": TType.dot,
+      "/": TType.slash,
+      ":": TType.colon,
+      ";": TType.semicolon,
+      "<": TType.lt,
+      "=": TType.assign,
+      ">": TType.gt,
+      "@": TType.at,
+      "O[": TType.sq_o_open,
+      "[": TType.sq_open,
+      "]": TType.sq_close,
+      "^": TType.bit_xor,
+      "{": TType.c_open,
+      "|": TType.bit_or,
+      "}": TType.c_close,
+      "~": TType.tilde,
+      "?": TType.question,
+  ]
+
+  dict<string, TType> %keywords = [
+      "ALIAS": TType.alias,
+      "ARG": TType.id,
+      "AS": TType.as,
+      "BITS": TType.bits,
+      "BOX": TType.id,
+      "BREAK": TType.break,
+      "BUILD_IF": TType.build_if,
+      "BUILD_ELSEIF": TType.build_elseif,
+      "BUILD_ELSE": TType.build_else,
+      "BYTES": Token.Type.id,  # TODO: remove
+      "BYTESTRING": Token.Type.id,
+      "C": TType.c,
+      "CASE": TType.case,
+      "CATCH": TType.catch,
+      "CHEADER": TType.id,
+      "CHECK": TType.id,
+      "CLASS": TType.class,
+      "CONTINUE": TType.continue,
+      "CSS": TType.css,  # for ZUT
+      "DEFAULT": TType.default,
+      "DEFER": TType.defer,
+      "DO": TType.do,
+      "E": TType.id,
+      "ELSE": TType.else,
+      "ELSEIF": TType.elseif,
+      "ENUM": TType.enum,
+      "EXIT": TType.exit,
+      "EXTENDS": TType.extends,
+      "FAIL": TType.fail,
+      "FALSE": TType.false,
+      "FINALLY": TType.finally,
+      "FOR": TType.for,
+      "FUNC": TType.func,
+      "GC": TType.id,
+      "GENERATE_ELSE": TType.generate_else,
+      "GENERATE_ELSEIF": TType.generate_elseif,
+      "GENERATE_ERROR": TType.generate_error,
+      "GENERATE_IF": TType.generate_if,
+      "GET": TType.get,
+      "HTTP": TType.id,
+      "HTML": TType.html,  # for ZUT
+      "I": TType.i,
+      "IF": TType.if,
+      "IFNIL": TType.ifnil,
+      "IMPLEMENTS": TType.implements,
+      "IMPORT": TType.import,
+      "IN": TType.in,
+      "INCLUDE": TType.include,
+      "INF": TType.inf,
+      "INT": Token.Type.id,
+      "INTERFACE": TType.interface,
+      "IO": TType.id,
+      "IS": TType.is,
+      "ISA": TType.isa,
+      "ISNOT": TType.isnot,
+      "ISNOTA": TType.isnota,
+      "LAMBDA": TType.lambda,
+      "LOG": TType.id,
+      "MODULE": TType.module,
+      "NAN": TType.nan,
+      "NEW": TType.new,
+      "NIL": TType.nil,
+      "NINF": TType.ninf,
+      "OK": TType.ok,
+      "OPTIONS": TType.options,
+      "PARENT": TType.parent,
+      "PIECE": TType.piece,
+      "PIPE": TType.id,
+      "PROC": TType.proc,
+      "PROCEED": TType.proceed,
+      "PROTO": TType.id,
+      "RETURN": TType.return,
+      "RPC": TType.id,
+      "SHARED": TType.shared,
+      "STATIC": TType.static,
+      "STEP": TType.step,
+      "STRING": Token.Type.id,
+      "SWITCH": TType.switch,
+      "SYS": TType.id,
+      "T": TType.id,
+      "THIS": TType.this,
+      "THREAD": TType.id,
+      "THROW": TType.throw,
+      "TIME": TType.id,
+      "TIO": TType.id,
+      "TO": TType.to,
+      "TRUE": TType.true,
+      "TRY": TType.try,
+      "TYPE": TType.type,
+      "UNTIL": TType.until,
+      "USE": TType.use,
+      "VAR": TType.var,
+      "VARBYTES": Token.Type.id,  # TODO: remove
+      "VARBYTESTRING": Token.Type.id,
+      "VARSTRING": Token.Type.id,
+      "WHILE": TType.while,
+      "Z": TType.id,
+      "ZUT": TType.id,
+      "ZWT": TType.id,
+  ]
+
+  # Writer used by get().  Kept over calls to avoid creating a new
+  # object every time.
+  IO.StringWriter %tokenWriter = NEW()
+
+  # Returns the next token from |in|.
+  # Skips comments.
+  # Returns Token.Type.eof when nothing more to read.
+  FUNC get(TokenInput in) Token
+    Token  res = NEW()
+
+    # Handle white space, line breaks and comments.
+    res.zuiPos = ZuiFile.createPosition(in.input.pos)
+    handleWhite(in, res)
+    IF res.type != TType.empty
+      RETURN res
+    }
+
+    ZuiFile.copyPosition(in.input.pos, res.zuiPos)
+    IF getNew(in, res) == OK
+      IF res.type == TType.id || res.type == TType.i
+        in.usedIdKeywords.set(res.value)
+      }
+      RETURN res
+    }
+
+    int c = in.get()
+    IF c == 'R' && in.peek() == '"'
+      # Special handling for R"raw string"
+      in.get()  # drop "
+      getRawString(in, %tokenWriter)
+      res.type = TType.stringLiteral
+    ELSE
+      SWITCH c
+        CASE '"'
+          # double quoted string
+          res.type = TType.stringLiteral
+          WHILE TRUE
+            c = in.get()
+            IF c == '"'
+              BREAK
+            }
+            IF c == '\n' || c == IO.eof
+              in.push(c)
+              in.error("missing double quote")
+              BREAK
+            }
+            IF c == '\\'
+              c = in.get()
+              IF c == '\n' || c == IO.eof
+                in.error("missing double quote")
+                BREAK
+              }
+              IF c == '('
+                # "string \(expr)" -> stringExprStart + (expr)
+                res.type = TType.stringExprStart
+                BREAK
+              }
+              controlChar(c, in, %tokenWriter)
+            ELSE
+              %tokenWriter.writeChar(c)
+            }
+          }
+
+        CASE '\''
+          # single quoted character or triple quoted string
+          c = in.get()
+          IF c == '\''
+            c = in.get()
+            IF c == '\'' || c == '"'
+              # old: '''very long string'''
+              # new: ''"very long string"''
+              res.type = TType.stringLiteral
+              WHILE TRUE
+                int nc = in.get()
+                c = nc
+                IF c == '\'' || c == '"'
+                  c = in.get()
+                  IF c == '\''
+                    c = in.get()
+                    IF c == '\''
+                      BREAK
+                    }
+                    in.push(c)
+                    c = '\''
+                  }
+                  in.push(c)
+                  c = nc
+                }
+                IF c == IO.eof
+                  in.error("missing end of ''\" string")
+                  BREAK
+                }
+                %tokenWriter.writeChar(c)
+              }
+              BREAK
+            ELSE
+              in.push(c)
+              c = '\''
+            }
+          }
+          res.type = TType.char
+          IF c == '\\'
+            controlChar(in.get(), in, %tokenWriter)
+          ELSE
+            IF c == '\''
+              in.push(c)
+              in.error("Missing character betwee single quotes")
+              c = 0
+            }
+            %tokenWriter.writeChar(c)
+          }
+          c = in.get()
+          IF c != '\''
+            in.error("missing single quote")
+          }
+
+        DEFAULT
+          # Should find an identifier, number or keyword.
+          IF !isIdChar(c)
+            in.error("Unrecognized character: '\(c.asString())'")
+          ELSE
+            bool number
+            IF c >= '0' && c <= '9'
+              number = TRUE  # allow ' and _ inside numbers as separator
+            }
+            WHILE isIdChar(c) || (number
+                       && (c == '\'' || c == '_' || c == '.' || c == '-'))
+              # Only .3 is part of a float, not .Size().
+              IF c == '.'
+                int nc = in.get()
+                in.push(nc)
+                IF !nc.isDigit()
+                  BREAK
+                }
+              }
+              %tokenWriter.writeChar(c)
+              c = in.get()
+            }
+            in.push(c)
+          }
+
+          string name = %tokenWriter.ToString()
+          res.value = name  # avoid calling ToString() twice
+
+          bool allUpper = TRUE
+          bool nonDigit = FALSE
+          bool doubleUnderscore = FALSE
+          FOR i IN 0 UNTIL name.Size()
+            c = name[i]
+            IF !(c >= '0' && c <= '9' && c != '\'' && c != '_')
+              nonDigit = TRUE
+            }
+            IF !((c >= 'A' && c <= 'Z')
+                                  || c == '_' || (c >= '0' && c <= '9'))
+              allUpper = FALSE
+            }
+            IF c == '_' && i + 1 < name.Size() && name[i + 1] == '_'
+              doubleUnderscore = TRUE
+            }
+          }
+          IF allUpper && nonDigit
+            res.error("Unrecognized keyword: '" .. name .. "'")
+          }
+          IF doubleUnderscore
+            res.error("'__' is illegal in identifier: '" .. name .. "'")
+          }
+          # Note that a number is also stored as an ID.
+          res.type = TType.id
+      }
+    }
+
+    IF res.value == NIL
+      res.value = %tokenWriter.ToString()
+    }
+    %tokenWriter.truncate()  # Reset tokenWriter for the next call.
+
+    RETURN res
+  }
+
+  # Handle the control character for |c| when it comes after a backslash.
+  # Write the unescaped value to |writer|.
+  PROC controlChar(int c, TokenInput in, IO.StringWriter writer)
+    SWITCH c
+      CASE '\\'
+        writer.writeChar('\\')
+      CASE '\''
+        writer.writeChar('\'')
+      CASE '"'
+        writer.writeChar('"')
+      CASE 'a'
+        writer.writeChar('\a')
+      CASE 'b'
+        writer.writeChar('\b')
+      CASE 'f'
+        writer.writeChar('\f')
+      CASE 'n'
+        writer.writeChar('\n')
+      CASE 'r'
+        writer.writeChar('\r')
+      CASE 't'
+        writer.writeChar('\t')
+      CASE 'v'
+        writer.writeChar('\v')
+      CASE '0'
+      CASE '1'
+      CASE '2'
+      CASE '3'
+        # \012 octal
+        int n = c - '0'
+        FOR i IN 1 TO 2
+          int oc = in.get()
+          IF oc < '0' || oc > '7'
+            in.push(oc)
+            in.error("Illegal octal character")
+            in.get()
+            BREAK
+          }
+          n = (n << 3) + (oc - '0')
+        }
+        writer.writeByte(n)
+      CASE 'x'
+        # \x12
+        writer.writeByte(getHex(2, in))
+      CASE 'u'
+        # \u1234
+        writer.writeChar(getHex(4, in))
+      CASE 'U'
+        # \U12345678
+        writer.writeChar(getHex(8, in))
+      DEFAULT
+        in.push(c)
+        in.error("Illegal character after \\")
+        in.get()
+    }
+  }
+
+  FUNC getHex(int charCount, TokenInput in) int
+    int res
+    FOR i IN 1 TO charCount
+      int c = in.get()
+      IF !c.isHexDigit()
+        in.push(c)
+        in.error("Illegal hex character")
+        in.get()
+        RETURN 0
+      }
+      res = (res << 4) + c.asString().hexToInt()
+    }
+    RETURN res
+  }
+
+  PROC getRawString(TokenInput in, IO.StringWriter writer)
+    int i
+    WHILE TRUE
+      int c = in.get()
+      IF c == '"'
+        c = in.get()
+        IF c != '"'
+          # Single double quote ends the string.
+          in.push(c)
+          BREAK
+        }
+        # Two double quotes results in one double quote
+      }
+      IF c == '\n' || c == IO.eof
+        in.push(c)
+        in.error("missing double quote")
+        BREAK
+      }
+      writer.write(c.asString())
+    }
+  }
+
+  # Writer used by handleWhite().  Kept over calls to avoid creating a new
+  # object every time.
+  IO.StringWriter %whiteWriter = NEW()
+
+  # Handle white space, line breaks and comments.
+  # Store the result in |res|.
+  # If there is no white space |res|.type is TType.empty.
+  PROC handleWhite(TokenInput in, Token res)
+    bool isSep
+    bool hasLineBreak
+
+    int c = in.get()
+    IF c == ' ' || c == '\n'
+      # A separator must start with a space or NL, not a comment.
+      isSep = TRUE
+    }
+    WHILE c == '#' || (c == '/' && in.peek() == '*') || c == ' ' || c == '\n'
+      %whiteWriter.writeChar(c)
+      IF c == '\n'
+        hasLineBreak = TRUE
+      ELSEIF c == '#'
+        # comment continues until the end of the line.
+        IF !res.hasComment
+          res.hasCommentFirst = !hasLineBreak
+        }
+        res.hasComment = TRUE
+        hasLineBreak = TRUE
+        DO
+          c = in.get()
+          %whiteWriter.writeChar(c)
+        UNTIL c == IO.eof || c == '\n'
+      ELSEIF c == '/'
+        # /* comment continues until the */
+        %whiteWriter.writeChar(in.get()) # consume the '*'
+        IF !res.hasComment
+          res.hasCommentFirst = !hasLineBreak
+        }
+        res.hasComment = TRUE
+        DO
+          c = in.get()
+          IF c == '\n'
+            in.push(c)
+            in.error("missing */")
+            c = IO.eof
+            BREAK
+          }
+          %whiteWriter.writeChar(c)
+        UNTIL c == IO.eof || (c == '*' && in.peek() == '/')
+        IF c != IO.eof
+          %whiteWriter.writeChar(in.get()) # consume the '/'
+        }
+      }
+      c = in.get()
+    }
+    in.push(c)
+
+    IF isSep
+      IF hasLineBreak
+        # Starts with space or NL and contains NL.
+        res.type = TType.line_sep
+      ELSE
+        # Starts with space or NL.
+        res.type = TType.sep
+      }
+    ELSEIF res.hasComment
+      # Starts with comment, no predecing space or NL.
+      res.type = TType.comment
+    ELSE
+      res.type = TType.empty
+      RETURN
+    }
+    res.value = %whiteWriter.ToString()
+    %whiteWriter.truncate()  # Reset whiteWriter for the next call.
+  }
+
+  # One node in the parse Trie.
+  CLASS Node
+    array<Node>  $children
+    string       $value
+    TType        $type
+    bool         $isKeyword
+  }
+
+  # The parse Trie.
+  Node %root
+
+  # Add one Node for token |name| of type |type|.
+  PROC addNode(string name, TType type, bool isKeyword)
+    Node n = %root
+    FOR c IN name
+      IF n.children == NIL
+        n.children = NEW(128)  # we only use ASCII characters
+      }
+      IF n.children[c] == NIL
+        n.children[c] = NEW()
+      }
+      n = n.children[c]
+    }
+    IF n.value != NIL
+      LOG.internal("Duplicate token: \(name)")
+    }
+    n.value = name
+    n.type = type
+    n.isKeyword = isKeyword
+  }
+
+  FUNC Init() status
+    # Build the parse Trie.
+    %root = NEW()
+    FOR key IN %nonKeywords.keys()
+      addNode(key, %nonKeywords[key], FALSE)
+    }
+    FOR key IN %keywords.keys()
+      addNode(key, %keywords[key], TRUE)
+    }
+
+    RETURN OK
+  }
+
+  FUNC getNew(TokenInput in, Token res) status
+    int c1 = in.get()
+    IF c1 == IO.eof
+      # Already at end of file.
+      res.type = TType.eof
+      RETURN OK
+    }
+    IF c1 < 128
+      Node n = %root.children[c1]
+      IF n != NIL
+        IF n.children != NIL
+          IF deeper(in, n, res) == OK
+            RETURN OK
+          }
+        }
+        IF n.value != NIL && (!n.isKeyword || !isIdChar(in.peek()))
+          # Single character match.
+          res.type = n.type
+          res.value = n.value
+          RETURN OK
+        }
+      }
+    }
+
+    in.push(c1)
+    RETURN FAIL
+  }
+
+  FUNC deeper(TokenInput in, Node n, Token res) status
+    int c = in.get()
+    IF c > 0 && c < 128
+      Node n2 = n.children[c]
+      IF n2 != NIL
+        IF n2.children != NIL
+          IF deeper(in, n2, res) == OK
+            RETURN OK
+          }
+        }
+        IF n2.value != NIL && (!n2.isKeyword || !isIdChar(in.peek()))
+          # Match.
+          res.type = n2.type
+          res.value = n2.value
+          RETURN OK
+        }
+      }
+    }
+    in.push(c)
+    RETURN FAIL
+  }
+
+}

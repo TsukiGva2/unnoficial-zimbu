@@ -1,0 +1,6 @@
+MODULE Testing
+  # HTML data / Css
+  TEMPLATE inDataCss(ZUT.Css text) ZUT.Html @public
+    <title>[=text]</title>
+  }
+}

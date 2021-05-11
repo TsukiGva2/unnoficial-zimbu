@@ -1,0 +1,294 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT.Widget class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZWT.html'>up:&nbsp;ZWT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZWT.Widget
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A UIObject that handles events and can be added to panels.
+</p>
+<p class='ptext'> Needs to be subclassed to be useful.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getParent'><b>$getParent</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='UIObject.html'>UIObject</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the parent of this Widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns "Widget".  Should be replaced by subclasses.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getText'><b>$getText</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the text of the Widget.  NIL if there is none.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setHoverText'><b>$setHoverText</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the text to be displayed on hover-over.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getHoverText'><b>$getHoverText</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the text to be displayed on hover-over.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$addToParent'><b>$addToParent</b></a>(<small>parent</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add this widget to <b>parent</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$removeFromParent'><b>$removeFromParent</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove this Widget from its parent.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setHandler'><b>$setHandler</b></a>(<small>eventType, handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the only method to be invoked for <b>eventType</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$addHandler'><b>$addHandler</b></a>(<small>eventType, handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>handler</b> as a method to be invoked for <b>eventType</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setClickHandler'><b>$setClickHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked for a click event on this
+ widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setMouseOverHandler'><b>$setMouseOverHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked when the mouse enters the
+ area of this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setMouseOutHandler'><b>$setMouseOutHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked when the mouse leaves the
+ area of this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyHandler'><b>$setKeyHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is typed in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyDownHandler'><b>$setKeyDownHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is pressed in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyUpHandler'><b>$setKeyUpHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is released in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setActive'><b>$setActive</b></a>(<small>active</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set whether the Widget handles click events.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$isActive'><b>$isActive</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return whether the Widget was set to be active.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setInactiveStyle'><b>$setInactiveStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the style to be used when the Widget is inactive.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='ZWT.UIObject.html'>ZWT.UIObject</A>:</td></tr>
+
+<tr><td align='right'><small><span class='type'><A class='typehref' href='ZWT.Element.html'>ZWT.Element</A></span></small>&nbsp;</td><td class='nowrap'><A href='ZWT.UIObject.html#$elem'><b>$elem</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The HTML element for this Item.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyle'><b>$setStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the main Style for this UIObject to <b>style</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyleList'><b>$setStyleList</b></a>(<small>styles</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the list of Styles for this UIObject to <b>styles</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$addStyle'><b>$addStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>style</b> to this UIObject, keeping previously set ones.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$removeStyle'><b>$removeStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>style</b> from this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyle'><b>$getStyle</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the main Style for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyleList'><b>$getStyleList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='ZWT.Style.html'>ZWT.Style</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the list of Styles for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getWidth'><b>$getWidth</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the width of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getHeight'><b>$getHeight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the height of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setHidden'><b>$setHidden</b></a>(<small>hidden</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item to be hidden or displayed.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table>Known subclasses:<br><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<div><A href='ZWT.Button.html'>ZWT.Button</A></div><div><A href='ZWT.Checkbox.html'>ZWT.Checkbox</A></div><div><A href='ZWT.Code.html'>ZWT.Code</A></div><div><A href='ZWT.Dropdown.html'>ZWT.Dropdown</A></div><div><A href='ZWT.Input.html'>ZWT.Input</A></div><div><A href='ZWT.Label.html'>ZWT.Label</A></div><div><A href='ZWT.Panel.html'>ZWT.Panel</A></div><div><A href='ZWT.TextBlock.html'>ZWT.TextBlock</A></div><div><A href='ZWT.Textarea.html'>ZWT.Textarea</A></div></td></tr></table>
+&nbsp;<br></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @default</span><span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns "Widget".  Should be replaced by subclasses.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addHandler'><b>$addHandler</b></A>(<span class='type'><A class='typehref' href='ZWT.EventType.html'>ZWT.EventType</A></span> eventType, <span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add <b>handler</b> as a method to be invoked for <b>eventType</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addToParent'><b>$addToParent</b></A>(<span class='type'><A class='typehref' href='UIObject.html'>UIObject</A></span> parent)<span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add this widget to <b>parent</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getHoverText'><b>$getHoverText</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the text to be displayed on hover-over.
+</p>
+<p class='ptext'> Returns NIL
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getParent'><b>$getParent</b></A>() <span class='type'><A class='typehref' href='UIObject.html'>UIObject</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the parent of this Widget.
+</p>
+<p class='ptext'> Returns NIL if there is no parent.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getText'><b>$getText</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the text of the Widget.  NIL if there is none.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isActive'><b>$isActive</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return whether the Widget was set to be active.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$removeFromParent'><b>$removeFromParent</b></A>()<span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove this Widget from its parent.
+</p>
+<p class='ptext'> If there is no parent nothing happens.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setActive'><b>$setActive</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> active)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set whether the Widget handles click events.
+</p>
+<p class='ptext'> When not active the button is given a style set by $setInactiveStyle()
+ or a grey text by default.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setClickHandler'><b>$setClickHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> as the method to be invoked for a click event on this
+ widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setHandler'><b>$setHandler</b></A>(<span class='type'><A class='typehref' href='ZWT.EventType.html'>ZWT.EventType</A></span> eventType, <span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> as the only method to be invoked for <b>eventType</b>.
+</p>
+<p class='ptext'> When <b>handler</b> is NIL all handlers are removed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setHoverText'><b>$setHoverText</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text) <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the text to be displayed on hover-over.
+</p>
+<p class='ptext'> The text is plain text, not HTML.  Use NIL or an empty string to clear.
+
+ Returns the Widget for chaining.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setInactiveStyle'><b>$setInactiveStyle</b></A>(<span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span> style)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the style to be used when the Widget is inactive.
+</p>
+<p class='ptext'> When not set a default grey color is used for the foreground.
+<p class='ptext'> Use a NIL <b>style</b> to reset to the default.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setKeyDownHandler'><b>$setKeyDownHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> to be invoked when a key is pressed in this widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setKeyHandler'><b>$setKeyHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> to be invoked when a key is typed in this widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+<p class='ptext'> There will also be keyDown and keyUp events. Usually (depending on the
+ browser) the key event is delivered just before the keyUp event.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setKeyUpHandler'><b>$setKeyUpHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> to be invoked when a key is released in this widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setMouseOutHandler'><b>$setMouseOutHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> as the method to be invoked when the mouse leaves the
+ area of this widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setMouseOverHandler'><b>$setMouseOverHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.Event.html'>ZWT.Event</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set <b>handler</b> as the method to be invoked when the mouse enters the
+ area of this widget.
+</p>
+<p class='ptext'> Any previously set handlers are removed.
+ When <b>handler</b> is NIL there will be no handlers.
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,51 @@
+# GENERATED FILE - DO NOT EDIT
+# generated from ZutDemoPage.zut
+
+#
+# ZUT (Zimbu Templates) demo page
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../MyController.zu" @javascript
+
+
+MODULE ZutDemoPage @public
+
+  PROC addCss(ZUT.Context context)
+    IF context.hasCss("ZutDemoPage.zut")
+      RETURN
+    }
+    IO.StringWriter w = NEW()
+    w.write(''"body {
+font-family: arial,sans-serif;
+}
+"'')
+    context.addCss("ZutDemoPage.zut", w.ToString())
+  }
+
+
+  FUNC demoBody(ZUT.Context context, string text) string @public
+    addCss(context)
+    IO.StringWriter w = NEW()
+    string helloId = ZUT.uid()
+    ZUT.registerAction("MyController", "clicked")
+    w.write(''"<div zcontroller="MyController"
+zaction="click: clicked"
+data-id=""'')
+    w.write(helloId)
+    w.write(''"">
+"'')
+    w.write(text)
+    w.write(''"</div>
+<div id=""'')
+    w.write(helloId)
+    w.write(''""> "'')
+    w.write(''"</div>
+"'')
+    RETURN w.ToString()
+  }
+
+}

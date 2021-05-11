@@ -1,0 +1,175 @@
+# Test PIECE and INCLUDE
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Util.zu"
+
+MODULE PieceTest @public
+
+  PROC test() @public
+    test1()
+    test2()
+    testMax()
+  }
+
+  PIECE ByItem<Tx>
+    int $value @local
+
+    FUNC $removeItem(Tx item) Tx
+      int idx = $find(item)
+      IF idx < 0
+        THROW E.ItemNotFound.NEW("item not found")
+      }
+      $setValue()
+      RETURN $remove(idx)
+    }
+
+    PROC $setValue() @local
+      $value = 8
+    }
+  }
+
+  CLASS Foo<Titem>
+    string $value  # does not conflict with $value from ByItem
+    list<Titem> $list = NEW()
+
+    INCLUDE
+      ByItem<Titem> $byItem
+    }
+
+    FUNC $add(Titem item) Foo<Titem>
+      $list.add(item)
+      RETURN THIS
+    }
+
+    FUNC $remove(int idx) Titem
+      RETURN $list.remove(idx)
+    }
+
+    FUNC $find(Titem item) int
+      RETURN $list.find(item)
+    }
+
+    FUNC $ToString() string
+      RETURN $list.ToString()
+    }
+
+    PROC $setValue()
+      $value = "something"
+    }
+  }
+
+  PROC test1()
+    Foo<int> foo = NEW()
+    foo.add(1).add(2).add(3)
+    IO.print("2 is at " .. foo.find(2))
+    foo.removeItem(1)
+    IO.print("2 is at " .. foo.find(2))
+
+    Foo<string> fs = NEW()
+    fs.value = "ignore"
+    fs.add("one").add("two").add("three").add("four")
+    fs.removeItem("three")
+    IO.print("remains: " .. fs.ToString())
+    TRY
+      fs.removeItem("blah")
+    CATCH E.ItemNotFound e
+      IO.print("Caught: " .. Util.stripLine(e.ToString()))
+    }
+    fs.removeItem("two")
+    IO.print("remains: " .. fs.ToString())
+  }
+
+  PIECE SetItem<Ty> EXTENDS ByItem<Ty>
+    FUNC $setItem(Ty item) THIS
+      int idx = $find(item)
+      IF idx < 0
+        $add(item)
+      }
+      RETURN THIS
+    }
+  }
+
+  CLASS Bar<Titem>
+    list<Titem> $list = NEW()
+
+    INCLUDE
+      SetItem<Titem> $addItem
+    }
+
+    FUNC $add(Titem item) Bar<Titem>
+      $list.add(item)
+      RETURN THIS
+    }
+
+    FUNC $remove(int idx) Titem
+      RETURN $list.remove(idx)
+    }
+
+    FUNC $find(Titem item) int
+      RETURN $list.find(item)
+    }
+
+    FUNC $ToString() string
+      RETURN $list.ToString()
+    }
+  }
+
+  PROC test2()
+#    Bar<int> foo = NEW()
+#    foo.add(1).add(2).add(3)
+#    IO.print("2 is at " .. foo.find(2))
+#    foo.removeItem(1)
+#    IO.print("2 is at " .. foo.find(2))
+#
+#    Bar<string> fs = NEW()
+#    fs.add("one").add("two").add("three").add("four")
+#    fs.setItem("three")
+#    fs.setItem("four")
+#    IO.print("now: " .. fs.ToString())
+  }
+
+  PIECE Max
+    bool $done @local
+    int  $maxVal @local
+            = T.int.min
+
+    FUNC $max() int
+      IF !$done
+        $done = TRUE
+        FOR n IN $Iterator()
+          IF n > $maxVal
+            $maxVal = n
+          }
+        }
+      }
+      RETURN $maxVal
+    }
+  }
+
+  CLASS Maxed
+    list<int> $l = NEW()
+    int $done
+
+    FUNC $Iterator() I.Iterator<int>
+      IO.print("Getting the iterator")
+      ++$done
+      RETURN $l.Iterator()
+    }
+
+    INCLUDE
+      Max $maxPiece
+    }
+  }
+
+  PROC testMax()
+    Maxed m = NEW()
+    m.l.add(1).add(10).add(-4)
+    IO.print("Max: " .. m.max())
+    IO.print("Max again: " .. m.max())
+  }
+
+}

@@ -1,0 +1,60 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Textarea
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE TextareaModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Textarea is a widget that contains editable text.
+  CLASS Textarea EXTENDS ZWT.Widget @public
+
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('textarea');
+<<<
+    }
+
+    #= Create a new Textarea with |text| as the text.
+    NEW(string text) @public
+      $setText(text)
+    }
+
+    #= Replace the text of the Textarea with |text|.
+    PROC $setText(string text) @public
+>>>
+      %$elem%.value = %text%;
+<<<
+    }
+
+    #= Return the text of the Textarea.
+    FUNC $getText() string @replace @public
+      string s
+>>>
+      %s% = %$elem%.value;
+<<<
+      RETURN s
+    }
+
+    #= Enable or disable spell checking.
+    #- Does not work with all browsers.
+    FUNC $setSpellCheck(bool on) THIS @public
+>>>
+      %$elem%.spellcheck = %on%;
+<<<
+      RETURN THIS
+    }
+
+    #= Return "Textarea(text)", where "text" is the Textarea text.
+    FUNC $ToString() string @replace @public
+      RETURN "Textarea(" .. $getText() .. ")"
+    }
+
+  }
+ }
+}

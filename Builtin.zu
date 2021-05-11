@@ -1,0 +1,414 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# module to handle builtin modules
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassRefType.zu"
+IMPORT "ClassType.zu"
+IMPORT "Config.zu"
+IMPORT "Declaration.zu"
+IMPORT "EnumType.zu"
+IMPORT "FileScope.zu"
+IMPORT "Generate.zu"
+IMPORT "ModuleScope.zu"
+IMPORT "ModuleType.zu"
+IMPORT "Output.zu"
+IMPORT "Parse.zu"
+IMPORT "Resolve.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "TopScope.zu"
+IMPORT "Type.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiStatementExt.zu"
+
+# The automatically loaded libraries.
+IMPORT "lib/ARGLoader.zu"
+IMPORT "lib/ARRAYLoader.zu"
+IMPORT "lib/BOXLoader.zu"
+IMPORT "lib/BYTESTRINGLoader.zu"
+IMPORT "lib/CHECKLoader.zu"
+IMPORT "lib/DICTLoader.zu"
+IMPORT "lib/ELoader.zu"
+IMPORT "lib/FLOATLoader.zu"
+IMPORT "lib/GCLoader.zu"
+IMPORT "lib/HTTPLoader.zu"
+IMPORT "lib/ILoader.zu"
+IMPORT "lib/INTLoader.zu"
+IMPORT "lib/INT8Loader.zu"
+IMPORT "lib/INT16Loader.zu"
+IMPORT "lib/INT32Loader.zu"
+IMPORT "lib/NATLoader.zu"
+IMPORT "lib/BYTELoader.zu"
+IMPORT "lib/DYNLoader.zu"
+IMPORT "lib/NAT16Loader.zu"
+IMPORT "lib/NAT32Loader.zu"
+IMPORT "lib/IOLoader.zu"
+IMPORT "lib/LISTLoader.zu"
+IMPORT "lib/LOGLoader.zu"
+IMPORT "lib/MULTIDICTLoader.zu"
+IMPORT "lib/NATLoader.zu"
+IMPORT "lib/PIPELoader.zu"
+IMPORT "lib/RPCLoader.zu"
+IMPORT "lib/SETLoader.zu"
+IMPORT "lib/SORTEDLISTLoader.zu"
+IMPORT "lib/STRINGLoader.zu"
+IMPORT "lib/SYSLoader.zu"
+IMPORT "lib/THREADLoader.zu"
+IMPORT "lib/TIMELoader.zu"
+IMPORT "lib/TIOLoader.zu"
+IMPORT "lib/TYPELoader.zu"
+IMPORT "lib/VARBYTESTRINGLoader.zu"
+IMPORT "lib/VARSTRINGLoader.zu"
+IMPORT "lib/ZLoader.zu"
+IMPORT "lib/ZUTLoader.zu"
+IMPORT "lib/ZWTLoader.zu"
+
+IMPORT "genC/WriteC.zu"
+IMPORT "genJS/WriteJS.zu"
+
+# Builtin contains info about a builtin module.
+# When used |zimbuFile| will be set.
+CLASS Builtin @items=public                   # TODO: restrict visibility
+  string    $moduleName    # module name, such as HTTPmodule
+  string    $fileName      # name of the file to parse below the lib dir.
+  UsedFile  $usedFile      # used to import the builtin module, NIL when not
+                           # parsed yet
+
+  proc<Builtin, SContext> $setup
+                           # to be called when the module has been imported
+
+  proc<Resolve, Builtin> $markUsed
+
+  # Add all members of the zimbuFile to |moduleScope|
+  PROC $addAllMembers(ModuleScope moduleScope)
+    Declaration decl = $getTopDecl()
+    IF decl != NIL && decl.type.<ModuleType>.scope.declDict != NIL
+      # Go over all members in the module and add them to moduleScope.
+      FOR l IN decl.type.<ModuleType>.scope.declDict.values()
+        FOR d IN l
+          moduleScope.addMemberPlain(d)
+        }
+      }
+    }
+  }
+
+  # Get the top item, the MODULE, in this builtin.
+  # Return NIL when not found or there is some error.
+  FUNC $getTopDecl() Declaration
+    FileScope scope = $usedFile.zimbuFile.fileScope
+    IF scope != NIL && scope.declDict != NIL
+      # Give an error if a module does not have exactly one toplevel item.
+      # Not when there is no item and an error was already produced, we most
+      # likely skipped processing the file because of the error.
+      IF scope.declDict.Size() > 1
+                      || (scope.declDict.Size() == 0 && LOG.errorCount == 0)
+        LOG.internal("found \(scope.declDict.Size()) toplevel declarations "
+                                                        .. " in \($fileName)")
+      ELSE
+        # Get the first item, it's the declaration of the module.
+        VAR vl = scope.declDict.values()[0]
+        IF vl != NIL && vl.Size() > 0
+          RETURN  vl[0]
+        }
+      }
+    }
+    RETURN NIL
+  }
+
+  SHARED
+
+    # Builtin modules can are available for loading when used.
+    dict<string, Builtin> %availableModules
+
+    # Called at the start: prepare to handle builtin modules.
+    # This is the ONLY place to add a new builtin module.
+    PROC prepare()
+      %availableModules = NEW()
+      %availableModules["ARG"] = ARGLoader.prepare()
+      %availableModules["ARRAY"] = ARRAYLoader.prepare()
+      %availableModules["BOX"] = BOXLoader.prepare()
+      %availableModules["BYTESTRING"] = BYTESTRINGLoader.prepare()
+      %availableModules["CHECK"] = CHECKLoader.prepare()
+      %availableModules["DICT"] = DICTLoader.prepare()
+      %availableModules["E"] = ELoader.prepare()
+      %availableModules["FLOAT"] = FLOATLoader.prepare()
+      %availableModules["GC"] = GCLoader.prepare()
+      %availableModules["HTTP"] = HTTPLoader.prepare()
+      %availableModules["I"] = ILoader.prepare()
+      %availableModules["INT"] = INTLoader.prepare()
+      %availableModules["INT8"] = INT8Loader.prepare()
+      %availableModules["INT16"] = INT16Loader.prepare()
+      %availableModules["INT32"] = INT32Loader.prepare()
+      %availableModules["NAT"] = NATLoader.prepare()
+      %availableModules["BYTE"] = BYTELoader.prepare()
+      %availableModules["DYN"] = DYNLoader.prepare()
+      %availableModules["NAT16"] = NAT16Loader.prepare()
+      %availableModules["NAT32"] = NAT32Loader.prepare()
+      %availableModules["IO"] = IOLoader.prepare()
+      %availableModules["LIST"] = LISTLoader.prepare()
+      %availableModules["LOG"] = LOGLoader.prepare()
+      %availableModules["MULTIDICT"] = MULTIDICTLoader.prepare()
+      %availableModules["NAT"] = NATLoader.prepare()
+      %availableModules["PIPE"] = PIPELoader.prepare()
+      %availableModules["RPC"] = RPCLoader.prepare()
+      %availableModules["SET"] = SETLoader.prepare()
+      %availableModules["SORTEDLIST"] = SORTEDLISTLoader.prepare()
+      %availableModules["STRING"] = STRINGLoader.prepare()
+      %availableModules["SYS"] = SYSLoader.prepare()
+      %availableModules["THREAD"] = THREADLoader.prepare()
+      %availableModules["TIME"] = TIMELoader.prepare()
+      %availableModules["TIO"] = TIOLoader.prepare()
+      %availableModules["TYPE"] = TYPELoader.prepare()
+      %availableModules["VARBYTESTRING"] = VARBYTESTRINGLoader.prepare()
+      %availableModules["VARSTRING"] = VARSTRINGLoader.prepare()
+      %availableModules["Z"] = ZLoader.prepare()
+      %availableModules["ZUT"] = ZUTLoader.prepare()
+      %availableModules["ZWT"] = ZWTLoader.prepare()
+    }
+
+    # Return TRUE if |name| is a builtin module.
+    FUNC isBuiltin(string name) bool
+      RETURN %availableModules.has(name)
+    }
+
+    # We always use the Z, E and other modules, load them right away to
+    # reduce the number of passes needed.
+    PROC initBuiltins(TopScope topScope)
+      VAR usedBuiltins = topScope.usedBuiltins
+      # TODO: remove BYTES
+      FOR id IN ["Z", "E", "INT", "BYTESTRING", "STRING"]
+        usedBuiltins[id] = %availableModules.get(id)
+      }
+    }
+
+    # After parsing a file we need to check if it is using any built-in
+    # modules.  As soon as we find a new one we add it to the top scope.  It
+    # will result in the module to be parsed ASAP and imported when calling
+    # resolve() next time.
+    PROC checkBuiltin(UsedFile usedFile, TopScope topScope)
+      VAR usedBuiltins = topScope.usedBuiltins
+      VAR usedIdKeywords = usedFile.zimbuFile.usedIdKeywords
+      IF usedIdKeywords != NIL
+        FOR id IN usedIdKeywords.keys()
+          IF !usedBuiltins.has(id)
+            usedBuiltins[id] = %availableModules.get(id, NIL)
+          }
+        }
+      }
+    }
+
+    # Called when a symbol in a specific module is used.
+    PROC useModule(string name, SContext ctx)
+      VAR usedBuiltins = ctx.topScope.usedBuiltins
+      IF !usedBuiltins.has(name)
+        usedBuiltins[name] = %availableModules.get(name, NIL)
+      }
+    }
+
+    # Process builtin modules.  Only invoked for the main file scope and the
+    # toplevel ZWT file.
+    # Return the number of undefined symbols.
+    FUNC generateBuiltins(UsedFile usedFile, SContext ctx) int
+      ZimbuFile zf = usedFile.zimbuFile
+      RETURN generateBuiltins(zf.usedAsZimbu, zf.usedAsZimbu, ctx)
+    }
+
+    FUNC generateBuiltins(bool usedAsZimbu, bool usedAsZwt, SContext ctx) int
+      # First do the parsing.  The FOR gets a snapshot list with values(),
+      # parse() may discover more builtin modules used, redo when there was a
+      # call to parse().
+      bool didParse
+      DO
+        didParse = FALSE
+        FOR builtin IN ctx.topScope.usedBuiltins.values()
+          IF builtin != NIL && builtin.usedFile == NIL
+            # Newly added, need to parse the module.
+            didParse = TRUE
+            string name = Config.libPath .. "/" .. builtin.fileName
+            ZimbuFile zimbuFile = NEW(name, FALSE)
+            builtin.usedFile = NEW(zimbuFile, FALSE)
+            IF builtin.usedFile.parse(ctx.topScope, "  ") == FAIL
+              LOG.error("Cannot open file for reading: \(name)")
+              builtin.usedFile = NIL
+            ELSEIF zimbuFile.fileScope.getFirstStatement() != NIL
+              # Set to some number so that processImport() will do its work.
+              ZuiStatementExt.get(zimbuFile.fileScope.getFirstStatement())
+                                                               .undefined = 99
+
+              # Parse imported files now, so that builtin modules imported
+              # there will also be parsed right away.
+              builtin.usedFile.parseImports("", ctx)
+            }
+            zimbuFile.dirName = Config.libPath
+          }
+        }
+      UNTIL !didParse
+
+      # Do one pass over each used builtin module.
+      int undef
+      FOR builtin IN ctx.topScope.usedBuiltins
+        IF builtin != NIL
+          ZimbuFile zimbuFile
+          IF builtin.usedFile != NIL
+            zimbuFile = builtin.usedFile.zimbuFile
+
+            # When the builtin is used in a file for which C code is produced,
+            # produce C code for the builtin as well.
+            # Same for JS code.
+            IF usedAsZimbu
+              zimbuFile.usedAsZimbu = TRUE
+            }
+            IF usedAsZwt
+              zimbuFile.usedAsZwt = TRUE
+            }
+
+            # Resolve symbols and/or generate code and includes.
+            # Use the topScope of the UsedFile passed in so that used
+            # symbols are set there instead
+            FileScope fileScope = builtin.usedFile.zimbuFile.fileScope
+            Scope.Stype saveScopeType = fileScope.scopeType
+            fileScope.scopeType = Scope.Stype.libModule
+            undef += Generate.processImport(builtin.usedFile, ctx)
+            fileScope.scopeType = saveScopeType
+
+            IF builtin.setup != NIL
+              builtin.setup(builtin, ctx)
+            }
+          }
+        }
+      }
+
+      RETURN undef
+    }
+
+    # Mark symbols as used in the builtin module.
+    PROC markUsed(Resolve gen, TopScope topScope)
+      FOR builtin IN topScope.usedBuiltins
+        IF builtin != NIL && builtin.markUsed != NIL
+          builtin.markUsed(gen, builtin)
+        }
+      }
+    }
+
+    #
+    # Predefined symbols.
+    #
+    dict<string, Declaration>  %predefinedDecl
+
+    FUNC findPredefinedDecl(string name) Declaration
+      IF %predefinedDecl == NIL
+        loadPredefinedSymbols()
+      }
+      RETURN %predefinedDecl.get(name, NIL)
+    }
+
+    PROC loadPredefinedSymbols()
+      %predefinedDecl = NEW()
+
+      # Define library modules and classes.
+      #%predefinedDecl.add("Z", LibZ.getSymbol())
+    }
+
+    # Called for builtin modules loaded only when used.
+    FUNC addLibModule(string name, Builtin builtin) Declaration
+      IF %predefinedDecl == NIL
+        loadPredefinedSymbols()
+      }
+
+      # Add this module to the list of predefined symbols.
+      ModuleType moduleType = NEW(Type.Enum.builtinModule, name)
+      moduleType.pName = "M" .. name
+      moduleType.type = moduleType
+
+      %predefinedDecl.add(name, moduleType)
+
+      # Create a ModuleScope and have the symbol use the same declDict.
+      ModuleScope scope = NEW(NIL,
+                              builtin.usedFile.zimbuFile.fileScope.statements)
+      moduleType.scope = scope
+      moduleType.scopeBase = builtin.usedFile.zimbuFile.fileScope
+
+      # Take over the members of the module
+      builtin.addAllMembers(scope)
+
+      RETURN moduleType
+    }
+
+    # Return the Type for E.Exception.
+    # When not found returns an unknown type.
+    FUNC getExceptionDotIType() Type
+      STATIC ClassRefType %exceptionDotIType
+
+      IF %exceptionDotIType != NIL
+        RETURN %exceptionDotIType
+      }
+
+      Declaration decl = findPredefinedDecl("E")
+      IF decl == NIL
+        RETURN Type.anUnknown
+      }
+      Declaration edecl = decl.type.findMember("Exception", NIL)
+      IF edecl == NIL
+        RETURN Type.anUnknown
+      }
+
+      %exceptionDotIType = NEW(Type.Enum.iobject, edecl.type.<ClassType>,
+                                                                "Exception")
+      RETURN %exceptionDotIType
+    }
+
+    # Return the Type for Z.FinishReason.
+    # When not found returns an unknown type.
+    FUNC getFinishReasonType() Type
+      STATIC EnumType finishReasonType
+
+      IF finishReasonType == NIL
+        Declaration decl = findPredefinedDecl("Z")
+        IF decl == NIL
+          RETURN Type.anUnknown
+        }
+        Declaration frdecl = decl.type.findMember("FinishReason", NIL)
+        IF frdecl == NIL
+          RETURN Type.anUnknown
+        }
+
+        finishReasonType = frdecl.type
+      }
+
+      RETURN finishReasonType
+    }
+
+    PROC usesDeclarations(list<string> decls, Zui.Statement stmt, SContext ctx)
+      # The items that may appear in >>> uses().
+      STATIC dict<string, Declaration.C> %usesDeclDict
+
+      IF %usesDeclDict == NIL
+        %usesDeclDict = NEW()
+        FOR dl IN [WriteC.getUsesDeclarations(), WriteJS.getUsesDeclarations()]
+          FOR d IN dl
+            %usesDeclDict.add(d.name, d)
+          }
+        }
+      }
+
+      FOR d IN decls
+        IF %usesDeclDict.has(d)
+          ctx.addUsedItem(%usesDeclDict.get(d))
+        ELSE
+          ctx.error("Unknown uses item: " .. d, stmt)
+        }
+      }
+    }
+
+  }
+
+}

@@ -1,0 +1,280 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Expr Eval module: Compile time evaluation of an expression.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Config.zu"
+IMPORT "Generate.zu"
+IMPORT "ManageMemory.zu"
+IMPORT "SContext.zu"
+IMPORT "ZuiExpressionExt.zu"
+
+MODULE ExprEval @items=public                   # TODO: restrict visibility
+
+  # Evaluate to a boolean result: ||, &&, ==, !=, etc.
+  # When the returned value depends on the context |isContextFree| is reset to
+  # FALSE.
+  FUNC evalBool(Zui.Expression expr, SContext ctx,
+                                     bool giveError, bool &isContextFree) bool
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eEQUAL
+      CASE Zui.ExprType.eNOTEQUAL
+        string left = evalString(expr.getLeft(), ctx, giveError, isContextFree)
+        string right = evalString(expr.getRight(), ctx,
+                                                     giveError, isContextFree)
+        RETURN (left == right) == (expr.getType() == Zui.ExprType.eEQUAL)
+
+      CASE Zui.ExprType.eOR
+      CASE Zui.ExprType.eAND
+        bool isOr = expr.getType() == Zui.ExprType.eOR
+        bool left = evalBool(expr.getLeft(), ctx, giveError, isContextFree)
+        IF left == isOr
+          # false for (false && any), true for (true || any)
+          RETURN isOr
+        }
+        # true for (true && true) and (false || true)
+        RETURN evalBool(expr.getRight(), ctx, giveError, isContextFree)
+
+      CASE Zui.ExprType.eNOT
+        RETURN !evalBool(expr.getRight(), ctx, giveError, isContextFree)
+
+      CASE Zui.ExprType.eTRUE
+        RETURN TRUE
+
+      CASE Zui.ExprType.eFALSE
+        RETURN FALSE
+
+      CASE Zui.ExprType.eCALL
+        isContextFree = FALSE
+
+        # Z.have(string)
+        Zui.MethodCall methodCall = expr.getMethodCall()
+        Zui.Expression name = methodCall.getName()
+        IF name.getType() == Zui.ExprType.eMEMBER
+          Zui.Expression left = name.getLeft()
+          Zui.Expression right = name.getRight()
+          IF left.getType() == Zui.ExprType.eID
+              && left.getId().getName() == "Z"
+              && right.getType() == Zui.ExprType.eID
+              && right.getId().getName() == "have"
+            IF methodCall.sizeArgument() != 1
+              IF giveError
+                ctx.error("Z.have() requires one argument", expr)
+              }
+              RETURN FALSE
+            }
+
+            isContextFree = TRUE # Z.have("portable") is context free.
+            ZuiExpressionExt.get(left).undefined = 0
+            ZuiExpressionExt.get(right).undefined = 0
+            string arg = evalString(methodCall.getArgument(0), ctx,
+                                                     giveError, isContextFree)
+            IF arg == "backtrace"
+              RETURN !Config.noBacktrace
+            ELSEIF arg == "resolve"
+              RETURN Config.haveResolve
+            ELSEIF arg == "fork"
+              RETURN Config.haveFork
+            ELSEIF arg == "mswindows"
+              RETURN Config.isMingw
+            ELSEIF arg == "sigaction"
+              RETURN Config.haveSigaction
+            ELSEIF arg == "portable"
+              RETURN Config.portable
+            ELSEIF arg == "keepunused"
+              RETURN Generate.keepUnusedFlag.get()
+            ELSEIF arg == "managed"
+              # Note: the value may change when objects get marked as used
+              RETURN ManageMemory.manageMemory(ctx.gen)
+            }
+            RETURN FALSE
+          }
+        } 
+        isContextFree = FALSE
+        IF giveError
+          ctx.error("This method not supported here", name)
+        }
+    }
+    isContextFree = FALSE
+    IF giveError
+      ctx.error("Not supported here: "
+                        .. expr.getType().ToString().slice(1).toLower(), expr)
+    }
+    RETURN TRUE
+  }
+
+  # Evaluate to a status result: FAIL and OK
+  # When the returned value depends on the context |isContextFree| is reset to
+  # FALSE.
+  FUNC evalStatus(Zui.Expression expr, SContext ctx,
+                                   bool giveError, bool &isContextFree) status
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eFAIL
+        RETURN FAIL
+      CASE Zui.ExprType.eOK
+        RETURN OK
+    }
+    isContextFree = FALSE
+    IF giveError
+      ctx.error("Not supported here: "
+                        .. expr.getType().ToString().slice(1).toLower(), expr)
+    }
+    RETURN FAIL
+  }
+
+  # Evaluate to a string result: "string", Z.lang
+  FUNC evalString(Zui.Expression expr, SContext ctx,
+                                   bool giveError, bool &isContextFree) string
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eSTRING
+        RETURN expr.getStringValue()
+
+      CASE Zui.ExprType.eMEMBER
+        isContextFree = FALSE
+        Zui.Expression left = expr.getLeft()
+        Zui.Expression right = expr.getRight()
+        IF left.getType() == Zui.ExprType.eID && left.getId().getName() == "Z"
+                              && right.getType() == Zui.ExprType.eID
+          string name = right.getId().getName()
+          ZuiExpressionExt.get(left).undefined = 0
+          ZuiExpressionExt.get(right).undefined = 0
+          IF name == "lang"
+            RETURN ctx.gen.getLangName()
+          ELSE
+            IF giveError
+              ctx.error("Expected 'lang', found '" .. name .. "'",
+                                                     expr.getRight().getPos())
+            }
+            RETURN ""
+          }
+        }
+        PROCEED
+
+      DEFAULT
+        isContextFree = FALSE
+        IF giveError
+          ctx.error("Not supported here: "
+                        .. expr.getType().ToString().slice(1).toLower(), expr)
+        }
+    }
+    RETURN ""
+  }
+
+  # Evaluate to an int result: (123 + 3) * 5
+  FUNC evalInt(Zui.Expression expr, SContext ctx,
+                                      bool giveError, bool &isContextFree) int
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eNAT
+      CASE Zui.ExprType.eINT
+        RETURN expr.getNumber()
+      CASE Zui.ExprType.ePARENS
+        RETURN evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eADD
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     + evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eSUBTRACT
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     - evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eBIT_AND
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     & evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eBIT_OR
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     | evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eBIT_XOR
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     ^ evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eMULTIPLY
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                     * evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eDIVIDE
+        int div = evalInt(expr.getRight(), ctx, giveError, isContextFree)
+        IF div == 0
+          IF giveError
+            ctx.error("Divide by zero", expr)
+          }
+          RETURN 0
+        }
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree) / div
+      CASE Zui.ExprType.eREMAINDER
+        int div = evalInt(expr.getRight(), ctx, giveError, isContextFree)
+        IF div == 0
+          IF giveError
+            ctx.error("Divide by zero", expr)
+          }
+          RETURN 0
+        }
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree) % div
+      CASE Zui.ExprType.eSHIFT_RIGHT
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                    >> evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eSHIFT_LEFT
+        RETURN evalInt(expr.getLeft(), ctx, giveError, isContextFree)
+                    << evalInt(expr.getRight(), ctx, giveError, isContextFree)
+      DEFAULT
+        isContextFree = FALSE
+        IF giveError
+          ctx.error("Integer constant required, found: "
+                        .. expr.getType().ToString().slice(1).toLower(), expr)
+        }
+    }
+    RETURN 0
+  }
+
+  # Evaluate to a float result: (123.3 + 3.0) * 5.1
+  FUNC evalFloat(Zui.Expression expr, SContext ctx,
+                                    bool giveError, bool &isContextFree) float
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eFLOAT
+        RETURN expr.getFnumber()
+      CASE Zui.ExprType.eNAT
+      CASE Zui.ExprType.eINT
+        RETURN expr.getNumber()
+      CASE Zui.ExprType.ePARENS
+        RETURN evalFloat(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eADD
+        RETURN evalFloat(expr.getLeft(), ctx, giveError, isContextFree)
+                     + evalFloat(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eSUBTRACT
+        RETURN evalFloat(expr.getLeft(), ctx, giveError, isContextFree)
+                     - evalFloat(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eMULTIPLY
+        RETURN evalFloat(expr.getLeft(), ctx, giveError, isContextFree)
+                     * evalFloat(expr.getRight(), ctx, giveError, isContextFree)
+      CASE Zui.ExprType.eDIVIDE
+        float div = evalFloat(expr.getRight(), ctx, giveError, isContextFree)
+        IF div == 0
+          IF giveError
+            ctx.error("Divide by zero", expr)
+          }
+          RETURN 0
+        }
+        RETURN evalFloat(expr.getLeft(), ctx, giveError, isContextFree) / div
+
+      # The following only work if the numbers are integer.
+      CASE Zui.ExprType.eBIT_AND
+      CASE Zui.ExprType.eBIT_OR
+      CASE Zui.ExprType.eBIT_XOR
+      CASE Zui.ExprType.eREMAINDER
+      CASE Zui.ExprType.eSHIFT_RIGHT
+      CASE Zui.ExprType.eSHIFT_LEFT
+        RETURN evalInt(expr, ctx, giveError, isContextFree)
+
+      DEFAULT
+        isContextFree = FALSE
+        IF giveError
+          ctx.error("Float constant required, found: "
+                        .. expr.getType().ToString().slice(1).toLower(), expr)
+        }
+    }
+
+    RETURN 0
+  }
+}

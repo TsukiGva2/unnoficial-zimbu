@@ -1,0 +1,20 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  ENUM LongName
+    blue
+    red
+    green
+  }
+  ENUM WrongName
+    blue
+    red
+    green
+  }
+  TYPE LongName ShortName
+  ShortName color = ShortName.red
+  WrongName wn
+  wn = color
+
+  RETURN 0
+}

@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>THREAD.Thread class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='THREAD.html'>up:&nbsp;THREAD</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.thread
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type thread.
+</p>
+<p class='ptext'> A thread that will execute a method.
+<p class='ptext'> Example: run myProc() in a thread:
+<pre class='example'> thread t = NEW(myProc).start()
+ t.wait()
+</pre>
+<p class='ptext'>
+ Example: subclass
+<pre class='example'> CLASS MyThread EXTENDS thread
+  PROC $body() @replace
+    int count
+    WHILE TRUE
+      IO.print(count)
+      ++count
+      TIME.sleep(500'000)
+    }
+  }
+ }
+
+ MyThread t = NEW(doSomething)
+ t.start()
+ TIME.sleepSec(3)
+ t.kill()
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='THREAD.Thread.html#NEW'><b>NEW</b></a>(<small>proc</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new thread that will execute <b>proc</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.Thread.html#NEW'><b>NEW</b></a>(<small>func</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new thread that will execute <b>func</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.Thread.html#$body'><b>$body</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> The default method to execute: call the method specified at creation or
+ with <b>setProc()</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.Thread.html#$setProc'><b>$setProc</b></a>(<small>proc</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the method to be invoked by the default <b>body()</b> method.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='THREAD.ThreadBase.html'>THREAD.ThreadBase</A>:</td></tr>
+
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$name'><b>$name</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> optional name, NIL when not set
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='THREAD.State.html'>THREAD.State</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$state'><b>$state</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> state of the thread
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='Type.html'>Type</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$type'><b>$type</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> type of thread
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td>
+ Create a new thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$setName'><b>$setName</b></a>(<small>name</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the name of the thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$start'><b>$start</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Start executing the thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$wait'><b>$wait</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait in the current thread for the thread of this object to finish.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$kill'><b>$kill</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Kill the thread, stop its execution.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$remove'><b>$remove</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Not Implemented Yet
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><span class='type'>proc</span>&lt;&gt;</span> proc)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new thread that will execute <b>proc</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; <A class='typehref' href='STATUS.status.html'>status</A>&gt;</span> func)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new thread that will execute <b>func</b>.
+</p>
+<p class='ptext'> The return value is ignored.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$body'><b>$body</b></A>()<span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> The default method to execute: call the method specified at creation or
+ with <b>setProc()</b>.
+</p>
+<p class='ptext'> Replace this method in a subclass to have the thread do something else.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setProc'><b>$setProc</b></A>(<span class='type'><span class='type'>proc</span>&lt;&gt;</span> proc)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the method to be invoked by the default <b>body()</b> method.
+</p>
+<p class='ptext'> TODO: return the object.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

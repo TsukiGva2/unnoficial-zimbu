@@ -1,0 +1,51 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# BYTESTRING module loader
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE BYTESTRINGLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin BYTESTRING module.
+  FUNC prepare() Builtin
+    # We need the pName of the functions where they are called.
+    DeclStore.wantPName("MBYTESTRINGModule", "Flatin1ToString")
+    DeclStore.wantPName("MBYTESTRINGModule", "FToString__1")
+    DeclStore.wantPName("MBYTESTRINGModule", "Fsplit")
+
+    Builtin b = NEW()
+    b.moduleName = "BYTESTRINGModule"
+    b.fileName = "BYTESTRINGModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the BYTESTRING module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("BYTESTRING", builtin)
+      ModuleType mt = moduleDecl.type.<ModuleType>
+
+      # Remove the methods added for docs only, the real ones are defined
+      # below or elsewhere.
+      FOR k IN ["asString", "get", "getByte", "getChar", "getCharSize"]
+        Declaration d = mt.findMember(k, NIL)
+        IF d != NIL
+          mt.removeMember(d)
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,129 @@
+Using protocol buffers in Zimbu.
+
+This is implemented with a compiler plugin:
+
+   IMPORT.PROTO "person.proto"
+
+This uses the  $PLUGINDIR/proto  program to convert the person.proto file into
+a Zimbu source file ZUDIR/person.zu, which is then imported.
+
+
+If person.proto contains:
+
+        message Person {
+          required int32 id = 1;
+          required string name = 2;
+          optional string email = 3;
+        }
+
+You can use this code to write a binary protocol buffer to file "bob.pb":
+
+        Person.Person bob = NEW()
+        bob.setId(123)
+           .setName("Bob")
+           .setEmail("bob@example.com")
+
+        # Write binary form to file
+        IO.File out = IO.fileWriter("bob.pb")
+        bob.writeBinary(out)
+        out.close()
+
+        # Read binary form file to create object
+        IO.File in = IO.fileReader("bob.pb")
+        VAR person = Person.createFromBinary(in)
+        in.close()
+
+        # Set values in object from binary in file 
+        IO.File in = IO.fileReader("bob.pb")
+        Person person = ...
+        Person.mergeFromBinary(in, person)
+        in.close()
+
+To create output in JSON, to be send to or from a browser, use:
+
+        string msg = bob.toJSON()
+        ...
+        VAR person = Person.createFromJSON(msg)
+
+
+METHODS AND FIELD NAMES
+
+The methods for required or optional field "foo" are:
+                setFoo(value)   # returns the message class
+        value = getFoo()
+          has = hasFoo()    # TRUE when "foo" was set
+                clearFoo()  # clear value, returns message class
+
+For a repeated field "foo":
+                addFoo(value)   # returns message class
+       object = addNewFoo()     # adds an item and returns it
+       object = getFoo(i)
+        olist = getFooList()    # returns a list that can be changed
+         size = sizeFoo()
+          has = hasFoo()        # TRUE when there is 1 ore more
+          has = hasFoo(i)       # TRUE when there are at least (i + 1) items
+                clearFoo()      # clear all, returns message class
+
+Some of the methods return the class, so that you can chain the calls:
+         person.setName("foo")
+               .setAddress("101 Elm str")
+               .setHomePhone("1234")
+               .setWorkPhone("5678")
+
+The field names are converted from underscore style to HuH style:
+        foo         -> getFoo()
+        foo_val     -> getFooVal()
+        foo_val_alt -> getFooValAlt()
+
+The values of an enum are prepended with "e".  This is to avoid all-upper
+names to cause trouble.  Example, this .proto entry:
+        enum SomeType {
+           MOBILE = 0;
+           HOME = 1;
+        }
+        optional SomeType foo;
+Produces code to access:
+        p.setFoo(SomeType.eMOBILE)
+        IF p.getFoo() == SomeType.eHOME
+
+Message methods:
+        clear()        clears all fields
+        valid()        returns TRUE if all required fields are set.
+        toString()     returns a text version of the message
+        writeText(IO.Writer_I)  writes a text version that can be parsed back.
+
+
+ZIMBU OPTIONS
+
+At the file level you can use the "zimbu_import" option.  It generates an
+IMPORT statement in the generated .zu file.  For example:
+
+        option zimbu_import = "Node.zu";
+
+Will generate this line in the .zu file:
+
+        IMPORT "../Node.zu"
+
+The "../" is added to compensate for the fact that the generated .zu file is
+written in the ZUDIR directory, thus imports are one directory up.
+
+
+At the message level you can use the "zimbu_field" option.  It generates a
+line in the generated class.  This is supposed to be used to declare a field
+that is in the generated .zu file, but is not written in the binary protocol
+buffer.  Example:
+
+        message Statement {
+          option zimbu_field = "Node $node  # first Node of this block";
+
+Will generate this line in the .zu file:
+
+        CLASS Statement EXTENDS Message @public @items=public
+          Node $node  # first Node of this block
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

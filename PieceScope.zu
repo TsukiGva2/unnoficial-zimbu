@@ -1,0 +1,31 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# PieceScope class.
+#
+# A Scope used when including a piece.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassScope.zu"
+
+CLASS PieceScope EXTENDS ClassScope @items=public
+
+  # Used for @local members when including a piece.
+  int             $pieceNr
+
+  # Copy of the SHARED block of the piece.
+  Zui.CodeBlock   $sharedBlock
+  Zui.Attributes  $sharedAttr
+
+  # Return TRUE when in a PieceScope.
+  # TODO: should not be needed if THIS ISA PieceScope would work.
+  FUNC $isPieceScope() bool @replace
+    RETURN TRUE
+  }
+}

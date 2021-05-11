@@ -1,0 +1,64 @@
+#
+# ZUT (Zimbu Templates) dialogs
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "DialogController.zu"
+
+MODULE DialogTemplate @public
+
+  CSS
+    .dialogBack {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255,255,255,0.7);
+        z-index: 1000;
+    }
+    .dialogBox {
+        position: relative;
+        margin: auto;
+        padding: 20px;
+        text-align: center;
+        top: 30%;
+        border: 2px solid #999;
+        border-radius: 7px;
+        z-index: 1001;
+        background-color: #fff;
+        box-shadow: 7px 5px 5px grey;
+    }
+    .dialogText {
+        margin-bottom: 20px;
+    }
+    .okButton {
+        margin-right: 15px;
+    }
+  }
+
+  TEMPLATE textDialog(string text, int width,
+                      bool okButton, bool cancelButton
+                     ) ZUT.Html @public
+    <div class="dialogBack">
+      <div class="dialogBox"
+           style="width: [=width]px">
+        <div class="dialogText">
+          [=text]
+        </div>
+        <div zcontroller="DialogController">
+          [IF okButton]
+            <button class="okButton"
+                    zaction="click: ok">OK</button>
+          [}]
+          [IF cancelButton]
+            <button zaction="click: cancel">Cancel</button>
+          [}]
+        </div>
+      </div>
+    </div>
+  }
+}

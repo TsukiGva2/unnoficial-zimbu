@@ -1,0 +1,43 @@
+# Recursive import
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Something_2.zu"
+
+MODULE Another
+
+  Something.Barbar bar
+
+  FUNC Init() status
+    IO.print("Another.Init()")
+    RETURN OK
+  }
+
+  PROC testRecurse() @public
+    Something.Foobar foo = NEW(101)
+    foo.next = bar
+  }
+
+  # Test forward delcaration of a class inside a class, using a list.
+  CLASS ForwardDeclTest @public
+
+    list<OtherClass> $lll @public
+
+    FUNC $get(int i) OtherClass
+      RETURN $lll[i]
+    }
+
+    FUNC $add(OtherClass v) ForwardDeclTest
+      $lll.add(v)
+      RETURN THIS
+    }
+
+    CLASS OtherClass @directory
+      int $number @public
+    }
+  }
+
+}

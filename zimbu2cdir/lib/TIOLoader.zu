@@ -1,0 +1,35 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TIO module loader - Terminal I/O
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+
+MODULE TIOLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin TIO module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "TIOModule"
+    b.fileName = "TIOModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the TIO module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("TIO", builtin)
+    }
+  }
+
+}

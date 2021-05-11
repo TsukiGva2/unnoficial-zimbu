@@ -1,0 +1,166 @@
+GUI design for Zimbu
+
+
+Alternatives:
+
+1. Use a portable GUI library.
+
+   Examples are Qt and GTK.
+
+   - Dependency on installed library and runtime.
+   - Requires generating glue code.
+
+2. Use native GUI on each platform.
+
+   - Requires a separate port to each platform
+
+3. Use a browser based GUI.  Like GWT (Google Web Toolkit).
+
+   - Requires generating Javascript
+   + GUI runs everywhere if there is a browser
+   + Also works remotely
+
+Choice: 3.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+The main window is created at the specified locaiton.  A browser must then
+open this page to make it visible.
+
+Example:
+
+main.zu:
+	# This is the server side code.
+
+	IMPORT "mypage.zwt"
+
+	Main()
+           # Create the ZWT page and the javascript file.
+	   HTTP.Server server = NEW(8888)
+	   string pageName = "demo.html"
+	   ZWT.createPage(server, pageName, MyPage.INFO())
+
+           # Open the ZWT page "http://localhost:8888/demo.html" in a browser
+	   SYS.openInBrowser(server, pageName)
+	   ZWT.waitForClose()
+	}
+
+mypage.zwt:
+	# This is the UI code.
+
+	MODULE MyPage IMPLEMENTS ZWT.StartPage
+	  PROC init()
+	    ZWT.root().add(ZWT.Label.NEW("Hello World!"))
+	    ZWT.root().add(ZWT.Button.NEW("Close", close))
+	  }
+
+	  PROC close()
+	    ZWT.root().clear()
+	    ZWT.root().add(ZWT.Label.NEW("Bye bye"))
+	    ZWT.close()
+	  }
+	}
+
+Explanation:
+
+The Main() function starts an http server and uses a ZWT method to add the
+"start.html" page to it.  ZWT will take care of the details to add this page
+to the http server and have it load the Javascript code defined by the MyPage
+module.
+
+The MyPage.init() method is the entry function.  It adds label and a
+button to the page.
+
+When the button is clicked it invokes the close() method.  This resets the
+page to show "Bye bye" and calls the ZWT close function.  This informs the
+server that the session is finished and ZWT.waitForClose() returns, the
+program exits.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Visible way to create a layout
+
+Simplest is to use a table, filled by a two-dimensional list.
+
+ZWT.Widget navigation = ...
+ZWT.Widget welcome = ...
+etc.
+ZWT.Table = NEW([
+                [navigation,   welcome,   "<",        ads     ],
+                ["^",          today,     tomorrow,   "^"     ],
+                [footer,       "<",       "<",        feedback],
+                ])
+
+ "^" means: take from above (span more than one row)
+ "<" means: take from left (span more than one column)
+ ""  means: empty
+
+How to nicely set borders and spacing?
+How to do nested items?
+
+Alternative: Text protocol buffer string:
+
+enum WidgetType {
+  BY_NAME = 0;
+  LABEL = 1;
+  HORIZONTAL_PANEL = 2;
+  VERTICAL_PANEL = 3;
+}
+
+message Widget {
+  required WidgetType type = 1;
+  optional string name = 2;
+  optional Style style = 3;
+  repeated Widget widget = 4;
+}
+
+message Style {
+ optional margin_bot string = 0;
+}
+
+ZWT.Layout main = NEW('''
+    type: VERTICAL_PANEL
+    name: "main"
+    style: mainStyle
+    widget: {
+      type: HORIZONTAL_PANEL
+      name: "menuBar"
+      style: {
+        margin_bot: "10px"
+      }
+      # Quit, Save and Load Buttons are added here.
+    }
+    widget: {
+      type: HORIZONTAL_PANEL
+      widget: {
+        type: VERTICAL_PANEL
+        name: "performers"
+        widget: {
+          type: HORIZONTAL_PANEL
+          name: "letterButtons"
+          # "A" - "Z" Buttons are added here.
+        }
+        widget: ZWT.ScrollPanel {
+          name: "scrollPerformers"
+          widget: 
+        }
+      }
+    }
+''')
+
+main.getWidget("menuBar").addWidget(quitButton)
+                         .addWidget(saveButton)
+                         .addWidget(loadButton)
+FOR c IN 'A' TO 'Z'
+  main.getWidget("letterButtons").addWidget(c)
+}
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

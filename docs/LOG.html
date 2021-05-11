@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>LOG module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> LOG
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Logging, messages and error reporting.
+</p>
+<p class='ptext'> The log levels are defined in LOG.Leve.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='LOG.Level.html'><b>Level</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><span class='keyword'>BITS</span>&nbsp;</td><td class='nowrap'><A href='LOG.Flags.html'><b>Flags</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Optional flags for the message methods.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'><small><span class='type'><A class='typehref' href='ARG.Bool.html'>ARG.Bool</A></span></small>&nbsp;</td><td class='nowrap'><A href='LOG.html#debugFlag'><b>debugFlag</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='ARG.Bool.html'>ARG.Bool</A></span></small>&nbsp;</td><td class='nowrap'><A href='LOG.html#verboseFlag'><b>verboseFlag</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='LOG.Level.html'>LOG.Level</A>, <A class='typehref' href='INT.int.html'>int</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='LOG.html#counts'><b>counts</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='LOG.html#errorCount'><b>errorCount</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='LOG.html#isDebug'><b>isDebug</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the debug flag is on.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#isVerbose'><b>isVerbose</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the verbose flag is on.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#getFlags'><b>getFlags</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the flags used by LOG.  Useful to pass on to another program.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#debug'><b>debug</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a debug message, only output with "-d".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#verbose'><b>verbose</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a message about detailed info, only output with "-vv".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#info'><b>info</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log an information message, only output with "-v".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#report'><b>report</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a message about normal operation.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#warning'><b>warning</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a warning message.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#error'><b>error</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log an error message.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#internal'><b>internal</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log an internal error message.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#severe'><b>severe</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a severe error message.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#fatal'><b>fatal</b></a>(<small>msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a fatal error message, the program will exit.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#setExtraLead'><b>setExtraLead</b></a>(<small>lead</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set a leader to be inserted before every message.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#log'><b>log</b></a>(<small>level, msg, pos, flags</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Log a message at <b>level</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#reportStack'><b>reportStack</b></a>(<small>out</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Report the current stack backtrace, if possible.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#flush'><b>flush</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Flush any output streams for messages.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#getFlushInterval'><b>getFlushInterval</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the current flush interval.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#setFlushInterval'><b>setFlushInterval</b></a>(<small>interval</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the flush interval.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#writeToFile'><b>writeToFile</b></a>(<small>name, truncate</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#getUseTimeStamp'><b>getUseTimeStamp</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='LOG.html#setUseTimeStamp'><b>setUseTimeStamp</b></a>(<small>on</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='LOG.Level.html'>LOG.Level</A>, <A class='typehref' href='INT.int.html'>int</A>&gt;</span>&nbsp;<A name='counts'><b>counts</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='ARG.Bool.html'>ARG.Bool</A></span>&nbsp;<A name='debugFlag'><b>debugFlag</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='errorCount'><b>errorCount</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'><pre class='example'> int oldCount = LOG.errorCount
+ doSomething()
+ IF oldCount == LOG.errorCount
+   IO.print("No errors found")
+ }
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='ARG.Bool.html'>ARG.Bool</A></span>&nbsp;<A name='verboseFlag'><b>verboseFlag</b></A><span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>PROC</span> <A name='debug'><b>debug</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a debug message, only output with "-d".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='error'><b>error</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log an error message.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='fatal'><b>fatal</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a fatal error message, the program will exit.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='flush'><b>flush</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Flush any output streams for messages.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getFlags'><b>getFlags</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the flags used by LOG.  Useful to pass on to another program.
+</p>
+<p class='ptext'> Returns an empty string if no flags are set.  Otherwise includes a
+ leading space for easy concatenation.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getFlushInterval'><b>getFlushInterval</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the current flush interval.
+</p>
+<p class='ptext'> This is used for messages below error level.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getUseTimeStamp'><b>getUseTimeStamp</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>PROC</span> <A name='info'><b>info</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log an information message, only output with "-v".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='internal'><b>internal</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log an internal error message.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isDebug'><b>isDebug</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the debug flag is on.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isVerbose'><b>isVerbose</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the verbose flag is on.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='log'><b>log</b></A>(<span class='type'><A class='typehref' href='LOG.Level.html'>LOG.Level</A></span> level, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a message at <b>level</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='report'><b>report</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a message about normal operation.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='reportStack'><b>reportStack</b></A>(<span class='type'><A class='typehref' href='IO.I_Writer.html'>IO.I_Writer</A></span> out)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Report the current stack backtrace, if possible.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='setExtraLead'><b>setExtraLead</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> lead) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set a leader to be inserted before every message.
+</p>
+<p class='ptext'> Returns the current extra lead.  It should be restored afterwards.
+<pre class='example'> string savedLead = setExtraLead("in file \(fileName): ")
+ processFile()
+ setExtraLead(savedLead)
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='setFlushInterval'><b>setFlushInterval</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> interval)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the flush interval.
+</p>
+<p class='ptext'> This is used for messages below error level.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='setUseTimeStamp'><b>setUseTimeStamp</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> on)<span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>PROC</span> <A name='severe'><b>severe</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a severe error message.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='verbose'><b>verbose</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a message about detailed info, only output with "-vv".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='warning'><b>warning</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> msg, <span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span> pos, <span class='type'><A class='typehref' href='LOG.Flags.html'>LOG.Flags</A></span> flags)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Log a warning message.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='writeToFile'><b>writeToFile</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name, <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> truncate) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

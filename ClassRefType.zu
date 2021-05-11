@@ -1,0 +1,228 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ClassRefType class.
+#
+# A Type used for objects and iobjects: Reference to an object or interface.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+
+CLASS ClassRefType EXTENDS ReferenceType @items=public
+  # The class for an Type.Enum.object.
+  # The interface for an Type.Enum.iobject.
+  # The class for an Type.Enum.iclass.
+  # The class for a starred Type.Enum.class.
+  ReferenceType      $classRef
+
+  # Cached value of the valuetype
+  ClassRefType         $valueType
+
+  # Set only when an interface object was created for a class automatically,
+  # when using MyClass as MyClass.I because it has children.
+  bool                 $isAuto
+
+  NEW(Type.Enum type, ReferenceType classRef, string name)
+    NEW(type, name)
+    $classRef = classRef
+  }
+
+  NEW(Type.Enum type, ClassType classRef, string name)
+    NEW(type, name)
+    $classRef = classRef
+  }
+
+  FUNC $typeToString() string @replace
+    string s = PARENT.typeToString()
+    IF $classRef != NIL
+      s ..= " for class: " .. $classRef.typeToString()
+    }
+    RETURN s
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    ClassRefType ret = NEW($ttype, $name)
+    $copyObjectValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyObjectValues(ClassRefType ret) @default
+    $copyReferenceValues(ret)
+    ret.classRef = $classRef
+    ret.valueType = $valueType
+    ret.isAuto = $isAuto
+  }
+
+  # If this type is a Class, Enum, Bits or Method, return a reference to it.
+  # Otherwise return THIS.
+  FUNC $getValueType(SContext ctx) Type @replace
+    RETURN $getObject()
+  }
+
+  # Return an object of an iclass, object for a classDotC, the object
+  # itself otherwise.
+  FUNC $getObject() ClassRefType
+    IF $ttype != Type.Enum.iclass && $ttype != Type.Enum.classDotC
+      RETURN THIS
+    }
+    IF $valueType == NIL
+      IF $ttype == Type.Enum.classDotC
+        # classDotC -> object
+        $valueType = NEW(Type.Enum.object, $classRef, "instance of " .. $name)
+      ELSE
+        # class -> iobject
+        $valueType = NEW(Type.Enum.iobject, THIS, "instance of " .. $name)
+      }
+      IF $zuiAttr != NIL
+        $valueType.zuiAttr = $zuiAttr.copy(TRUE)
+        $valueType.zuiAttr.setAbstract(FALSE)
+      }
+    }
+    RETURN $valueType
+  }
+
+  # Return the name for the object declaration table.
+  # Return NIL if this is not an object.
+  FUNC $getTypeName(SContext ctx) string @replace
+    IF $ttype == Type.Enum.iobject
+      RETURN "iobj"
+    }
+    IF $classRef == NIL
+      RETURN "unknown"
+    }
+    RETURN $classRef.getTypeName(ctx)
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN TRUE
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace @default
+    SWITCH $ttype
+      CASE Type.Enum.object
+        RETURN "object of " .. Type.typeName($classRef, long)
+      CASE Type.Enum.iobject
+        IF $classRef == NIL
+          RETURN "object of nil"
+        }
+        # object for an iclass
+        RETURN "object of " .. Type.typeName($classRef.getClassType(NIL), long)
+                            .. ".I"
+      CASE Type.Enum.iclass
+        RETURN Type.typeName($classRef, long) .. ".I"
+    }
+    RETURN PARENT.typeName(long)
+  }
+
+  # For an object, iobject and class: return the class type.
+  # Otherwise return NIL
+  FUNC $getClassType(SContext ctx) ClassType @replace @default
+    IF $classRef == NIL
+      RETURN NIL
+    }
+    IF $classRef ISA ClassType
+      RETURN $classRef.<ClassType>
+    }
+    RETURN $classRef.getClassType(ctx)
+  }
+
+  # Return TRUE when this is a class used to store an allocated variable, used
+  # in a USE &argument.
+  FUNC $isAllocType(SContext ctx) bool @replace
+    ClassType cl = $getClassType(ctx)
+    RETURN cl?.allocDecl != NIL
+  }
+
+  # Get the list of object declarations.
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @replace @default
+    IF $classRef != NIL
+      RETURN $classRef.getObjectDeclDict()
+    }
+    RETURN NIL
+  }
+
+  # For a method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @replace @default
+    RETURN NIL
+  }
+
+  # For a method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @replace @default
+    RETURN NIL
+  }
+
+  # Return the types as they are used in a typespec.
+  FUNC $getTypespecType(int idx) Type @replace @default
+    IF $classRef != NIL
+      RETURN $classRef.getTypespecType(idx)
+    }
+    RETURN NIL
+  }
+
+  FUNC $hasAnyMembers() bool @replace
+    RETURN TRUE
+  }
+
+  # Search for |name| in the object member dict, checking for usage with
+  # |symUse|.  Only search parents when |options.searchParent| is TRUE.
+  FUNC $findObjectMember(string name,
+                         SymUse symUse,
+                         MethodType.FindFuncOptions options,
+                         bool inParent
+                        ) Declaration @replace
+    IF $classRef != NIL
+      RETURN $classRef.findObjectMember(name, symUse, options, inParent)
+    }
+    RETURN NIL
+  }
+
+  # Find methods with name |method| that matches the arguments |argList|.
+  # Skip |skip.method|.
+  # This only works for objects.
+  PROC $findMatchingMethods(
+                 string method,
+                 bool objectMethod,
+                 list<Declaration.C> argList,
+                 MethodType.Skip skip,
+                 MethodType.FindFuncOptions options,
+                 int &undef,
+                 multiDict<int, Declaration> funcs,
+                 SContext ctx
+                 ) @replace @default
+    IF $classRef != NIL
+      $classRef.findMatchingMethods(method, objectMethod, argList,
+                                             skip, options, undef, funcs, ctx)
+    }
+  }
+
+  # Return the NEW() method that accepts a list of items.
+  FUNC $findNewFromContainerMethod(Zui.Expression expr,
+                              Type.Enum ttype, string tName,
+                                             SContext ctx) MethodType @replace
+    IF $classRef != NIL
+      RETURN $classRef.findNewFromContainerMethod(expr, ttype, tName, ctx)
+    }
+    RETURN NIL
+  }
+
+}

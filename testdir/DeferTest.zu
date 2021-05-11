@@ -1,0 +1,129 @@
+# Test DEFER
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE DeferTest @public
+
+  PROC test() @public
+    IO.print("DeferTest")
+    testSome()
+    testExceptionAfterDefer()
+    testExceptionInDefer()
+    testDeferWithCatch()
+  }
+
+  PROC doIt(string text)
+    IO.print(text)
+  }
+
+  CLASS Foo
+    string $name
+
+    PROC $doIt()
+      IO.print($name)
+    }
+
+    PROC $doIt(string lead)
+      IO.print(lead .. $name)
+    }
+  }
+
+  CLASS Parent
+    int $nr
+    PROC $doIt(string name) @default
+      IO.print($nr .. name)
+    }
+  }
+
+  CLASS Child EXTENDS Parent
+    PROC $doIt(string name) @replace
+      IO.print("child: " .. $nr .. name)
+    }
+  }
+
+  PROC testSome()
+    DEFER doIt("function call")
+
+    Foo foo = NEW()
+    foo.name = "foo.doIt()"
+    DEFER foo.doIt()
+
+    Foo fooMore = NEW()
+    fooMore.name = "doIt(arg)"
+    DEFER fooMore.doIt("fooMore.")
+
+    DEFER IO.print("print string")
+
+    FOR i IN 100 TO 103
+      DEFER IO.print(i)
+    }
+
+    DEFER IO.print(FAIL)
+
+    Parent p = NEW()
+    p.nr = 7
+    DEFER p.doIt(" seven")
+
+    Child c = NEW()
+    c.nr = 8
+    DEFER c.doIt(" eight")
+
+    p = c
+    DEFER p.doIt(" parent")
+
+    # Do the stored callbacks survive a GC run?
+    GC.run()
+
+    IO.print("Busy")
+  }
+
+  # Test that DEFER calls are made even when an exception is thrown.
+  PROC testExceptionAfterDefer()
+    TRY
+      deferAndThrow()
+    CATCH E.Exception e
+      IO.print("caught exception after DEFER")
+    }
+  }
+
+  PROC deferAndThrow()
+    DEFER IO.print("deferAndThrow()")
+    DEFER doIt("doIt()")
+    break()
+    IO.print("Not reached")
+  }
+
+  PROC break()
+    # This will show up with a stack trace on stderr when running the tests:
+    #   testdir/DeferTest.zu:100 col 5: DeferTest.break()
+    #   testdir/DeferTest.zu:107 col 5: DeferTest.testExceptionInDefer()
+    #   testdir/DeferTest.zu:14 col 5: DeferTest.test()
+    #   testprog.zu:507 col 3: Main()
+    THROW "Don't worry, Intentionally throwing an exception."
+  }
+
+  PROC testExceptionInDefer()
+    IO.print("in testExceptionInDefer()")
+    DEFER doIt("first DEFER")
+    DEFER break()
+    DEFER doIt("last DEFER")
+  }
+
+  PROC testDeferWithCatch()
+    IO.print("in testDeferWithCatch()")
+    DEFER doIt("DEFER 1")
+    TRY
+      DEFER doIt("DEFER 2")
+      break()
+      DEFER doIt("DEFER not reached")
+    CATCH E.Exception e
+      IO.print("caught exception")
+    }
+    IO.print("after CATCH")
+    DEFER doIt("DEFER 3")
+  }
+
+}

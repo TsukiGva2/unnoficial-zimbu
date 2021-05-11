@@ -1,0 +1,23 @@
+# A Zimbu program for quickly testing the compiler.
+# This part tests features that require posix threads and sockets.
+
+IMPORT "testdir/GarbageThread.zu" 
+IMPORT "testdir/HttpTest.zu"     # HTTP server
+IMPORT "testdir/PipeTest.zu"     # pipe<Type>
+IMPORT "testdir/ThreadTest.zu"   # threads and locks
+
+FUNC Main() int
+  # Test threads.
+  ThreadTest.test()
+
+  # Test pipes.
+  PipeTest.test()
+
+  # Test HTTP server.
+  HttpTest.test()
+
+  # Test garbage collection thread.
+  GarbageThread.test()
+
+  RETURN 0
+}

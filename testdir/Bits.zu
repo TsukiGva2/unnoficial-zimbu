@@ -1,0 +1,99 @@
+# Test file for BITS
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Bits @public
+
+  PROC test() @public
+    IO.print("testdir/Bits.zu")
+    test1()
+    test2()
+  }
+
+  BITS MyFlags
+    bool  $one
+    bool  $two
+    Kolor $color
+    bool  $three
+    bool  $four
+    int5  $count
+    nat2  $unsigned
+  }
+
+  ENUM Kolor
+    red
+    green
+    blue
+  }
+
+  MyFlags flags = three
+
+  PROC test1()
+    bitter(two + four + color=green + count=-16 + unsigned=3)
+    MyFlags tflags = one + two + three + color=blue + count=5 + unsigned=1
+    bool flag
+    bitter(two + (flag ? three : 0))
+    bitter(tflags)
+    bitter(0)
+    IF tflags.two
+      IO.print(R"bit two")
+    }
+    IF flags.three
+      IO.print(R"bit ""three""")
+    }
+    IO.print("count is " .. tflags.count
+                 .. "; unsigned is " .. tflags.unsigned)
+    tflags = 0
+    flags.one = FALSE
+    flags.two = TRUE
+    flags.three = (2 > 4)
+    flags.four = (4 > 2)
+    flags.color = Kolor.green
+    flags.count = -6
+    flags.unsigned = 3
+    IO.print("flags.one: " .. flags.one
+             .. ", flags.two: " .. flags.two
+             .. ", flags.three: " .. flags.three
+             .. ", flags.four: " .. flags.four)
+    IO.print("flags.color: " .. flags.color.ToString()
+             .. " and also: " .. flags.color)
+    Kolor otherColor = flags.color
+    GENERATE_IF Z.lang == "C"
+      IO.print("color is still " .. otherColor.ToString())
+    GENERATE_ELSE
+      IO.print("something wrong " .. otherColor.ToString())
+    }
+    IO.print("count is " .. flags.count
+                 .. "; unsigned is " .. flags.unsigned)
+  }
+
+  PROC bitter(MyFlags foo)
+    IF foo.one
+      IO.print("bit one")
+    }
+  }
+
+  BITS JustBool
+    bool $one
+    bool $two
+    bool $three
+  }
+
+  PROC test2()
+    JustBool a = one + three
+    JustBool b = two + three
+
+    JustBool c = a | b
+    IO.print("OR: " .. c.one .. "/" .. c.two .. "/" .. c.three)
+
+    c = a & b
+    IO.print("AND: " .. c.one .. "/" .. c.two .. "/" .. c.three)
+
+    IO.print("a: " .. a.ToString()
+            .. ", b: " .. b.ToString()
+            .. ", c: " .. c.ToString())
+  }
+}

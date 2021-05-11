@@ -1,0 +1,491 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>MULTIDICT.MultiDict class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='MULTIDICT.html'>up:&nbsp;MULTIDICT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.multiDict&lt;Tkey, Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type multiDict.
+</p>
+<p class='ptext'> MultiDicts keep a list of items for each key that is present.  It's like
+ a dict where each value is a list.
+<p class='ptext'> The key type must support the ToString() method.  It is used for error
+ messages.
+<p class='ptext'> The item type must support the Equal() method.  This is needed for the
+ has(key, item) method.
+<p class='ptext'> The item type should support the ToString() method.  When missing the
+ string "-object-" is used instead of the actual value.
+<p class='ptext'> Example:
+<pre class='example'> multiDict&lt;string, int&gt; md = NEW()
+ md.add("yes", 1)
+ md.add("yes", 2)
+ IO.WriteLine("multiDict has yes: " .. md.has("yes"))
+ IO.WriteLine("multiDict has yes " .. md.get("yes").Size() .. " times")
+ md.remove("yes")
+</pre>
+<p class='ptext'>
+ Optionally the multiDict can use a list to remember the order in which
+ keys were added.  ToString(), keys() and values() will have the keys in
+ the order they were added.  This has a small overhead.  Without the list
+ the order of keys depends on the hash value, which is rather arbitrary.
+ The values for a key are always kept in the order they were added.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new empty multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small>ordered</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new empty multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small>items</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict from a dictionary.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small>items, ordered</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict from a dictionary.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small>items</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict from a list of dicts.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#NEW'><b>NEW</b></a>(<small>items, ordered</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict from a list of dicts.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$isOrdered'><b>$isOrdered</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return whether the order in which keys are added is remembered.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$count'><b>$count</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the multiDict with key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$get'><b>$get</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the list of entries for key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$get'><b>$get</b></a>(<small>key, default</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the list of entries for key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$has'><b>$has</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if any item with key <b>key</b> is present in the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$has'><b>$has</b></a>(<small>key, item</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if item with key <b>key</b> and value <b>item</b> is present in the
+ multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$keys'><b>$keys</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with all the keys.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$values'><b>$values</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with all the lists of values.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$add'><b>$add</b></a>(<small>key, item</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$addDict'><b>$addDict</b></a>(<small>items</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add items a dictionary.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$addList'><b>$addList</b></a>(<small>key, itemList</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a list of items to the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$insert'><b>$insert</b></a>(<small>key, item</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$addList'><b>$addList</b></a>(<small>items</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add all the items in a list of dicts to the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$set'><b>$set</b></a>(<small>key, items</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the multiDict if not yet present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$removeAll'><b>$removeAll</b></a>(<small>key</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove a list of items from the multiDict with key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$remove'><b>$remove</b></a>(<small>key, item</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove an item from the multiDict with key <b>key</b> and value equal to
+ <b>item</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$clear'><b>$clear</b></a>(<small>key</small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove an item from the multiDict if present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$clear'><b>$clear</b></a>(<small></small>) <small><span class='type'>MultiDict&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Make the multiDict empty.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$map'><b>$map</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item value.  Each value is replaced by the
+ result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$mapList'><b>$mapList</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on the value list for each key.  Each list is
+ replaced by the result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$keyMap'><b>$keyMap</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item key and each value.  Each item value
+ is replaced by the result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$keyMapList'><b>$keyMapList</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item key and value list.  Each value list
+ is replaced by the result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$mapTo'><b>$mapTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict where each item is the result of executing
+ function <b>f</b> on each item value of this multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$mapListTo'><b>$mapListTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict where each item list is the result of executing
+ function <b>f</b> on each item list of this multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$keyMapTo'><b>$keyMapTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict where each item is the result of executing
+ function <b>f</b> on each item key and value of this multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$keyMapListTo'><b>$keyMapListTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new multiDict where each value list is the result of executing
+ function <b>f</b> on each item key and value list of this multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$forEach'><b>$forEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item value in the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$forEachList'><b>$forEachList</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every key in the multiDict, passing the list of
+ values.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$forKeyEach'><b>$forKeyEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item key and value in the multiDict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='MULTIDICT.MultiDict.html#$forKeyEachList'><b>$forKeyEachList</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every key the multiDict, passing the list of values.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new empty multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> ordered)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new empty multiDict.
+</p>
+<p class='ptext'> When <b>ordered</b> is TRUE remember the order in which keys were added.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> items)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict from a dictionary.
+</p>
+<p class='ptext'> This makes a copy of the argument.
+<p class='ptext'> When <b>items</b> is ordered then the multiDict will also be ordered.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> items, <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> ordered)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict from a dictionary.
+</p>
+<p class='ptext'> This makes a copy of the argument.
+ When <b>ordered</b> is TRUE remember the order in which keys were added.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;&gt;</span> items)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict from a list of dicts.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;&gt;</span> items, <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> ordered)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict from a list of dicts.
+</p>
+<p class='ptext'> When <b>ordered</b> is TRUE remember the order in which keys were added.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the multiDict.
+</p>
+<p class='ptext'> Looks like a list of the keys: [key1: [val1, val2], key2: [val3]]
+<p class='ptext'> The order of items is unpredictable, unless this is an ordered
+ multiDict, then the keys will be in the order they were added.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> item) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the multiDict.
+</p>
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addDict'><b>$addDict</b></A>(<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> items) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add items a dictionary.
+</p>
+<p class='ptext'> This makes a copy of the argument.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addList'><b>$addList</b></A>(<span class='type'>Tkey</span> key, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> itemList) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a list of items to the multiDict.
+</p>
+<p class='ptext'> If <b>key</b> is already present the items are appended to the existing list
+ of items.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addList'><b>$addList</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;&gt;</span> items) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add all the items in a list of dicts to the multiDict.
+</p>
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>(<span class='type'>Tkey</span> key) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove an item from the multiDict if present.
+</p>
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>() <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Make the multiDict empty.
+</p>
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$count'><b>$count</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the multiDict with key <b>key</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEach'><b>$forEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Titem&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item value in the multiDict.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the value.
+<p class='ptext'> The order in which <b>f</b> is called for each key is undefined,
+ unless this is an ordered multiDict.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEachList'><b>$forEachList</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every key in the multiDict, passing the list of
+ values.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the list of values.
+<p class='ptext'> The order in which <b>f</b> is called for each key is undefined,
+ unless this is an ordered multiDict.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEach'><b>$forKeyEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Tkey, Titem&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item key and value in the multiDict.
+</p>
+<p class='ptext'> The first argument for f is the key, the second argument is each value.
+<p class='ptext'> The order in which <b>f</b> is called for each item is undefined.
+ unless this is an ordered multiDict.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEachList'><b>$forKeyEachList</b></A>(<span class='type'><span class='type'>proc</span>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every key the multiDict, passing the list of values.
+</p>
+<p class='ptext'> The first argument for f is the key, the second argument is the list of
+ values.
+<p class='ptext'> The order in which <b>f</b> is called for each list of items is undefined,
+ unless this is an ordered multiDict.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the list of entries for key <b>key</b>.
+</p>
+<p class='ptext'> Throws an E.KeyNotFound exception when <b>key</b> is not present.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'>Tkey</span> key, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> default) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the list of entries for key <b>key</b>.
+</p>
+<p class='ptext'> Returns <b>default</b> when key is not present.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Check if any item with key <b>key</b> is present in the multiDict.
+</p>
+<p class='ptext'> Returns TRUE or FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Check if item with key <b>key</b> and value <b>item</b> is present in the
+ multiDict.
+</p>
+<p class='ptext'> Returns TRUE or FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> item) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the multiDict.
+</p>
+<p class='ptext'> Same as add(), but inserts before other items with the same key.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isOrdered'><b>$isOrdered</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return whether the order in which keys are added is remembered.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMap'><b>$keyMap</b></A>(<span class='type'><span class='type'>func</span>&lt;Tkey, Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item key and each value.  Each item value
+ is replaced by the result of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The key and the value of the item.  <b>f</b> must
+ return the new value of the item.
+<pre class='example'> multiDict&lt;int, string&gt; d = [1: ["a", "b"], 2: ["c"]]
+ d.keyMap({ k, v =&gt; k .. "/" .. v })
+ # d == [1: ["1/a", "2/b"], 2: ["3/c"]]
+</pre>
+<p class='ptext'>
+ Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapList'><b>$keyMapList</b></A>(<span class='type'><span class='type'>func</span>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt; =&gt; <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item key and value list.  Each value list
+ is replaced by the result of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The key and the value list.  <b>f</b> must return the
+ new value list.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapListTo'><b>$keyMapListTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;Tkey, <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt; =&gt; <A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict where each value list is the result of executing
+ function <b>f</b> on each item key and value list of this multiDict.
+</p>
+<p class='ptext'> This is like keyMapList() but with a different result type.
+<p class='ptext'> <b>f</b> has two arguments: The key in the multiDict and the value list.
+ <b>f</b> must return the value list for the new multiDict.
+<p class='ptext'> If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> Returns the new multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapTo'><b>$keyMapTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;Tkey, Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict where each item is the result of executing
+ function <b>f</b> on each item key and value of this multiDict.
+</p>
+<p class='ptext'> This is like keyMap() but with a different result type.
+<p class='ptext'> <b>f</b> has two arguments: The key in the multiDict and the value of the
+ item.  <b>f</b> must return the value for the new multiDict.
+<pre class='example'> multiDict&lt;string, int&gt; id = ["one": [11, 22], "three": [33]]
+ multiDict&lt;string, string&gt; sd = id.keyMapTo({ k, n =&gt; k .. ": " .. n })
+ # sd == ["one": ["one: 11", "one: 22"], "three": ["three: 33"]]
+</pre>
+<p class='ptext'>
+ If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> Returns the new multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keys'><b>$keys</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with all the keys.
+</p>
+<p class='ptext'> The order is undefined, unless this is an ordered multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$map'><b>$map</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item value.  Each value is replaced by the
+ result of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value, and must return the
+ new value.
+<pre class='example'> multiDict&lt;int, string&gt; d = [1: ["a", "b"], 2: ["c"]]
+ d.map({ s =&gt; s .. "+" })
+ # d == [1: ["a+", "b+"], 2: ["c+"]]
+</pre>
+<p class='ptext'>
+ Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapList'><b>$mapList</b></A>(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt; =&gt; <A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on the value list for each key.  Each list is
+ replaced by the result of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value list for the key, and
+ it must return the new value list.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapListTo'><b>$mapListTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt; =&gt; <A class='typehref' href='LIST.list.html'>list</A>&lt;Tresult&gt;&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict where each item list is the result of executing
+ function <b>f</b> on each item list of this multiDict.
+</p>
+<p class='ptext'> This is like mapList() but with a different result type.
+<p class='ptext'> <b>f</b> has one argument, which is the value list, and must return the
+ value list for the new multiDict.
+<p class='ptext'> If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> Returns the new multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapTo'><b>$mapTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new multiDict where each item is the result of executing
+ function <b>f</b> on each item value of this multiDict.
+</p>
+<p class='ptext'> This is like map() but with a different result type.
+<p class='ptext'> <b>f</b> has one argument, which is the value of the item, and must return
+ the value for the new multiDict.
+<pre class='example'> multiDict&lt;string, int&gt; id = ["one": [1, 2], "two": [3]]
+ multiDict&lt;string, string&gt; sd = id.mapTo({ n =&gt; n .. ":" })
+ # sd == ["one": ["1:", "2:"], "two": ["3:"]]
+</pre>
+<p class='ptext'>
+ If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> Returns the new multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> item) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove an item from the multiDict with key <b>key</b> and value equal to
+ <b>item</b>
+</p>
+<p class='ptext'> Throws an E.KeyNotFound exception if the key is not present.
+<p class='ptext'> Throws an E.ItemNotFound exception if the item is not present.
+<p class='ptext'> Only the first matching item found is removed.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$removeAll'><b>$removeAll</b></A>(<span class='type'>Tkey</span> key) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove a list of items from the multiDict with key <b>key</b>.
+</p>
+<p class='ptext'> Throws an E.KeyNotFound exception if the item is not present.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'>Tkey</span> key, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> items) <span class='type'>MultiDict&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the multiDict if not yet present.
+</p>
+<p class='ptext'> When the item is already present nothing happens.
+<p class='ptext'> Returns the multiDict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$values'><b>$values</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with all the lists of values.
+</p>
+<p class='ptext'> The order is undefined, unless this is an ordered multiDict.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

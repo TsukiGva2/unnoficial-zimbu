@@ -1,0 +1,1011 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# C implemenation for Array.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../ArrayStuff.zu"
+IMPORT "../ContainerType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../ManageMemory.zu"
+IMPORT "../Output.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "../TupleType.zu"
+IMPORT "../WriteCommon.zu"
+IMPORT "WriteC.zu"
+
+MODULE WriteArrayC @items=public                   # TODO: restrict visibility
+
+  FUNC generateMethodCall(ContainerType type, Zui.MethodCall call,
+                                         SContext ctx, Type destType) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        # nothing
+#      ELSEIF type.arraySize.Size() == 0
+#        IF ctx.gen.writing
+#          ctx.error("Cannot use map() on array of unknown size", call.getPos())
+#        }
+      ELSE
+        string funcName
+        IF type.itemType != NIL && !type.itemType.isValueType()
+          IF methodName == "map"
+            funcName = "arrayMapP"
+            ctx.setDeclUsed(%arrayMapP)
+          ELSE
+            funcName = "arrayKeyMapP"
+            ctx.setDeclUsed(%arrayKeyMapP)
+          }
+        ELSE
+          IF methodName == "map"
+            funcName = "arrayMapI"
+            ctx.setDeclUsed(%arrayMapI)
+          ELSE
+            funcName = "arrayKeyMapI"
+            ctx.setDeclUsed(%arrayKeyMapI)
+          }
+        }
+
+        ctx.out.write("Z" .. funcName .. "(")
+        Generate.generateVarname(object, ctx, type)
+
+#        ctx.out.write(", " .. type.arraySize[0] .. ", ")
+        ctx.out.write(", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = type
+      }
+    ELSEIF methodName == "set"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 2, 2, ctx) == FAIL
+        # nothing
+      ELSEIF ctx.gen.writing
+        ctx.out.write("Zas(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", ")
+        Type r = Generate.genExpr(argList[1], ctx)
+        IF r != NIL
+          writeItemType(r, type.itemType, call.getPos(), ctx)
+        }
+
+        Generate.genExpr(argList[0], ctx, Type.anInt)
+        ctx.out.write(")")
+        ctx.setDeclUsed(%arraySet)
+        ctx.setDeclUsed(WriteC.copyItems)
+      }
+      retType = type
+    ELSEIF methodName == "resize"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        # nothing
+      ELSE
+        ctx.out.write("ZarrayResize(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", sizeof(")
+        ctx.gen.vartype(type.itemType, FALSE, call.getPos(), ctx)
+        ctx.out.write("), ")
+        Zui.Expression arg = argList[0]
+        Generate.genExpr(arg, ctx, Type.anInt)
+        ctx.out.write(") ")
+        ctx.setDeclUsed(%arrayResize)
+      }
+      retType = type
+    ELSEIF methodName == "size" || methodName == "Size"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        # nothing
+      ELSE
+        ctx.setDeclUsed(%arraySize)
+        ctx.out.write("ZArraySize(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(")")
+      }
+      retType = Type.anInt
+    ELSEIF methodName == "ToString"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        # nothing
+      ELSE
+        ctx.out.write("ZarrayToString(")
+        Generate.genExpr(object, ctx, type)
+        WriteC.oneToStringArgument(type.itemType, call, TRUE, ctx)
+        # TODO: format argument
+        ctx.out.write(")")
+      }
+      retType = Type.aString
+    ELSEIF methodName == "Type"
+      ctx.out.write("(&")
+      ctx.out.write(type.typeUsed(ctx).pName)
+      ctx.out.write("__T)")
+      retType = Type.aType
+    ELSEIF methodName == "find" || methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "has"
+          ctx.out.write("(")
+        }
+        IF type.itemType.getTtype() == Type.Enum.iobject
+          ctx.setDeclUsed(%arrayFindIobj)
+          ctx.out.write("ZArrayFindIobj(")
+        ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+          ctx.setDeclUsed(%arrayFindDyn)
+          ctx.out.write("ZArrayFindDyn(")
+        ELSE
+          ctx.setDeclUsed(%arrayFind)
+          ctx.out.write("ZArrayFind(")
+        }
+        ctx.out.write("(Ta*)")  # In case it was decleared volatile.
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", ")
+
+        # generate the pointer or integer value
+        WriteC.writeTzOrIobjArg(type.itemType, call.getArgument(0), ctx)
+
+        # finish up
+        ctx.out.write(")")
+        IF methodName == "has"
+          ctx.out.write(">= 0)")
+        }
+      }
+      retType = methodName == "has" ? Type.aBool : Type.anInt
+    ELSE
+      IF ctx.gen.writing
+        ctx.error("Method " .. methodName .. "() not supported for array",
+                                                              call.getPos())
+      }
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  # Write the third argument of Zas(): the type of the second set() argument.
+  PROC writeItemType(Type argType, Type itemType,
+                                               Zui.Position pos, SContext ctx)
+    Type t
+    IF argType.ttype == Type.Enum.byteString
+      ctx.out.write(", 0, ")
+      t = Type.aByte
+    ELSEIF argType.ttype == Type.Enum.array
+      ctx.out.write(", 1, ")
+      t = argType.<ContainerType>.itemType
+    ELSEIF argType.ttype == Type.Enum.list
+      ctx.out.write(", 2, ")
+      t = argType.<ContainerType>.itemType
+    ELSE
+      ctx.error("Unsupported type for array.set(): "
+                                                   .. argType.typeName(), pos)
+    }
+    IF t != NIL && !Type.compatibleTypes(t, itemType, ctx)
+      ctx.error("Incompatible type for array.set(): "
+                                                   .. argType.typeName(), pos)
+    }
+  }
+
+  # [item1, item2]  ->  Id = ZnewArray(size), set(Id, item1), set(Id, item2)
+  # |destType| is the type of a list item (may be NIL).
+  FUNC generateListPart(Zui.Expression expr, string noAllocName,
+                                         SContext ctx, Type destType) Type
+    ctx.setDeclUsed(Declaration.newArray)
+    string id
+
+    Type type = destType
+    string separator = ", "
+    bool useTempVar
+    IF expr.sizeListItem() > 0
+      ctx.setDeclUsed(%arraySet)
+      id = WriteC.genTempUseStart(expr, "Ta *", &useTempVar, &separator, ctx)
+
+      # Get the type from the first item.
+      type = Generate.genExpr(expr.getListItem(0), ctx.copyNoOut(), destType)
+    }
+    Output out = ctx.out
+
+    # Create the array.
+    IF noAllocName != NIL
+      # %theArray = [1, 2, 3]
+      ctx.setDeclUsed(%arrayInit)
+      out.write("ZArrayInit(&")
+      out.write(noAllocName)
+      out.write(", ")
+    ELSE
+      out.write("ZnewArray(")
+    }
+    out.write(WriteC.getTname(type, ctx))
+    out.write(", sizeof(")
+    ctx.gen.vartype(type, FALSE, expr.getPos(), ctx)
+    out.write("), ")
+    out.write(expr.sizeListItem())
+    out.write(")")
+
+    # Now write each added item.
+    int idx
+    FOR item IN expr.getListItemList() ?: []
+      out.write(separator)
+      setOneArg(type, item, id, noAllocName != NIL, idx, ctx)
+      ++idx
+    }
+    IF useTempVar
+      out.write(", " .. id .. ")")
+    }
+
+    RETURN type
+  }
+
+  # Write a varargs argument for |args[startIndex]| .. |args[args.Size() - 1]|
+  # Note that |args| may be reordered compared to call.getArgumentList().
+  # |type| is the type of the method varargs.
+  # Return the number of undefined symbols.
+  PROC writeVarargs(Zui.MethodCall call, Type type, TupleType tupleType,
+                      list<Zui.Expression> args, int startIndex, SContext ctx)
+    string id
+    string separator = ", "
+    bool useTempVar
+    ctx.setDeclUsed(%arraySet)
+
+    # Use the tempDecl on the dummy expression added by the Annotator.
+    Zui.Expression expr = call.getVararg()
+    id = WriteC.genTempUseStart(expr, tupleType.pName .. " ",
+                                     &useTempVar, &separator, ctx.copyNoOut())
+    Output out = ctx.out
+
+    # Create the array for the names.
+    string namesArrayId = id .. ".m0"
+    out.write("(\(namesArrayId) = ZnewArray(")
+    out.write(WriteC.getTname(Type.aString, ctx))
+    out.write(", sizeof(")
+    ctx.gen.vartype(Type.aString, FALSE, call.getPos(), ctx)
+    out.write("), ")
+    out.write(args.Size() - startIndex)
+    out.write(")")
+
+    # Create the array for the values.
+    string valueArrayId = id .. ".m1"
+    out.write(separator)
+    out.write("\(valueArrayId) = ZnewArray(")
+    out.write(WriteC.getTname(type, ctx))
+    out.write(", sizeof(")
+    ctx.gen.vartype(type, FALSE, call.getPos(), ctx)
+    out.write("), ")
+    out.write(args.Size() - startIndex)
+    out.write(")")
+
+    # Write each item name and each value into the arrays.
+    FOR idx IN startIndex UNTIL args.Size()
+      Zui.Expression item = args[idx]
+      Zui.Expression name
+      IF item.getType() == Zui.ExprType.eASSIGN
+        name = item.getLeft()
+      ELSE
+        # no name, use NIL.
+        Zui.Expression nilItem = NEW().setType(Zui.ExprType.eNIL)
+        nilItem.setPos(item.getPos())
+        name = nilItem
+      }
+      out.write(separator)
+      setOneArg(Type.aString, name, namesArrayId, FALSE, idx - startIndex, ctx)
+
+      out.write(separator)
+      setOneArg(type, item, valueArrayId, FALSE, idx - startIndex, ctx)
+    }
+
+    out.write(", &\(id))")
+  }
+
+  PROC setOneArg(Type type, Zui.Expression item, string id,
+                                 bool hasNoAllocName, int index, SContext ctx)
+    Output out = ctx.out
+    out.write("((")
+    ctx.gen.vartype(type, FALSE, item.getPos(), ctx)
+    out.write("*)(")
+    out.write(id)
+    IF hasNoAllocName
+      out.write(".ptr))[")
+    ELSE
+      out.write("->ptr))[")
+    }
+    out.write(index)
+    out.write("] = (")
+    ctx.gen.vartype(type, FALSE, item.getPos(), ctx)
+    out.write(")")
+    Generate.genExpr(item.getType() == Zui.ExprType.eASSIGN
+                                          ? item.getRight() : item, ctx, type)
+  }
+
+  PROC writeArrayAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    ctx.setDeclUsed(Declaration.alloc)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 1
+      IF type.itemType != NIL
+        Output out = ctx.out
+        IF noAllocName != NIL
+          # %theArray = NEW(3)
+          ctx.setDeclUsed(%arrayInit)
+          out.write("ZArrayInit(&")
+          out.write(noAllocName)
+          out.write(", ")
+        ELSE
+          ctx.setDeclUsed(Declaration.newArray)
+          out.write("ZnewArray(")
+        }
+        out.write(WriteC.getTname(type.itemType, ctx))
+        out.write(", sizeof(")
+        ctx.gen.vartype(type.itemType, FALSE, call.getPos(), ctx)
+        out.write("), ")
+        Generate.genExpr(args[0], ctx, Type.anInt)
+        out.write(")")
+      }
+    ELSE
+      ctx.error("Expected one argument", call.getPos())
+    }
+  }
+
+  # Pointer to a position in an array: (*(itemType *)ZarrayPtr(array, expr))
+  # This could be done with "((itemType)(array->ptr))[expr]"
+  # but then we can't check the index being out of range and we might corrupt
+  # memory.
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr, bool lvalue,
+                                                 SContext ctx, Type destType
+       ) Type
+    ctx.setDeclUsed(%arrayPtr)
+    ctx.setDeclUsed(Declaration.throwCstringOutOfRange)
+    ctx.out.write("(*(")
+    ctx.gen.vartype(type.itemType, FALSE, expr.getPos(), ctx)
+    ctx.out.write("*)ZarrayPtr(")
+    Generate.genExpr(expr.getLeft(), ctx, Type.anArray)
+    ctx.out.write(", ")
+    Generate.genExpr(expr.getRight(), ctx, Type.anInt)
+    ctx.out.write("))")
+    Type ret = type.itemType
+    IF ret == NIL && ctx.out.writing
+      ctx.error("type of array item unknown", expr)
+    }
+    RETURN ret
+  }
+
+  Declaration %arrayPtr = NEW("arrayPtr")
+  Declaration %arrayMapI = NEW("arrayMapI")
+  Declaration %arrayMapP = NEW("arrayMapP")
+  Declaration %arrayKeyMapI = NEW("arrayKeyMapI")
+  Declaration %arrayKeyMapP = NEW("arrayKeyMapP")
+  Declaration %arraySet = NEW("arraySet")
+  Declaration %arrayResize = NEW("arrayResize")
+  Declaration %arraySize = NEW("arraySize")
+  Declaration %arrayEqual = NEW("arrayEqual")
+  Declaration %arrayCompare = NEW("arrayCompare")
+  Declaration %arrayInit = NEW("arrayInit")
+  Declaration %arrayFind = NEW("arrayFind")
+  Declaration %arrayFindIobj = NEW("arrayFindIobj")
+  Declaration %arrayFindDyn = NEW("arrayFindDyn")
+
+  PROC writeTypedefs(WriteC gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.array)
+      fd.write(''"
+typedef struct CArray__S Ta; /* array head */
+"'')
+    }
+  }
+
+  # Set dependencies of used items.
+  PROC addDependencies(WriteC gen)
+  }
+
+  PROC writeDecl(WriteC gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.array)
+      IF !ManageMemory.manageMemory(gen)
+        gen.setDeclUsed(WriteC.zfree)
+      }
+
+      # Basic array definitions.  Up to 10 dimensions.
+      fd.write(''"
+struct CArray__S {
+"'')
+      fd.write(gen.getStructHead())
+      fd.write(" void *ptr;")
+      IF ManageMemory.manageMemory(gen) && ManageMemory.isExitclean()
+        fd.write(''"
+ void *alloced;"'')
+      }
+      fd.write(''"
+ int dim;
+ Ti size[3];
+ Tt *itemType;
+ int itemSize;
+ int tosNr;
+};"'')
+      IF !ManageMemory.manageMemory(gen)
+        fd.write(''"
+void ZfreeArray(Ta *head);"'')
+      }
+      IF gen.isDeclUsed(Declaration.itemToString)
+        fd.write(''"
+void ZArrayToStringGa(Ta *head, int useq, Tg *ga);"'')
+      }
+      IF gen.isDeclUsed(Type.aDyn) || gen.isDeclUsed(Declaration.itemEqual)
+        fd.write(''"
+Tz ZArrayGetTz(Ta *head, int idx);"'')
+      }
+      IF gen.isDeclUsed(Declaration.newArray)
+        fd.write(''"
+Ta *ZnewArray(Tt *itemType, int itemSize, Ti size);"'')
+      }
+    }
+  }
+
+  PROC writeBody(WriteC gen, IO.File fd)
+    IF !gen.isDeclUsed(Declaration.array)
+      RETURN
+    }
+
+    IF !ManageMemory.manageMemory(gen)
+      fd.write(''"
+void ZfreeArray(Ta *head) {
+ Ti i;
+ Ti d;
+ if (head == NULL) return;
+ if (head->ptr && head->ptr != head + 1) {
+  Zfree(head->ptr - ZOH_OFF);
+ }
+ Zfree(head);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayInit) || gen.isDeclUsed(Declaration.newArray)
+      # Keep in sync with ZnewArray().
+      fd.write(''"
+Ta *ZArrayInit(Ta *head, Tt *itemType, int itemSize, Ti size) {
+ head->ptr = ZaOff(itemSize * size);"'')
+      IF ManageMemory.manageMemory(gen) && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = head->ptr - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->dim = 1;
+ head->size[0] = size;
+ head->itemType = itemType;
+ head->itemSize = itemSize;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.newArray)
+      # When the array is small, put it right after the Ta struct, so that
+      # only one allocation is needed.
+      # Otherwise: keep in sync with ZArrayInit().
+      fd.write(''"
+Ta *ZnewArray(Tt *itemType, int itemSize, Ti size) {
+ Ta *head;
+ size_t extra = size * itemSize;
+ if (extra > 100) extra = 0;
+ head = Za(sizeof(Ta) + extra);
+ if (extra == 0) {
+  head->ptr = ZaOff(itemSize * size);"'')
+      IF ManageMemory.manageMemory(gen) && ManageMemory.isExitclean()
+        fd.write(''"
+  head->alloced = head->ptr - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ } else head->ptr = head + 1;
+ head->dim = 1;
+ head->size[0] = size;
+ head->itemType = itemType;
+ head->itemSize = itemSize;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arraySize)
+      fd.write(''"
+Ti ZArraySize(Ta *head) {
+ Ti r;
+ if (head == NULL) r = 0;
+ else r = head->size[0];
+ return r;
+}
+"'')
+    }
+
+    # TODO: More dimensions
+    IF gen.isDeclUsed(Type.aDyn) || gen.isDeclUsed(Declaration.itemEqual)
+      fd.write(''"
+Tz ZArrayGetTz(Ta *head, int idx) {
+ switch (head->itemType->nr) {
+  case 0:
+  case 24:
+  case 25:
+   return (Tz)((Ti*)head->ptr)[idx];
+  case 10:
+   return (Tz)(Ti)((Tu*)head->ptr)[idx];
+  case 1:
+   return (Tz)(Ti)((char*)head->ptr)[idx];
+  case 11:
+   return (Tz)(Ti)((Tc*)head->ptr)[idx];
+  case 2:
+   return (Tz)(Ti)((Ti16*)head->ptr)[idx];
+  case 12:
+   return (Tz)(Ti)((Tu16*)head->ptr)[idx];
+  case 3:
+   return (Tz)(Ti)((Ti32*)head->ptr)[idx];
+  case 13:
+   return (Tz)(Ti)((Tu32*)head->ptr)[idx];
+  case 21:
+  case 22:
+  case 23:
+   return (Tz)(Ti)((int*)head->ptr)[idx];
+  case 80:
+  case 82:
+  case 83:
+   return (Tz)((Tf*)head->ptr)[idx];
+  case 81:
+   return (Tz)(Tf)((Tf32*)head->ptr)[idx];
+ }
+ return (Tz)(((void**)head->ptr)[idx]);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayEqual)
+      # TODO: if the left and right types are equal, can directly compare the
+      # array byte-for-byte.
+      fd.write(''"
+Tb ZArrayEqual(Ta *headl, Ta *headr) {
+ Ti n;
+ Ti tot;
+ Tz l;
+ Tz r;
+ if (headl == NULL || headr == NULL) ZthrowCstringNil("Comparing with NIL array");
+ if (headl->size[0] != headr->size[0]) return 0;
+ tot = headl->size[0];
+ for (n = 0; n < tot; ++n) {
+  l = ZArrayGetTz(headl, n);
+  r = ZArrayGetTz(headr, n);
+  if (!ZitemEqual(headl->itemType, l, headr->itemType, r)) return 0;
+ }
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayCompare)
+      # TODO: if the left and right types are equal, can directly compare the
+      # array byte-for-byte.
+      fd.write(''"
+int ZArrayCompare(Ta *headl, Ta *headr) {
+ Ti n;
+ Ti tot;
+ int v;
+ if (headl == NULL || headr == NULL) ZthrowCstringNil("Comparing with NIL array");
+ tot = headl->size[0];
+ if (headr->size[0] < tot) tot = headr->size[0];
+ for (n = 0; n < tot; ++n) {
+  v = ZitemEqual(headl->itemType, ZArrayGetTz(headl, n), headr->itemType, ZArrayGetTz(headr, n));
+  if (v != 0) return v;
+ }
+ if (headl->size[0] == headr->size[0]) return 0;
+ return headl->size[0] > headr->size[0] ? 1 : -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forArray)
+      fd.write(''"
+int ZforArrayCont(Tfa *tfa) {
+ Ta *a = tfa->a;
+ Ti i = tfa->i;
+ if (a == NULL || i >= a->size[0]) {
+  return 0;
+ }
+ if (tfa->keyp) {
+  *tfa->keyp = i;
+ }
+
+ if (a->itemType == &iobj__T)
+  *(Tr*)tfa->valp = ((Tr*)a->ptr)[i];"'')
+     IF gen.isDeclUsed(Type.aDyn)
+       fd.write(''"
+ else if (a->itemType == &dyn__T)
+  *(Tx*)tfa->valp = ((Tx*)a->ptr)[i];"'')
+     }
+     fd.write(''"
+ else if (a->itemType->nr < 80)
+  *(Ti*)tfa->valp = ZArrayGetTz(a, i).ival;
+ else if (a->itemType->nr < 100)
+  *(Tf*)tfa->valp = ZArrayGetTz(a, i).fval;
+ else
+  *(char**)tfa->valp = ((void**)a->ptr)[i];
+
+ ++tfa->i;
+ return 1;
+}
+
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayPtr)
+      fd.write(''"
+void *ZarrayPtr(Ta *head, Ti idx) {
+ if (head == NULL) ZthrowCstringNil("using [] on NIL array");
+ if (idx < 0 || idx >= head->size[0]) ZthrowCstringOutOfRange(idx, "array index out of bounds");
+ return head->ptr + idx * head->itemSize;
+}
+"'')
+    }
+
+    # TODO: other types than int
+    IF gen.isDeclUsed(%arrayMapI)
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+Zfo ZArrayMapIfo[3] = {{0,&array__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Ta *ZarrayMapI(Ta *head, Tcb *f) {
+ Ti i;
+ Ti *p;"'')
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZArrayMapIfo[0].off = (void*)&sf - (void*)&head;
+  ZArrayMapIfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZArrayMapIfo", fd)
+      }
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking map() on NIL array");
+ p = (Ti *)head->ptr;
+ for (i = 0; i < head->size[0]; ++i) {
+  p[i] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, p[i]);
+ }"'')
+      IF ManageMemory.manageMemory(gen)
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayMapP)
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+Zfo ZArrayMapPfo[3] = {{0,&array__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Ta *ZarrayMapP(Ta *head, Tcb *f) {
+ Ti i;
+ char **p;"'')
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZArrayMapPfo[0].off = (void*)&sf - (void*)&head;
+  ZArrayMapPfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZArrayMapPfo", fd)
+      }
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking map() on NIL array");
+ p = (char **)head->ptr;
+ for (i = 0; i < head->size[0]; ++i) {
+  char *pi = p[i];
+  p[i] = ((void *(*)(Tcb *, void *))f->cfunc)(f, p[i]);
+ }"'')
+      IF ManageMemory.manageMemory(gen)
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayKeyMapI)
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+Zfo ZArrayKeyMapIfo[3] = {{0,&array__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Ta *ZarrayKeyMapI(Ta *head, Tcb *f) {
+ Ti i;
+ Ti *p;"'')
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZArrayKeyMapIfo[0].off = (void*)&sf - (void*)&head;
+  ZArrayKeyMapIfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZArrayKeyMapIfo", fd)
+      }
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking map() on NIL array");
+ p = (Ti *)head->ptr;
+ for (i = 0; i < head->size[0]; ++i) {
+  p[i] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, i, p[i]);
+ }"'')
+      IF ManageMemory.manageMemory(gen)
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayKeyMapP)
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+Zfo ZArrayKeyMapPfo[3] = {{0,&array__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Ta *ZarrayKeyMapP(Ta *head, Tcb *f) {
+ Ti i;
+ char **p;"'')
+      IF ManageMemory.manageMemory(gen)
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZArrayKeyMapPfo[0].off = (void*)&sf - (void*)&head;
+  ZArrayKeyMapPfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZArrayKeyMapPfo", fd)
+      }
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking map() on NIL array");
+ p = (char **)head->ptr;
+ for (i = 0; i < head->size[0]; ++i) {
+  char *pi = p[i];
+  p[i] = ((void *(*)(Tcb *, Ti, void *))f->cfunc)(f, i, pi);
+ }"'')
+      IF ManageMemory.manageMemory(gen)
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arraySet)
+      # TODO: when the types don't match throw an error?
+      fd.write(''"
+Ta *Zas(Ta *head, void *vals, int type, Ti offset) {
+ int len;
+ int i;
+ if (head == NULL) ZthrowCstringNil("Invoking set() on NIL array");
+ if (type == 0) {
+  /* vals is a byteString */
+  Tc *p;
+  len = ZstringSizePtr(vals, &p);
+  if (len > head->size[0] - offset) len = head->size[0] - offset;
+  if (head->itemSize == 1) {
+   memmove(((Tc*)head->ptr) + offset, p, len);
+  } else if (head->itemSize == sizeof(Te)) {
+   for (i = 0; i < len; ++i) ((Te*)head->ptr)[i + offset] = p[i];
+  } else {
+   for (i = 0; i < len; ++i) ((Ti*)head->ptr)[i + offset] = p[i];
+  }
+ } else if (type == 1) {
+  /* vals is an array */
+  Ta *from = vals;
+  len = from->size[0];
+  if (len > head->size[0] - offset) len = head->size[0] - offset;
+  ZcopyItems(head->itemType, head->itemSize, head->ptr, offset, from->itemType, from->itemSize, from->ptr, 0, len);
+
+ } else {
+  /* vals is a list */
+  Tl *from = (Tl*)vals;
+  Ti count = from->itemCount;
+  if (count > offset + head->size[0]) count = offset + head->size[0];
+  ZcopyItems(head->itemType, head->itemSize, head->ptr, offset, from->itemType, from->itemSize, from->items, from->empty, count);
+ }
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayResize)
+      fd.write(''"
+Ta *ZarrayResize(Ta *head, int bytes, Ti size) {
+ if (head == NULL) ZthrowCstringNil("Invoking resize() on NIL array");
+ if (head->ptr == head + 1) {
+  head->ptr = ZaOff(bytes * size);
+  memmove(head->ptr, head + 1, size > head->size[0] ? bytes * head->size[0] : bytes * size);
+ } else head->ptr = ZranOff(head->ptr, bytes * head->size[0], bytes * size);"'')
+      IF ManageMemory.manageMemory(gen) && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = head->ptr - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->size[0] = size;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.itemToString)
+      fd.write(''"
+void ZArrayToStringGa(Ta *head, int useq, Tg *ga) {
+ int i;
+ Tn *e = "'' .. gen.getEnvCode() .. ''";
+ ga_append(ga, "[");
+ if (head->tosNr == e->tosNr) {
+  ga_append(ga, "recursive-array");
+ } else {
+  head->tosNr = e->tosNr;
+  for (i = 0; i < head->size[0]; ++i) {
+   Tz v;
+   if (i > 0) ga_append(ga, ", ");
+   if (head->itemType == &iobj__T) {
+    Tr *tr = (Tr*)head->ptr + i;
+    if (tr->ptr == NULL) ZobjectToString(NULL, NULL, ga);
+    else ZitemToString((Tt*)(tr->table[0]), useq, (Tz)tr->ptr, ga);"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+   } else if (head->itemType == &dyn__T) {
+    Tx *tx = (Tx*)head->ptr + i;
+    if (tx->type == NULL) ZobjectToString(NULL, NULL, ga);
+    else ZitemToString(tx->type, useq, tx->u, ga);"'')
+      }
+      fd.write(''"
+   } else {
+    if (head->itemSize == 1) {
+     v.ival = ((Tc*)head->ptr)[i];
+    } else if (head->itemType->nr >= 100) {
+     v.ptr = ((char**)head->ptr)[i];
+    } else if (head->itemSize == sizeof(Te)) {
+     v.ival = ((Te*)head->ptr)[i];
+    } else {
+     v.ival = ((Ti*)head->ptr)[i];
+    }
+    ZitemToString(head->itemType, useq, v, ga);
+   }
+  }
+  head->tosNr = 0;
+ }
+ ga_append(ga, "]");
+}
+
+Tc *ZarrayToString(Ta *head, int useq) {
+ Tg ga;
+ Tc *r;
+ if (head == NULL) return (Tc*)&ZNilString;
+ ++"'' .. gen.getEnvCode() .. ''"->tosNr;
+ ga.data = NULL;
+ ga.used = 0;
+ ZArrayToStringGa(head, useq, &ga);
+ r = ZnewString(ga.data, ga.used);"'')
+        IF !ManageMemory.manageMemory(gen)
+          fd.write(''"
+ Zfree(ga.data - ZOH_OFF);"'')
+        }
+        fd.write(''"
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayFind)
+      # TODO: compare pointer values properly.
+      fd.write(''"
+Ti ZArrayFind(Ta *head, Tz val) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL array");
+ tot = head->size[0];
+ for (n = 0; n < tot ; ++n)
+  switch (head->itemType->nr) {
+   case 0:
+   case 24:
+   case 25:
+    if (((Ti*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 10:
+    if ((Ti)((Tu*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 1:
+    if (((char*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 11:
+    if ((Ti)((Tc*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 2:
+    if (((Ti16*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 12:
+    if ((Ti)((Tu16*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 3:
+   case 13:
+    if (((Ti32*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 21:
+   case 22:
+   case 23:
+    if (((int*)head->ptr)[n] == val.ival) return n;
+    break;
+   case 80:
+   case 82:
+   case 83:
+    if (((Tf*)head->ptr)[n] == val.fval) return n;
+    break;
+   case 81:
+    if (((Tf32*)head->ptr)[n] == (Tf32)val.fval) return n;
+    break;
+   case 200:
+   case 201:
+    if (ZstringCmp(((void**)head->ptr)[n], val.ptr) == 0) return n;
+    break;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+   case 360:
+    if (ZdynEqual(((Tx*)head->ptr)[n], *(Tx*)val.ptr) == 0) return n;
+    break;"'')
+      }
+      fd.write(''"
+   case 391:
+    ZthrowCstringNil("Invoking find() on iobject array");
+    break;
+   default:
+    if (((void**)head->ptr)[n] == val.ptr) return n;
+    break;
+  }
+ return -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayFindIobj)
+      # TODO: compare pointer values properly.
+      fd.write(''"
+Ti ZArrayFindIobj(Ta *head, Tr tr) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL array");
+ tot = head->size[0];
+ for (n = 0; n < tot ; ++n)
+  if (((Tr*)head->ptr + n)->ptr == tr.ptr) return n;
+ return -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%arrayFindDyn)
+      fd.write(''"
+Ti ZArrayFindDyn(Ta *head, Tx tx) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL array");
+ tot = head->size[0];
+ for (n = 0; n < tot ; ++n)
+  if (ZdynEqual(((Tx*)head->ptr)[n], tx)) return n;
+ return -1;
+}
+"'')
+    }
+
+
+  }
+
+}

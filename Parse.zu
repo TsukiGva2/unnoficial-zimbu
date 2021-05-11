@@ -1,0 +1,4605 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Parser module.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Input.zu"
+IMPORT "Token.zu"
+IMPORT "TokenInput.zu"
+IMPORT "Visibility.zu"
+IMPORT "ZuiFile.zu"
+
+MODULE Parse @items=public                   # TODO: restrict visibility
+
+  # We use Token.Type a lot, define an alias.
+  ALIAS Token.Type TType
+
+  # Every block that doesn't have a name gets a number, so that items defined
+  # inside it can have a unique name.
+  int scopeNumber = 1
+
+  # Result of parsing a file.  Used to pass used keywords to the caller.
+  CLASS ParseResult @directory @items=directory
+    set<string>      $usedIdKeywords
+  }
+
+  # Read and parse |fileName|, return a Zui.Contents with the parse tree.
+  # Also returns a ParseResult with extra information.
+  # |blockType| should contain toplevel and mainfile or import.
+  # Return NIL, NIL when the file could not be read.
+  FUNC parseFile(string fileName, string indent, BlockType blockType
+                ) Zui.Contents, ParseResult
+    IO.File inFile = IO.fileReader(fileName)
+    IF inFile == NIL
+      RETURN NIL, NIL
+    }
+
+    # Parse the file.
+    Input input = NEW(inFile, fileName, indent)
+    TokenInput in = NEW(input)
+    LOG.info("\(indent)\(fileName): Parsing...")
+    ParseResult pr = NEW()
+
+    # Skip comments and white space at the start of the file.
+    # All other skipping is done after a statement.
+    skipSep(in)
+
+    # Parse IMPORT statements.
+    Zui.Contents contents = NEW()
+    parseImports(in, contents)
+
+    # Parse code.
+    parseInput(in, blockType, contents)
+
+    pr.usedIdKeywords = in.usedIdKeywords
+    inFile.close()
+    RETURN contents, pr
+  }
+
+  #
+  # Parse IMPORT statements and them to contents.imports.
+  #
+  PROC parseImports(TokenInput in, Zui.Contents contents)
+    Token   token
+    int     importNumber   # for Zui.Import.importNumber
+
+    # Keep the separator before the first import for the first item after the
+    # last import.
+    Token firstSep = lastSep
+
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type != TType.import
+        in.pushToken(token)
+        BREAK
+      }
+
+      string plugin
+      Token next = tokenAfterSep(in)
+      IF next.type == TType.dot
+        # IMPORT.plugin
+        checkNoSep(in)
+        token = in.getToken()  # eat the "."
+        checkNoSep(in)
+        token = in.getToken()
+        IF token.type != TType.id
+          token.error("IMPORT. must be followed by a name")
+        ELSE
+          plugin = token.value
+        }
+      }
+
+      expectSep(in)
+      token = in.getToken()
+      IF token.type != TType.stringLiteral && token.type != TType.lt
+        token.error("IMPORT must be followed by a string in \"\" or <>")
+        in.pushToken(token)
+      ELSE
+        string fileName = token.value
+        Zui.Position pos = token.zuiPos
+        bool angle
+        IF token.type == TType.lt
+          angle = TRUE
+          IO.StringWriter w = NEW()
+          WHILE TRUE
+            int c = in.get()
+            IF c == IO.eof || c == '\n'
+              token.error("Missing >")
+              BREAK
+            }
+            IF c == '>'
+              BREAK
+            }
+            w.writeChar(c)
+          }
+          fileName = w.ToString() # .trim()
+        }
+
+        string asName
+        string options
+        bool javascript
+
+        WHILE TRUE
+          SWITCH tokenAfterSep(in).type
+            CASE TType.as
+              token = getAs(in)
+              IF asName != NIL
+                token.error("duplicate AS")
+              ELSE
+                asName = token.value
+              }
+              CONTINUE
+          
+            CASE TType.options
+              expectSep(in)
+              token = in.getToken()  # OPTIONS
+              expectSep(in)
+              token = in.getToken()  # "--some_arg"
+              IF token.type != TType.stringLiteral
+                token.error("OPTIONS must be followed by a string")
+              ELSEIF options != NIL
+                token.error("duplicate OPTIONS")
+              ELSE
+                options = token.value
+              }
+              CONTINUE
+
+            CASE TType.at
+              Zui.Attributes za = NEW()
+              parseAttr(za, TRUE, ["javascript"], in)
+              javascript = za.getJavascript()
+              CONTINUE
+          }
+          BREAK
+        }
+
+        expectNewLine(in)
+
+        IF contents != NIL
+          Zui.Import import = contents.addNewImport()
+          import.setFileName(fileName)
+          import.setPlugin(plugin)
+          import.setOptions(options)
+          import.setJavascript(javascript)
+          IF asName != NIL
+            import.setAsName(asName)
+          }
+          IF angle
+            import.setAngleQuotes(TRUE)
+          }
+          import.setPos(pos)
+          import.setImportNumber(++importNumber)
+        }
+      }
+    }
+
+    # Only use the separator before the IMPORTs when the one after does not
+    # have a comment.  When the last one has a comment it should be what comes
+    # just before the CLASS or MODULE.
+    IF !lastSep.hasComment
+      lastSep = firstSep
+    }
+  }
+
+  # Read " AS name" and return the token with "name".
+  FUNC getAs(TokenInput in) Token
+    expectSep(in)
+    Token token = in.getToken()  # AS
+    expectSep(in)
+    token = in.getToken()  # name
+    IF token.type != TType.id
+      token.error("AS must be followed by a name")
+    }
+    RETURN token
+  }
+
+  #
+  # The main parsing function.
+  #
+  # Parse input |in| and fill in |contents|.
+  #
+  PROC parseInput(TokenInput in, BlockType blockTypeIn, Zui.Contents contents)
+    Token  token
+    bool   hadBlockItem
+    BlockType blockType = blockTypeIn
+    blockType.keepEnd = FALSE
+
+    list<Zui.Statement> statements = NEW()
+
+    # Parse toplevel code.
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type == TType.eof
+        # Normal way to end a file.
+        BREAK
+      }
+
+      IF !blockType.mainfile && blockType.toplevel && hadBlockItem
+        IF token.type == TType.c_close
+          token.error("unexpected }")
+        ELSE
+          token.error("Only one toplevel item allowed")
+        }
+      }
+      hadBlockItem = TRUE
+
+      in.pushToken(token)
+      Zui.Statement stmt = parseBlockItem(in, blockType)
+      IF stmt == NIL
+        token = in.getToken()
+        IF token.type == TType.eof
+          BREAK
+        ELSEIF token.type == TType.c_close
+          token.error("unexpected }")
+        ELSE
+          token.errorNotAllowed()
+        }
+      ELSEIF stmt ISNOT %emptyStatement
+        IF stmt.getType() == Zui.StatementType.eSPLIT
+          statements.extend(stmt.getStatementList())
+        ELSE
+          statements.add(stmt)
+        }
+      }
+    }
+
+    contents.setStatementList(statements)
+  }
+
+  # Note: |mainfile| and |toplevel| are used at the same time for zudoc.
+  BITS BlockType
+    bool $mainfile  # file containing Main()
+    bool $toplevel  # toplevel block, cannot have statements
+    bool $import    # imported file, only CLASS/MIXIN/INTERFACE and MODULE
+                    # allowed
+    bool $keepEnd   # do not consume the trailing token; when FALSE block must
+                    # end in "}"
+    bool $interface # Interface definition, all methods are abstract
+    bool $expression  # nameless PROC or FUNC declaration
+  }
+
+  FUNC parseBlock(TokenInput in, BlockType blockType) list<Zui.Statement>
+    list<Zui.Statement> statements = NEW()
+
+    WHILE TRUE
+      Zui.Statement stmt = parseBlockItem(in, blockType)
+      IF stmt == NIL
+        BREAK
+      }
+      IF stmt ISNOT %emptyStatement
+        IF stmt.getType() == Zui.StatementType.eSPLIT
+          statements.extend(stmt.getStatementList())
+        ELSE
+          statements.add(stmt)
+        }
+      }
+    }
+    IF !blockType.keepEnd
+      Token token = in.getToken()
+      IF token.type != TType.c_close
+        token.error("Syntax error")
+      ELSE
+        expectNewLine(in)
+      }
+    }
+
+    RETURN statements
+  }
+
+  # Returned by parseBlockItem() when no statement was found.
+  Zui.Statement %emptyStatement = NEW()
+
+  #
+  # Parse an item in a block.
+  # Return the statement or emptyStatement when there is none.
+  # Return NIL when at the end of the block.
+  #
+  FUNC parseBlockItem(TokenInput in, BlockType blockType) Zui.Statement
+    Token token = in.getToken()
+
+    SWITCH token.type
+      CASE TType.eof
+        error("unexpected EOF", in)
+        RETURN NIL
+
+      CASE TType.line_sep
+      CASE TType.sep
+      CASE TType.comment
+        # Ignore white space and commments at start of block.
+        # Should not happen in between statements, because we consume the
+        # separator after each statement.
+        RETURN %emptyStatement
+
+      CASE TType.c_close
+        # End of this block.
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.stringLiteral
+        token.error("unexpected string: '" .. token.value .. "'")
+        RETURN %emptyStatement
+
+      CASE TType.alias
+      CASE TType.type
+        RETURN parseAlias(token, in)
+
+      CASE TType.copy_start
+        # >>>  # comment
+        #   C or JS code
+        # <<<
+        Zui.Statement stmt = copyCode(in)
+        RETURN stmt
+
+      CASE TType.c
+        # Declaration with C type:  C(type) id
+        RETURN parseCType(in)
+
+      CASE TType.module
+        RETURN parseModule(token, in)
+
+
+      CASE TType.class
+      CASE TType.interface
+      CASE TType.piece
+        RETURN parseClass(token, in)
+
+      CASE TType.include
+        RETURN parseInclude(token, in)
+
+      CASE TType.shared
+        IF blockType.toplevel
+          # SHARED interrupts the CLASS block, it is handled in parseClass().
+          in.pushToken(token)
+          RETURN NIL
+        }
+        token.error("Unexpected SHARED")
+
+      CASE TType.static
+        skipSep(in)
+
+        # Must be a STATIC variable declaration
+        Token nextToken = in.getToken()
+        Zui.Statement stmt = parseStatement(nextToken, in, blockType)
+        IF stmt.getType() == Zui.StatementType.eVAR_DECL
+          stmt.getDeclaration().setShared(TRUE)
+          RETURN stmt
+        }
+        token.error("Unexpected STATIC")
+
+      CASE TType.new
+        IF !blockType.toplevel
+          BREAK
+        }
+        # NEW(arg) without preceding PROC.
+        PROCEED
+
+      CASE TType.proc
+      CASE TType.func
+        BlockType bt = blockType
+        bt.keepEnd = FALSE
+        RETURN parseMethod(token, in, bt)
+
+      CASE TType.lambda
+        token.error("Misplaced LAMBDA")
+        RETURN %emptyStatement
+
+      CASE TType.bits
+        RETURN parseBits(token, in)
+
+      CASE TType.enum
+        RETURN parseEnum(token, in)
+
+      CASE TType.dollar
+      CASE TType.percent
+      CASE TType.id
+      CASE TType.var
+      CASE TType.this
+      CASE TType.parent
+      CASE TType.i
+      CASE TType.sq_open  # tuple unpack
+        # This can be the start of a declaration, method call, etc.
+        RETURN parseStatement(token, in, blockType)
+
+      CASE TType.generate_if
+        RETURN parseIf(token, in)
+
+      CASE TType.generate_elseif
+      CASE TType.generate_else
+        # "GENERATE_ELSEIF expr"  ends the block
+        # "GENERATE_ELSE"  ends the block
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.generate_error
+        RETURN parseGenerateError(token, in)
+
+      DEFAULT
+        # something else
+    }
+
+    #
+    # The rest cannot appear at the toplevel.
+    #
+    IF blockType.toplevel
+      token.errorNotAllowed()
+    }
+
+    SWITCH token.type
+      CASE TType.if
+      CASE TType.ifnil
+        RETURN parseIf(token, in)
+
+      CASE TType.elseif
+      CASE TType.else
+        # "ELSEIF expr"  ends the block
+        # "ELSE"  ends the block
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.try
+        RETURN parseTry(token, in)
+
+      CASE TType.catch
+      CASE TType.finally
+        # "CATCH expr"  ends the block
+        # "FINALLY"  ends the block
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.while
+        RETURN parseWhile(token, in)
+        
+      CASE TType.do
+        RETURN parseDo(token, in)
+
+      CASE TType.until
+        # "UNTIL expr" ends the block
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.for
+        RETURN parseFor(token, in)
+
+      CASE TType.return
+      CASE TType.exit
+      CASE TType.throw
+      CASE TType.defer
+        RETURN parseReturnExitThrowDefer(token, in)
+
+      CASE TType.break
+      CASE TType.continue
+        RETURN parseBreakContinue(token, in)
+
+      CASE TType.switch
+        RETURN parseSwitch(token, in)
+
+      CASE TType.case
+      CASE TType.default
+      CASE TType.proceed
+        # "CASE expr"  ends the block
+        # "DEFAULT"  ends the block
+        # "PROCEED"  ends the block
+        in.pushToken(token)
+        RETURN NIL
+
+      CASE TType.new
+        RETURN parseNewStatement(token, in)
+
+      CASE TType.c_open
+        RETURN parseBlockStatement(token, in)
+
+      CASE TType.plusplus
+      CASE TType.minmin
+        # ++var, --var.member
+        # Give an error for "++ x here, instead of giving an error for
+        # unexpected sep.
+        checkNoSep(in)
+
+        Zui.Expression nameExpr = parseDotName(in, TRUE, doTypespec + doParens)
+        # TODO: error when nameExpr is not a left value.
+        IF nameExpr.getType() == Zui.ExprType.eCALL
+          token.error("Cannot use " .. token.value .. " here")
+        }
+        expectLineSep(in)
+
+        RETURN makeIncDecStatement(token, nameExpr)
+
+      DEFAULT
+        token.error("unexpected '" .. token.value .. "'")
+    }
+
+    RETURN %emptyStatement
+  }
+
+  FUNC makeIncDecStatement(Token token, Zui.Expression nameExpr
+       ) Zui.Statement
+    bool isInc = (token.type == TType.plusplus)
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(token.zuiPos)
+        .setType(isInc ? Zui.StatementType.eINC : Zui.StatementType.eDEC)
+        .setExpr(nameExpr)
+
+    RETURN stmt
+  }
+
+  # Parse a declaration after we have the type in |typeExpr| and ID in
+  # |id_token|.
+  FUNC parseDeclaration(Zui.Expression typeExpr, Token id_token,
+                            bool checkForInit, bool checkForEol, TokenInput in
+                       ) Zui.Statement
+    Token token = id_token
+
+    bool hasDollar
+    bool hasPercent
+    IF token.type == TType.dollar
+      # member variable: Type $name
+      token = in.getToken()
+      hasDollar = TRUE
+    ELSEIF token.type == TType.percent
+      # member variable: Type %name
+      token = in.getToken()
+      hasPercent = TRUE
+    }
+    IF token.type != TType.id
+      in.pushToken(token)
+      IF typeExpr.getType() == Zui.ExprType.eID
+        token.error("name without operation: " .. typeExpr.getId().getName())
+      ELSE
+        token.error("Syntax error")
+      }
+      RETURN %emptyStatement
+    }
+
+    # "Type name" is a declaration.
+    string name = token.value
+    Zui.Position pos = token.zuiPos
+
+    Token prevComment
+    IF lastSep.hasComment
+      prevComment = lastSep
+    }
+
+    # TODO: repeat when there is a comma: Type name, name @public = 1, name
+
+    # Type name @public
+    Zui.Attributes za = NEW()
+    parseAttr(za, TRUE, ["private", "protected",
+                        "public", "local", "file", "directory", "read"], in)
+
+    Zui.Expression expr
+    IF checkForInit
+      token = tokenAfterSep(in)
+      IF token.type == TType.assign
+        # "Type name = expr"
+        expectSep(in)
+        token = in.getToken()
+        expectSep(in)
+        expr = parseExpr(in)
+
+        # Check for @earlyInit.
+        parseAttr(za, TRUE, ["earlyInit"], in)
+      }
+    }
+
+    # A comment directly after declaration belongs to the declaration:
+    # "type name  # comment"
+    # It is preferred over a comment before the declaration.
+    Token peek = in.peekToken()
+    Token nextComment
+    IF peek.type == TType.line_sep && peek.hasCommentFirst
+      nextComment = peek
+    }
+
+    IF checkForEol
+      expectNewLine(in)
+    }
+
+    typeUsed(typeExpr, in)
+
+    Zui.Declaration decl = NEW()
+    decl.setName(name)
+        .setDollar(hasDollar)
+        .setPercent(hasPercent)
+        .setPos(pos)
+        .newType()
+            .setType(Zui.TypeEnum.eNAME)  # actual type figured out later
+            .setName(typeExpr)
+            .setAttr(za)
+    IF expr != NIL
+      decl.setInit(expr)
+    }
+    IF prevComment != NIL
+      decl.setCommentBefore(prevComment.value)
+    }
+    IF nextComment != NIL
+      decl.setPreferCommentAfter(TRUE)
+      decl.setCommentAfter(nextComment.value)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(pos)
+        .setType(Zui.StatementType.eVAR_DECL)
+        .setDeclaration(decl)
+    RETURN stmt
+  }
+
+  # A type |expr| is used, may add it to the keywords when the type requires
+  # loading a library module.  Do that right after parsing to reduce the
+  # number of passes required.
+  PROC typeUsed(Zui.Expression expr, TokenInput in)
+    IF expr.getType() == Zui.ExprType.eID
+      string name = expr.getId().getName()
+      # TODO: More types that require loading a library module?
+      IF name == "varbytes"  # TODO: remove
+           || name == "varByteString"
+           || name == "varstring"  # TODO: remove
+           || name == "varString"
+           || name == "int"
+           || name == "dyn"
+           || name == "string"
+        in.usedIdKeywords.set(name.toUpper())
+      ELSEIF name == "lock" || name == "autoLock" || name == "cond"
+        in.usedIdKeywords.set("THREAD")
+      }
+    }
+  }
+
+  # MODULE {name}
+  #   type var1
+  #   type var2
+  # }
+  FUNC parseModule(Token startToken, TokenInput in) Zui.Statement
+    Zui.Position modulePos = startToken.zuiPos
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+
+    # {name}
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.id
+      token.error("MODULE must be followed by a name")
+    }
+    string name = token.value
+
+    # @public and friends, can't use @protected or @private
+    Zui.Attributes za = NEW()
+    parseAttr(za, TRUE, ["public", "file", "directory", "items"], in)
+
+    Zui.ModuleType module = NEW()
+    expectNewLine(in)
+    module.setStatementList(parseBlock(in, toplevel))
+
+    Zui.Declaration decl = NEW()
+    decl.setName(name)
+        .setPos(modulePos)
+        .newType()
+            .setType(Zui.TypeEnum.eMODULE)
+            .setModuleDecl(module)
+            .setAttr(za)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(modulePos)
+        .setType(Zui.StatementType.eMODULE_DECL)
+        .setDeclaration(decl)
+
+    RETURN stmt
+  }
+
+  # CLASS {name}<Type, Type>
+  #        [EXTENDS {name}, {name}]
+  #        [IMPLEMENTS {name}, {name}]
+  #   type var1
+  #   FUNC name() type
+  #     stmt
+  #   }
+  # }
+  # INTERFACE {name} [EXTENDS {name}, {name}]
+  #   type var1
+  #   FUNC name() type
+  # }
+  # PIECE
+  #   (like CLASS)
+  # }
+  FUNC parseClass(Token classToken, TokenInput in) Zui.Statement
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+    bool isInterface = classToken.type == TType.interface
+    bool isPiece = classToken.type == TType.piece
+    Zui.ClassType class = NEW()
+    IF isInterface
+      class.setIsInterface(TRUE)
+    }
+    IF isPiece
+      class.setIsPiece(TRUE)
+    }
+
+    Zui.Attributes za = NEW()
+    IF isInterface
+      za.setAbstract(TRUE)
+    }
+
+    # {name}
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.id
+      token.error("CLASS must be followed by a name")
+    }
+    string name = token.value
+
+    # <Type, Type>  template types go in ClassType.templateTypeName.
+    token = tokenAfterSep(in)
+    IF token.type == TType.lt
+      skipLineSep(in)
+      class.setTemplateTypeNameList(parseTypeNameList(in))
+      token = tokenAfterSep(in)
+    }
+
+    # EXTENDS {name}
+    IF token.type == TType.extends
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+      Zui.Expression nameExpr = parseDotName(in, FALSE, doTypespec)
+      class.setExtends(nameExpr)
+      IF nameExpr.getType() == Zui.ExprType.eID
+        string tname = nameExpr.getId().getName()
+        # TODO: More class types that require loading a library module?
+        IF tname == "thread" || tname == "evalThread"
+          in.usedIdKeywords.set("THREAD")
+        }
+      }
+      token = tokenAfterSep(in)
+    }
+
+    # IMPLEMENTS {name}
+    IF token.type == TType.implements
+      IF isInterface
+        token.error("cannot use IMPLEMENTS on an interface")
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+      list<Zui.Expression> nameList = parseDotNameList(in)
+      class.setImplementsList(nameList)
+    }
+
+    parseAttr(za, TRUE, ["abstract", "final", "earlyInit",
+                                        "private", "protected", "public",
+                                   "local", "file", "directory", "items"], in)
+    expectNewLine(in)
+
+    # Repeat parsing CLASS statements and SHARED blocks.
+    list<Zui.Statement> memberStmts = NEW()
+    list<Zui.Statement> sharedStmts = NEW()
+    WHILE TRUE
+      # Parse block and terminating }
+      memberStmts.extend(parseBlock(in,
+                          toplevel + keepEnd + (isInterface ? interface : 0)))
+
+      IF tokenAfterSep(in).type != TType.shared
+        BREAK
+      }
+
+      # Parse a SHARED section and a terminating }.
+      token = in.getToken()
+
+      # TODO: SHARED @items=public should only apply to its contents
+      parseAttr(za, TRUE, ["items"], in)
+      expectNewLine(in)
+
+      sharedStmts.extend(parseBlock(in, toplevel))
+    }
+
+    class.setMemberList(memberStmts)
+    IF sharedStmts.Size() > 0
+      class.newShared()
+           .setStatementList(sharedStmts)
+      class.setSharedAttr(NEW())
+    }
+
+    # Check for closing }.
+    token = in.getToken()
+    IF token.type != TType.c_close
+      token.error("Syntax error")
+      classToken.error("No } found that ends this class")
+    ELSE
+      expectNewLine(in)
+    }
+
+    # Create the statement and the declaration.
+    Zui.Declaration decl = NEW()
+    decl.setName(name)
+        .setPos(classToken.zuiPos)
+        .newType()
+            .setType(isInterface ? Zui.TypeEnum.eINTERFACE
+                       : isPiece ? Zui.TypeEnum.ePIECE
+                       : Zui.TypeEnum.eCLASS)
+            .setClassDecl(class)
+            .setAttr(za)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(classToken.zuiPos)
+        .setType(Zui.StatementType.eCLASS_DECL)
+        .setDeclaration(decl)
+
+    RETURN stmt
+  }
+
+  # INCLUDE
+  #   PieceName $foo
+  # }
+  FUNC parseInclude(Token startToken, TokenInput in) Zui.Statement
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+    expectLineSep(in)
+
+    Zui.Include include = NEW()
+    list<Zui.Statement> stmtList = parseBlock(in, 0)
+    include.setStatementList(stmtList)
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eINCLUDE)
+        .setInclude(include)
+
+    RETURN stmt
+  }
+
+  bool   hadMain        # set to TRUE when Main() encountered.
+
+  # NEW(type arg1, type arg2) @attribute
+  #   body
+  # }
+  #
+  # PROC {name}(type arg1, type arg2) @attribute
+  #   body
+  # }
+  #
+  # FUNC {name}(type arg1, type arg2) type @attribute
+  #   body
+  # }
+  #
+  FUNC parseMethod(Token firstToken, TokenInput in, BlockType blockType
+                  ) Zui.Statement
+    CHECK.true(firstToken.type == TType.func
+            || firstToken.type == TType.proc
+            || firstToken.type == TType.lambda
+            || firstToken.type == TType.new)
+    IF blockType.import
+      firstToken.errorNotAllowed()
+    }
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+
+    # Create a method statement and add it to list of statements in the
+    # current block.
+    Zui.Statement stmt = NEW()
+    Zui.Declaration decl = stmt.newDeclaration()
+    decl.setPos(firstToken.zuiPos)
+
+    Zui.MethodType method = NEW()
+    Zui.Attributes za = NEW()
+
+    IF blockType.interface
+      za.setAbstract(TRUE)
+    }
+
+    IF firstToken.type != TType.new
+      expectSep(in)
+    }
+
+    Zui.TypeEnum type = Zui.TypeEnum.ePROC
+    string name
+    IF blockType.expression
+      # A nameless method, part of an expression.
+      decl.setPos(firstToken.zuiPos)
+    ELSE
+      Token nameToken
+      IF firstToken.type == TType.new
+        # NEW()
+        nameToken = firstToken
+      ELSE
+        # Get the function name.
+        nameToken = in.getToken()
+        IF nameToken.type == TType.dollar
+          # FUNC $function()  or PROC $proc()
+          decl.setDollar(TRUE)
+          nameToken = in.getToken()
+        }
+        IF nameToken.type == TType.new
+          nameToken.error(firstToken.value .. " NEW() not allowed")
+        }
+      }
+      IF nameToken.type == TType.new
+        # NEW()
+        type = Zui.TypeEnum.eNEW
+        decl.setDollar(TRUE)
+      ELSEIF nameToken.type == TType.id && nameToken.value == "Main"
+        # FUNC Main() int
+        IF !blockType.mainfile
+          nameToken.error("Main() not allowed in imported file")
+        ELSEIF hadMain
+          nameToken.error("Duplicate Main()")
+        }
+        hadMain = TRUE
+      ELSEIF nameToken.type != TType.id
+        nameToken.error("Expected a name")
+      }
+      name = nameToken.value
+      decl.setPos(nameToken.zuiPos)
+
+      # Check for <Type> after the name.
+      IF in.peekToken().type == TType.lt
+        method.setTemplateTypeNameList(parseTypeNameList(in))
+      }
+    }
+    decl.setName(name)
+
+    # Get function arguments.  For LAMBDA there are no types.
+    Token token = in.getToken()
+    IF token.type != TType.p_open
+      token.error("Missing (")
+    ELSE
+      parseArgDecl(method, in, firstToken.type == TType.lambda, TType.p_close)
+    }
+
+    IF firstToken.type == TType.func
+      # FUNC name(args) ReturnType
+      type = Zui.TypeEnum.eFUNC
+
+      expectSep(in)
+      VAR typeList = parseDotNameList(in)
+
+      FOR retType IN typeList
+        method.addNewReturnType()
+            .setType(Zui.TypeEnum.eNAME)
+            .setName(retType)
+      }
+    ELSEIF firstToken.type == TType.lambda
+      type = Zui.TypeEnum.eLAMBDA
+    }
+
+    parseAttr(za, TRUE,
+                      ["backtrace", "abstract", "default", "define", "replace",
+                       "private", "protected", "public", "local",
+                       "file", "directory", "primitive", "notOnExit"],
+                      in)
+
+    # Allow semicolon for line continuation only for nameless method.
+    expectLineSep(in, blockType.expression)
+
+    # Get the body of the method.
+    Zui.CodeBlock block = getCodeBlock(firstToken, in,
+                                              blockType.keepEnd ? keepEnd : 0)
+    IF block.hasStatement()
+      method.setBody(block)
+    }
+
+    stmt.setPos(firstToken.zuiPos)
+        .setType(Zui.StatementType.eMETHOD_DECL)
+    decl.newType()
+            .setType(type)
+            .setMethodDecl(method)
+            .setAttr(za)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+
+    RETURN stmt
+  }
+
+  # BITS {name}
+  #   type var1
+  #   type var2
+  #   PROC ...
+  #   FUNC ...
+  # }
+  FUNC parseBits(Token bitsToken, TokenInput in
+                ) Zui.Statement
+    Zui.BitsType bits = NEW()
+    Zui.Statement stmt = NEW()
+    stmt.setPos(bitsToken.zuiPos)
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.id
+      token.error("BITS must be followed by a name")
+    }
+    expectNewLine(in)
+    list<Zui.Statement> stmts = parseBlock(in, toplevel)
+    IF stmts.Size() > 0
+      bits.setMemberList(stmts)
+    }
+    stmt.setType(Zui.StatementType.eBITS_DECL)
+    Zui.Declaration decl = stmt.newDeclaration()
+    decl.setPos(stmt.getPos())
+        .newType()
+            .setType(Zui.TypeEnum.eBITS)
+            .setBitsDecl(bits)
+    decl.setName(token.value)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+
+    RETURN stmt
+  }
+
+  # ENUM {name}
+  #   value1
+  #   value2
+  # }
+  FUNC parseEnum(Token enumToken, TokenInput in) Zui.Statement
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+
+    # {name}
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.id
+      token.error("ENUM must be followed by a name")
+    }
+    string enumName = token.value
+
+    # @public and friends.
+    Zui.Attributes za = NEW()
+    parseAttr(za, TRUE, ["private", "public", "local", "file", "directory"], in)
+
+    Zui.EnumType enum = NEW()
+
+    expectNewLine(in)
+    WHILE TRUE
+      token = in.getToken()
+      Token saveLastSep = lastSep  # remember for below
+      IF token.type == TType.c_close
+        expectNewLine(in)
+        BREAK
+      }
+      IF token.type != TType.id
+        IF token.type == TType.eof
+          token.error("unexpected EOF, unterminated ENUM")
+        ELSE
+          token.error("unexpected token in ENUM")
+        }
+        BREAK
+      }
+
+      Token peek = in.peekToken()
+
+      Token next = tokenAfterSep(in)
+      IF next.type == TType.c_close
+        expectNewLine(in)  # don't allow value1; value2; }
+      ELSE
+        expectSep(in)
+      }
+
+      # A comment directly after declaration belongs to the declaration:
+      # "valuename  #= comment"
+      Token nextComment
+      IF peek.type == TType.line_sep && peek.hasCommentFirst
+        nextComment = peek
+      }
+      Token prevComment
+      IF saveLastSep.hasComment
+        prevComment = lastSep
+      }
+
+      Zui.Declaration decl = enum.addNewItem()
+      decl.setPos(token.zuiPos)
+          .setName(token.value)
+          .newType()
+              .setType(Zui.TypeEnum.eENUMVAL)
+      IF prevComment != NIL
+        decl.setCommentBefore(prevComment.value)
+      }
+      IF nextComment != NIL
+        decl.setCommentAfter(nextComment.value)
+      }
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(enumToken.zuiPos)
+        .setType(Zui.StatementType.eENUM_DECL)
+    Zui.Declaration decl = stmt.newDeclaration()
+    decl.setPos(enumToken.zuiPos)
+        .setName(enumName)
+        .newType()
+            .setType(Zui.TypeEnum.eENUM)
+            .setEnumDecl(enum)
+            .setAttr(za)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+
+    RETURN stmt
+  }
+
+  FUNC parseStatement(Token startToken, TokenInput in, BlockType blockType
+                     ) Zui.Statement
+    IF blockType.import
+      startToken.errorNotAllowed()
+    }
+    Zui.Expression leadExpr
+    IF startToken.type == TType.id
+        || startToken.type == TType.dollar
+        || startToken.type == TType.percent
+        || startToken.type == TType.this
+        || startToken.type == TType.parent
+        || startToken.type == TType.i
+      IF blockType.toplevel && (startToken.type == TType.this
+                                       || startToken.type == TType.parent)
+        startToken.error("cannot use " .. startToken.value .. " in this scope")
+      }
+      # Found a type/variable/module/class/enum/function name.
+      in.pushToken(startToken)
+      leadExpr = parseDotName(in, TRUE, doTypespec + doParens)
+    ELSEIF startToken.type == TType.sq_open
+                                         || startToken.type == TType.sq_o_open
+      leadExpr = parseList(startToken, in)
+    ELSE
+      # Must be VAR
+      leadExpr = newZuiExpr(Zui.ExprType.eID, startToken.zuiPos)
+      leadExpr.newId()
+              .setName(startToken.value)
+    }
+
+    Zui.Statement splitStmt
+
+    IF tokenAfterSep(in).type == TType.comma
+      # "expr, expr = expr"
+      # For "expr, type var = expr" put "type var" into splitStmt and
+      # "expr, var" in itemList.
+      list<Zui.Expression> itemList = NEW()
+      WHILE TRUE
+        list<Zui.Expression> items = parseComma(in, leadExpr, 0)
+        IF isAssign(tokenAfterSep(in).type)
+          itemList.extend(items)
+          BREAK
+        }
+
+        # We have "expr, type" in items, " var" is following. Take the last
+        # "type" to make "type var" into a declaration.
+        leadExpr = items.remove(-1)
+        itemList.extend(items)
+        expectSep(in)
+        Zui.Statement declStmt = parseDeclaration(leadExpr, in.getToken(),
+                                                             FALSE, FALSE, in)
+        IF splitStmt == NIL
+          splitStmt = NEW()
+          splitStmt.setType(Zui.StatementType.eSPLIT)
+        }
+        splitStmt.addStatement(declStmt)
+        leadExpr = varExprFromDeclStmt(declStmt)
+        IF tokenAfterSep(in).type != TType.comma
+          # Found ", type var" with no comma following, add "var" to the list.
+          itemList.add(leadExpr)
+          BREAK
+        }
+      }
+
+      leadExpr = newZuiExpr(Zui.ExprType.eLIST, startToken.zuiPos)
+      leadExpr.setListItemList(itemList)
+    }
+
+    Zui.Statement stmt
+
+    IF leadExpr.getType() == Zui.ExprType.eCALL
+      # func(arg) or module.method(arg)
+      IF blockType.toplevel
+        startToken.error("cannot call a function in this scope")
+      }
+      expectLineSep(in)
+
+      Zui.MethodCall call = leadExpr.getMethodCall()
+      stmt = NEW()
+      stmt.setPos(startToken.zuiPos)
+          .setType(Zui.StatementType.eCALL)
+          .setMethodCall(call)
+    ELSE
+      Token afterSep = tokenAfterSep(in)
+      IF afterSep.type != TType.plusplus
+                                     && afterSep.type != TType.minmin
+        expectSep(in)
+      }
+      Token token = in.getToken()
+      IF isAssign(token.type)
+        IF blockType.toplevel
+          token.error("cannot do assignment in this scope")
+        }
+        stmt = parseAssign(leadExpr, token, in)
+        expectLineSep(in)
+      ELSEIF afterSep.type == TType.plusplus
+             || afterSep.type == TType.minmin
+        # "var++" or "module.something--"
+        in.pushToken(token)
+        checkNoSep(in)
+        token = in.getToken()
+        IF blockType.toplevel
+          token.error("cannot do in/decrement in this scope")
+        ELSEIF leadExpr.getType() == Zui.ExprType.eID
+             && (leadExpr.getId().getName() == "dyn"
+              || leadExpr.getId().getName() == "VAR")
+          token.error("cannot in/decrement dyn or VAR")
+        }
+        expectLineSep(in)
+
+        stmt = makeIncDecStatement(token, leadExpr)
+      ELSE
+        # Can't have $Type name.
+        IF startToken.type == TType.dollar
+          startToken.error("Misplaced $")
+        }
+        stmt = parseDeclaration(leadExpr, token, TRUE, FALSE, in)
+
+        IF stmt ISNOT %emptyStatement
+            && !stmt.getDeclaration().hasInit()
+            && tokenAfterSep(in).type == TType.comma
+          # We don't know which one of these it is yet:
+          # 1. "type var, var, var"
+          # 2. "type var, [type] var, [type] var = expr"
+          leadExpr = varExprFromDeclStmt(stmt)
+          list<Zui.Expression> items = parseComma(in, leadExpr, 0)
+          splitStmt = NEW()
+          splitStmt.setType(Zui.StatementType.eSPLIT)
+
+          Token nextToken = tokenAfterSep(in)
+          IF isAssign(nextToken.type) || (nextToken.type == TType.id
+                                     && in.peekToken().type != TType.line_sep)
+            # It's 2. "type var, [type] var, [type] var = expr"
+            # NOTE: a linebreak is not allowed between type and var, because
+            # that could be:
+            #      type var, var
+            #      var = expr
+            # instead of
+            #      type var, type
+            #      var = expr
+            splitStmt.addStatement(stmt)
+
+            list<Zui.Expression> itemList = NEW()
+            WHILE TRUE
+              IF isAssign(tokenAfterSep(in).type)
+                itemList.extend(items)
+                leadExpr = newZuiExpr(Zui.ExprType.eLIST, startToken.zuiPos)
+                leadExpr.setListItemList(itemList)
+                expectSep(in)
+                token = in.getToken()
+                stmt = parseAssign(leadExpr, token, in)
+                BREAK
+              }
+              IF in.peekToken().type == TType.line_sep
+                token.error("Syntax error")
+                BREAK
+              }
+              expectSep(in)
+
+              # We have "expr, type" in items, " var" is following. Take the
+              # last "type" to make "type var" into a declaration.
+              leadExpr = items.remove(-1)
+              itemList.extend(items)
+              Zui.Statement declStmt = parseDeclaration(leadExpr, in.getToken(),
+                                                             FALSE, FALSE, in)
+              IF declStmt IS %emptyStatement
+                BREAK
+              }
+              splitStmt.addStatement(declStmt)
+              leadExpr = varExprFromDeclStmt(declStmt)
+              IF tokenAfterSep(in).type != TType.comma
+                # Found ", type var" with no comma following, add "var" to the
+                # list.
+                items = [leadExpr]
+              ELSE
+                # more items following
+                items = parseComma(in, leadExpr, 0)
+              }
+            }
+
+          ELSE
+            # It's 1. "type var, var, var".  Make a list of declaration
+            # statements.
+            VAR declStmt = stmt
+            FOR var IN items.slice(1)  # skip the first one, it's in declStmt
+              splitStmt.addStatement(stmt)
+              stmt = declStmt.copy(TRUE)
+              Zui.Declaration decl = stmt.getDeclaration()
+              decl.setName(var.getId().getName())
+                  .setDollar(var.getId().getDollar())
+                  .setPercent(var.getId().getPercent())
+                  .setPos(var.getPos())
+            }
+          }
+        }
+        expectNewLine(in)
+      }
+    }
+
+    IF splitStmt != NIL
+      splitStmt.addStatement(stmt)
+      RETURN splitStmt
+    }
+    RETURN stmt
+  }
+
+  FUNC isAssign(TType type) bool
+    RETURN type == TType.assign
+        || type == TType.minassign
+        || type == TType.plusassign
+        || type == TType.multassign
+        || type == TType.divassign
+        || type == TType.stringassign
+  }
+
+  # Parse "var = expr".
+  # |expr| is the lhs, |token| is "=", "+=", etc.
+  FUNC parseAssign(Zui.Expression expr, Token token, TokenInput in
+                  ) Zui.Statement
+    # "var = expr"
+    # "var -= expr"
+    # "var += expr"
+    # "var *= expr"
+    # "var /= expr"
+    # "var ..= expr"
+    # "module.something = expr"
+    # "var[i] = expr"
+    Zui.Assignment ass = NEW()
+    SWITCH token.type
+      CASE TType.minassign
+           ass.setType(Zui.ExprType.eSUBTRACT)
+      CASE TType.plusassign
+           ass.setType(Zui.ExprType.eADD)
+      CASE TType.multassign
+           ass.setType(Zui.ExprType.eMULTIPLY)
+      CASE TType.divassign
+           ass.setType(Zui.ExprType.eDIVIDE)
+      CASE TType.stringassign
+           ass.setType(Zui.ExprType.eCONCAT)
+    }
+    expectSep(in)
+    Zui.Expression rhs = parseExpr(in)
+
+    IF tokenAfterSep(in).type == TType.comma
+      # a, b, c = b, c, a
+      list<Zui.Expression> rhsList = [rhs]
+
+      WHILE tokenAfterSep(in).type == TType.comma
+        checkNoSep(in)
+        Token commaToken = in.getToken()  # get the comma
+        IF expr.getType() != Zui.ExprType.eLIST
+          commaToken.error("Misplaced comma")
+          BREAK
+        }
+        expectSep(in)
+        rhsList.add(parseExpr(in))
+      }
+
+      rhs = newZuiExpr(Zui.ExprType.eLIST, token.zuiPos)
+      rhs.setListItemList(rhsList)
+
+      IF expr.getType() == Zui.ExprType.eLIST
+                                      && expr.sizeListItem() != rhsList.Size()
+        token.error("Expected " .. expr.sizeListItem()
+                                       .. " values, found " .. rhsList.Size())
+      }
+    }
+
+    ass.setLhs(expr)
+    ass.setRhs(rhs)
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(token.zuiPos)
+        .setType(Zui.StatementType.eASSIGN)
+        .setAssign(ass)
+    RETURN stmt
+  }
+
+  # Generate an Expression from the variable in a Declaration.
+  FUNC varExprFromDeclStmt(Zui.Statement stmt) Zui.Expression
+    Zui.Expression expr = newZuiExpr(Zui.ExprType.eID, stmt.getPos())
+    Zui.Id id = expr.newId()
+    Zui.Declaration decl = stmt.getDeclaration()
+    id.setName(decl.getName())
+    id.setDollar(decl.getDollar())
+    id.setPercent(decl.getPercent())
+    RETURN expr
+  }
+
+  # IF expr         GENERATE_IF expr
+  #   ...             ...
+  # ELSEIF expr     GENERATE_ELSEIF expr
+  #   ...             ...
+  # ELSE            GENERATE_ELSE
+  #   ...             ...
+  # }               }
+  #
+  # Also IFNIL instead of IF expr
+  FUNC parseIf(Token startToken, TokenInput in) Zui.Statement
+    bool generate = (startToken.type == TType.generate_if)
+    bool ifnil = (startToken.type == TType.ifnil)
+
+    Zui.Condition cond = NEW()
+
+    IF !ifnil
+      checkNoLineBreak(in)
+      expectSep(in)
+      Zui.Expression condExpr = parseExpr(in)
+      cond.setCond(condExpr)
+    }
+    expectLineSep(in)
+
+    # IF block goes in cond.block
+    cond.setBlock(getCodeBlock(startToken, in, keepEnd))
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(generate ? Zui.StatementType.eGENERATEIF
+                  : ifnil ? Zui.StatementType.eIFNIL
+                          : Zui.StatementType.eIF)
+        .setCondition(cond)
+
+    # Parse zero or more ELSEIF, goes in cond.elseif.
+    Token token
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type != (generate ? TType.generate_elseif : TType.elseif)
+        BREAK
+      }
+      checkNoLineBreak(in)
+      expectSep(in)
+      Zui.Expression elseifExpr = parseExpr(in)
+      expectLineSep(in)
+      Zui.Condition elseifCond = cond.addNewElseif()
+      elseifCond.setCond(elseifExpr)
+      elseifCond.setBlock(getCodeBlock(token, in, keepEnd))
+    }
+
+    # Parse optional ELSE.
+    IF token.type == (generate ? TType.generate_else : TType.else)
+      expectLineSep(in)
+      cond.setElse(getCodeBlock(token, in, keepEnd))
+      token = in.getToken()
+    }
+
+    IF token.type == TType.c_close
+      expectNewLine(in)
+    ELSE
+      token.error("Syntax error")
+    }
+
+    RETURN stmt
+  }
+
+  # GENERATE_ERROR expr
+  FUNC parseGenerateError(Token token, TokenInput in) Zui.Statement
+    Zui.Statement stmt = NEW()
+    stmt.setType(Zui.StatementType.eGENERATEERROR)
+    stmt.setPos(token.zuiPos)
+
+    checkNoLineBreak(in)
+    expectSep(in)
+    Zui.Expression expr = parseExpr(in)
+    stmt.setExpr(expr)
+    expectLineSep(in)
+
+    RETURN stmt
+  }
+
+  # TRY
+  #   ...
+  # CATCH Exn e
+  #   ...
+  # ELSE
+  #   ...
+  # FINALLY
+  #   ...
+  # }
+  FUNC parseTry(Token startToken, TokenInput in) Zui.Statement
+    Token token = startToken
+
+    Zui.TryStatement try = NEW()
+    Zui.Statement stmt = NEW()
+    stmt.setPos(token.zuiPos)
+        .setType(Zui.StatementType.eTRY)
+        .setTry(try)
+
+    expectLineSep(in)
+
+    # Parse the TRY block.
+    try.setBody(getCodeBlock(startToken, in, keepEnd))
+
+    # Parse a sequence of CATCH blocks
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type != TType.catch
+        BREAK
+      }
+      Zui.Catch catch = try.addNewCatch()
+      catch.setPos(token.zuiPos)
+      checkNoLineBreak(in)
+      expectSep(in)
+
+      # E.Exit, E.Interrupt e
+      list<Zui.Type> types = NEW()
+      parseTypeList(in, types, FALSE)
+      catch.setTypeList(types)
+
+      expectSep(in)
+      token = in.getToken()
+      IF token.type != TType.id
+        token.error("Expected a name for the exception")
+      }
+      Zui.Declaration decl = NEW()
+      decl.setName(token.value)
+      decl.setPos(token.zuiPos)
+      catch.setDecl(decl)
+      expectLineSep(in)
+
+      # Parse the CATCH block.  Also add the block when it's empty, it means
+      # the exception is ignored.
+      catch.setBody(getCodeBlock(token, in, keepEnd))
+    }
+
+    # Parse the optional ELSE
+    IF token.type == TType.else
+      # Append the ELSE at the end of the TRY block.
+      expectLineSep(in)
+
+      # Parse the ELSE block.
+      Zui.CodeBlock tryElse = getCodeBlock(token, in, keepEnd)
+
+      Zui.Statement elseStmt = NEW()
+      elseStmt.setPos(token.zuiPos)
+          .setType(Zui.StatementType.eTRYELSE)
+          .setBlock(tryElse)
+          .setTry(try)  # link to the TryStatement
+      try.getBody().addStatement(elseStmt)
+      try.setElse(tryElse)
+
+      token = in.getToken()
+    }
+
+    # Parse the optional FINALLY
+    IF token.type == TType.finally
+      expectLineSep(in)
+
+      # Parse the FINALLY block.
+      Zui.CodeBlock tryFinally = getCodeBlock(token, in, keepEnd)
+      IF tryFinally.hasStatement()
+        try.setFinally(tryFinally)
+      }
+
+      token = in.getToken()
+    }
+
+    IF token.type == TType.c_close
+      expectNewLine(in)
+    ELSE
+      token.error("Syntax error")
+      in.pushToken(token)
+    }
+
+    RETURN stmt
+  }
+
+  FUNC getCodeBlock(Token token, TokenInput in, BlockType blockType
+                   ) Zui.CodeBlock
+    Zui.CodeBlock block = NEW()
+    list<Zui.Statement> stmts = parseBlock(in, blockType)
+    IF stmts.Size() > 0
+      block.setStatementList(stmts)
+      block.setPos(stmts[0].getPos())
+    ELSE
+      block.setPos(token.zuiPos)
+    }
+    block.setEndPos(in.peekToken().zuiPos)
+    RETURN block
+  }
+
+  # WHILE expr
+  #   ...
+  # }
+  FUNC parseWhile(Token startToken, TokenInput in) Zui.Statement
+    expectSep(in)
+    Zui.Expression condExpr = parseExpr(in)
+    Zui.Condition cond = NEW()
+    cond.setCond(condExpr)
+
+    expectLineSep(in)
+    Zui.CodeBlock block = getCodeBlock(startToken, in, 0)
+    IF block.hasStatement()
+      cond.setBlock(block)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eWHILE)
+        .setCondition(cond)
+
+    RETURN stmt
+  }
+
+  # DO
+  #   ...
+  # UNTIL expr
+  FUNC parseDo(Token startToken, TokenInput in) Zui.Statement
+    expectLineSep(in)
+
+    list<Zui.Statement> stmts = parseBlock(in, keepEnd)
+
+    Token token = in.getToken()
+    IF token.type != TType.until
+      token.error("Missing UNTIL")
+    ELSE
+      # The UNTIL goes at the end of the block, so that variables declared
+      # inside the block can be accessed.
+      expectSep(in)
+      Zui.Expression condExpr = parseExpr(in)
+      expectNewLine(in)
+
+      Zui.Condition cond = NEW()
+      cond.setCond(condExpr)
+
+      Zui.Statement stmt = NEW()
+      stmt.setPos(token.zuiPos)
+          .setType(Zui.StatementType.eUNTIL)
+          .setCondition(cond)
+      stmts.add(stmt)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eDO)
+
+    Zui.Condition cond = stmt.newCondition()
+    cond.newBlock().setPos(stmt.getPos())
+    IF stmts.Size() > 0
+      cond.getBlock()
+          .setPos(stmts[0].getPos())
+          .setStatementList(stmts)
+    }
+    cond.getBlock().setEndPos(token.zuiPos)
+
+    RETURN stmt
+  }
+
+  # FOR i IN expr
+  #   block
+  # }
+  FUNC parseFor(Token startToken, TokenInput in) Zui.Statement
+    Zui.ForStatement for = NEW()
+
+    # Get the loop variables: comma separated list of "USE i" and "i".
+    WHILE TRUE
+      Zui.Declaration loopVar = NEW()
+
+      expectSep(in)
+      Token token = in.peekToken()
+      IF token.type == TType.use
+        loopVar.setIsUse(TRUE)
+        in.getToken()
+        expectSep(in)
+      }
+
+      Zui.Expression leftExpr = parseDotName(in, TRUE, 0)
+      string name
+      IF leftExpr.getType() == Zui.ExprType.eID
+        name = leftExpr.getId().getName()
+      ELSE
+        # TODO: "USE some.member" should work.
+        token.error("Sorry, only name supported for FOR loop variable")
+        name = "unknown"
+      }
+      loopVar.setName(name)
+      loopVar.setPos(leftExpr.getPos())
+      setPrefixFromExpr(loopVar, leftExpr)
+      for.addLoopVar(loopVar)
+
+      IF tokenAfterSep(in).type != TType.comma
+        BREAK
+      }
+      checkNoSep(in)
+      in.getToken()  # eat the comma
+    }
+
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.in
+      token.error("Missing IN")
+    }
+    expectSep(in)
+    Zui.Expression expr = parseExpr(in)
+    for.addIter(expr)
+
+    token = tokenAfterSep(in)
+    IF token.type == TType.to || token.type == TType.until
+      IF for.sizeLoopVar() > 1
+        token.error("Cannot use TO or UNTIL with more than one variable")
+      }
+
+      # FOR i IN 1 TO 100
+      # FOR i IN 0 UNTIL 100
+      expectSep(in)
+      in.getToken()  # TO or UNTIL
+      expectSep(in)
+      Zui.Expression toExpr = parseExpr(in)
+      IF token.type == TType.to
+        for.setTo(toExpr)
+      ELSE
+        for.setUntil(toExpr)
+      }
+
+      token = tokenAfterSep(in)
+      IF token.type == TType.step
+        # FOR i IN 1 TO 100 STEP -1
+        expectSep(in)
+        in.getToken()  # STEP
+        expectSep(in)
+        Zui.Expression stepExpr = parseExpr(in)
+        for.setStep(stepExpr)
+      }
+    ELSE
+      WHILE token.type == TType.comma
+        # FOR i1, i2 IN iter1, iter2
+        checkNoSep(in)
+        in.getToken()  # eat the comma
+        expectSep(in)
+        expr = parseExpr(in)
+        for.addIter(expr)
+        token = tokenAfterSep(in)
+      }
+    }
+
+    expectLineSep(in)
+    list<Zui.Statement> stmts = parseBlock(in, 0)
+    IF stmts.Size() > 0
+      for.newBody()
+          .setPos(stmts[0].getPos())
+          .setStatementList(stmts)
+          .setEndPos(in.peekToken().zuiPos)
+    }
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eFOR)
+        .setFor(for)
+
+    RETURN stmt
+  }
+
+  # RETURN [expr]
+  # EXIT {expr}
+  # THROW {expr}
+  # DEFER method(arg)
+  FUNC parseReturnExitThrowDefer(Token startToken, TokenInput in) Zui.Statement
+    Zui.Statement stmt = NEW()
+    SWITCH startToken.type
+      CASE TType.return
+           stmt.setType(Zui.StatementType.eRETURN)
+      CASE TType.exit
+           stmt.setType(Zui.StatementType.eEXIT)
+      CASE TType.throw
+           stmt.setType(Zui.StatementType.eTHROW)
+      CASE TType.defer
+           stmt.setType(Zui.StatementType.eDEFER)
+    }
+    Token next = in.getToken()
+    in.pushToken(next)
+    skipSep(in)
+    Zui.Expression arg
+    IF startToken.type == TType.return
+      VAR argList = parseComma(in, NIL, 0)
+      IF argList.Size() > 0
+        arg = argList[0]
+        stmt.setArgumentsList(argList)
+      ELSE
+        arg = newZuiExpr(Zui.ExprType.eUNKNOWN, startToken.zuiPos)
+      }
+    ELSE
+      arg = parseExpr(in)
+    }
+    IF arg.getType() != Zui.ExprType.eUNKNOWN
+                                       || next.type != TType.line_sep
+      # There must be a line separator when there is an argument.  When
+      # there is no argument check for a line break when there wasn't one
+      # before looking for the argument to generate an error.
+      expectLineSep(in)
+    }
+
+    IF arg.getType() != Zui.ExprType.eUNKNOWN
+      stmt.setExpr(arg)
+    }
+    stmt.setPos(startToken.zuiPos)
+
+    RETURN stmt
+  }
+
+  # BREAK
+  # CONTINUE
+  FUNC parseBreakContinue(Token startToken, TokenInput in) Zui.Statement
+    bool isBreak = startToken.type == TType.break
+    expectLineSep(in)
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(isBreak ? Zui.StatementType.eBREAK
+                                                : Zui.StatementType.eCONTINUE)
+
+    RETURN stmt
+  }
+
+  # SWITCH expr
+  #   CASE expr
+  #   ...
+  #   DEFAULT
+  #   ...
+  # }
+  FUNC parseSwitch(Token startToken, TokenInput in) Zui.Statement
+    skipSep(in)
+    Zui.Expression condExpr = parseExpr(in)
+    Zui.Condition cond = NEW()
+    cond.setCond(condExpr)
+
+    expectLineSep(in)
+
+    list<Zui.Statement> stmts = NEW()
+    Zui.Statement stmt
+    bool hadDefault
+    Token token
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type == TType.case
+        # CASE expr
+        IF hadDefault
+          token.error("CASE after DEFAULT")
+        }
+        skipSep(in)
+        Zui.Expression caseExpr = parseExpr(in)
+        expectLineSep(in)
+
+        stmt = NEW()
+        stmt.setPos(token.zuiPos)
+            .setType(Zui.StatementType.eCASE)
+            .setExpr(caseExpr)
+        stmts.add(stmt)
+      ELSEIF token.type == TType.default
+        # DEFAULT
+        IF hadDefault
+          token.error("Duplicate DEFAULT")
+        }
+        IF stmt != NIL
+          token.error("DEFAULT follows CASE")
+        }
+        hadDefault = TRUE
+        expectLineSep(in)
+
+        stmt = NEW()
+        stmt.setPos(token.zuiPos)
+            .setType(Zui.StatementType.eDEFAULT)
+        stmts.add(stmt)
+
+      ELSEIF token.type == TType.c_close
+          || token.type == TType.eof
+        BREAK
+      ELSE
+        IF stmt == NIL
+          token.error("Unexpected item in SWITCH")
+        }
+        in.pushToken(token)
+        Zui.CodeBlock block = getCodeBlock(token, in, keepEnd)
+        IF block.hasStatement() && stmt != NIL
+          stmt.setBlock(block)
+        }
+
+        token = tokenAfterSep(in)
+        IF token.type == TType.proceed
+          token = in.getToken()
+          expectLineSep(in)
+          IF stmt != NIL
+            stmt.setProceedPos(token.zuiPos)
+          }
+        }
+        stmt = NIL
+      }
+    }
+    IF stmts.Size() > 0
+      cond.newBlock()
+          .setStatementList(stmts)
+          .setEndPos(token.zuiPos)
+    }
+
+    stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eSWITCH)
+        .setCondition(cond)
+
+    RETURN stmt
+  }
+
+  # NEW(args) as a statement.
+  FUNC parseNewStatement(Token startToken, TokenInput in) Zui.Statement
+    Zui.Expression expr = parseNew(startToken, in)
+
+    Zui.MethodCall method = expr.getMethodCall()
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eNEWCALL)
+        .setMethodCall(method)
+
+    RETURN stmt
+  }
+
+  # {
+  #   ...
+  # }
+  FUNC parseBlockStatement(Token startToken, TokenInput in) Zui.Statement
+    expectLineSep(in)
+    Zui.CodeBlock block = getCodeBlock(startToken, in, 0)
+    Zui.Statement stmt = NEW()
+    stmt.setPos(startToken.zuiPos)
+        .setType(Zui.StatementType.eBLOCK)
+        .setBlock(block)
+
+    RETURN stmt
+  }
+
+  # Parse arguments for a method declaration: "type name, type name".
+  # Also find "type ... name" at the end.
+  # When isLambda is TRUE parse arguments for a lambda expression or method:
+  # "name, USE name, GET name".
+  # Stop when |end_token| is found.
+  # Add the arguments to |method|.
+  PROC parseArgDecl(Zui.MethodType method, TokenInput in,
+                                              bool isLambda, TType end_token)
+    bool didFirst
+    bool foundUse
+    bool foundDefault
+    bool gotThreeDots
+
+    # Parse the arguments: "type name".
+    # Loop until we find the end_token.
+    skipLineSep(in)
+    WHILE TRUE
+      Token token = in.getToken()
+      IF token.type == end_token
+        BREAK
+      }
+      IF !didFirst
+        # first argument
+        didFirst = TRUE
+        in.pushToken(token)
+      ELSEIF in.peekToken().type == TType.use
+        # Found USE after argument: "(type arg USE x)".  No comma.
+        in.pushToken(token)
+        expectSep(in)
+      ELSE
+        # second or later argument
+        IF token.type != TType.comma
+          token.error("missing comma")
+        }
+        expectSep(in)
+        IF in.peekToken().type == TType.use
+          token.error("superfluous comma before USE")
+        }
+      }
+      IF tokenAfterSep(in).type == end_token
+        token.error("superfluous comma")
+        token = in.getToken()
+        IF token.type != end_token
+          token = in.getToken()
+        }
+        BREAK
+      }
+      IF gotThreeDots
+        token.error("Cannot have another argument after a varargs argument")
+      }
+
+      TType ttype = TType.id
+      Zui.Type type = NEW()
+      type.setPos(token.zuiPos)
+      IF foundUse
+        # Second name: "USE x, &y"
+        type.setType(Zui.TypeEnum.eUSE)
+      ELSE
+        token = in.peekToken()
+        IF token.type == TType.use
+          # USE id
+          in.getToken()
+          type.setType(Zui.TypeEnum.eUSE)
+          foundUse = TRUE
+          expectSep(in)
+        ELSEIF isLambda
+          type.setType(Zui.TypeEnum.eUSE)
+        ELSE
+          # get the type
+          Zui.Expression typeExpr = parseDotName(in, FALSE, doTypespec)
+          type.setType(Zui.TypeEnum.eNAME)
+              .setName(typeExpr)
+
+          # If we get a ) or comma the type is missing.
+          token = in.getToken()
+          IF token.type == end_token || token.type == TType.comma
+            token.error("Missing type or name")
+          }
+          in.pushToken(token)
+          expectSep(in)
+        }
+      }
+
+      token = in.getToken()
+      IF token.type == TType.threeDots
+        # type ... name
+        gotThreeDots = TRUE
+        expectSep(in)
+        token = in.getToken()
+      }
+
+      # get optional '&' and the argument name
+      IF token.type == TType.amp
+        checkNoSep(in)
+        token = in.getToken()
+
+        IF foundUse
+          type.setType(Zui.TypeEnum.eREF)
+        ELSE
+          Zui.Type t = NEW()
+             .setType(Zui.TypeEnum.eREF)
+             .setRef(type)
+          type = t
+          type.setPos(token.zuiPos)
+        }
+      }
+
+      IF foundUse
+        # After USE can come an expression: "USE Mod.var"
+        # Also allowed: "USE $var"
+        in.pushToken(token)
+        Zui.Expression nameExpr = parseDotName(in, TRUE, 0)
+        Zui.Declaration d = method.addNewUse()
+            .setDotName(nameExpr)
+            .setPos(token.zuiPos)
+            .setIsArg(TRUE)
+            .setType(type)
+        setPrefixFromExpr(d, nameExpr)
+
+        token = tokenAfterSep(in)
+        IF token.type == TType.as
+          token = getAs(in)
+          d.setName(token.value)
+        }
+      ELSE
+        IF token.type != TType.id
+          token.error("Expected argument name; missing )?")
+          BREAK
+        }
+
+        Zui.Declaration d = method.addNewArgument()
+        d.setName(token.value)
+            .setPos(token.zuiPos)
+            .setIsArg(TRUE)
+            .setThreeDots(gotThreeDots)
+            .setType(type)
+
+        IF tokenAfterSep(in).type == TType.assign
+          # argument with a default value: "type arg = value"
+          expectSep(in)
+          in.getToken()
+          expectSep(in)
+          d.setInit(parseExpr(in))
+          foundDefault = TRUE
+        ELSEIF foundDefault
+          error("Expected default value", in)
+        }
+      }
+
+      IF foundDefault && gotThreeDots
+        error("Cannot have both varargs and optional arguments", in)
+      }
+
+      # A comma must be right after the name, but the ) may come after a
+      # line break.
+      token = tokenAfterSep(in)
+      IF token.type == TType.gives
+        # There must be white space between the argument and "=>"
+        expectSep(in)
+      }
+      IF token.type != TType.comma && token.type != TType.use
+        skipLineSep(in)
+      }
+    }
+  }
+
+  PROC setPrefixFromExpr(Zui.Declaration d, Zui.Expression expr)
+    d.setDollar(exprHasDollar(expr))
+    d.setPercent(exprHasPercent(expr))
+  }
+
+  # Parse attributes in the form @attr.
+  # |accepted| is the list of possible attribute names.
+  PROC parseAttr(Zui.Attributes za, bool requireSep,
+                                         list<string> accepted, TokenInput in)
+    bool needSep = requireSep
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.at
+        BREAK
+      }
+      IF needSep
+        expectSep(in)
+      ELSE
+        checkNoSep(in)
+        needSep = TRUE  # must have separator if another @ follows
+      }
+      token = in.getToken()  # get the @ token
+      token = in.getToken()
+      IF token.type != TType.id
+        token.error("Expected attribute name")
+        BREAK
+      }
+      string attrName = token.value
+      string attrValue
+      token = in.getToken()
+      IF token.type == TType.assign
+        token = in.getToken()
+        # TODO: get dot name
+        attrValue = token.value
+      ELSE
+        in.pushToken(token)
+      }
+      checkAttrAccepted(token, attrName, accepted)
+
+      IF attrName == "backtrace"
+        IF attrValue == NIL
+          token.error("missing =no or =yes after @backtrace")
+        ELSEIF attrValue == "no"
+          attrUsedTwice(za.getNoBacktrace() || za.getWantBacktrace(),
+                                                              token, attrName)
+          za.setNoBacktrace(TRUE)
+        ELSEIF attrValue == "yes"
+          attrUsedTwice(za.getNoBacktrace() || za.getWantBacktrace(),
+                                                              token, attrName)
+          za.setWantBacktrace(TRUE)
+        ELSE
+          token.error("expected =no or =yes after @backtrace")
+        }
+      ELSEIF attrName == "read" || attrName == "items"
+        # E.g., @read=public or @items=public
+        IF attrValue == NIL
+          token.error("missing = after @" .. attrName)
+        ELSE
+          Visibility vis = name2visibility.get(attrValue, Visibility.unset)
+          Zui.Visibility zavis = name2zuiVisibility.get(attrValue,
+                                                        Zui.Visibility.eUNSET)
+
+          IF vis == Visibility.unset
+            token.error("invalid value for @" .. attrName .. "=")
+          }
+          IF attrName == "read"
+            attrUsedTwice(za.hasReadVisibility(), token, "read")
+            za.setReadVisibility(zavis)
+          ELSE
+            attrUsedTwice(za.hasItemsVisibility(), token, "items")
+            za.setItemsVisibility(zavis)
+          }
+        }
+      ELSE
+        IF attrValue != NIL
+          token.error("No value expected for this attribute")
+        }
+        IF attrName == "default"
+          attrUsedTwice(za.getIsdefault(), token, attrName)
+          za.setIsdefault(TRUE)
+        ELSEIF attrName == "replace"
+          attrUsedTwice(za.getReplace(), token, attrName)
+          za.setReplace(TRUE)
+        ELSEIF attrName == "define"
+          attrUsedTwice(za.getDefine(), token, attrName)
+          za.setDefine(TRUE)
+        ELSEIF attrName == "abstract"
+          attrUsedTwice(za.getAbstract(), token, attrName)
+          za.setAbstract(TRUE)
+        ELSEIF attrName == "earlyInit"
+          attrUsedTwice(za.getEarlyInit(), token, attrName)
+          za.setEarlyInit(TRUE)
+        ELSEIF attrName == "primitive"
+          attrUsedTwice(za.getPrimitive(), token, attrName)
+          za.setPrimitive(TRUE)
+        ELSEIF attrName == "notOnExit"
+          attrUsedTwice(za.getNotOnExit(), token, attrName)
+          za.setNotOnExit(TRUE)
+        ELSEIF attrName == "final"
+          attrUsedTwice(za.getFinal(), token, attrName)
+          za.setFinal(TRUE)
+        ELSEIF attrName == "javascript"
+          attrUsedTwice(za.getJavascript(), token, attrName)
+          za.setJavascript(TRUE)
+        ELSE
+          Zui.Visibility v = name2zuiVisibility.get(attrName,
+                                                        Zui.Visibility.eUNSET)
+          IF v != Zui.Visibility.eUNSET
+            visAttrSet(za.hasVisibility(), token, attrName)
+            za.setVisibility(v)
+          ELSE
+            token.error("Unsupported attribute: " .. attrName)
+          }
+        }
+      }
+    }
+  }
+
+  dict<string, Visibility> name2visibility = [
+      "private": Visibility.private,
+      "protected": Visibility.protected,
+      "public": Visibility.public,
+      "file": Visibility.file,
+      "directory": Visibility.directory]
+
+  dict<string, Zui.Visibility> name2zuiVisibility = [
+      "private": Zui.Visibility.ePRIVATE,
+      "protected": Zui.Visibility.ePROTECTED,
+      "public": Zui.Visibility.ePUBLIC,
+      "local": Zui.Visibility.eLOCAL,
+      "file": Zui.Visibility.eFILE,
+      "directory": Zui.Visibility.eDIRECTORY]
+
+  # Check if "value" was already set, if so then give an error for an
+  # attribute appearing twice.
+  PROC checkAttrAccepted(Token token, string name, list<string> accepted)
+    FOR n IN accepted
+      IF n == name
+        RETURN
+      }
+    }
+    token.error("Attribute not allowed here: @" .. name)
+  }
+
+  # Check if "value" is TRUE, if so then give an error for an
+  # attribute appearing twice.
+  PROC attrUsedTwice(bool value, Token token, string name)
+    IF value
+      token.error("Attribute used twice: @" .. name)
+    }
+  }
+
+  # Check if "value" was already set, if so then give an error for a
+  # visibility attribute appearing twice.
+  PROC visAttrSet(bool isSet, Token token, string name)
+    IF isSet
+      token.error("Visibility set a second time: @" .. name)
+    }
+  }
+
+  #
+  # Toplevel expression parser.
+  #
+  FUNC parseExpr(TokenInput in) Zui.Expression
+    RETURN parseExprIfnil(in)
+  }
+
+  #
+  # Evaluate "expr_alt" ?: "expr_ifnil"
+  #
+  FUNC parseExprIfnil(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprAlt(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    IF tokenAfterSep(in).type == TType.colonnil
+      expectSep(in)
+      Token token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression e = newZuiExpr(Zui.ExprType.eIFNIL, token.zuiPos)
+      e.setLeft(expr)
+      expr = e
+
+      e = parseExprIfnil(in)
+      expr.setRight(e)
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_or ? expr_alt : expr_alt"
+  #
+  FUNC parseExprAlt(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprOr(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    Token token = tokenAfterSep(in)
+    IF token.type == TType.question
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression e = newZuiExpr(Zui.ExprType.eTERNARY, token.zuiPos)
+      e.setCond(expr)
+      expr = e
+
+      e = parseExprAlt(in)
+      expr.setLeft(e)
+
+      expectSep(in)
+      token = in.getToken()
+      IF token.type != TType.colon
+        token.error("Missing ':' after '?'")
+        in.pushToken(token)
+      ELSE
+        expectSep(in)
+        e = parseExprAlt(in)
+        expr.setRight(e)
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_and || expr_and || expr_and"
+  #
+  FUNC parseExprOr(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprAnd(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.or
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression e = newZuiExpr(Zui.ExprType.eOR, token.zuiPos)
+      e.setLeft(expr)
+      expr = e
+
+      e = parseExprAnd(in)
+      expr.setRight(e)
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_comp && expr_comp && expr_comp"
+  #
+  FUNC parseExprAnd(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprComp(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.and
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression e = newZuiExpr(Zui.ExprType.eAND, token.zuiPos)
+      e.setLeft(expr)
+      expr = e
+
+      e = parseExprComp(in)
+      expr.setRight(e)
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_concat COMPARE expr_concat" (==, !=, =~, etc.)
+  #
+  FUNC parseExprComp(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprConcat(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type == TType.assign
+        BREAK
+      }
+      IF token.type != TType.isis
+          && token.type != TType.notequal
+          && token.type != TType.gt
+          && token.type != TType.gte
+          && token.type != TType.lt
+          && token.type != TType.lte
+          && token.type != TType.is
+          && token.type != TType.isnot
+          && token.type != TType.isa
+          && token.type != TType.isnota
+          && token.type != TType.match
+          && token.type != TType.nomatch
+        BREAK
+      }
+      bool typeSpec
+      Token first = in.getToken()
+      IF first.type == TType.lt
+        # typeSpec is written as "expr<"
+        typeSpec = TRUE
+        token = first
+      ELSE
+        # smaller-than is written as "expr <"
+        in.pushToken(first)
+        expectSep(in)
+        token = in.getToken()
+      }
+      IF typeSpec
+        skipSep(in)
+      ELSE
+        expectSep(in)
+      }
+
+      Z.Pos pos = in.input.pos.copy()
+      Zui.Expression e = NEW()
+      SWITCH token.type
+        CASE TType.isis
+            e.setType(Zui.ExprType.eEQUAL)
+        CASE TType.notequal
+            e.setType(Zui.ExprType.eNOTEQUAL)
+        CASE TType.gt
+            e.setType(Zui.ExprType.eGREATER)
+        CASE TType.gte
+            e.setType(Zui.ExprType.eGREATER_EQUAL)
+        CASE TType.lt
+            IF typeSpec
+              e.setType(Zui.ExprType.eTYPESPEC)
+            ELSE
+              e.setType(Zui.ExprType.eLESS)
+            }
+        CASE TType.lte
+            e.setType(Zui.ExprType.eLESS_EQUAL)
+        CASE TType.is
+            e.setType(Zui.ExprType.eIS)
+        CASE TType.isnot
+            e.setType(Zui.ExprType.eISNOT)
+        CASE TType.isa
+            e.setType(Zui.ExprType.eISA)
+        CASE TType.isnota
+            e.setType(Zui.ExprType.eISNOTA)
+        CASE TType.match
+            e.setType(Zui.ExprType.eMATCH)
+        CASE TType.nomatch
+            e.setType(Zui.ExprType.eNOMATCH)
+      }
+
+      e.setLeft(expr)
+      e.setPos(token.zuiPos)
+
+      IF typeSpec
+        bool hasOp
+        IF expr.getType() != Zui.ExprType.eID
+              && expr.getType() != Zui.ExprType.eMEMBER
+              && expr.hasLeft()
+              && expr.hasRight()
+          # Turn "(left OP right) <type>" into "left OP (right<type>)"
+          e.setLeft(expr.getRight())
+          hasOp = TRUE
+        }
+
+        list<Zui.Type> types = NEW()
+        parseTypeSpec(in, types, FALSE)
+        e.setTypespecList(types)
+
+        # Now check for what follows: list<string>.NEW()...
+        e = parseMembers(e, in, doParens)
+
+        IF hasOp
+          expr.setRight(e)
+        ELSE
+          expr = e
+        }
+      ELSE
+        expr = e
+        e = parseExprConcat(in)
+        expr.setRight(e)
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_bitwise .. expr_bitwise": string concatenation
+  #
+  FUNC parseExprConcat(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprBitwise(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.concat
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression e = newZuiExpr(Zui.ExprType.eCONCAT, token.zuiPos)
+      e.setLeft(expr)
+      expr = e
+
+      expr.setRight(parseExprBitwise(in))
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_shift OP expr_shift"  (&, |, ^)
+  #
+  FUNC parseExprBitwise(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprShift(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.amp
+          && token.type != TType.bit_or
+          && token.type != TType.bit_xor
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression right = parseExprShift(in)
+
+      IF (expr.getType() == Zui.ExprType.eINT
+                                       || expr.getType() == Zui.ExprType.eNAT)
+         && (right.getType() == Zui.ExprType.eINT
+                                      || right.getType() == Zui.ExprType.eNAT)
+        # nr OP nr: compute the result.
+        int val
+        IF token.type == TType.amp
+          val = expr.getNumber() & right.getNumber()
+        ELSEIF token.type == TType.bit_or
+          val = expr.getNumber() | right.getNumber()
+        ELSE
+          val = expr.getNumber() ^ right.getNumber()
+        }
+        expr.setNumber(val)
+      ELSE
+        Zui.Expression e = NEW()
+        IF token.type == TType.amp
+          e.setType(Zui.ExprType.eBIT_AND)
+        ELSEIF token.type == TType.bit_or
+          e.setType(Zui.ExprType.eBIT_OR)
+        ELSE
+          e.setType(Zui.ExprType.eBIT_XOR)
+        }
+        e.setLeft(expr)
+        e.setRight(right)
+        e.setPos(token.zuiPos)
+        expr = e
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_incr OP expr_incr" (<<, >>)
+  #
+  FUNC parseExprShift(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprPlus(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.lshift && token.type != TType.rshift
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()
+      expectSep(in)
+
+      Zui.Expression right = parseExprPlus(in)
+
+      IF (expr.getType() == Zui.ExprType.eINT
+                                       || expr.getType() == Zui.ExprType.eNAT)
+         && (right.getType() == Zui.ExprType.eINT
+                                      || right.getType() == Zui.ExprType.eNAT)
+        # nr OP nr: compute the result.
+        int val
+        IF token.type == TType.lshift
+          val = expr.getNumber() << right.getNumber()
+        ELSE
+          val = expr.getNumber() >> right.getNumber()
+        }
+        expr.setNumber(val)
+      ELSE
+        Zui.Expression e = NEW()
+        IF token.type == TType.lshift
+          e.setType(Zui.ExprType.eSHIFT_LEFT)
+        ELSE
+          e.setType(Zui.ExprType.eSHIFT_RIGHT)
+        }
+        e.setLeft(expr)
+        e.setRight(right)
+        e.setPos(token.zuiPos)
+        expr = e
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_incr OP expr_incr" (+, -)
+  #
+  FUNC parseExprPlus(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprMult(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.plus && token.type != TType.minus
+        BREAK
+      }
+      expectSep(in)
+      token = in.getToken()  # get the + or -
+      expectSep(in)
+
+      Zui.Expression right = parseExprMult(in)
+
+      IF (expr.getType() == Zui.ExprType.eINT
+                                       || expr.getType() == Zui.ExprType.eNAT)
+         && (right.getType() == Zui.ExprType.eINT
+                                      || right.getType() == Zui.ExprType.eNAT)
+        # int OP int: compute the int result.
+        int val
+        IF token.type == TType.plus
+          val = expr.getNumber() + right.getNumber()
+        ELSE
+          val = expr.getNumber() - right.getNumber()
+        }
+        expr.setNumber(val)
+      ELSEIF (expr.getType() == Zui.ExprType.eINT
+           || expr.getType() == Zui.ExprType.eNAT
+           || expr.getType() == Zui.ExprType.eFLOAT)
+         && (right.getType() == Zui.ExprType.eINT
+          || right.getType() == Zui.ExprType.eNAT
+          || right.getType() == Zui.ExprType.eFLOAT)
+        # int/float OP int/float: compute the float result.
+        float lval
+        IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+          lval = expr.getNumber()
+        ELSE
+          lval = expr.getFnumber()
+        }
+        float rval
+        IF right.getType() == Zui.ExprType.eINT
+                                       || right.getType() == Zui.ExprType.eNAT
+          rval = right.getNumber()
+        ELSE
+          rval = right.getFnumber()
+        }
+        IF token.type == TType.plus
+          lval += rval
+        ELSE
+          lval -= rval
+        }
+        expr.setFnumber(lval)
+        expr.setType(Zui.ExprType.eFLOAT)
+      ELSE
+        Zui.Expression e = NEW()
+        IF token.type == TType.plus
+          e.setType(Zui.ExprType.eADD)
+        ELSE
+          e.setType(Zui.ExprType.eSUBTRACT)
+        }
+        e.setLeft(expr)
+        e.setRight(right)
+        e.setPos(token.zuiPos)
+        expr = e
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Evaluate "expr_incdec OP expr_incdec" (*, /, %)
+  #
+  FUNC parseExprMult(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprIndecr(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    WHILE TRUE
+      Token token = tokenAfterSep(in)
+      IF token.type != TType.star
+          && token.type != TType.slash
+          && token.type != TType.percent
+        BREAK
+      }
+      IF token.type == TType.percent
+        # % is not an operator when used as %var
+        Token next
+        token, next = twoTokensAfterSep(in)
+        IF !next.isSep()
+          BREAK
+        }
+      }
+      expectSep(in)
+      token = in.getToken()  # get the *, / or %
+      expectSep(in)
+
+      Zui.Expression right = parseExprIndecr(in)
+
+      IF (expr.getType() == Zui.ExprType.eINT
+                                       || expr.getType() == Zui.ExprType.eNAT)
+         && (right.getType() == Zui.ExprType.eINT
+                                      || right.getType() == Zui.ExprType.eNAT)
+        # int OP int: compute the int result.
+        int val
+        IF token.type == TType.star
+          val = expr.getNumber() * right.getNumber()
+        ELSE
+          IF right.getNumber() == 0
+            token.error("Divide by zero")
+            val = 0
+          ELSEIF token.type == TType.slash
+            val = expr.getNumber() / right.getNumber()
+          ELSE
+            val = expr.getNumber() % right.getNumber()
+          }
+        }
+        expr.setNumber(val)
+      ELSEIF (expr.getType() == Zui.ExprType.eINT
+           || expr.getType() == Zui.ExprType.eNAT
+           || expr.getType() == Zui.ExprType.eFLOAT)
+         && (right.getType() == Zui.ExprType.eINT
+          || right.getType() == Zui.ExprType.eNAT
+          || right.getType() == Zui.ExprType.eFLOAT)
+        # int/float OP int/float: compute the float result.
+        float lval
+        IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+          lval = expr.getNumber()
+        ELSE
+          lval = expr.getFnumber()
+        }
+        float rval
+        IF right.getType() == Zui.ExprType.eINT
+                                       || right.getType() == Zui.ExprType.eNAT
+          rval = right.getNumber()
+        ELSE
+          rval = right.getFnumber()
+        }
+        IF token.type == TType.star
+          lval = lval * rval
+        ELSE
+          IF rval == 0
+            token.error("Divide by zero")
+          ELSEIF token.type == TType.slash
+            lval = lval / rval
+          ELSE
+            token.error("Cannot use % with float")
+          }
+        }
+        expr.setFnumber(lval)
+        expr.setType(Zui.ExprType.eFLOAT)
+      ELSE
+        Zui.Expression e = NEW()
+        IF token.type == TType.star
+          e.setType(Zui.ExprType.eMULTIPLY)
+        ELSEIF token.type == TType.slash
+          e.setType(Zui.ExprType.eDIVIDE)
+        ELSE
+          e.setType(Zui.ExprType.eREMAINDER)
+        }
+        e.setLeft(expr)
+        e.setRight(right)
+        e.setPos(token.zuiPos)
+        expr = e
+      }
+    }
+
+    RETURN expr
+  }
+
+  #
+  # Evaluate "++expr_dot", "--expr_dot", "expr_dot++" and "expr_dot--".
+  #
+  FUNC parseExprIndecr(TokenInput in) Zui.Expression
+    Token token = in.getToken()
+    Zui.Expression preExpr
+
+    IF token.type == TType.plusplus || token.type == TType.minmin
+      IF token.type == TType.plusplus
+        preExpr = NEW().setType(Zui.ExprType.ePRE_INC)
+      ELSE
+        preExpr = NEW().setType(Zui.ExprType.ePRE_DEC)
+      }
+      preExpr.setPos(token.zuiPos)
+    ELSE
+      in.pushToken(token)
+    }
+
+    Zui.Expression expr = parseExprUnary(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+    IF preExpr != NIL
+      preExpr.setRight(expr)
+      expr = preExpr
+    }
+
+    token = in.getToken()
+    # give an error for "x ++" here, instead of giving an error for
+    # unexpected ++ much later.
+    IF token.type == TType.sep
+      Token next = in.getToken()
+      IF next.type == TType.plusplus
+        next.error("white space before ++")
+        token = next
+      ELSEIF next.type == TType.minmin
+        next.error("white space before --")
+        token = next
+      ELSE
+        in.pushToken(next)
+      }
+    }
+    IF token.type == TType.plusplus || token.type == TType.minmin
+      Zui.Expression postExpr = NEW()
+      IF token.type == TType.plusplus
+        postExpr.setType(Zui.ExprType.ePOST_INC)
+      ELSE
+        postExpr.setType(Zui.ExprType.ePOST_DEC)
+      }
+      postExpr.setPos(token.zuiPos)
+      postExpr.setRight(expr)
+      expr = postExpr
+    ELSE
+      in.pushToken(token)
+    }
+
+    RETURN expr
+  }
+
+  #
+  # Evaluate  -expr  and  !expr  and  ~expr  and  &expr
+  #
+  FUNC parseExprUnary(TokenInput in) Zui.Expression
+    Zui.Expression expr
+    Token token = in.getToken()
+    Zui.ExprType exprType = Zui.ExprType.eUNKNOWN
+
+    IF token.type == TType.minus
+        && !(in.peekToken().type == TType.id
+                                         && in.peekToken().value[0].isDigit())
+      # handle -expr but not -123
+      exprType = Zui.ExprType.eMINUS
+    ELSEIF token.type == TType.not
+      exprType = Zui.ExprType.eNOT
+    ELSEIF token.type == TType.tilde
+      exprType = Zui.ExprType.eTILDE
+    ELSEIF token.type == TType.amp
+      exprType = Zui.ExprType.eREF
+    }
+
+    IF exprType == Zui.ExprType.eUNKNOWN
+      in.pushToken(token)
+      expr = parseExprDot(in)
+    ELSE
+      Zui.Expression e = parseExprDot(in)
+      IF e.getType() == Zui.ExprType.eUNKNOWN
+        RETURN e
+      }
+      expr = newZuiExpr(exprType, token.zuiPos)
+                .setRight(e)
+    }
+
+    RETURN expr
+  }
+
+  #
+  # Evaluate members and methods.
+  #
+  FUNC parseExprDot(TokenInput in) Zui.Expression
+    Zui.Expression expr = parseExprParen(in)
+    IF expr.getType() == Zui.ExprType.eUNKNOWN
+      RETURN expr
+    }
+
+    # This is shared with toplevel evaluation.
+    RETURN parseMembers(expr, in, doParens)
+  }
+
+  #
+  # Evaluate "( expr_alt )" or "expr_base".
+  #
+  FUNC parseExprParen(TokenInput in) Zui.Expression
+    Zui.Expression expr
+    Token token = in.getToken()
+
+    IF token.type == TType.p_open
+      skipLineSep(in)
+      Zui.Expression right = parseExpr(in)
+      IF right.getType() == Zui.ExprType.eUNKNOWN
+        RETURN right
+      }
+      skipLineSep(in)
+      Token closeToken = in.getToken()
+      IF closeToken.type != TType.p_close
+        token.error("missing matching )")
+      }
+
+      IF [Zui.ExprType.eSTRING,
+          Zui.ExprType.eNIL,
+          Zui.ExprType.eTHIS,
+          Zui.ExprType.ePARENT,
+          Zui.ExprType.eTRUE,
+          Zui.ExprType.eFALSE,
+          Zui.ExprType.eOK,
+          Zui.ExprType.eFAIL,
+          Zui.ExprType.eINT,
+          Zui.ExprType.eNAT,
+          Zui.ExprType.eFLOAT,
+          Zui.ExprType.eID].has(right.getType())
+        # There is no need to add a PARENS expression around a constant.
+        expr = right
+      ELSE
+        expr = newZuiExpr(Zui.ExprType.ePARENS, token.zuiPos)
+        expr.setRight(right)
+      }
+    ELSE
+      in.pushToken(token)
+      expr = parseExprBase(in)
+    }
+    RETURN expr
+  }
+
+
+  #
+  # Base level evaluation, recognize:
+  # "string"
+  # 123    number
+  # -123   negative number
+  # 0x12   hex number
+  # 'c'    character (used as a number)
+  # TRUE   boolean
+  # FALSE  boolean
+  # OK     status
+  # FAIL   status
+  # THIS   object
+  # PARENT object
+  # name   identifier
+  # $name  identifier
+  # %name  identifier
+  # [item, item]  list
+  # [key: value, key: value] dict
+  # { arg => expr }  Lambda function
+  # FUNC(arg) block  func
+  # PROC(arg) block  proc
+  # C(code)  C code
+  #
+  FUNC parseExprBase(TokenInput in) Zui.Expression
+    Token token = in.getToken()
+    Zui.Expression expr
+
+    SWITCH token.type
+      CASE TType.stringLiteral
+           expr = newZuiExpr(Zui.ExprType.eSTRING, token.zuiPos)
+                     .setStringValue(token.value)
+      CASE TType.stringExprStart
+           expr = parseStringExpr(token, in)
+      CASE TType.nil
+           expr = newZuiExpr(Zui.ExprType.eNIL, token.zuiPos)
+      CASE TType.inf
+           expr = newZuiExpr(Zui.ExprType.eINF, token.zuiPos)
+      CASE TType.ninf
+           expr = newZuiExpr(Zui.ExprType.eNINF, token.zuiPos)
+      CASE TType.nan
+           expr = newZuiExpr(Zui.ExprType.eNAN, token.zuiPos)
+      CASE TType.this
+           expr = newZuiExpr(Zui.ExprType.eTHIS, token.zuiPos)
+      CASE TType.parent
+           expr = newZuiExpr(Zui.ExprType.ePARENT, token.zuiPos)
+      CASE TType.new
+           expr = parseNew(token, in)
+      CASE TType.true
+           expr = newZuiExpr(Zui.ExprType.eTRUE, token.zuiPos)
+      CASE TType.false
+           expr = newZuiExpr(Zui.ExprType.eFALSE, token.zuiPos)
+      CASE TType.ok
+           expr = newZuiExpr(Zui.ExprType.eOK, token.zuiPos)
+      CASE TType.fail
+           expr = newZuiExpr(Zui.ExprType.eFAIL, token.zuiPos)
+      CASE TType.char
+           int val = token.value[0]
+           expr = newZuiExpr(Zui.ExprType.eINT, token.zuiPos)
+                   .setNumber(val)
+      CASE TType.dollar
+           expr = parseId(in, in.getToken())
+           IF expr.getType() == Zui.ExprType.eID
+             expr.getId().setDollar(TRUE)
+           ELSE
+             token.error("Misplaced $")
+           }
+      CASE TType.percent
+           expr = parseId(in, in.getToken())
+           IF expr.getType() == Zui.ExprType.eID
+             expr.getId().setPercent(TRUE)
+           ELSE
+             token.error("Misplaced %")
+           }
+      CASE TType.minus
+           expr = parseId(in, in.getToken())
+           IF expr.getType() == Zui.ExprType.eINT
+             expr.setNumber(-expr.getNumber())
+           ELSEIF expr.getType() == Zui.ExprType.eNAT
+             # This may overflow, give an error?
+             expr.setNumber(-expr.getNumber())
+             expr.setType(Zui.ExprType.eINT)
+           ELSEIF expr.getType() == Zui.ExprType.eFLOAT
+             expr.setFnumber(-expr.getFnumber())
+           ELSE
+             token.error("Unexpected minus")
+           }
+      CASE TType.id
+      CASE TType.i
+           expr = parseId(in, token)
+      CASE TType.sq_open
+      CASE TType.sq_o_open
+           expr = parseList(token, in)
+      CASE TType.c_open
+           expr = parseCurlyExpr(token, in)
+      CASE TType.proc
+      CASE TType.func
+      CASE TType.lambda
+           # FUNC, PROC or LAMBDA used in an expression
+           Zui.Statement stmt = parseMethod(token, in, keepEnd + expression)
+           Token t = in.getToken()
+           IF t.type != TType.c_close
+             t.error("Missing }")
+           }
+           Zui.Declaration decl = stmt.getDeclaration()
+           expr = newZuiExpr(Zui.ExprType.eMETHOD, token.zuiPos)
+                        .setDecl(decl)
+      CASE TType.c
+           expr = parseCCode(in)
+
+      CASE TType.semicolon
+           token.error("unexpected ;")
+           PROCEED
+      DEFAULT
+           # Didn't recognize anything, could be an empty expression in ().
+           in.pushToken(token)
+           expr = newZuiExpr(Zui.ExprType.eUNKNOWN, token.zuiPos)
+    }
+
+    RETURN expr
+  }
+
+  # Parse a string literal containing \(expr).
+  # Token is the the string up to the \(.
+  FUNC parseStringExpr(Token startToken, TokenInput in) Zui.Expression
+    Zui.Expression result
+    Token token = startToken
+    WHILE TRUE
+      IF token.value != ""
+        Zui.Expression sExpr = newZuiExpr(Zui.ExprType.eSTRING,
+                                     token.zuiPos).setStringValue(token.value)
+        IF result == NIL
+          result = sExpr
+        ELSE
+          Zui.Expression e = newZuiExpr(Zui.ExprType.eCONCAT, token.zuiPos)
+          e.setLeft(result)
+          e.setRight(sExpr)
+          result = e
+        }
+      }
+      IF token.type != TType.stringExprStart
+        BREAK
+      }
+
+      # Check for a format: \(0.2s expr)
+      list<Zui.Expression> args
+      IO.StringWriter w = NEW()
+      bool gotSpace
+      bool gotMinus
+      WHILE TRUE
+        int c = in.get()
+        IF c == ' ' && w.Size() == 0
+          # Leading space, no format.
+          BREAK
+        }
+        w.writeChar(c)
+        IF gotSpace && (c.isDigit() || c.isAlpha() || (c != ' ' && gotMinus))
+          IF gotMinus
+            in.push(w.remove())  # push back "x" of "-x"
+          }
+          in.push(w.remove())    # push back character after space
+          w.remove()             # drop the space
+          Zui.Expression arg = NEW()
+              .setType(Zui.ExprType.eSTRING)
+              .setStringValue(w.ToString())
+          args = [arg]
+          BREAK
+        ELSEIF c == ' ' && !gotSpace
+          gotSpace = TRUE
+        ELSEIF c == '-' && gotSpace && !gotMinus
+          # (foo - expr) is an expression
+          # (foo -expr) is a format + expression
+          gotMinus = TRUE
+        ELSEIF !c.isDigit() && !c.isAlpha() && c != '-' && c != '.'
+          WHILE w.Size() > 0
+            in.push(w.remove())
+          }
+          BREAK
+        }
+      }
+
+      # Parse the expr in \(expr) and turn into expr.ToString().
+      Zui.Expression expr = parseExpr(in)
+
+      Zui.Expression methodName = NEW()
+          .setType(Zui.ExprType.eMEMBER)
+          .setPos(expr.getPos())
+          .setLeft(expr)
+      methodName.newRight()
+           .setType(Zui.ExprType.eID)
+           .setPos(token.zuiPos)
+           .newId().setName("ToString")
+
+      Zui.MethodCall method = NEW()
+      method.setPos(expr.getPos())
+      IF args != NIL
+        method.setArgumentList(args)
+      }
+      method.setName(methodName)
+
+      Zui.Expression call = NEW()
+           .setType(Zui.ExprType.eCALL)
+           .setPos(expr.getPos())
+           .setMethodCall(method)
+
+      IF result == NIL
+        result = call
+      ELSE
+        Zui.Expression e = newZuiExpr(Zui.ExprType.eCONCAT, token.zuiPos)
+        e.setLeft(result)
+        e.setRight(call)
+        result = e
+      }
+
+      # Allow for space before the ).
+      skipSep(in)
+      token = in.getToken()
+      IF token.type != TType.p_close
+        token.error("missing matching )")
+        IF token.type == TType.stringLiteral
+          # We run into the end quote, which now will start a new string.
+          # Bail out.
+          BREAK
+        }
+      }
+      in.push('"')  # start of the next string part
+      token = in.getToken()
+    }
+    RETURN result
+  }
+
+  # Parse a lambda expression: { foo USE bar => expr }
+  # OR
+  # Parse an object initializer: {foo: expr, bar: expr}
+  FUNC parseCurlyExpr(Token startToken, TokenInput in) Zui.Expression
+    Token first = in.getToken()
+    Token id
+    IF first.isSep()
+      id = in.getToken()
+    ELSE
+      id = first
+      first = NIL
+    }
+    Token afterId = in.peekToken()
+    in.pushToken(id)
+    IF first != NIL
+      in.pushToken(first)
+    }
+
+    # object initializer: {foo: expr, bar: expr}  or {}
+    IF (id.type == TType.id && afterId.type == TType.colon)
+        || id.type == TType.c_close
+      RETURN parseObjectInitializer(startToken, in)
+    }
+    RETURN parseLambdaExpr(startToken, in)
+  }
+
+  # Parse an object initializer: {foo: expr, bar: expr}
+  FUNC parseObjectInitializer(Token startToken, TokenInput in) Zui.Expression
+    skipLineSep(in)
+    Zui.Expression initExpr = newZuiExpr(Zui.ExprType.eINIT, startToken.zuiPos)
+
+    Token token = in.getToken()
+    WHILE token.type != TType.c_close
+      IF token.type == TType.eof
+        token.error("Missing }")
+        startToken.error("To match this {")
+        BREAK
+      }
+      IF token.type != TType.id
+        token.error("Expected a name")
+      }
+      checkNoSep(in)
+      Token colon = in.getToken()
+      IF colon.type != TType.colon
+        token.error("missing colon")
+      }
+      skipSep(in)
+      Zui.Expression val = parseExpr(in)
+      Zui.NameExpr item = initExpr.addNewInitItem()
+      item.setName(token.value)
+      item.setValue(val)
+
+      # Skip the comma and white space.
+      token = in.getToken()
+      IF token.isSep() && in.peekToken().type == TType.comma
+        token.error("unexpected white space")
+        token = in.getToken()
+      }
+      IF token.type == TType.comma
+        skipSep(in)
+      ELSEIF token.type != TType.c_close
+                                    && tokenAfterSep(in).type != TType.c_close
+        token.error("expected a comma")
+      }
+
+      token = in.getToken()
+    }
+    RETURN initExpr
+  }
+
+  # Parse a lambda expression: { foo USE bar => expr }
+  FUNC parseLambdaExpr(Token startToken, TokenInput in) Zui.Expression
+    expectSep(in)
+
+    # Parse any arguments.
+    Zui.MethodType method = NEW()
+    parseArgDecl(method, in, TRUE, TType.gives)
+
+    # Parse "expr", it goes in method.expr
+    expectSep(in)
+    Zui.Expression right = parseExpr(in)
+    method.setExpr(right)
+
+    # Return type is unknown, will be set while processing.
+
+    # Check for the }
+    expectSep(in)
+    Token token = in.getToken()
+    IF token.type != TType.c_close
+      token.error("Missing }")
+      startToken.error("To match this {")
+    }
+
+    Zui.Expression expr = newZuiExpr(Zui.ExprType.eLAMBDA, startToken.zuiPos)
+                              .setMethod(method)
+
+    RETURN expr
+  }
+
+  # An id token can be a number or a name.
+  FUNC parseId(TokenInput in, Token token) Zui.Expression
+    int c = token.value[0]
+    Zui.Expression expr
+    IF c >= '0' && c <= '9'
+      nat value
+      float fvalue
+      bool isFloat
+      IF c == '0' && token.value.Size() > 1
+                           && (token.value[1] == 'x' || token.value[1] == 'X')
+        IF token.value.Size() == 2
+          token.error("Missing digit after " .. token.value)
+        }
+        string v = token.value.slice(2)
+        FOR cc IN v
+          IF !cc.isHexDigit() && cc != '\'' && cc != '_'
+            token.error("Non-digit after hex number: " .. token.value)
+            BREAK
+          }
+        }
+        value = v.quotedHexToInt()
+      ELSEIF c == '0' && token.value.Size() > 1
+                           && (token.value[1] == 'b' || token.value[1] == 'B')
+        string v = token.value.slice(2)
+        IF token.value.Size() == 2
+          token.error("Missing digit after " .. token.value)
+        }
+        FOR cc IN v
+          IF cc != '0' && cc != '1' && cc != '\'' && cc != '_'
+            token.error("Invalid character after binary number: "
+                                                               .. token.value)
+            BREAK
+          }
+        }
+        value = v.quotedBinToInt()
+      ELSE
+        FOR cc IN token.value
+          IF cc == '.' || cc == 'e' || cc == 'E'
+            isFloat = TRUE
+            BREAK
+          }
+          IF !cc.isDigit() && cc != '\'' && cc != '_'
+            token.error("Non-digit after number: " .. token.value)
+            BREAK
+          }
+        }
+        IF isFloat
+          int len
+          fvalue = token.value.toFloat(&len)
+          IF len < token.value.Size()
+            token.error("invalid number: " .. token.value)
+          }
+        ELSE
+          value = token.value.quotedToInt()
+        }
+      }
+
+      IF isFloat
+        expr = newZuiExpr(Zui.ExprType.eFLOAT, token.zuiPos)
+                  .setFnumber(fvalue)
+      ELSE
+        # TODO: convert?
+        int v = value
+        expr = newZuiExpr(Zui.ExprType.eNAT, token.zuiPos)
+                  .setNumber(v)
+      }
+    ELSE
+      expr = newZuiExpr(Zui.ExprType.eID, token.zuiPos)
+      Zui.Id id = expr.newId()
+      id.setName(token.value)
+    }
+    RETURN expr
+  }
+
+  # parse "foo.NEW(args)", "NEW(args)" or "NEW"
+  FUNC parseNew(Token startToken, TokenInput in) Zui.Expression
+    Token token = in.getToken()
+    Zui.Expression expr
+    IF token.type != TType.p_open
+      # "NEW" without (arg) can be used as a pointer to the method.
+      in.pushToken(token)
+
+      expr = newZuiExpr(Zui.ExprType.eID, startToken.zuiPos)
+      expr.newId()
+          .setName("NEW")
+    ELSE
+      skipLineSep(in)
+      list<Zui.Expression> args = parseComma(in, NIL, arguments)
+      token = in.getToken()
+      IF token.type == TType.line_sep
+        # Allow for NEW("foo"
+        #              )
+        token = in.getToken()
+      ELSEIF token.type == TType.sep && token.hasComment
+        # Allow for  method(arg /* yes */)
+        token = in.getToken()
+      }
+      IF token.type != TType.p_close
+        IF token.type == TType.sep
+          token.error("Expected ), missing comma?")
+        ELSE
+          token.error("Expected ), found " .. token.type.ToString())
+        }
+      }
+
+      Zui.MethodCall method = NEW()
+      method.setPos(startToken.zuiPos)
+      # The method has no name, eNEWCALL indicates it's NEW().
+
+      method.setArgumentList(args)
+      expr = newZuiExpr(Zui.ExprType.eNEWCALL, startToken.zuiPos)
+      expr.setMethodCall(method)
+    }
+    RETURN expr
+  }
+
+  # Parse [item, item] or [key: value, key: value] or [:]
+  FUNC parseList(Token startToken, TokenInput in) Zui.Expression
+    bool isL = startToken.type == TType.sq_o_open
+
+    # [:] is an empty dictionary
+    Token token = tokenAfterSep(in)
+    IF token.type == TType.colon
+      token = in.getToken()
+      bool wrong
+      IF token.type != TType.colon
+        wrong = TRUE
+        token = in.getToken()
+      }
+      token = in.peekToken()
+      IF wrong || token.type != TType.sq_close
+        token.error("Empty dictionary must be written as [:]")
+      }
+      RETURN parseDict(in, NIL, isL)
+    }
+
+    skipLineSep(in)
+    Zui.Expression firstExpr = parseExpr(in)
+    token = tokenAfterSep(in)
+    IF token.type == TType.colon
+      # [key: value, key: value] is a dictionary
+      RETURN parseDict(in, firstExpr, isL)
+    }
+    IF isL
+      startToken.error("O[ can only be used for dictionary")
+    }
+
+    list<Zui.Expression> itemList = parseComma(in, firstExpr, allowTrailing)
+    skipLineSep(in)
+    token = in.getToken()
+    IF token.type != TType.sq_close
+      token.error("Expected ], found " .. token.type.ToString())
+    }
+
+    Zui.Expression listExpr = newZuiExpr(Zui.ExprType.eLIST, token.zuiPos)
+    listExpr.setListItemList(itemList)
+
+    RETURN listExpr
+  }
+
+  # parse {key: value, key: value } or [key: value, key: value ]
+  # If |firstKey| is not NIL it is the first key.
+  FUNC parseDict(TokenInput in, Zui.Expression firstKey,
+                                                      bool isL) Zui.Expression
+    # Evaluate expression pairs separated by commas:
+    #   "expr1: expr2, expr3: expr4"
+    IF firstKey == NIL
+      skipLineSep(in)
+    }
+    Token token = in.peekToken()
+    Zui.Expression dictExpr = newZuiExpr(Zui.ExprType.eDICT, token.zuiPos)
+    IF isL
+      dictExpr.setOrderedDict(TRUE)
+    }
+    IF token.type != TType.sq_close
+      bool useFirstKey = firstKey != NIL
+      WHILE TRUE
+        Zui.Expression key
+        IF useFirstKey
+          useFirstKey = FALSE
+          key = firstKey
+        ELSE
+          key = parseExpr(in)   # parse key
+        }
+        skipLineSep(in)
+        token = in.getToken()
+        IF token.type != TType.colon
+          token.error("Missing ':' after dict key")
+          IF token.type == TType.eof
+            BREAK
+          }
+          IF token.type == TType.sq_close
+            in.pushToken(token)
+            BREAK
+          }
+        }
+        expectSep(in)
+        Zui.Expression value = parseExpr(in)  # parse value
+
+        dictExpr.addNewDictItem()
+            .setKey(key)
+            .setValue(value)
+
+        # if there is a comma, consume it
+        IF tokenAfterSep(in).type != TType.comma
+          IF tokenAfterSep(in).type == TType.sq_close
+            BREAK
+          }
+          token.error("missing comma")
+        }
+        checkNoSep(in)
+        token = in.getToken()
+
+        # break when comma after last item
+        IF tokenAfterSep(in).type == TType.sq_close
+          skipSep(in)
+          BREAK
+        }
+        expectSep(in)
+      }
+    }
+    skipLineSep(in)
+    token = in.getToken()
+    IF token.type != TType.sq_close
+      token.error("Expected ], found " .. token.type.ToString())
+    }
+
+    RETURN dictExpr
+  }
+
+  # Parse a comma separated list of type names: I.Iterable<Titem>, I_Mine
+  FUNC parseDotNameList(TokenInput in) list<Zui.Expression>
+    list<Zui.Expression> names = NEW()
+    names.add(parseDotName(in, FALSE, doTypespec))
+    WHILE TRUE
+      IF tokenAfterSep(in).type != TType.comma
+        BREAK
+      }
+      # Should be either "name," or "name /* comment */,", but not "name ,"
+      Token token = in.getToken()
+      IF token.type == TType.line_sep
+                             || (token.type == TType.sep && !token.hasComment)
+        token.error("superfluous white space")
+      }
+      IF token.type != TType.comma
+        token = in.getToken()
+      }
+      expectSep(in)
+      names.add(parseDotName(in, FALSE, doTypespec))
+    }
+    RETURN names
+  }
+
+  #
+  # Parse a type specification or var name: "string", "MyMod.method".
+  # |prefixOk| is TRUE with "$" and "%" prefixes are valid.
+  #
+  FUNC parseDotName(TokenInput in, bool prefixOk, MemberType what
+       ) Zui.Expression
+    Token token = in.getToken()
+    Zui.Expression expr
+    IF token.type == TType.id || token.type == TType.i
+      expr = parseId(in, token)
+    ELSEIF token.type == TType.dollar || token.type == TType.percent
+      # $name or %name
+      bool dollar = token.type == TType.dollar
+      Token next = in.getToken()
+      IF next.type != TType.id
+        token.error("expected ID instead of " .. next.type.ToString())
+      ELSEIF !prefixOk
+        token.error((dollar ? "$" : "%") .. " not allowed here")
+      }
+      expr = newZuiExpr(Zui.ExprType.eID, token.zuiPos)
+      Zui.Id id = expr.newId()
+                  .setName(next.value)
+      IF dollar
+        id.setDollar(TRUE)
+      ELSE
+        id.setPercent(TRUE)
+      }
+      token.value = next.value
+    ELSEIF token.type == TType.this
+      expr = newZuiExpr(Zui.ExprType.eTHIS, token.zuiPos)
+    ELSEIF token.type == TType.parent
+      expr = newZuiExpr(Zui.ExprType.ePARENT, token.zuiPos)
+    ELSE
+      IF what.doTypespec
+        token.error("expected type name, found " .. token.value)
+      ELSE
+        token.error("unexpected token type: " .. token.type.ToString())
+      }
+      expr = newZuiExpr(Zui.ExprType.eUNKNOWN, token.zuiPos)
+    }
+
+    RETURN parseMembers(expr, in, what)
+  }
+
+  # Return TRUE when |expr| starts with a $.
+  FUNC exprHasDollar(Zui.Expression expr) bool
+    Zui.Expression e = expr
+    WHILE e.hasLeft()
+      e = e.getLeft()
+    }
+    IF e.getType() == Zui.ExprType.eID
+      RETURN e.getId().getDollar()
+    }
+    RETURN FALSE
+  }
+
+  # Return TRUE when |expr| starts with a %.
+  FUNC exprHasPercent(Zui.Expression expr) bool
+    Zui.Expression e = expr
+    WHILE e.hasLeft()
+      e = e.getLeft()
+    }
+    IF e.getType() == Zui.ExprType.eID
+      RETURN e.getId().getPercent()
+    }
+    RETURN FALSE
+  }
+
+  # Parse a typespec: "<type, type>".
+  # Put the types in |types|.
+  # Also handles an empty list: "<>" and extra ">" after the end.
+  PROC parseTypeSpec(TokenInput in, list<Zui.Type> types, bool itemNames)
+    Token token = in.getToken()
+    IF token.type != TType.gt
+          && token.type != TType.rshift
+          && token.type != TType.copy_start
+      in.pushToken(token)
+      parseTypeList(in, types, itemNames)
+      skipLineSep(in)
+      token = in.getToken()
+    }
+
+    # If we get >> or >>> split it into individual > tokens.
+    IF token.type == TType.rshift
+         || token.type == TType.copy_start
+      # For ">>" push the second ">" with startpos incremented, decrement
+      # endpos of first ">".
+      Token second = token.copy()
+      second.type = TType.gt
+      second.zuiPos.setColumn(second.zuiPos.getColumn() + 1)
+      IF token.type == TType.copy_start
+        # For ">>>" push another ">" with startpos incremented, decrement
+        # endpos of first and second ">".
+        Token third = second.copy()
+        third.zuiPos.setColumn(third.zuiPos.getColumn() + 1)
+        in.pushToken(third)
+      }
+      in.pushToken(second)
+      token.type = TType.gt
+    }
+    IF token.type != TType.gt
+      token.error("Missing > after type spec")
+      in.pushToken(token)
+    }
+  }
+
+  #
+  # Find a list of dot names: type, type, ...
+  # There must always be a type, caller should check for empty <>.
+  # The last one can be " => type", marked with "isReturn == TRUE".
+  # When |itemNames| is TRUE accept an item name after the type.  Used for
+  # "tuple<type a, type b>"
+  # Add the types to |types|.
+  #
+  PROC parseTypeList(TokenInput in, list<Zui.Type> types, bool itemNames)
+    bool didFirst
+    bool foundGives
+    WHILE TRUE
+      Token token = in.getToken()
+      IF token.type == TType.gives
+        #  "=> type"
+        token.error("white space required before =>")
+        expectSep(in)
+      ELSEIF token.isSep() && in.peekToken().type == TType.gives
+        #  " => type"
+        token = in.getToken()
+        expectSep(in)
+        foundGives = TRUE
+      ELSE
+        # "type"
+        in.pushToken(token)
+        skipLineSep(in)
+      }
+
+      Zui.Expression expr = parseDotName(in, FALSE, doTypespec)
+      Zui.Type item = NEW()
+          .setType(Zui.TypeEnum.eNAME)
+          .setPos(expr.getPos())
+          .setName(expr)
+
+      IF tokenAfterSep(in).type == TType.amp
+        # Reference: "type &"
+        expectSep(in)
+        Token t = in.getToken()
+        Zui.Type ref = NEW()
+             .setType(Zui.TypeEnum.eREF)
+             .setRef(item)
+             .setPos(t.zuiPos)
+        item = ref
+      }
+
+      IF foundGives
+        item.setIsReturn(TRUE)
+      }
+
+      types.add(item)
+
+      IF itemNames && tokenAfterSep(in).type == TType.id
+        expectSep(in)
+        token = in.getToken()
+        item.setItemName(token.value)
+        item.setItemNamePos(token.zuiPos)
+      }
+
+      IF in.peekToken().type == TType.comma
+        in.getToken()
+        expectSep(in)
+      ELSEIF tokenAfterSep(in).type != TType.gives
+        BREAK
+      }
+      didFirst = TRUE
+    }
+  }
+
+  # Parse <Tone, Ttwo> and return a list with the names.
+  FUNC parseTypeNameList(TokenInput in) list<Zui.Id>
+    in.getToken()  # consume the '<'
+    checkNoSep(in)
+
+    list<Zui.Id> names = NEW()
+    Token token
+    WHILE TRUE
+      token = in.getToken()
+      IF token.type != TType.id
+        BREAK
+      }
+      Zui.Id id = NEW()
+      id.setPos(token.zuiPos)
+      id.setName(token.value)
+      names.add(id)
+
+      token = in.getToken()
+      IF token.type != TType.comma
+        BREAK
+      }
+      expectSep(in)
+    }
+
+    IF token.type != TType.gt
+      token.error("expected >")
+    }
+    RETURN names
+  }
+
+  BITS CommaFlags
+    bool $allowTrailing   # trailing comma allowed
+    bool $arguments       # allow "name = expr"
+  }
+
+  #
+  # Evaluate expressions separated by commas:  "expr, expr, expr"
+  # For function arguments also accept "name = expr".
+  # When |firstExpr| is not NIL use it as the first expr.
+  # Returns a list of expressions.
+  #
+  FUNC parseComma(TokenInput in, Zui.Expression firstExpr, CommaFlags flags
+                 ) list<Zui.Expression>
+    Zui.Expression expr
+    IF firstExpr == NIL
+      expr = parseExpr(in)
+    ELSE
+      expr = firstExpr
+    }
+
+    list<Zui.Expression> exprList = NEW()
+    bool foundNamedArgument
+    WHILE TRUE
+      string name
+      Zui.Position pos
+      IF flags.arguments && tokenAfterSep(in).type == TType.assign
+        IF expr.getType() != Zui.ExprType.eID
+          error("Argument without name after argument with name", in)
+        ELSE
+          name = expr.getId().getName()
+          pos = expr.getPos()
+        }
+        foundNamedArgument = TRUE
+        expectSep(in)
+        in.getToken()  # skip '='
+        expectSep(in)
+        expr = parseExpr(in)
+      ELSEIF foundNamedArgument
+        error("Argument without name after argument with name", in)
+      }
+
+      IF expr.getType() != Zui.ExprType.eUNKNOWN
+        IF name != NIL
+          Zui.Expression assign = NEW()
+              .setType(Zui.ExprType.eASSIGN)
+              .setPos(pos)
+              .setRight(expr)
+          assign.newLeft()
+              .setType(Zui.ExprType.eSTRING)
+              .setStringValue(name)
+              .setPos(pos)
+          expr = assign
+        }
+        exprList.add(expr)
+      }
+
+      IF tokenAfterSep(in).type != TType.comma
+        BREAK
+      }
+      checkNoSep(in)
+      Token token = in.getToken()
+      expectSep(in)
+
+      expr = parseExpr(in)
+      IF expr.getType() == Zui.ExprType.eUNKNOWN
+        IF !flags.allowTrailing
+          token.error("trailing comma")
+        }
+        BREAK
+      }
+    }
+
+    RETURN exprList
+  }
+
+  BITS MemberType
+    bool $doTypespec    # accept typespec: list<int>
+    bool $doParens      # accept (arg)
+  }
+
+  #
+  # Evaluate "expr_idx.member"
+  #      and "expr_idx?.member"
+  #      and "expr_idx(expr, ...)"
+  #      and "expr_idx[arg]"
+  #      and "expr_idx<type>"
+  #      and "bitsfield=value
+  #      and "expr_idx<type>"  (only when "what.doTypespec" is TRUE)
+  #      and "expr_idx.method(expr, ...)"
+  #      and "expr_idx.method[expr]"
+  #      and "expr_idx.(expr)
+  #      and "expr_idx.(expr)(arg)
+  #      and "expr_idx.<typeCast>
+  #   repeated
+  #
+  FUNC parseMembers(Zui.Expression startExpr, TokenInput in, MemberType what
+                   ) Zui.Expression
+    Zui.Expression expr = startExpr
+    Token token
+
+    WHILE TRUE
+      token = tokenAfterSep(in)
+      IF !(token.type == TType.dot
+          || token.type == TType.dotnil
+          || (token.type == TType.p_open && what.doParens)
+          || token.type == TType.sq_open
+          || (token.type == TType.assign && !what.doTypespec
+                                                   && !in.peekToken().isSep())
+          || (token.type == TType.lt && what.doTypespec))
+        BREAK
+      }
+      IF token.type == TType.sq_open && in.peekToken().type == TType.line_sep
+        # "[]" on the next line should be tuple unpack.
+        BREAK
+      }
+      IF token.type == TType.dot || token.type == TType.dotnil
+        # We allow a line break before '.', nothing else
+        token = in.getToken()
+        IF token.type != TType.line_sep
+          in.pushToken(token)
+        }
+      }
+      checkNoSep(in)
+      Token opToken = in.getToken()
+
+      IF opToken.type != TType.dot && opToken.type != TType.dotnil
+                   && opToken.type != TType.assign && opToken.type != TType.lt
+        # skip line break after '(' and '['
+        skipLineSep(in)
+      }
+      IF opToken.type == TType.dot || opToken.type == TType.dotnil
+        token = in.getToken()
+        IF token.type == TType.p_open
+          # var.(expr)  method reference
+          Zui.Expression methodExpr = newZuiExpr(Zui.ExprType.eEXPRMETHOD,
+                                                                 token.zuiPos)
+          IF opToken.type == TType.dotnil
+            methodExpr.setDotnil(TRUE)
+          }
+          skipLineSep(in)
+          Zui.Expression arg = parseExpr(in)
+          skipLineSep(in)
+          token = in.getToken()
+          IF token.type != TType.p_close
+            token.error("Missing )")
+            in.pushToken(token)
+          }
+
+          methodExpr.setRight(arg)
+          methodExpr.setLeft(expr)
+          expr = methodExpr
+        ELSEIF token.type == TType.lt
+          # var.<type> type cast
+          Zui.Expression typeExpr =
+                       newZuiExpr(Zui.ExprType.eTYPECAST, token.zuiPos)
+          IF opToken.type == TType.dotnil
+            typeExpr.setDotnil(TRUE)
+          }
+          skipLineSep(in)
+          Zui.Expression arg = parseDotName(in, TRUE, doTypespec)
+          skipLineSep(in)
+          token = in.getToken()
+          IF token.type != TType.gt
+            token.error("Missing >")
+            in.pushToken(token)
+          }
+
+          typeExpr.newTypecast()
+                  .setType(Zui.TypeEnum.eNAME)
+                  .setName(arg)
+          typeExpr.setLeft(expr)
+          expr = typeExpr
+        ELSE
+          # "var.member" / "var.NEW" / "var.PARENT" / "var.C" / "var.I"
+          IF token.type != TType.id
+             && token.type != TType.new
+             && token.type != TType.parent
+             && token.type != TType.c
+             && token.type != TType.i
+            token.error("expected ID after .")
+          }
+
+          Zui.Expression member = newZuiExpr(Zui.ExprType.eMEMBER, token.zuiPos)
+          IF opToken.type == TType.dotnil
+            member.setDotnil(TRUE)
+          }
+
+          member.newRight()
+                  .setType(Zui.ExprType.eID)
+                  .setPos(token.zuiPos)
+                  .newId()
+                      .setName(token.value)
+          member.setLeft(expr)
+          expr = member
+        }
+      ELSEIF opToken.type == TType.assign
+        # "var=value"
+        token = in.getToken()
+        bool negative
+        IF token.type == TType.minus
+          # "=-value"
+          negative = TRUE
+          token = in.getToken()
+        }
+        IF token.type != TType.id
+          token.error("expected ID or number after =")
+        }
+        Zui.Expression rhs = parseId(in, token)
+        IF negative
+          IF rhs.getType() != Zui.ExprType.eINT
+                                         && rhs.getType() != Zui.ExprType.eNAT
+            token.error("expected number after =-")
+          }
+          rhs.setNumber(-rhs.getNumber())
+        }
+
+        Zui.Expression assign =
+                            newZuiExpr(Zui.ExprType.eBITSASSIGN, token.zuiPos)
+        assign.setRight(rhs)
+                   .setLeft(expr)
+        expr = assign
+      ELSEIF opToken.type == TType.p_open
+        # "name(arg, arg)"
+        skipLineSep(in)
+        list<Zui.Expression> args = parseComma(in, NIL, arguments)
+        skipLineSep(in)
+        token = in.getToken()
+        IF token.type != TType.p_close
+          token.error("Missing )")
+          in.pushToken(token)
+        }
+
+        Zui.MethodCall method = NEW()
+        method.setPos(expr.getPos())
+        method.setArgumentList(args)
+        method.setName(expr)
+
+        expr = NEW()
+                .setType(Zui.ExprType.eCALL)
+                .setPos(expr.getPos())
+                .setMethodCall(method)
+      ELSEIF opToken.type == TType.sq_open
+        # "var[arg]"
+        Zui.Expression arg = parseExpr(in)
+        skipLineSep(in)
+        token = in.getToken()
+        IF token.type != TType.sq_close
+          token.error("Missing ] after subscript")
+          in.pushToken(token)
+        }
+
+        Zui.Expression subscript = NEW()
+               .setType(Zui.ExprType.eSUBSCRIPT)
+               .setPos(expr.getPos())
+        subscript.setLeft(expr)
+                 .setRight(arg)
+        expr = subscript
+      ELSE # opToken.type == TType.lt
+        # var<type, type>
+        # proc<type>
+        # func<type => type>
+        # tuple<type, type> or tuple<type a, type b>
+
+        # Parse if we do not get >, >> or >>>, that is an empty type spec.
+        list<Zui.Type> types = NEW()
+        parseTypeSpec(in, types, expr.getType() == Zui.ExprType.eID
+                                         && expr.getId().getName() == "tuple")
+
+        IF expr.getType() == Zui.ExprType.eID
+          # For some types we may need to load a module.  Do that right after
+          # parsing to reduce the number of passes required.
+          string name = expr.getId().getName()
+          IF name == "list"
+              # || name == "dict"      does not contain functionality
+              || name == "multiDict"
+              # || name == "array"     does not contain functionality
+              || name == "pipe"
+              || name == "evalThread"
+              || name == "set"
+              # || name == "multiSet"  not implemented yet
+              || name == "sortedList"
+            in.usedIdKeywords.set(name.toUpper())
+          }
+        }
+
+        Zui.Expression typespec = NEW()
+              .setType(Zui.ExprType.eTYPESPEC)
+              .setPos(expr.getPos())
+        typespec.setTypespecList(types)
+        typespec.setLeft(expr)
+        expr = typespec
+      }
+    }
+    RETURN expr
+  }
+
+  #
+  # Found ">>>": start of directly copied text.
+  #
+  FUNC copyCode(TokenInput in) Zui.Statement
+    Z.Pos pos = in.input.pos.copy()
+
+    Zui.Statement stmt = NEW()
+        .setPos(ZuiFile.createPosition(pos))
+        .setType(Zui.StatementType.eCBLOCK)
+
+    # We can't use tokens here, a C line may start with #ifdef which would be
+    # recognized as a comment and skipped over.
+    in.emptyStack()
+
+    # Skip to end of line, ignore comment, parse uses().
+    bool comment
+    int    c
+    list<string> usesList
+    WHILE TRUE
+      Z.Pos startPos = in.input.pos.copy()
+      c = in.get()
+      IF c == IO.eof || c == '\n'
+        BREAK
+      }
+      IF c == '#'
+        comment = TRUE
+      ELSEIF !comment
+        IF c == 'u' && in.getWord() == "ses"
+          # Parse uses(item, item).
+          c = in.get()
+          IF c != '('
+            error("Missing ( after uses", in)
+            comment = TRUE  # one error is enough
+          ELSE
+            usesList = NEW()
+            WHILE TRUE
+              string word = in.getWord()
+              IF word == ""
+                error("Syntax error in uses()", in)
+                comment = TRUE  # one error is enough
+                BREAK
+              }
+              usesList.add(word)
+              c = in.get()
+              IF c == ')'
+                BREAK
+              }
+              IF c != ','
+                IF c == ' '
+                  error("Unexpected white space in uses()", in)
+                ELSE
+                  error("Syntax error in uses()", in)
+                }
+                comment = TRUE  # one error is enough
+                BREAK
+              }
+              IF !in.skipWhite()
+                error("Missing white space after comma", in)
+                comment = TRUE  # one error is enough
+                BREAK
+              }
+            }
+          }
+        ELSEIF c == 'b' && in.getWord() == "lockgc"
+          # Parse "blockgc"
+          stmt.setBlockgc(TRUE)
+        ELSEIF c != ' '
+          LOG.error("Expected comment or uses()", startPos)
+          comment = TRUE  # one error is enough
+        }
+      }
+    }
+
+    # Collect all text until the "<<<".
+    IO.StringWriter writer = NEW()
+    int    gt_count = 0
+    WHILE TRUE
+      c = in.get()
+      IF c == IO.eof
+        error("missing <<<", in)
+        BREAK
+      }
+
+      # Write any postponed '<'.
+      WHILE gt_count > 0 && c != '<'
+        writer.writeChar('<')
+        --gt_count
+      }
+
+      IF c == '\n'
+        gt_count = 0        # start of line, look for "<<<"
+      ELSEIF gt_count >= 0 && c == '<'
+        IF ++gt_count == 3  # found "<<<"
+          BREAK
+        }
+      ELSE
+        gt_count = -1       # not at start of line, don't look for "<<<"
+      }
+      IF gt_count <= 0
+        writer.writeChar(c)
+      }
+    }
+
+    # Skip to end of line, ignore comment.
+    WHILE TRUE
+      c = in.get()
+      IF c == IO.eof || c == '\n'
+        BREAK
+      }
+    }
+
+    string text = writer.ToString()
+
+    # Find and parse separate items for these:
+    # - %var%
+    # - %{ expression }%
+    # - %[ function ]%
+    int start
+    string toWrite = ""
+    Z.Pos startPos = pos.copy()
+    WHILE TRUE
+      int idx = text.find('%', start)
+      IF idx >= 0
+        # write the text before the '%'
+        string s = text.slice(start, idx - 1)
+        toWrite ..= s
+        pos.advance(s)
+        ++pos.col  # count the starting %
+
+        int end = idx + 1
+        bool literal
+        IF text[end] == '{' || text[end] == '['
+          int match
+          IF text[end] == '{'
+            # Find end for %{ expr }%.
+            match = '}'
+          ELSE
+            # Find end for %[ name ]%.
+            match = ']'
+            literal = TRUE
+          }
+          ++end
+          WHILE text[end] != 0 && (text[end] != match || text[end + 1] != '%')
+            ++end
+          }
+          IF text[end] == match
+            ++end
+          }
+        ELSE
+          # Find end for %varname%.
+          WHILE text[end] != '%' && text[end] != 0
+                                      && text[end] != ' ' && text[end] != '\n'
+            ++end
+          }
+        }
+        IF text[end] == '%'
+          IF end == idx + 1
+            # found %%, produce one %
+            toWrite ..= "%"
+            ++pos.col
+          ELSE
+            # Found %var% or %{ expr }% or %[ expr ]%.
+            Zui.CBlock block = NEW().setPos(ZuiFile.createPosition(startPos))
+                .setText(toWrite)
+                .setLiteral(literal)
+            IF usesList != NIL
+              block.setUsesList(usesList)
+              usesList = NIL
+            }
+            stmt.addCblock(block)
+
+            s = text.slice(idx + 1, end - 1)
+            parseCopyPercent(block, s, pos)
+            pos.advance(s)
+
+            toWrite = ""
+            pos.col++  # count the closing %
+            startPos = pos.copy()
+          }
+          start = end + 1  # continue after %foo%
+        ELSE
+          # % that is not %var%, write the % and continue after it.
+          toWrite ..= "%"
+          start = idx + 1
+        }
+      ELSE
+        # No %, copy the rest of the text.
+        toWrite ..= text.slice(start)
+        BREAK
+      }
+    }
+
+    IF toWrite != ""
+      Zui.CBlock block = NEW().setPos(ZuiFile.createPosition(startPos))
+          .setText(toWrite)
+      IF usesList != NIL
+        block.setUsesList(usesList)
+        usesList = NIL
+      }
+      stmt.addCblock(block)
+    }
+
+    RETURN stmt
+  }
+
+  # Parse the text "var" between % in >>> %var% <<<.
+  PROC parseCopyPercent(Zui.CBlock block, string text, Z.Pos pos)
+    TokenInput in
+    IF text[0] == '{' || text[0] == '['
+      Input input = NEW(text.slice(1, -2), pos)
+      in = NEW(input)
+      in.input.pos.col++  # count the {
+    ELSE
+      Input input = NEW(text, pos)
+      in = NEW(input)
+    }
+    skipSep(in)
+
+    block.setExpr(parseExpr(in))
+  }
+
+  # ALIAS Some.Dot.Name id
+  # TYPE Some.Dot.Name id
+  FUNC parseAlias(Token token, TokenInput in) Zui.Statement
+    Token comment
+    IF lastSep.hasComment
+      comment = lastSep
+    }
+
+    # Some.Dot.Name
+    expectSep(in)
+    Zui.Expression left = parseDotName(in, TRUE, doTypespec)
+
+    # id
+    expectSep(in)
+    Zui.Expression idExpr = parseDotName(in, TRUE, 0)
+    string name
+    IF idExpr.getType() != Zui.ExprType.eID
+      token.error("Expected a name")
+    ELSE
+      name = idExpr.getId().getName()
+      IF exprHasDollar(idExpr) != exprHasDollar(left)
+        token.error("Must both have a dollar or neither")
+      }
+      IF exprHasPercent(idExpr) != exprHasPercent(left)
+        token.error("Must both have a percent or neither")
+      }
+    }
+
+    # @public and friends.
+    Zui.Attributes za = NEW()
+    parseAttr(za, TRUE, ["private", "protected", "public",
+                              "file", "directory"], in)
+
+    Zui.AliasType alias = NEW()
+    alias.setFrom(left)
+    alias.setName(name)
+
+    Zui.Declaration decl = NEW()
+    decl.setName(name)
+        .setPos(token.zuiPos)
+        .newType()
+            .setType(Zui.TypeEnum.eALIAS)
+            .setAlias(alias)
+            .setAttr(za)
+    setPrefixFromExpr(decl, idExpr)
+    IF comment != NIL
+      decl.setCommentBefore(comment.value)
+    }
+    # A comment directly after declaration belongs to the declaration:
+    # "valuename  #= comment"
+    Token peek = in.peekToken()
+    IF peek.type == TType.line_sep && peek.hasCommentFirst
+      decl.setCommentAfter(peek.value)
+    }
+    expectNewLine(in)
+
+    Zui.Statement stmt = NEW()
+    stmt.setPos(token.zuiPos)
+        .setType(token.type == TType.alias
+            ? Zui.StatementType.eALIAS_DECL
+            : Zui.StatementType.eTYPE_DECL)
+        .setDeclaration(decl)
+
+    RETURN stmt
+  }
+
+  # Found C, start of "C(c-type) id"
+  FUNC parseCType(TokenInput in) Zui.Statement
+    Zui.Position startPos
+    string typeName
+    typeName, startPos = parseCparens(in)
+
+    Zui.Expression ctype = newZuiExpr(Zui.ExprType.eCTYPE, startPos)
+    ctype.newId().setName(typeName)
+
+    expectSep(in)
+    Token token = in.getToken()
+
+    RETURN parseDeclaration(ctype, token, TRUE, TRUE, in)
+  }
+
+  # Parse what is inside "C( code )"
+  FUNC parseCparens(TokenInput in) string, Zui.Position
+    Zui.Position startPos = ZuiFile.createPosition(in.input.pos)
+    int c = in.get()
+    IF c != '('
+      error("Missing (", in)
+      RETURN "", startPos
+    }
+
+    # Skip white space after C(
+    DO
+      c = in.get()
+    UNTIL c != ' '
+    in.push(c)
+
+    # Copy the text until the matching ).  This takes everything literally,
+    # does not use the tokenizer.
+    IO.StringWriter writer = NEW()
+    int nesting
+    WHILE TRUE
+      IF c == IO.eof || c == '\n'
+        error("Missing )", startPos)
+        RETURN "", startPos
+      }
+      c = in.get()
+      IF c == ')'
+        IF nesting == 0
+          BREAK
+        }
+        --nesting
+      ELSEIF c == '('
+        ++nesting
+      }
+      writer.writeChar(c)
+    }
+    RETURN writer.ToString(), startPos
+  }
+
+  # Found "C", start of "C( any C code )"
+  FUNC parseCCode(TokenInput in) Zui.Expression
+    Zui.Position startPos
+    string code
+    code, startPos = parseCparens(in)
+    Zui.Expression ccode = newZuiExpr(Zui.ExprType.eCCODE, startPos)
+    ccode.setStringValue(code)
+    RETURN ccode
+  }
+
+  # Report an error detected during the parse phase.
+  PROC error(string msg, TokenInput in)
+    LOG.error(msg, in.input.pos)
+  }
+
+  # Report an error using Zui.Position, converting it to a Z.Pos for the LOG
+  # module.
+  PROC error(string msg, Zui.Position pos)
+    LOG.error(msg,
+                 Z.Pos.NEW(pos.getFilename(), pos.getLine(), pos.getColumn()))
+  }
+
+  # Read a line separator from |in|.  When there is none give an error message.
+  # A semicolon may also be used.
+  # A comment without leading white space is not acceptable.
+  PROC expectLineSep(TokenInput in)
+    expectLineSep(in, TRUE)
+  }
+
+  # Like expectLineSep() above, but do not allow a semicolon.
+  PROC expectNewLine(TokenInput in)
+    expectLineSep(in, FALSE)
+  }
+
+  # Like expectLineSep() above, but allow a semicolon only when
+  # |allowSemicolon| is TRUE.
+  PROC expectLineSep(TokenInput in, bool allowSemicolon)
+    Token token = in.getToken()
+    Token next
+    IF token.type == TType.sep
+      lastSep = token
+      next = in.getToken()
+      token = next
+    }
+    IF allowSemicolon
+      IF token.type == TType.semicolon
+        # Semicolon must be followed by white space, not a line break.
+        token = in.getToken()
+        IF token.type == TType.line_sep
+          token.error("unexpected semicolon")
+        ELSE
+          in.pushToken(token)
+          expectSep(in)
+        }
+        RETURN
+      }
+      IF next != NIL
+        in.pushToken(next)
+      }
+    }
+
+    IF token.type == TType.line_sep
+      lastSep = token
+    ELSE
+      IF token.type == TType.comment
+        token.error("missing white space before comment")
+      ELSEIF token.type == TType.semicolon
+        next = in.getToken()
+        IF next.type == TType.line_sep
+          token.error("unexpected semicolon")
+        ELSE
+          token.error("semicolon not allowed here, line break required")
+          IF next.type != TType.sep
+            in.pushToken(next)
+          }
+        }
+      ELSE
+        token.error("missing line break")
+        IF token.type != TType.sep
+          in.pushToken(token)
+        }
+      }
+    }
+  }
+
+  # Read a separator from |in|.  When there is none give an error message.
+  # A comment without leading white space is not acceptable.
+  PROC expectSep(TokenInput in)
+    Token token = in.getToken()
+    IF token.type != TType.sep && token.type != TType.line_sep
+      token.error("white space required")
+      IF token.type != TType.comment
+        in.pushToken(token)
+      }
+    }
+  }
+
+  # The last skipped separator is remembered, so that we can attach a comment
+  # before an item to that item.
+  Token lastSep = NEW()
+
+  # Read an optional separator or comment from |in|.
+  PROC skipSep(TokenInput in)
+    Token token = in.getToken()
+    IF token.isSep()
+      lastSep = token
+    ELSE
+      in.pushToken(token)
+    }
+  }
+
+  # Read an optional line break or comment from |in|.
+  # Give an error if it is white space without a line break and without a
+  # single line comment.
+  PROC skipLineSep(TokenInput in)
+    Token token = in.getToken()
+    IF token.type == TType.line_sep
+                              || (token.type == TType.sep && token.hasComment)
+      lastSep = token
+    ELSE
+      IF token.type == TType.sep
+        token.error("superfluous white space")
+      ELSEIF token.type == TType.comment
+        token.error("white space required")
+      ELSE
+        in.pushToken(token)
+      }
+    }
+  }
+
+  # Return the next token, ignoring a separator token.
+  # Does not actually read anything.
+  FUNC tokenAfterSep(TokenInput in) Token
+    Token res
+    Token token = in.getToken()
+    IF token.type == TType.sep || token.type == TType.line_sep
+      res = in.getToken()
+      in.pushToken(res)
+    ELSE
+      res = token
+    }
+    in.pushToken(token)
+    RETURN res
+  }
+
+  # Return the next token and the one after that, ignoring a separator token.
+  # Does not actually read anything.
+  FUNC twoTokensAfterSep(TokenInput in) Token, Token
+    Token res
+    Token next
+    Token token = in.getToken()
+    IF token.type == TType.sep || token.type == TType.line_sep
+      res = in.getToken()
+      next = in.peekToken()
+      in.pushToken(res)
+    ELSE
+      res = token
+      next = in.peekToken()
+    }
+    in.pushToken(token)
+    RETURN res, next
+  }
+
+  # Check that the next token is not a separator.  If it is anyway, give an
+  # error message and consume it.
+  PROC checkNoSep(TokenInput in)
+    Token next = in.getToken()
+    IF next.type == TType.sep || next.type == TType.line_sep
+      next.error("superfluous white space")
+    ELSE
+      in.pushToken(next)
+    }
+  }
+
+  # Check that the next token is not a line break.  If it is anyway, give an
+  # error message.
+  PROC checkNoLineBreak(TokenInput in)
+    Token next = in.peekToken()
+    IF next.type == TType.line_sep
+      next.error("unexpected line break")
+    }
+  }
+
+  # Create a new Zui.Expression and set the type and position.
+  FUNC newZuiExpr(Zui.ExprType type, Zui.Position pos) Zui.Expression
+    Zui.Expression expr = NEW()
+    expr.setType(type)
+    expr.setPos(pos)
+    RETURN expr
+  }
+
+}

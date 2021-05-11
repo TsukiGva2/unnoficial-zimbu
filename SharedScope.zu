@@ -1,0 +1,43 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# SharedScope class.
+#
+# A Scope used for the SHARED section of a class.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Scope.zu"
+
+CLASS SharedScope EXTENDS Scope @items=public
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @define
+    RETURN FALSE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @define
+    RETURN TRUE
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @define
+    RETURN TRUE
+  }
+
+  # Can there be statements in this Scope?
+  FUNC $hasStatements() bool @define
+    RETURN FALSE
+  }
+
+  PROC $initPass(Scope outer)
+    $fillFromOuter(outer)
+  }
+
+}

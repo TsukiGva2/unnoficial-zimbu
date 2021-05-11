@@ -1,0 +1,75 @@
+#
+# ZUT (Zimbu Templates) demo: button controller
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT ZutDemoPage.zut
+
+CLASS ButtonController
+
+  FUNC $alert(ZUT.Event event) bool
+    ZUT.alert("Alert button: " .. event.type.ToString() .. " event")
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $something(ZUT.Event event) bool
+    ZUT.appendToDom(ZutDemoPage.something)
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  SHARED
+    # This must be in the SHARED section, because $vertical() is called on a
+    # different controller than $removeVertical()
+    ZUT.Element verticalElement
+    ZUT.Element horizontalElement
+  }
+
+  FUNC $vertical(ZUT.Event event) bool
+    IF verticalElement == NIL
+      verticalElement = ZUT.appendToDom(ZutDemoPage.vertical)
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $removeVertical(ZUT.Event event) bool
+    IF verticalElement != NIL
+      verticalElement.removeFromDom()
+      verticalElement = NIL
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $horizontal(ZUT.Event event) bool
+    IF horizontalElement == NIL
+      horizontalElement = ZUT.appendToDom(ZutDemoPage.horizontal)
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $removeHorizontal(ZUT.Event event) bool
+    IF horizontalElement != NIL
+      horizontalElement.removeFromDom()
+      horizontalElement = NIL
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+
+
+
+}

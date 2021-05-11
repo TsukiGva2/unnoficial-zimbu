@@ -1,0 +1,26 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TryScope class.
+#
+# A Scope used for a TRY statement.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "BlockScope.zu"
+
+CLASS TryScope EXTENDS BlockScope @items=public
+
+  list<string>  $catchList    # names used for generated CATCH statements
+
+  bool $hasFinally         # this TRY has a FINALLY
+  string $finallyLabelName # name of the label at the FINALLY
+
+  bool $foundReturn        # there is a RETURN inside this TRY
+  bool $foundBreak         # there is a BREAK inside this TRY
+  bool $foundContinue      # there is a CONTINUE inside this TRY
+
+}

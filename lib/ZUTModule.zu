@@ -1,0 +1,340 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module ZUT.
+#
+# Beware of browser incompabilities!
+# compatibility tables: http://www.quirksmode.org/
+
+IMPORT.ZUT "zut/MainPage.zut"
+
+#= Zimbu Templates
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE ZUTModule @public
+
+  #= The configuration for events handled by ZUT.
+  CLASS EventConfig @public
+    set<EventType> $active
+
+    #= This constructor is only used internaly.
+    NEW()
+      $active = NEW()
+      eventConfig = THIS
+    }
+
+    #= Add EventType |type| to the set of events that ZUT listens on.
+    #- Returns FAIL for an event that is not supported.
+    #
+    #- It is only possible to add types, they can't be removed.
+    FUNC $listen(EventType type) status @public
+      GENERATE_IF Z.lang == "JS"
+        IF !$active.has(type)
+          $active.add(type)
+
+          # zut.eventHandler is defined in GenJS.writeZutFooter().
+          SWITCH type
+            CASE EventType.click
+>>>
+              $doc.onclick = zut.clickEventHandler;
+<<<
+            CASE EventType.mouseOver
+>>>
+              $doc.onmouseover = zut.mouseOverEventHandler;
+<<<
+            CASE EventType.mouseOut
+>>>
+              $doc.onmouseout = zut.mouseOutEventHandler;
+<<<
+            DEFAULT
+              RETURN FAIL
+          }
+        }
+      }
+      RETURN OK
+    }
+  }
+
+  #! Singleton EventConfig.
+  EventConfig eventConfig
+  
+  #= The context for processing ZUT templates.
+  #- Passed to all the methods generating CSS and HTML.
+  CLASS Context @public
+    HTTP.Context    $httpContext @public #!
+    set<string>     $cssNames #!
+    list<string>    $cssEntries @public #!
+    set<EventType>  $activeEvents
+
+    #= Create a new Context for a HTTP request on the server.
+    NEW(HTTP.Context httpContext) @public
+      $httpContext = httpContext
+      NEW()
+    }
+
+    #= Create a new Context for use on the client.
+    NEW() @public
+      $cssEntries = NEW()
+      $cssNames = NEW()
+    }
+
+    #= Return the HTTP.Context for the current request.
+    #- In the client this will return NIL.
+    FUNC $getHttpContext() HTTP.Context @public
+      RETURN $httpContext
+    }
+
+    #! Return TRUE if CSS entry |name| was already added.
+    FUNC $hasCss(string name) bool @public
+      RETURN $cssNames.has(name)
+    }
+
+    #! Add CSS entry |css|, registering as |name|.
+    PROC $addCss(string name, string css) @public
+      $cssNames.add(name)
+      GENERATE_IF Z.lang == "C"
+        # Add to the list used by MainPage.
+        $cssEntries.add(css)
+      GENERATE_ELSE
+        # Add to the page right away.
+>>>
+        var styleEl = $doc.createElement('style');
+        styleEl.type = 'text/css';
+        if (styleEl.styleSheet) {
+          styleEl.styleSheet.cssText = %css%;
+        } else {
+          styleEl.appendChild($doc.createTextNode(%css%));
+        }
+        $doc.head.appendChild(styleEl);
+<<<
+      }
+    }
+
+    #! Add an event to listen on.  Passed on to the EventConfig, either right
+    # away (on the client) or through the page (on the server).
+    FUNC $listen(EventType eventType) status @public
+      GENERATE_IF Z.lang == "C"
+        IF $activeEvents == NIL
+          $activeEvents = NEW()
+        }
+        IF !$activeEvents.has(eventType)
+          $activeEvents.add(eventType)
+        }
+        RETURN OK
+      GENERATE_ELSE
+        RETURN eventConfig.listen(eventType)
+      }
+    }
+
+    #! On the server, when generating the html page, add the event listeners
+    # used in the encountered templates.
+    FUNC $activateEventListeners() string @public
+      GENERATE_IF Z.lang == "C"
+        IF $activeEvents != NIL
+          IO.StringWriter w = NEW()
+          w.write("<script type=\"text/javascript\">\n")
+          FOR e IN $activeEvents
+            w.write("zut.eventConfig.listen(")
+            w.write(e.value())
+            w.write(");\n")
+          }
+          w.write("</script>\n")
+          RETURN w.ToString()
+        }
+      }
+      RETURN ""
+    }
+
+  }
+
+  #= The type used for a ZUT template method producing HTML.
+  #- The first argument is ZUT.Context, which is added by the ZUT plugin.
+  #
+  #- Example, creating a callback for template function HelloMessage.show():
+  #% callback<ZUT.HtmlFunc, string> cb = NEW(HelloMessage.show, "Hello World!")
+  ALIAS func<ZUT.Context => string> HtmlFunc @public
+
+  #= The properties of an HTML page.
+  CLASS Page @public @items=public
+    string          $title #!
+    HtmlFunc        $bodyTemplate #!
+    list<string>    $pathList #!
+    bool            $html5 #!
+    list<string>    $cssEntries #!
+    list<string>    $jsFiles #!
+
+    #= Create a page with Title |title|.
+    NEW(string title) @public
+      $title = title
+      $pathList = NEW()
+      $jsFiles = NEW()
+      $jsFiles.add("main.js")  # TODO: split up in parts
+    }
+
+    #= Set the template to call to fill the body of the page.
+    #- Use a callback to pass arguments to the template, e.g.:
+    #% ZUT.page page = NEW("ZUT demo page")
+    #% callback<ZUT.HtmlFunc, string> cb = NEW(ZutDemoPage.page, "Hello world!")
+    #% page.setBody(cb)
+    PROC $setBody(HtmlFunc body) @public
+      $bodyTemplate = body
+    }
+
+    #= Render the body template, passing |context| if needed.
+    FUNC $renderBody(ZUT.Context context) string @public
+      IF $bodyTemplate != NIL
+        RETURN $bodyTemplate(context)
+      }
+      RETURN ""
+    }
+
+    #= Set whether the page should use an HTML 5 declaration.
+    PROC $setHtml5(bool html5)
+      $html5 = html5
+    }
+
+    # PROC addController()
+
+    #= Add a path for which this page should display.
+    PROC $addPath(string path) @public
+      $pathList.add(path)
+    }
+
+    #= Add CSS to be inserted in the page header.
+    #- Note that |css| is included as-is, not processed like a template.
+    PROC $addCss(string css) @public
+      IF $cssEntries == NIL
+        $cssEntries = NEW()
+      }
+      $cssEntries.add(css)
+    }
+
+    #! Return all added CSS concatenated.
+    FUNC $getAllCss() string @public
+      RETURN $cssEntries == NIL ? "" : $cssEntries.join("\n")
+    }
+  }
+
+#  GENERATE_IF Z.lang == "JS"
+    #= Lowest level object, an HTML element.
+    #- Only to be used in Javascript code.
+    CLASS Element @public
+    }
+#  }
+
+  ENUM EventType @public
+    click          #= single mouse click or touch tap
+    doubleClick    #= double mouse click or touch tap twice
+    longClick      #= long mouse click or touch & hold (ca. 2 seconds)
+    mouseDown
+    mouseUp
+
+    mouseOver      #= No touch equivalent
+    mouseOut       #= No touch equivalent
+
+    key            #= Key press (not for modifier keys)
+    keyDown        #= also for modifier keys
+    keyUp          #= also for modifier keys
+  }
+
+  #= The properties of an event.
+  CLASS Event @public @items=public
+    EventType $type
+    Element   $element
+
+    NEW(Element el)
+      $element = el
+    }
+
+    SHARED
+      FUNC newClickEvent(Element el) Event
+        Event e = NEW(el)
+        e.type = EventType.click
+        RETURN e
+      }
+
+      FUNC newMouseOverEvent(Element el) Event
+        Event e = NEW(el)
+        e.type = EventType.mouseOver
+        RETURN e
+      }
+
+      FUNC newMouseOutEvent(Element el) Event
+        Event e = NEW(el)
+        e.type = EventType.mouseOut
+        RETURN e
+      }
+    }
+  }
+
+  #= Return the value of an attribute of an Element.
+  #- Returns an empty string when the attribute does not exist.
+  #
+  #- Can only be used in the client.
+  FUNC getAttribute(Element el, string name) string @public
+    string value
+    GENERATE_IF Z.lang == "JS"
+>>>
+      %value% = %el%.getAttribute(%name%);
+<<<
+    }
+    RETURN value
+  }
+
+  #= Fill element |id| with the result of |template|.
+  #- Can only be used in the client.
+  PROC fillElement(string id, HtmlFunc template) @public
+    GENERATE_IF Z.lang == "JS"
+      string html = template(C(zut.context))
+>>>
+      var el = $doc.getElementById(%id%);
+      if (el) {
+        el.innerHTML = %html%;
+      }
+<<<
+    }
+  }
+
+  #= Function passed to a FunctionServlet to create the HTML page.
+  FUNC createPage(HTTP.Context httpContext, Page page) string @public
+    ZUT.Context zutContext = NEW(httpContext)
+    RETURN MainPage.page(zutContext, page)
+  }
+
+  #! Registers an action on a controller.
+  PROC registerAction(string controllerName, string functionName) @public
+    #! Implemented in the compiler.
+  }
+
+  int nextId #!
+  string letters = "abcdefghijklmnopqrstuvwxyz0123456789" #!
+
+  #= Return a unique ID.
+  #- This will start with "z_" when used in the server, "z-" when used in the
+  #- client.
+  FUNC uid() string @public
+    string r = ""
+    int n = nextId++
+    WHILE TRUE
+      int idx = n % letters.Size()
+      r ..= letters[idx].asString()
+      n = n / letters.Size()
+      IF n == 0
+        BREAK
+      }
+      --n
+    }
+    GENERATE_IF Z.lang == "JS"
+      r = "z-" .. r
+    GENERATE_ELSE
+      r = "z_" .. r
+    }
+    RETURN r
+  }
+
+}

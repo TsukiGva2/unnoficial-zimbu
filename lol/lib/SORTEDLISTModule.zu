@@ -1,0 +1,543 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module SORTEDLIST
+#
+
+#= Classes, Interfaces and methods for sortedList.
+#
+#- Still very much under development.
+#
+#- TODO: proper error handling
+#- TODO: more efficient implementation, perhaps with a heap.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE SORTEDLISTModule @public
+
+  #! The SORTEDLISTloader changes "SORTEDLISTmodule.SortedList" to
+  #! "sortedList", as this is how it is used globally.
+
+  #= The builtin type sortedList.
+  #
+  #- SortedLists keep a list in sorted order.  Either using the Compare method
+  #- of the item or an explicitly specified sort method.
+  #
+  #- This is similar to a priority queue.  However, the order is determined by
+  #- the items themselves, not by a separately provided priority.
+  #
+  #- Example:
+  #% sortedList<string> sl = NEW()
+  #% sl.add('yes').add('no').add('maybe')
+  #% IO.print("sortedList: " .. sl.ToString())
+  #- Results in: sortedList: ["maybe", "no", "yes"]
+  #
+  #- The sorting only happens when an item is added.  When an item is modified
+  #- it needs to be removed and added back to update the sort order.
+  CLASS SortedList<Titem> IMPLEMENTS I.Iterable<Titem>
+      @public
+    list<Titem>               $list         #! stores the values
+    func<Titem, Titem => int> $sortMethod   #!
+
+    #!
+    PROC $Init()
+      $list = NEW()
+    }
+
+    #= Create a new empty sortedList.
+    NEW() @public
+    }
+
+    #= Create a new sortedList from a list of items.
+    #- The |items| does not need to be sorted.
+    NEW(list<Titem> items) @public
+      $extend(items)
+    }
+
+    INCLUDE
+      BOX.ByItem<Titem> $byItem  # removeItem(), clearItem()
+      BOX.MaxMin<Titem> $maxMin  # max(), min()
+    }
+
+    #= Return the number of items in the sortedList.
+    FUNC $Size() int @public
+      IFNIL
+        RETURN 0
+      }
+      RETURN $list.Size()
+    }
+
+    #!
+    FUNC $size() int @public
+      RETURN $Size()
+    }
+
+
+    #= Return a string representation of the sortedList.
+    #- Looks like a list of the items: [item1, item2, item3]
+    FUNC $ToString() string @public
+      RETURN $list.ToString()
+    }
+
+    #= Return a copy of the sortedList.
+    FUNC $copy() SortedList<Titem> @public
+      SortedList<Titem> newsortedList = NEW()
+      FOR i IN $list
+        newsortedList.add(i)
+      }
+      RETURN newsortedList
+    }
+
+    #= Get an iterator to go over the items in sorted order.
+    #- Returns a SortedListIterator, which implements I.Iterator,
+    #- I.MutateIterator and I.BidiIterator.  Note that set() and add() are not
+    #- supported, because it confuses the iterator.
+    FUNC $Iterator() I.Iterator<Titem> @public
+      RETURN SortedListIterator<Titem>.NEW($list)
+    }
+
+    #= Get a key iterator to go over the items in sorted order.
+    #- Returns a BOX.ListKeyIterator, which implements I.KeyIterator.
+    FUNC $KeyIterator() I.KeyIterator<int, Titem> @public
+      RETURN BOX.ListKeyIterator<Titem>.NEW($list)
+    }
+
+    #= Return the ordinary list with the items.
+    #- Does not make a copy, changing the returned list will change the
+    #- sortedList without keeping it sorted.
+    FUNC $getList() list<Titem> @public
+      RETURN $list
+    }
+
+    #= Set the method to use for comparing two items.
+    #- The method must return zero when the two items are equal, < 0 when
+    #- the first one sorts before the second one and > 0 when the first one
+    #- sorts after the second one.
+    #
+    #- When |method| is NIL the item Compare() method is used.
+    PROC $setSortMethod(func<Titem, Titem => int> method) @public
+      $sortMethod = method
+    }
+
+    #= Return the item at position |index|.
+    FUNC $get(int index) Titem @public
+      RETURN $list[index]
+    }
+
+    #= Set the item at |index|.
+    #- A negative index is relative to the end, -1 refers to the last item.
+    #
+    #- Throws an E.OutOfRange exception when |index| does not refer to an
+    #- existing list item.
+    #
+    #- Returns the sortedList.
+    FUNC $set(int index, Titem value) SortedList<Titem> @public
+      $list[index] = value
+      RETURN THIS
+    }
+
+    #= Create a new list with all items starting at |index|.
+    #- |index| is used as with $add(): a negative index is relative to the end
+    #- of the list.
+    #
+    #- When |index| is before the first item zero is used.  When |index| is
+    #- beyond the last item an empty list is returned.
+    #
+    #- When Titem is a reference type both the original list and the slice
+    #- point to the same objects, as with a shallow copy.
+    #
+    #- When |index| is zero this is equivalent to $copy().
+    #
+    #- Returns the new list.  Note: Not a sortedList!.
+    FUNC $slice(int index) list<Titem> @public
+      RETURN $list.slice(index)
+    }
+
+    #= Create a new list with all items starting at |start| to |end|
+    #= (inclusive).
+    #- |start| and |end| are used as with $add(): a negative index is relative
+    #- to the end of the list.
+    #
+    #- When |start| is before the first item zero is used.  When |end| is
+    #- beyond the last item the last item is used. When end is before start
+    #- then an empty list is returned.
+    #
+    #- When Titem is a reference type both the original list and the slice
+    #- point to the same objects, as with a shallow copy.
+    #
+    #- Returns the new list.  Note: Not a sortedList!.
+    FUNC $slice(int start, int end) list<Titem> @public
+      RETURN $list.slice(start, end)
+    }
+
+    #= Add an item to the sortedList.
+    #- |item| will be placed in the correct place to keep the sortedList
+    #- sorted.
+    #
+    #- |item| must not be NIL.
+    #
+    #- Returns the sortedList.
+    FUNC $add(Titem item) SortedList<Titem> @public
+      # Binary search for the place to to insert.
+      int low = 0
+      int high = $list.Size() - 1
+      WHILE high >= low
+        int n = (low + high) / 2
+        int cmp
+        IF $sortMethod != NIL
+          cmp = $sortMethod(item, $list[n])
+        ELSE
+          cmp = item.Compare($list[n])
+        }
+        IF cmp == 0
+          low = n
+          BREAK
+        }
+        IF cmp < 0
+          IF n == 0
+            low = 0
+            BREAK
+          }
+          high = n - 1
+        ELSE
+          low = n + 1
+        }
+      }
+      $list.insert(item, low)
+      RETURN THIS
+    }
+
+    #= Add an item to the sortedList.  Identical to add(item).
+    #- |index| is ignored, this method exists only to be compatible with list.
+    #
+    #- Returns the sortedList.
+    FUNC $add(Titem item, int index) SortedList<Titem> @public
+      RETURN $add(item)
+    }
+
+    #= Add an item to the sortedList.  Identical to add(item).
+    #- Returns the sortedList.
+    FUNC $insert(Titem item) SortedList<Titem> @public
+      RETURN $add(item)
+    }
+
+    #= Add an item to the sortedList.  Identical to add(item).
+    #- |index| is ignored, this method exists only to be compatible with list.
+    #
+    #- Returns the sortedList.
+    FUNC $insert(Titem item, int index) SortedList<Titem> @public
+      RETURN $add(item)
+    }
+
+    #= Make the sortedList empty.
+    #- Returns the sortedList.
+    FUNC $clear() SortedList<Titem> @public
+      $list.clear()
+      RETURN THIS
+    }
+
+    #= Remove an item at |index| from the sortedList. and return the
+    #= sortedList.
+    #- |index| is used as with $add(): a negative index is relative to the end
+    #- of the list.
+    #
+    #- When |index| is out of range the list is unchanged.
+    #
+    #- $remove(index) does the same but returns the removed item.
+    #
+    #- Returns the sortedList.
+    FUNC $clear(int index) SortedList<Titem> @public
+      $list.clear(index)
+      RETURN THIS
+    }
+
+    #= Removes the last item from the list and returns it.
+    #- This does the same as remove(-1).
+    FUNC $remove() Titem @public
+      RETURN $list.remove()
+    }
+
+    #= Removes the item at |index| from the sortedList and returns it.
+    #- |index| is used as with $add(): a negative index is relative to the end
+    #- of the list.
+    #
+    #- Returns the item.  When |index| is out of range the list is unchanged
+    #- and the default item value returned (NIL, zero, FALSE).
+    FUNC $remove(int index) Titem @public
+      RETURN $list.remove(index)
+    }
+
+    #= Removes items |from| to |to| (inclusive) from the list and returns them
+    #= in a new list.
+    #- |from| and |to| are used as with $add(): a negative index is relative to
+    #- the end of the list.
+    #
+    #- See list.remove(from to) for details.
+    FUNC $remove(int from, int to) list<Titem> @public
+      RETURN $list.remove(from, to)
+    }
+
+    #= Add a all items of list |items| to this sortedList.
+    #- Returns the sortedList.
+    FUNC $extend(list<Titem> items) SortedList<Titem> @public
+      FOR item IN items
+        $add(item)
+      }
+      RETURN THIS
+    }
+
+    #= Add a all items of sortedList |items| to this sortedList.
+    #- Returns the sortedList.
+    FUNC $extend(sortedList<Titem> items) SortedList<Titem> @public
+      FOR item IN items.list
+        $add(item)
+      }
+      RETURN THIS
+    }
+
+    #= Create a new list with all items of this list and list |other|
+    #- Returns the new sortedList.
+    FUNC $concat(list<Titem> other) SortedList<Titem> @public
+      RETURN NEW().extend($list).extend(other)
+    }
+
+    #= Create a new list with all items of this list and sortedList |other|
+    #- Returns the sortedList.
+    FUNC $concat(SortedList<Titem> other) SortedList<Titem> @public
+      RETURN NEW().extend($list).extend(other)
+    }
+
+    #= Check if an item is present in the sortedList.
+    #- Returns TRUE or FALSE.
+    FUNC $has(Titem item) bool @public
+      RETURN $list.has(item)
+    }
+
+    #= Return the index of |item| in the sortedList.
+    #- Returns -1 when |item| is not found.
+    FUNC $find(Titem item) int @public
+      RETURN $list.find(item)
+    }
+
+    #= Return all items converted to a string and concatenated, separated by a
+    #= single space.
+    FUNC $join() string
+      RETURN $list.join()
+    }
+
+    #= Return all items converted to a string and concatenated, separated by
+    #= |sep|.
+    FUNC $join(string sep) string
+      RETURN $list.join(sep)
+    }
+
+    #= Ensures that the items are sorted.
+    #- Can be used after the list returned by $getList() was modified, or when
+    #- individual items have been modified.
+    #
+    #- Returns the sortedList.
+    FUNC $sort() SortedList<Titem> @public
+      list<Titem> l = $list
+      $list = NEW()
+      $extend(l)
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item.  Each item is replaced by the result
+    #= of the function.
+    #- |f| has one argument, which is the current value of the item, and must
+    #- return the new value of the item.
+    #% sortedList<string> l = ["a", "b", "c"]
+    #% l.map({ s => s .. ":" })
+    #% # l == ["a:", "b:", "c:"]
+    #
+    #- Returns the sortedList.
+    FUNC $map(func<Titem => Titem> f) SortedList<Titem> @public
+      $list.map(f)
+      $sort()
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item.  Each item is replaced by the result
+    #= of the function.
+    #- |f| has two arguments: The index in the list and the current value of the
+    #- item.  |f| must return the new value of the item.
+    #% list<string> l = ["a", "b", "c"]
+    #% l.keyMap({ i, s => i .. ":" .. s })
+    #% # l == ["0:a", "1:b", "2:c"]
+    #
+    #- Returns the list.
+    FUNC $keyMap(func<int, Titem => Titem> f) SortedList<Titem> @public
+      $list.keyMap(f)
+      $sort()
+      RETURN THIS
+    }
+
+    #= Create a new sortedList where each item is the result of executing
+    #= function |f| on each item of this sortedList.
+    #- This is like map() but with a different result type.
+    #
+    #- |f| has one argument, which is the current value of the item, and must
+    #- return the new value of the item.
+    #% sortedList<int> il = [1, 2, 3]
+    #% sortedList<string> sl = il.mapTo({ i => i.ToString() })
+    #% # sl == ["1", "2", "3"]
+    #
+    #- Returns the new sortedList.
+    FUNC $mapTo<Tresult>(func<Titem => Tresult> f) SortedList<Tresult> @public
+      SortedList<Tresult> r = NEW()
+      FOR item IN $list
+        r.add(f(item))
+      }
+      RETURN r
+    }
+
+    #= Create a new sortedList where each item is the result of executing
+    #= function |f| on each item of this sortedList.
+    #- This is like keyMap() but with a different result type.
+    #
+    #- |f| has two arguments: The index in the list and the value of the item.
+    #- |f| must return the value for the new list.
+    #% sortedList<int> il = [11, 22, 33]
+    #% sortedList<string> sl = il.keyMapTo({ i, n => i .. ": " .. n })
+    #% # sl == ["0: 11", "1: 22", "2: 33"]
+    #
+    #- Returns the new sortedList.
+    FUNC $keyMapTo<Tresult>(func<int, Titem => Tresult> f
+                           ) SortedList<Tresult> @public
+      SortedList<Tresult> r = NEW()
+      FOR i IN 0 UNTIL $list.Size()
+        r.add(f(i, $list[i]))
+      }
+      RETURN r
+    }
+
+    #= Call method |f| for every item in the sortedList.
+    #- The argument for |f| is the value.
+    #
+    #- Returns the sortedList.
+    FUNC $forEach(proc<Titem> f) sortedList<Titem> @public
+      FOR item IN $list
+        f(item)
+      }
+      RETURN THIS
+    }
+
+    #= Call method |f| for every item in the sortedList.
+    #- The first argument for f is the index in the sortedList, the second
+    #- argument is the value.
+    #
+    #- Returns the sortedList.
+    FUNC $forKeyEach(proc<int, Titem> f) sortedList<Titem> @public
+      FOR idx IN 0 UNTIL $list.Size()
+        f(idx, $list[idx])
+      }
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item to collect a result value.
+    #- This first time |f| is called the first argument has the first item of
+    #- the sortedList.
+    #
+    #- If the sortedList is empty the default item value (zero, FALSE, NIL) is
+    #- returned.
+    #
+    #- If the sortedList contains only one item that item is returned.
+    #% sortedList<int> numberList = [1, 2, 3, 4]
+    #% int total = numberList.reduce({ a, b => a + b })
+    #% # total is 10.
+    FUNC $reduce(func<Titem, Titem => Titem> f) Titem @public
+      bool first = TRUE
+      Titem r
+      FOR item IN $list
+        IF first
+          r = item
+          first = FALSE
+        ELSE
+          r = f(r, item)
+        }
+      }
+      RETURN r
+    }
+
+    #= Execute function |f| on each item to collect a result value.
+    #- This first time |f| is called the first argument has the |init|value.
+    #
+    #- If the list is empty the |init| value is returned.
+    #% list<int> numberList = [1, -8, 3, 4]
+    #% int positiveMax = numberList.reduce(1, { a, b => b > a ? b : a })
+    #% # positiveMax is 4.
+    FUNC $reduce(Titem init, func<Titem, Titem => Titem> f) Titem @public
+      Titem r = init
+      FOR item IN $list
+        r = f(r, item)
+      }
+      RETURN r
+    }
+
+    #= Execute function |f| on each item to collect a result value.
+    #- This first time |f| is called the first argument has the |init| value.
+    #
+    #- If the list is empty the |init| value is returned.
+    #% list<int> numberList = [1, -8, 3, 4]
+    #% string values = numberList.reduceTo("values:", { r, v => r .. " " .. v })
+    #% # values is "values: 1 -8 3 4"
+    FUNC $reduceTo<Tresult>(Tresult init,
+                            func<Tresult, Titem => Tresult> f
+                           ) Tresult @public
+      Tresult r = init
+      FOR item IN $list
+        r = f(r, item)
+      }
+      RETURN r
+    }
+
+  }
+
+  #= Iterator for sortedList.
+  #- Mostly like BOX.ListIterator, but set() and add() are not supported.
+  CLASS SortedListIterator<Titem>
+        EXTENDS BOX.ListIterator<Titem>
+        IMPLEMENTS I.Iterator<Titem>,
+                   I.BidiIterator<Titem>,
+                   I.MutateIterator<Titem>
+
+    #= Returns FALSE, because setting an item would change the sorted order
+    #= and mess up the iteration.
+    FUNC $setSupported() bool @public @replace
+      RETURN FALSE
+    }
+
+    #= Not implemented, always returns FAIL
+    FUNC $set(Titem item) status @public @replace
+      RETURN FAIL
+    }
+
+    #= Returns FALSE, because setting an item would change the sorted order
+    #= and mess up the iteration.
+    FUNC $addSupported() bool @public @replace
+      RETURN FALSE
+    }
+
+    #= Not implemented, always returns FAIL
+    FUNC $add(Titem item) status @public @replace
+      RETURN FAIL
+    }
+
+    #= Returns FALSE, because setting an item would change the sorted order
+    #= and mess up the iteration.
+    FUNC $insertSupported() bool @public @replace
+      RETURN FALSE
+    }
+
+    #= Not implemented, always returns FAIL
+    FUNC $insert(Titem item) status @public @replace
+      RETURN FAIL
+    }
+
+  }
+
+}

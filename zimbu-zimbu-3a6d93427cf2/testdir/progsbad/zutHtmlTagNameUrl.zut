@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML tag name / Url
+  TEMPLATE inTagNameUrl(ZUT.Url text) ZUT.Html @public
+    <[=text]>foo</foo>
+  }
+}
+

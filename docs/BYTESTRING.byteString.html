@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>BYTESTRING.byteString class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='BYTESTRING.html'>up:&nbsp;BYTESTRING</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.byteString
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type byteString.
+</p>
+<p class='ptext'> A byteString is a sequence of bytes (octets) with any value, including NUL.
+<p class='ptext'> The object methods can be used on a byteString value:
+<pre class='example'> byteString buffer = "foobar"
+ IO.print(buffer.asString())
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of bytes in the byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Convert the byteString to a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Convert the byteString to a string and then apply <b>format</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$latin1ToString'><b>$latin1ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Assuming that the byteString contains Latin1 characters, return a string
+ encoded in utf-8.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$Compare'><b>$Compare</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return -1, 0 or 1 when <b>other</b> is larger, equal to or smaller than this
+ byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$Equal'><b>$Equal</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when <b>other</b> is equal to this byteString, FALSE otherwise.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$asString'><b>$asString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the byteString as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$toVarString'><b>$toVarString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Convert the byteString to a varString.  Equivalent to
+ <span class='commentcode'>$latin1ToString().toVarString().</span>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$toVarByteString'><b>$toVarByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Convert the byteString to a varByteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$get'><b>$get</b></a>(<small>idx</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the byte at position <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$getByte'><b>$getByte</b></a>(<small>idx</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the byte at position <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$getChar'><b>$getChar</b></a>(<small>idx</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the UTF-8 encoded character at position <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$getCharSize'><b>$getCharSize</b></a>(<small>idx</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the byte size of the UTF-8 encoded character at position <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$find'><b>$find</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where byteString <b>b</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$find'><b>$find</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where byte <b>b</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$findLast'><b>$findLast</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index where byteString <b>b</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$findLast'><b>$findLast</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index where byte <b>b</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$startsWith'><b>$startsWith</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the byteString starts with <b>b</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$endsWith'><b>$endsWith</b></a>(<small>b</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the byteString ends with <b>b</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$hash'><b>$hash</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a number that is a hash value of the byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$slice'><b>$slice</b></a>(<small>start</small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the byteString, starting at index <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the byteString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$split'><b>$split</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the byteString split into pieces, split at white space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BYTESTRING.byteString.html#$split'><b>$split</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the byteString split into pieces, split at <b>sep</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Compare'><b>$Compare</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> other) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return -1, 0 or 1 when <b>other</b> is larger, equal to or smaller than this
+ byteString.
+</p>
+<p class='ptext'> When using ?.Compare() on a NIL byteString and <b>other</b> is NIL it returns
+ zero.  When <b>other</b> is not NIL it returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Equal'><b>$Equal</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> other) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when <b>other</b> is equal to this byteString, FALSE otherwise.
+</p>
+<p class='ptext'> When using ?.Compare() on a NIL byteString and <b>other</b> is NIL it returns
+ TRUE.  Otherwise when <b>other</b> is NIL returns FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of bytes in the byteString.
+</p>
+<p class='ptext'> The size is stored thus this method is efficient.  It does not go over
+ the characters to find the end.
+<p class='ptext'> The empty byteString returns zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Convert the byteString to a string.
+</p>
+<p class='ptext'> Same as $latin1ToString().
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Convert the byteString to a string and then apply <b>format</b>.
+</p>
+<p class='ptext'> Same as $latin1ToString().ToString(format).
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asString'><b>$asString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the byteString as a string.
+</p>
+<p class='ptext'> Throws an exception if the byteString is not valid UTF-8.
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$endsWith'><b>$endsWith</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> b) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the byteString ends with <b>b</b>.
+</p>
+<p class='ptext'> When using ?.endsWith() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> b) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where byteString <b>b</b> appears.
+</p>
+<p class='ptext'> Returns -1 when <b>b</b> does not appear.
+<p class='ptext'> When using ?.find() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> b) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where byte <b>b</b> appears.
+</p>
+<p class='ptext'> Returns -1 when <b>b</b> does not appear.
+<p class='ptext'> Throws an exception when b &lt; 0 or b &gt; 255.
+<p class='ptext'> When using ?.find() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> b) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index where byteString <b>b</b> appears.
+</p>
+<p class='ptext'> Returns -1 when <b>b</b> does not appear.
+<p class='ptext'> When using ?.findLast() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> b) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index where byte <b>b</b> appears.
+</p>
+<p class='ptext'> Returns -1 when <b>b</b> does not appear.
+<p class='ptext'> Throws an exception when b &lt; 0 or b &gt; 255.
+<p class='ptext'> When using ?.findLast() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the byte at position <b>idx</b>.
+</p>
+<p class='ptext'> Throws an exception if <b>idx</b> is &lt; 0 or beyond the end of the byteString.
+<p class='ptext'> When using ?.get() and the byteString is NIL this returns zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getByte'><b>$getByte</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the byte at position <b>idx</b>.
+</p>
+<p class='ptext'> Throws an exception if <b>idx</b> is &lt; 0 or beyond the end of the byteString.
+<p class='ptext'> When using ?.getByte() and the byteString is NIL this returns zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getChar'><b>$getChar</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the UTF-8 encoded character at position <b>idx</b>.
+</p>
+<p class='ptext'> Throws an exception if <b>idx</b> is &lt; 0 or beyond the end of the byteString.
+ Returns -1 if the byte sequence does not start with a leading byte or
+ when it is truncated.
+<p class='ptext'> When using ?.getChar() and the byteString is NIL this returns zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getCharSize'><b>$getCharSize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the byte size of the UTF-8 encoded character at position <b>idx</b>.
+</p>
+<p class='ptext'> Throws an exception if <b>idx</b> is &lt; 0 or beyond the end of the byteString.
+ Returns -1 if the byte sequence does not start with a leading byte or
+ when it is truncated.
+ Returns 1 for a NUL byte.
+<p class='ptext'> When using ?.getCharSize() and the byteString is NIL this returns zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hash'><b>$hash</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a number that is a hash value of the byteString.
+</p>
+<p class='ptext'> A byteString value always results in the same hash value.
+ Two different byteString can result in the same hash value, but the
+ chance of this happening is small.
+<p class='ptext'> The hash method is fast and has a reasonable distribution.
+<p class='ptext'> TODO: this should return a nat
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$latin1ToString'><b>$latin1ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Assuming that the byteString contains Latin1 characters, return a string
+ encoded in utf-8.
+</p>
+<p class='ptext'> Takes each byte and converts it to an UTF-8 character.  The resulting
+ string size (counting characters) is equal to the size of the byteString.
+ The byte size of the string may be up to twice that.
+<p class='ptext'> For example: "foo".convertLatin1() returns "foo". 
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the byteString, starting at index <b>start</b>.
+</p>
+<p class='ptext'> A negative index is relative to the end of the byteString, <span class='commentcode'>slice(-1)</span>
+ returns a byteString with only the last byte.
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the byteString an empty
+ byteString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the
+ byteString size the whole byteString is returned.
+<p class='ptext'> When using ?.slice() on a NIL byteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the byteString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</p>
+<p class='ptext'> A negative index is relative to the end of the byteString. <span class='commentcode'>slice(0, -1)</span>
+ returns the whole byteString. <span class='commentcode'>slice(-1, -1)</span> only the last byte.
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the byteString an empty
+ byteString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the returned
+ byteString starts at index zero.
+ If the <b>start</b> byte is after the <b>end</b> byte an empty byteString is returned.
+<p class='ptext'> When using ?.slice() on a NIL byteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the byteString split into pieces, split at white space.
+</p>
+<p class='ptext'> Empty parts are omitted.
+<p class='ptext'> Example:  "foo  bar ".split() returns ["foo", "bar"].
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> sep) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='BYTES.byteString.html'>byteString</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the byteString split into pieces, split at <b>sep</b>.
+</p>
+<p class='ptext'> The matches with the <b>sep</b> byteString are omitted.
+<p class='ptext'> <b>sep</b> must match exactly.
+<p class='ptext'> When there are no byteString between two <b>sep</b> matches, or at the end or
+ start of the byteString, the list will contain an empty byteString item.
+<pre class='example'> "one, two,three".asByteString().split(", ")
+ # result: ["one", "two,three"]
+</pre>
+<p class='ptext'>
+ When using ?.split() on a NIL byteString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$startsWith'><b>$startsWith</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> b) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the byteString starts with <b>b</b>.
+</p>
+<p class='ptext'> When using ?.startsWith() and the byteString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarByteString'><b>$toVarByteString</b></A>() <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Convert the byteString to a varByteString.
+</p>
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarString'><b>$toVarString</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Convert the byteString to a varString.  Equivalent to
+ <span class='commentcode'>$latin1ToString().toVarString().</span>
+</p>
+<p class='ptext'> When the byteString is NIL this returns NIL.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

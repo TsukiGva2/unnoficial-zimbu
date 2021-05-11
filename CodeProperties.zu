@@ -1,0 +1,18 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# CodeProperties bits.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Type.zu"
+
+# Properties of Statements and Expressions.
+BITS CodeProperties
+  bool       $methodCall  # calls a method that may start GC
+  bool       $allocMem    # memory is allocated below here
+  bool       $inAllocMem  # expr result is in managed memory
+}

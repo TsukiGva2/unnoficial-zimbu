@@ -1,0 +1,60 @@
+#
+# Main file of the Zimbu protocol buffer plugin
+#
+# Usage:
+#      pluginproto infile.proto outfile.zu
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+# files part of the plugin
+IMPORT "ParseProto.zu"
+IMPORT "ProtoFile.zu"
+IMPORT "WriteZimbu.zu"
+
+
+FUNC Main() int
+  # TODO: -I {path} and --import_path {path} options.
+  IF ARG.Size() != 2
+    IO.print("Usage: " .. ARG.rawName .. " infile.proto outfile.zu")
+    EXIT 1
+  }
+
+  # Catch common mistakes in arguments.
+  string inFileName = ARG.get(0)
+  IF inFileName.slice(-6, -1) != ".proto"
+    IO.print("ERROR: Input name must end in '.proto': " .. inFileName)
+    EXIT 1
+  }
+  string outFileName = ARG.get(1)
+  IF outFileName.slice(-3, -1) != ".zu"
+    IO.print("ERROR: output name must end in '.zu': " .. outFileName)
+    EXIT 1
+  }
+
+  # Parse the input file, resulting in a list of items.
+  # This recursively reads and parses imported files.
+  ProtoFile protofile = ParseProto.parse(inFileName)
+
+  IF LOG.errorCount > 0
+    # Write an error to the file, returning a non-zero exit value is not
+    # always recognized.
+    WriteZimbu.writeError(inFileName, outFileName)
+    RETURN 1
+  }
+  # Write Zimbu code.
+  WriteZimbu.write(protofile, inFileName, outFileName)
+
+  RETURN 0
+}

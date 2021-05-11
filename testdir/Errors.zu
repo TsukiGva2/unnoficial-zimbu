@@ -1,0 +1,31 @@
+# A Zimbu file for testing compiler errors.
+#
+# Uncomment a line to check that it produces an error.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "TestClass.zu"        # check class can't be used as module
+
+IMPORT.CHEADER "testheader1.h"
+
+MODULE Errors @public
+
+  FUNC Init() status
+    # Wait for TestClass to be initialized
+    IO.print("Errors.Init: " .. TestClass.Ready)
+    RETURN TestClass.Ready ? OK : FAIL
+  }
+
+  FUNC EarlyInit() status
+    # Wait for TestClass to be initialized
+    IO.print("Errors.EarlyInit: " .. TestClass.EarlyReady)
+    RETURN TestClass.EarlyReady ? OK : FAIL
+  }
+
+  PROC test() @public
+    # Does nothing.
+  }
+}

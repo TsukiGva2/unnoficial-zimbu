@@ -1,0 +1,21 @@
+# Small test program: Verify that this does not compile.
+
+CLASS Parent
+  int   $nr
+}
+
+CLASS More AUGMENTS Parent
+  string $bad
+  FUNC $getNr() int
+    RETURN $nr
+  }
+}
+
+FUNC Main() int
+  Parent p = NEW()
+  p.nr = 7
+  More m = NEW()
+  m.bad = "bad"
+  RETURN 0
+}
+

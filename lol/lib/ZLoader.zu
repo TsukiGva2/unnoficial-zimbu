@@ -1,0 +1,345 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Z module: builtin stuff
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../Builtin.zu"
+IMPORT "../Config.zu"
+IMPORT "../ContainerType.zu"
+IMPORT "../CodeTable.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../Generate.zu"
+IMPORT "../MethodType.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../Output.zu"
+IMPORT "../Resolve.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "../WriteCommon.zu"
+IMPORT "../ZuiMethodCallExt.zu"
+IMPORT "../genC/WriteC.zu"
+IMPORT "../genC/WriteListC.zu"
+
+MODULE ZLoader @public @items=public
+  Declaration moduleDecl
+  bool useGetPos
+  bool useGetCallerPos
+  bool useBacktrace
+
+  Declaration.C getCallerPos = NEW("getCallerPos")
+
+  # Prepare for using the builtin Z module.
+  FUNC prepare() Builtin
+    DeclStore.wantPName("MZModule", "CPos")
+    DeclStore.wantPName("MZModule", "Vexiting")
+    DeclStore.wantPName("MZModule", "EFinishReason")
+    # NEW(name, lnum, col) is used in WriteC
+    DeclStore.wantPName("MZModule__CPos", "MNEW__1")
+
+    Builtin b = NEW()
+    b.moduleName = "ZModule"
+    b.fileName = "ZModule.zu"
+    b.setup = setup
+    b.markUsed = markUsed
+    RETURN b
+  }
+
+  # Invoked when the Z module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("Z", builtin)
+      ModuleType mt = moduleDecl.type.<ModuleType>
+
+      # Remove the methods added for docs only, the real ones are defined
+      # below or elsewhere.
+      FOR k IN ["pos", "callerPos", "backtrace", "backtrace", "have", "lang"]
+        Declaration d = mt.findMember(k, NIL)
+        IF d != NIL
+          mt.removeMember(d)
+        }
+      }
+
+      # The return symbol can only be added after the module was loaded,
+      # thus it's done in posMethod().
+      mt.addLibMethod("pos", posMethod, [], NIL)
+      mt.addLibMethod("callerPos", callerPosMethod, [], NIL)
+
+      # backtrace()
+      mt.addLibMethod("backtrace", backtraceMethod, [], Type.aList)
+
+      # backtrace(skip)
+      Declaration.C decl = NEW("")
+      decl.type = Type.anInt
+      mt.addLibMethod("backtrace", backtraceMethod, [decl], Type.aList)
+
+      # backtrace(skip, limit)
+      mt.addLibMethod("backtrace", backtraceMethod, [decl, decl], Type.aList)
+
+      WriteC.declWriters.add(writeDecl)
+      WriteC.bodyWriters.add(writeBodies)
+    }
+  }
+
+  PROC markUsed(Resolve gen, Builtin builtin)
+    IF moduleDecl != NIL
+      # Mark the members of Z.Pos as used.
+      # TODO: handle automatically?
+      ModuleType mt = moduleDecl.type.<ModuleType>
+      Declaration d = mt.findMember("Pos", NIL)
+      IF d == NIL
+        THROW "Pos not found"
+      ELSE
+        gen.setDeclUsed(d)
+        FOR k IN ["filename", "lnum", "col", "text"]
+          Declaration md = d.type.findObjectMember(k, NIL, 0, FALSE)
+          IF md == NIL
+            THROW "Pos." .. k .. " not found"
+          ELSE
+            gen.setDeclUsed(md)
+          }
+        }
+      }
+    }
+
+    # When a symbol is used in the moduleScope mark it as used in the
+    # scope of the UsedFile.
+    # TODO: check the items
+    Declaration decl = builtin.getTopDecl()
+    IF decl != NIL
+      gen.setDeclUsed(decl)
+    }
+  }
+
+  # Z.Pos Z.pos()
+  PROC posMethod(Declaration.C decl, Zui.MethodCall call, SContext ctx)
+    # Look for the Z.Pos symbol now.
+    findPosSym(decl.type, call, ctx)
+
+    useGetPos = TRUE
+    Z.Pos pos = ctx.zcPos(call.getPos())
+    ctx.out.write("MZ__pos(\"")
+    ctx.out.write(pos.filename)
+    ctx.out.write("\", ")
+    ctx.out.write(pos.lnum .. "")
+    ctx.out.write(", ")
+    ctx.out.write(pos.col .. "")
+    ctx.out.write(")")
+  }
+
+  # Z.Pos Z.callerPos()
+  PROC callerPosMethod(Declaration.C decl, Zui.MethodCall call, SContext ctx)
+    # Look for the Z.Pos symbol now.
+    findPosSym(decl.type, call, ctx)
+
+    IF !Config.noBacktrace
+      useGetCallerPos = TRUE
+      ctx.scope.wantBacktrace = TRUE
+      ctx.gen.writeCallerPos(ctx)
+    ELSE
+      ctx.gen.nil(Type.anUnknown, ctx)
+    }
+  }
+
+  # list<Z.Pos> Z.backtrace()
+  PROC backtraceMethod(Declaration.C decl, Zui.MethodCall call, SContext ctx)
+    # Look for the Z.Pos symbol now.
+    findPosSym(decl.type, call, ctx)
+
+    IF !Config.noBacktrace
+      useBacktrace = TRUE
+      ctx.gen.writeBacktrace(call, ctx)
+    ELSE
+      ctx.gen.nil(Type.anUnknown, ctx)
+    }
+  }
+
+  # Locate the Z.Pos class and set type
+  PROC findPosSym(Type type, Zui.MethodCall call, SContext ctx)
+    VAR ext = ZuiMethodCallExt.get(call)
+    IF moduleDecl == NIL
+      ext.undefined = 2  # Cannot happen?
+    ELSE
+      Declaration decl = moduleDecl.type.findMember("Pos", NIL)
+      IF decl == NIL
+        ext.undefined = 1
+      ELSE
+        Type posType = decl.type.getValueType(ctx)
+        MethodType method = type.<MethodType>
+        IF method.returnType != NIL && method.returnType.ttype == Type.Enum.list
+          IF method.returnType ISA ContainerType
+            method.returnType.<ContainerType>.itemType = posType
+          ELSE
+            IO.print("Not a container: " .. method.returnType.typeToString())
+          }
+        ELSE
+          type.<MethodType>.returnType = posType
+          method.returnType = posType
+        }
+      }
+    }
+  }
+
+  # Go through the members of the module and find out which ones were used.
+  PROC checkUsed()
+    IF moduleDecl != NIL
+    }
+  }
+
+  PROC writeDecl(WriteC gen, IO.File fd)
+    checkUsed()
+    string zcPosName = DeclStore.getPName("MZModule", "CPos")
+
+    IF useGetPos
+      fd.write(''"
+"'' .. zcPosName .. ''" *MZ__pos(char *filename, Ti lnum, Ti col);
+"'')
+    }
+    IF useGetCallerPos
+      fd.write(''"
+"'' .. zcPosName .. ''" *MZ__callerPos(void);
+"'')
+    }
+    IF useBacktrace
+      fd.write(''"
+Tl *MZ__backtrace(Ti zkip, Ti limit);
+"'')
+    }
+    fd.write("\n")
+    fd.write(zcPosName)
+    fd.write(" *MZ__posnr2pos(" .. zcPosName .. ''" *t, Ti pos);
+"'')
+  }
+
+  PROC writeBodies(WriteC gen, IO.File fd)
+    string zcPosName = DeclStore.getPName("MZModule", "CPos")
+
+    IF useGetPos
+      fd.write(''"
+"'' .. zcPosName .. ''" *MZ__pos(char *filename, Ti lnum, Ti col) {
+ "'' .. zcPosName .. "*t = Za(sizeof(" .. zcPosName .. ''"));
+ t->Vfilename = Zstr(filename);
+ t->Vlnum = lnum;
+ t->Vcol = col;
+ return t;
+}
+"'')
+    }
+
+    IF useGetCallerPos || useBacktrace
+      # TODO: use binary search.
+      fd.write(''"
+Tcode *ZtableIndex(Ti pos100) {
+ Ti pos = pos100 / 100;
+ int l = 0;
+ int h = sizeof(ZcodeTable)/sizeof(Tcode) - 1;
+ int m;
+ while (l <= h) {
+  m = (l + h) / 2;
+  if (ZcodeTable[m].offset == pos) break;
+  if (ZcodeTable[m].offset < pos) l = m + 1;
+  else h = m - 1;
+ }
+ return &ZcodeTable[m];
+}"'')
+    }
+
+    IF useGetCallerPos
+      fd.write(''"
+"'' .. zcPosName .. ''" *MZ__callerPos(void) {
+ Tcode *p;"'')
+      IF gen.isDeclUsed(WriteC.pthread)
+        fd.write(''"
+ Zsf *tf = ZgetEnv()->topFrame;"'')
+      ELSE
+        fd.write(''"
+ Zsf *tf = topFrame;"'')
+      }
+      # Skip the current stack frame to find the caller stack frame.
+      # Also skip stack frames with zero pos, caused by @backtrace=no.
+      # Also skip stack frames without a filename, e.g. start of thread.
+      fd.write(''"
+ if (tf == NULL) return NULL;
+ tf = tf->prev == NULL ? tf : tf->prev;
+ while (1) {
+  if (tf == NULL) return NULL;
+  if (tf->pos & POS_MASK) {
+   p = ZtableIndex(tf->pos & POS_MASK);
+   if (p->fileName) {
+    return MZ__posnr2pos(NULL, tf->pos & POS_MASK);
+   }
+  }
+  tf = tf->prev;
+ }
+}
+"'')
+    }
+
+    IF useBacktrace
+      fd.write(''"
+Tl *MZ__backtrace(Ti skip, Ti limit) {
+ Tl *head = ZnewList((Tt*)&"'' .. zcPosName .. ''"__T, 0);
+ int done = 0;"'')
+      IF gen.isDeclUsed(WriteC.pthread)
+        fd.write(''"
+ Zsf *tf = ZgetEnv()->topFrame;"'')
+      ELSE
+        fd.write(''"
+ Zsf *tf = topFrame;"'')
+      }
+      fd.write(''"
+ if (skip > 0) {
+  int i;
+  for (i = 0; i < skip && tf != NULL; ++i) tf = tf->prev;
+ }
+ while (tf != NULL) {
+  if (tf->pos & POS_MASK) {
+   "'' .. zcPosName .. " *item = Za(sizeof(" .. zcPosName .. ''"));
+   if (limit >= 0 && done >= limit) {
+    item->Vfilename = Zstr("truncated");
+    ZLa(head, -1, (Tz)(void*)item);
+    break;
+   }
+   MZ__posnr2pos(item, tf->pos & POS_MASK);
+   ZLa(head, -1, (Tz)(void*)item);
+   ++done;
+  }
+  tf = tf->prev;
+ }
+ return head;
+}
+"'')
+    }
+
+    # Always used for throwing exceptions.
+    fd.write("\n")
+    fd.write(zcPosName)
+    fd.write(" *MZ__posnr2pos(")
+    fd.write(zcPosName)
+    fd.write(''" *t, Ti pos) {
+ int i;
+ Tcode *p;
+ Tcpos *pp;
+ if (t == NULL) t = Za(sizeof("'' .. zcPosName .. ''"));
+ p = ZtableIndex(pos);
+ i = pos - p->offset * 100;
+ pp = &p->table[i];
+ t->Vfilename = Zstr((char*)p->fileName);
+ t->Vtext = Zstr((char*)p->methodName);
+ t->Vlnum = pp->line;
+ if (i) t->Vlnum += p->table[0].line;
+ t->Vcol = pp->col;
+ return t;
+}
+"'')
+  }
+
+}

@@ -1,0 +1,268 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module SET
+#
+
+#= Classes, Interfaces and methods for set.
+#
+#- Still very much under development.
+#
+#- TODO: proper error handling
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE SETModule @public
+
+  #! The SETloader changes "SETmodule.Set" to "set", as this is how it
+  #! is used globally.
+
+  #= The builtin type set.
+  #
+  #- Sets keep a flag for each item that is present.  It's like a dict without
+  #- a value.
+  #
+  #- Example:
+  #% set<string> s = ["one", "two", "three"]    # initialized from a list
+  #% s.add("yes")
+  #% s.remove("yes")
+  #% IO.print("set has yes: " .. s.has("yes"))
+  #
+  #- The item type can be int, string, bool, status and any class that has a
+  #- public ToString() method.
+  CLASS Set<Tkey> @public
+    dict<Tkey, bool>    $dict       #! stores the values
+
+    #! Always construct $dict.
+    PROC $Init()
+      $dict = NEW()
+    }
+
+    #= Create a new empty set.
+    NEW() @public
+    }
+
+    #= Create a new set from a list of items.
+    NEW(list<Tkey> keys) @public
+      $addList(keys)
+    }
+
+    #= Return the number of items in the set.
+    FUNC $Size() int @public
+      IFNIL
+        RETURN 0
+      }
+      RETURN $dict.Size()
+    }
+
+    #!
+    FUNC $size() int @public
+      RETURN $Size()
+    }
+
+    #= Return a shallow copy of the set.
+    FUNC $copy() Set<Tkey> @public
+      Set<Tkey> newset = NEW()
+      FOR k IN $dict.keys()
+        newset.add(k)
+      }
+      RETURN newset
+    }
+
+    #= Return a string representation of the set.
+    #- Looks just like a list of the keys: [key1, key2, key3]
+    FUNC $ToString() string @public
+      RETURN $dict.keys().ToString()
+    }
+
+    #= Return an iterator to iterate over all the keys.
+    FUNC $Iterator() I.Iterator<Tkey>
+      RETURN $dict.keys().Iterator()
+    }
+
+    #= Check if an item is present in the set.
+    #- Returns TRUE or FALSE.
+    FUNC $has(Tkey key) bool @public
+      RETURN $dict.has(key)
+    }
+
+    #= Return a list with all the keys.
+    FUNC $keys() list<Tkey> @public
+      RETURN $dict.keys()
+    }
+
+    #= Add an item to the set.
+    #- Throws an E.KeyExists exception when the item is already present.  Use
+    #- set() to avoid an exception.
+    #
+    #- Returns the set.
+    FUNC $add(Tkey key) Set<Tkey> @public @backtrace=no
+      IF $dict.has(key)
+        THROW E.KeyExists.NEW(Z.callerPos(),
+                                    "key already present: " .. key.ToString())
+      }
+      $dict.add(key, TRUE)
+      RETURN THIS
+    }
+
+    #= Add all items in |other| to the set.
+    #- Throws an exception when an item is already present.  Use setSet() to
+    #- avoid an exception.
+    #
+    #- Returns the set.
+    FUNC $addSet(Set<Tkey> other) Set<Tkey> @public
+      FOR key IN other.keys()
+        $add(key)
+      }
+      RETURN THIS
+    }
+
+    #= Add a list of items to the set.
+    #- Throws an exception when an item is already present.  Use setList() to
+    #- avoid an exception.
+    #
+    #- Returns the set.
+    FUNC $addList(list<Tkey> keys) Set<Tkey> @public
+      FOR key IN keys
+        $add(key)
+      }
+      RETURN THIS
+    }
+
+    #= Add an item to the set if not yet present.
+    #- When the item is already present nothing happens.
+    #
+    #- Returns the set.
+    FUNC $set(Tkey key) Set<Tkey> @public
+      IF !$dict.has(key)
+        $dict.add(key, TRUE)
+      }
+      RETURN THIS
+    }
+
+    #= Add all items in |other| to the set if not yet present.
+    #- When an item is already present nothing happens.
+    #
+    #- Returns the set.
+    FUNC $setSet(Set<Tkey> other) Set<Tkey> @public
+      FOR key IN other.keys()
+        $set(key)
+      }
+      RETURN THIS
+    }
+
+    #= Add all items in the list |keys| to the set if not yet present.
+    #- When the item is already present nothing happens.
+    #
+    #- Returns the set.
+    FUNC $setList(list<Tkey> keys) Set<Tkey> @public
+      FOR key IN keys
+        $set(key)
+      }
+      RETURN THIS
+    }
+
+    #= Remove an item from the set.
+    #- Throws an E.KeyNotFound exception if the item is not present.
+    #
+    #- Returns the item.
+    FUNC $remove(Tkey key) Tkey @public @backtrace=no
+      IF !$dict.has(key)
+        THROW E.KeyNotFound.NEW(Z.callerPos(), "key: " .. key.ToString())
+      }
+      $dict.remove(key)
+      RETURN key
+    }
+
+    #= Remove all items from the set that are in |other|.
+    #- If |other| has items that do not exist in this set then nothing happens.
+    #
+    #- Returns the set.
+    FUNC $removeSet(Set<Tkey> other) Set<Tkey> @public
+      FOR key IN other.keys()
+        IF $dict.has(key)
+          $dict.remove(key)
+        }
+      }
+      RETURN THIS
+    }
+
+    #= Remove all items from the set that are not in |other|.
+    #- What remains is the intersection of the two sets.
+    #
+    #- Returns the set.
+    FUNC $removeNotInSet(Set<Tkey> other) Set<Tkey> @public
+      Set<Tkey> n = $intersection(other)
+      $dict = n.dict
+      RETURN THIS
+    }
+
+    #= Make the set empty.
+    #- Returns the set.
+    FUNC $clear() Set<Tkey> @public
+      $dict.clear()
+      RETURN THIS
+    }
+
+    #= Remove an item from the set if present.
+    #- When the item is not present nothing happens.
+    #
+    #- Returns the set.
+    FUNC $clear(Tkey key) Set<Tkey> @public
+      IF $dict.has(key)
+        $dict.remove(key)
+      }
+      RETURN THIS
+    }
+
+    #= Make a copy of the set and all items in |set| if not yet present.
+    #- This is equal to $copy().setSet(set).
+    #
+    #- Returns the new set.
+    FUNC $union(Set<Tkey> set) Set<Tkey> @public
+      RETURN $copy().setSet(set)
+    }
+
+    #= Find all items present both in this set and |other|.
+    #- This is equal to $copy.removeNotInSet(other)
+    #
+    #- Returns a new set with the result.
+    FUNC $intersection(Set<Tkey> other) Set<Tkey> @public
+      Set<Tkey> r = NEW()
+      # Use the smallest set to iterate over for speed.
+      IF other.Size() > $dict.Size()
+        FOR key IN $dict.keys()
+          IF other.has(key)
+            r.add(key)
+          }
+        }
+      ELSE
+        FOR key IN other.keys()
+          IF $dict.has(key)
+            r.add(key)
+          }
+        }
+      }
+      RETURN r
+    }
+
+    #= Find items that are not present in |other|.
+    #- This is equal to $copy.removeSet(other)
+    #
+    #- Returns a new set with the result.
+    FUNC $difference(Set<Tkey> other) Set<Tkey> @public
+      Set<Tkey> r = NEW()
+      FOR key IN $dict.keys()
+        IF !other.has(key)
+          r.add(key)
+        }
+      }
+      RETURN r
+    }
+
+  }
+
+}

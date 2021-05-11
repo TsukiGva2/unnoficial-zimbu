@@ -1,0 +1,13 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  FUNC doIt() string, int
+    RETURN "yes", 88
+  }
+  func< => int, int> f = doIt
+  int a
+  int b
+  a, b = f()
+
+  RETURN 0
+}

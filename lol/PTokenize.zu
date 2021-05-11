@@ -1,0 +1,187 @@
+# The Zimbu compiler written in Zimbu
+#
+# Tokenizer for a proto buffer.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "PToken.zu"
+IMPORT "PTokenInput.zu"
+
+MODULE PTokenize @items=directory
+
+  # Returns the next token from |in|.
+  # Skips comments.
+  # Returns PToken.Type.eof when nothing more to read.
+  FUNC get(PTokenInput in) PToken
+    PToken res = NEW()
+    res.startPos = in.input.pos.copy()
+
+    # Skip white space, line breaks and comments.
+    skipWhite(in)
+
+    res.startPos = in.input.pos.copy()
+    IO.StringWriter writer = NEW()
+
+    int c = in.get()
+    IF c != IO.eof
+      writer.writeChar(c)
+    }
+    SWITCH c
+      CASE IO.eof
+        res.type = PToken.Type.eof
+      CASE ';'
+        res.type = PToken.Type.semicolon
+      CASE '='
+        res.type = PToken.Type.equal
+      CASE '('
+        res.type = PToken.Type.p_open
+      CASE ')'
+        res.type = PToken.Type.p_close
+      CASE '{'
+        res.type = PToken.Type.c_open
+      CASE '}'
+        res.type = PToken.Type.c_close
+      CASE '['
+        res.type = PToken.Type.s_open
+      CASE ']'
+        res.type = PToken.Type.s_close
+      CASE '"'
+        # double quoted string
+        writer.remove()  # drop "
+        res.type = PToken.Type.string
+        int i
+        WHILE TRUE
+          c = in.get()
+          IF c == '"'
+            BREAK
+          }
+          IF c == '\n' || c == IO.eof
+            in.push(c)
+            LOG.error("missing double quote", res.startPos)
+            BREAK
+          }
+          IF c == '\\'
+            c = in.get()
+            IF c == '\n' || c == IO.eof
+              LOG.error("missing double quote", res.startPos)
+              BREAK
+            }
+            IF c == 'n'
+              writer.writeChar('\n')
+            ELSEIF c == 't'
+              writer.writeChar('\t')
+            ELSEIF c == 'r'
+              writer.writeChar('\r')
+            ELSE
+              writer.writeChar(c)
+            }
+          ELSE
+            writer.writeChar(c)
+          }
+        }
+
+      CASE '\''
+          # single quoted character
+          c = in.get()
+          res.type = PToken.Type.char
+          IF c == '\\'
+            c = in.get()
+            SWITCH c
+              CASE 'n'
+                c = '\n'
+              CASE 'r'
+                c = '\r'
+              CASE 't'
+                c = '\t'
+            }
+          }
+          writer.remove()  # drop '
+          writer.writeChar(c)
+          c = in.get()
+          IF c != '\''
+            LOG.error("missing single quote", res.startPos)
+          }
+
+        DEFAULT
+          # Should find an identifier or keyword.
+          int i
+          IF !isIdChar(c)
+            LOG.error("Unrecognized character: '" .. c.asString() .. "'",
+                                                                 res.startPos)
+          ELSE
+            int quot
+            IF c >= '0' && c <= '9'
+              quot = '\''  # allow ' inside numbers as separator
+            }
+            writer.remove()
+            WHILE isIdChar(c) || c == quot
+              writer.writeChar(c)
+              c = in.get()
+            }
+            in.push(c)
+          }
+
+          res.type = keywords.get(writer.ToString(), PToken.Type.unknown)
+          IF res.type == PToken.Type.unknown
+            res.type = PToken.Type.id
+          }
+    }
+
+    res.value = writer.ToString()
+    res.endPos = in.input.pos.copy()
+    RETURN res
+  }
+
+  #
+  # Skip white space, line breaks and comments.
+  #
+  PROC skipWhite(PTokenInput in)
+    int c
+    WHILE TRUE
+      c = in.get()
+      IF c == '/'
+        int nc = in.get()
+        IF nc == '/'
+          # Consume // comment
+          WHILE TRUE
+            c = in.get()
+            IF c == IO.eof || c == '\n'
+              BREAK
+            }
+          }
+          CONTINUE
+        }
+        in.push(nc)  # single '/'
+      }
+      IF c != ' ' && c != '\n'
+        BREAK
+      }
+    }
+    in.push(c)
+  }
+
+  FUNC isIdChar(int c) bool
+    RETURN (c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z')
+        || (c >= '0' && c <= '9')
+        || c == '_'
+  }
+
+  dict<string, PToken.Type> keywords = [
+      "default":  PToken.Type.default,
+      "enum":     PToken.Type.enum,
+      "message":  PToken.Type.message,
+      "option":   PToken.Type.option,
+      "optional": PToken.Type.optional,
+      "package":  PToken.Type.package,
+      "repeated": PToken.Type.repeated,
+      "required": PToken.Type.required,
+      "returns":  PToken.Type.returns,
+      "rpc":      PToken.Type.rpc,
+      "service":  PToken.Type.service,
+  ]
+
+}

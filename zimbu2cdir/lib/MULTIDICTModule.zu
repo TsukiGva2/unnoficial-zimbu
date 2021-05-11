@@ -1,0 +1,586 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module MULTIDICT
+#
+
+
+#= Classes, Interfaces and methods for multiDict.
+#
+#- Still very much under development.
+#
+#- TODO: proper error handling
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE MULTIDICTModule @public
+
+  #! The MULTIDICTloader changes "MULTIDICTmodule.MultiDict" to "multiDict",
+  #! as this is how it is used globally.
+
+  #= The builtin type multiDict.
+  #
+  #- MultiDicts keep a list of items for each key that is present.  It's like
+  #- a dict where each value is a list.
+  #
+  #- The key type must support the ToString() method.  It is used for error
+  #- messages.
+  #
+  #- The item type must support the Equal() method.  This is needed for the
+  #- has(key, item) method.
+  #
+  #- The item type should support the ToString() method.  When missing the
+  #- string "-object-" is used instead of the actual value.
+  #
+  #- Example:
+  #% multiDict<string, int> md = NEW()
+  #% md.add("yes", 1)
+  #% md.add("yes", 2)
+  #% IO.WriteLine("multiDict has yes: " .. md.has("yes"))
+  #% IO.WriteLine("multiDict has yes " .. md.get("yes").Size() .. " times")
+  #% md.remove("yes")
+  #
+  #- Optionally the multiDict can use a list to remember the order in which
+  #- keys were added.  ToString(), keys() and values() will have the keys in
+  #- the order they were added.  This has a small overhead.  Without the list
+  #- the order of keys depends on the hash value, which is rather arbitrary.
+  #- The values for a key are always kept in the order they were added.
+  CLASS MultiDict<Tkey, Titem> @public
+    dict<Tkey, list<Titem>>    $dict       #! stores the values
+    int                        $itemCount  #! number of items
+
+    #= Create a new empty multiDict.
+    NEW() @public @primitive
+      $dict = NEW()
+    }
+
+    #= Create a new empty multiDict.
+    #- When |ordered| is TRUE remember the order in which keys were added.
+    NEW(bool ordered) @public @primitive
+      $dict = NEW(ordered)
+    }
+
+    #= Create a new multiDict from a dictionary.
+    #- This makes a copy of the argument.
+    #
+    #- When |items| is ordered then the multiDict will also be ordered.
+    NEW(dict<Tkey, list<Titem>> items) @public @primitive
+      $dict = NEW(items.isOrdered())
+      $addDict(items)
+    }
+
+    #= Create a new multiDict from a dictionary.
+    #- This makes a copy of the argument.
+    #- When |ordered| is TRUE remember the order in which keys were added.
+    NEW(dict<Tkey, list<Titem>> items, bool ordered) @public @primitive
+      $dict = NEW(ordered)
+      $addDict(items)
+    }
+
+    #= Create a new multiDict from a list of dicts.
+    NEW(list<dict<Tkey, Titem>> items) @public @primitive
+      $dict = NEW()
+      $addList(items)
+    }
+
+    #= Create a new multiDict from a list of dicts.
+    #- When |ordered| is TRUE remember the order in which keys were added.
+    NEW(list<dict<Tkey, Titem>> items, bool ordered) @public @primitive
+      $dict = NEW(ordered)
+      $addList(items)
+    }
+
+#    #= Create a new multiDict from a list of tuples.
+#    NEW(list<tuple<Tkey, Titem>> items) @public
+#      $dict = NEW()
+#      FOR item IN items
+#        $add(item[0], item[1])
+#      }
+#    }
+
+    #= Return the number of items in the multiDict.
+    FUNC $Size() int @public @primitive
+      IFNIL
+        RETURN 0
+      }
+      RETURN $itemCount
+    }
+
+    #!
+    FUNC $size() int @public @primitive
+      RETURN $Size()
+    }
+
+    #= Return whether the order in which keys are added is remembered.
+    FUNC $isOrdered() bool @public @primitive
+      RETURN $dict.isOrdered()
+    }
+
+    #= Return the number of items in the multiDict with key |key|.
+    FUNC $count(Tkey key) int @public @primitive
+      IF !$dict.has(key)
+        RETURN 0
+      }
+      RETURN $dict[key].Size()
+    }
+
+    #= Return a copy of the multiDict.
+    FUNC $copy() MultiDict<Tkey, Titem> @public
+      MultiDict<Tkey, Titem> newMultiDict = NEW($dict.isOrdered())
+      FOR k IN $dict.keys()
+        FOR i IN $dict[k]
+          newMultiDict.add(k, i)
+        }
+      }
+      RETURN newMultiDict
+    }
+
+    #= Return the list of entries for key |key|.
+    #- Throws an E.KeyNotFound exception when |key| is not present.
+    FUNC $get(Tkey key) list<Titem> @public @primitive
+      RETURN $dict[key]
+    }
+
+    #= Return the list of entries for key |key|.
+    #- Returns |default| when key is not present.
+    FUNC $get(Tkey key, list<Titem> default) list<Titem> @public @primitive
+      RETURN $dict.get(key, default)
+    }
+
+    #= Return a string representation of the multiDict.
+    #- Looks like a list of the keys: [key1: [val1, val2], key2: [val3]]
+    #
+    #- The order of items is unpredictable, unless this is an ordered
+    #- multiDict, then the keys will be in the order they were added.
+    FUNC $ToString() string @public
+      IF $itemCount == 0
+        RETURN "[:]"
+      }
+      IO.StringWriter w = NEW()
+      w.write("[")
+      string comma = ""
+      FOR k IN $dict.keys()
+        w.write(comma)
+        w.write("\"")
+        w.write(k.ToString())
+        w.write("\": ")
+        w.write($dict[k].ToString())
+        comma = ", "
+      }
+      w.write("]")
+      RETURN w.ToString()
+    }
+
+    #= Check if any item with key |key| is present in the multiDict.
+    #- Returns TRUE or FALSE.
+    FUNC $has(Tkey key) bool @public @primitive
+      RETURN $dict.has(key)
+    }
+
+    #= Check if item with key |key| and value |item| is present in the
+    #= multiDict.
+    #- Returns TRUE or FALSE.
+    FUNC $has(Tkey key, Titem item) bool @public
+      IF $dict.has(key)
+        FOR i IN $dict[key]
+          IF i == item
+            RETURN TRUE
+          }
+        }
+      }
+      RETURN FALSE
+    }
+
+    #= Return a list with all the keys.
+    #- The order is undefined, unless this is an ordered multiDict.
+    FUNC $keys() list<Tkey> @public @primitive
+      RETURN $dict.keys()
+    }
+
+    #= Return a list with all the lists of values.
+    #- The order is undefined, unless this is an ordered multiDict.
+    FUNC $values() list<list<Titem>> @public @primitive
+      RETURN $dict.values()
+    }
+
+#    #= Return an iterator over the values.
+#    #- The order is undefined, unless this is an ordered multiDict.
+#    FUNC $Iterator() I.Iterator<list<Titem>> @public @primitive
+#      RETURN $dict.Iterator()
+#    }
+#
+#    #= Return an iterator over the keys and values.
+#    #- The order is undefined, unless this is an ordered multiDict.
+#    FUNC $KeyIterator() I.KeyIterator<Tkey, list<Titem>> @public @primitive
+#      RETURN $dict.KeyIterator()
+#    }
+
+    #= Add an item to the multiDict.
+    #
+    #- Returns the multiDict.
+    FUNC $add(Tkey key, Titem item) MultiDict<Tkey, Titem> @public @primitive
+      IF $dict.has(key)
+        $dict[key].add(item)
+      ELSE
+        $dict.add(key, [item])
+      }
+      ++$itemCount
+      RETURN THIS
+    }
+
+    #= Add items a dictionary.
+    #- This makes a copy of the argument.
+    FUNC $addDict(dict<Tkey, list<Titem>> items
+                  ) MultiDict<Tkey, Titem> @public @primitive
+      FOR key IN items.keys()
+        $dict[key] = items[key].copy()
+        $itemCount += items[key].Size()
+      }
+      RETURN THIS
+    }
+
+    #= Add a list of items to the multiDict.
+    #
+    #- If |key| is already present the items are appended to the existing list
+    #- of items.
+    #
+    #- Returns the multiDict.
+    FUNC $addList(Tkey key, list<Titem> itemList
+             ) MultiDict<Tkey, Titem> @public @primitive
+      IF $dict.has(key)
+        $dict[key].extend(itemList)
+      ELSE
+        $dict.add(key, itemList)
+      }
+      $itemCount += itemList.Size()
+      RETURN THIS
+    }
+
+    #= Add an item to the multiDict.
+    #
+    #- Same as add(), but inserts before other items with the same key.
+    #
+    #- Returns the multiDict.
+    FUNC $insert(Tkey key, Titem item) MultiDict<Tkey, Titem> @public @primitive
+      IF $dict.has(key)
+        $dict[key].insert(item)
+      ELSE
+        $dict.add(key, [item])
+      }
+      ++$itemCount
+      RETURN THIS
+    }
+
+    #= Add all the items in a list of dicts to the multiDict.
+    #
+    # TODO: this should use a list of tuples.
+    #
+    #- Returns the multiDict.
+    FUNC $addList(list<dict<Tkey, Titem>> items) MultiDict<Tkey, Titem> @public
+      FOR item IN items
+        FOR key IN item.keys()
+          $add(key, item[key])
+        }
+      }
+      RETURN THIS
+    }
+
+    #= Add an item to the multiDict if not yet present.
+    #- When the item is already present nothing happens.
+    #
+    #- Returns the multiDict.
+    FUNC $set(Tkey key, list<Titem> items) MultiDict<Tkey, Titem> @public
+      IF !$dict.has(key)
+        $dict.add(key, items)
+      ELSE
+        $itemCount -= $dict[key].Size()
+        $dict[key] = items
+      }
+      $itemCount += items.Size()
+      RETURN THIS
+    }
+
+    #= Remove a list of items from the multiDict with key |key|.
+    #- Throws an E.KeyNotFound exception if the item is not present.
+    #
+    #- Returns the multiDict.
+    FUNC $removeAll(Tkey key) MultiDict<Tkey, Titem> @public
+      IF !$dict.has(key)
+        THROW E.KeyNotFound.NEW("key: " .. key.ToString())
+      }
+      $itemCount -= $dict[key].Size()
+      $dict.remove(key)
+      RETURN THIS
+    }
+
+    #= Remove an item from the multiDict with key |key| and value equal to
+    #= |item|
+    #- Throws an E.KeyNotFound exception if the key is not present.
+    #
+    #- Throws an E.ItemNotFound exception if the item is not present.
+    #
+    #- Only the first matching item found is removed.
+    #
+    #- Returns the multiDict.
+    FUNC $remove(Tkey key, Titem item) MultiDict<Tkey, Titem> @public
+      IF !$dict.has(key)
+        THROW E.KeyNotFound.NEW("key: " .. key.ToString())
+      }
+      list<Titem> l = $dict[key]
+      FOR i IN 0 TO l.Size() - 1
+        IF l[i] == item
+          l.remove(i)
+          --$itemCount
+          IF l.Size() == 0
+            $dict.remove(key)
+          }
+          RETURN THIS
+        }
+      }
+      THROW E.ItemNotFound.NEW("key: " .. key.ToString())
+    }
+
+    #= Remove an item from the multiDict if present.
+    #- Returns the multiDict.
+    FUNC $clear(Tkey key) MultiDict<Tkey, Titem> @public @primitive
+      IF $dict.has(key)
+        $itemCount -= $dict[key].Size()
+        $dict.remove(key)
+      }
+      RETURN THIS
+    }
+
+    #= Make the multiDict empty.
+    #- Returns the multiDict.
+    FUNC $clear() MultiDict<Tkey, Titem> @public @primitive
+      $dict.clear()
+      $itemCount = 0
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item value.  Each value is replaced by the
+    #= result of the function.
+    #- |f| has one argument, which is the current value, and must return the
+    #- new value.
+    #% multiDict<int, string> d = [1: ["a", "b"], 2: ["c"]]
+    #% d.map({ s => s .. "+" })
+    #% # d == [1: ["a+", "b+"], 2: ["c+"]]
+    #
+    #- Returns the multiDict.
+    FUNC $map(func<Titem => Titem> f) multiDict<Tkey, Titem> @public
+      FOR l IN $dict.values()
+        l.map(f)
+      }
+      RETURN THIS
+    }
+
+    #= Execute function |f| on the value list for each key.  Each list is
+    #= replaced by the result of the function.
+    #- |f| has one argument, which is the current value list for the key, and
+    #- it must return the new value list.
+    #
+    #- Returns the multiDict.
+    FUNC $mapList(func<list<Titem> => list<Titem>> f
+                 ) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        $dict[key] = f($dict[key])
+      }
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item key and each value.  Each item value
+    #= is replaced by the result of the function.
+    #- |f| has two arguments: The key and the value of the item.  |f| must
+    #- return the new value of the item.
+    #% multiDict<int, string> d = [1: ["a", "b"], 2: ["c"]]
+    #% d.keyMap({ k, v => k .. "/" .. v })
+    #% # d == [1: ["1/a", "2/b"], 2: ["3/c"]]
+    #
+    #- Returns the multiDict.
+    FUNC $keyMap(func<Tkey, Titem => Titem> f) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        VAR l = $dict[key]
+        FOR i IN 0 UNTIL l.Size()
+          l[i] = f(key, l[i])
+        }
+      }
+      RETURN THIS
+    }
+
+    #= Execute function |f| on each item key and value list.  Each value list
+    #= is replaced by the result of the function.
+    #- |f| has two arguments: The key and the value list.  |f| must return the
+    #- new value list.
+    #
+    #- Returns the multiDict.
+    FUNC $keyMapList(func<Tkey, list<Titem> => list<Titem>> f
+                    ) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        $dict[key] = f(key, $dict[key])
+      }
+      RETURN THIS
+    }
+
+    #= Create a new multiDict where each item is the result of executing
+    #= function |f| on each item value of this multiDict.
+    #- This is like map() but with a different result type.
+    #
+    #- |f| has one argument, which is the value of the item, and must return
+    #- the value for the new multiDict.
+    #% multiDict<string, int> id = ["one": [1, 2], "two": [3]]
+    #% multiDict<string, string> sd = id.mapTo({ n => n .. ":" })
+    #% # sd == ["one": ["1:", "2:"], "two": ["3:"]]
+    #
+    #- If this dict is ordered, the resulting dict will also be ordered, thus
+    #- the order of keys remains the same
+    #
+    #- Returns the new multiDict.
+    FUNC $mapTo<Tresult>(func<Titem => Tresult> f
+                        ) multiDict<Tkey, Tresult> @public
+      multiDict<Tkey, Tresult> r = NEW($dict.isOrdered())
+      FOR key IN $dict.keys()
+        FOR item IN $dict[key]
+          r.add(key, f(item))
+        }
+      }
+      RETURN r
+    }
+
+    #= Create a new multiDict where each item list is the result of executing
+    #= function |f| on each item list of this multiDict.
+    #- This is like mapList() but with a different result type.
+    #
+    #- |f| has one argument, which is the value list, and must return the
+    #- value list for the new multiDict.
+    #
+    #- If this dict is ordered, the resulting dict will also be ordered, thus
+    #- the order of keys remains the same
+    #
+    #- Returns the new multiDict.
+    FUNC $mapListTo<Tresult>(func<list<Titem> => list<Tresult>> f
+                            ) multiDict<Tkey, Tresult> @public
+      multiDict<Tkey, Tresult> r = NEW($dict.isOrdered())
+      FOR key IN $dict.keys()
+        r.addList(key, f($dict[key]))
+      }
+      RETURN r
+    }
+
+    #= Create a new multiDict where each item is the result of executing
+    #= function |f| on each item key and value of this multiDict.
+    #- This is like keyMap() but with a different result type.
+    #
+    #- |f| has two arguments: The key in the multiDict and the value of the
+    #- item.  |f| must return the value for the new multiDict.
+    #% multiDict<string, int> id = ["one": [11, 22], "three": [33]]
+    #% multiDict<string, string> sd = id.keyMapTo({ k, n => k .. ": " .. n })
+    #% # sd == ["one": ["one: 11", "one: 22"], "three": ["three: 33"]]
+    #
+    #- If this dict is ordered, the resulting dict will also be ordered, thus
+    #- the order of keys remains the same
+    #
+    #- Returns the new multiDict.
+    FUNC $keyMapTo<Tresult>(func<Tkey, Titem => Tresult> f
+                           ) multiDict<Tkey, Tresult> @public
+      multiDict<Tkey, Tresult> r = NEW($dict.isOrdered())
+      FOR key IN $dict.keys()
+        list<Titem> l = $dict[key]
+        list<Tresult> lnew = NEW()
+        FOR item IN l
+          lnew.add(f(key, item))
+        }
+        r.addList(key, lnew)
+      }
+      RETURN r
+    }
+
+    #= Create a new multiDict where each value list is the result of executing
+    #= function |f| on each item key and value list of this multiDict.
+    #- This is like keyMapList() but with a different result type.
+    #
+    #- |f| has two arguments: The key in the multiDict and the value list.
+    #- |f| must return the value list for the new multiDict.
+    #
+    #- If this dict is ordered, the resulting dict will also be ordered, thus
+    #- the order of keys remains the same
+    #
+    #- Returns the new multiDict.
+    FUNC $keyMapListTo<Tresult>(func<Tkey, list<Titem> => list<Tresult>> f
+                               ) multiDict<Tkey, Tresult> @public
+      multiDict<Tkey, Tresult> r = NEW($dict.isOrdered())
+      FOR key IN $dict.keys()
+        r.addList(key, f(key, $dict[key]))
+      }
+      RETURN r
+    }
+
+    #= Call method |f| for every item value in the multiDict.
+    #- The argument for |f| is the value.
+    #
+    #- The order in which |f| is called for each key is undefined,
+    #- unless this is an ordered multiDict.
+    #
+    #- Returns the multiDict.
+    FUNC $forEach(proc<Titem> f) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        FOR item IN $dict[key]
+          f(item)
+        }
+      }
+      RETURN THIS
+    }
+
+    #= Call method |f| for every key in the multiDict, passing the list of
+    #= values.
+    #- The argument for |f| is the list of values.
+    #
+    #- The order in which |f| is called for each key is undefined,
+    #- unless this is an ordered multiDict.
+    #
+    #- Returns the multiDict.
+    FUNC $forEachList(proc<list<Titem>> f) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        f($dict[key])
+      }
+      RETURN THIS
+    }
+
+    #= Call method |f| for every item key and value in the multiDict.
+    #- The first argument for f is the key, the second argument is each value.
+    #
+    #- The order in which |f| is called for each item is undefined.
+    #- unless this is an ordered multiDict.
+    #
+    #- Returns the multiDict.
+    FUNC $forKeyEach(proc<Tkey, Titem> f
+                    ) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        FOR item IN $dict[key]
+          f(key, item)
+        }
+      }
+      RETURN THIS
+    }
+
+    #= Call method |f| for every key the multiDict, passing the list of values.
+    #- The first argument for f is the key, the second argument is the list of
+    #- values.
+    #
+    #- The order in which |f| is called for each list of items is undefined,
+    #- unless this is an ordered multiDict.
+    #
+    #- Returns the multiDict.
+    FUNC $forKeyEachList(proc<Tkey, list<Titem>> f
+                        ) multiDict<Tkey, Titem> @public
+      FOR key IN $dict.keys()
+        f(key, $dict[key])
+      }
+      RETURN THIS
+    }
+
+  }
+
+}

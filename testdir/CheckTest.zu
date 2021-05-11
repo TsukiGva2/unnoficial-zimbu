@@ -1,0 +1,32 @@
+# A few checks
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE CheckTest @public
+
+  PROC test() @public
+    IO.print("testdir/CheckTest.zu")
+    list<int> nolist
+    CHECK.true(nolist == NIL)
+    nolist = NEW()
+    CHECK.true(nolist != NIL)
+
+    TRY
+      CHECK.true(nolist == NIL)
+    CATCH E.Check e
+      IO.print("check failed intentionally: " .. e.getMessage())
+    }
+
+    string nothing = "x"
+    CHECK.notEmpty(nothing)
+
+    int foo = 5
+    CHECK.inRange(foo, 5, 6)
+    foo = 6
+    CHECK.inRange(foo, 5, 6)
+  }
+
+}

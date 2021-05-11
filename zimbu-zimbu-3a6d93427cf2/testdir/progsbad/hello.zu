@@ -1,0 +1,4 @@
+# Small test program: Verify that this does not compile.
+PROC Main() int
+  IO.write("Hello World!")
+}

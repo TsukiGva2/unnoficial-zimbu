@@ -1,0 +1,306 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT.ListController class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZWT.html'>up:&nbsp;ZWT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZWT.ListController&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Display a list of items in a Panel.
+</p>
+<p class='ptext'> This is the controller in a model-view-controller construction, where
+ the model is a list of items and the view is a Panel.
+</p>
+&nbsp;<br><div>Implements <A href='ZWT.I_Controller.html'>ZWT.I_Controller</A></div>&nbsp;<br><table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.SelectEvent.html'><b>SelectEvent</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#NEW'><b>NEW</b></a>(<small>view, model, builder</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Display the items of <b>model</b> in <b>view</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setModel'><b>$setModel</b></a>(<small>model</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the model to be displayed.
+ Set to NIL to not display any items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getModel'><b>$getModel</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the current model.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setView'><b>$setView</b></a>(<small>view</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the view to display the items in.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getView'><b>$getView</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Panel.html'>ZWT.Panel</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the current view.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$update'><b>$update</b></a>(<small></small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Fill the view with items from the model.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$update'><b>$update</b></a>(<small>item</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Update the view for <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$update'><b>$update</b></a>(<small>index</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Update the view for the item at position <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$add'><b>$add</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>item</b> to the list of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$insert'><b>$insert</b></a>(<small>item</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Insert <b>item</b> at the start of the list of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$insert'><b>$insert</b></a>(<small>item, index</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Insert <b>item</b> before item <b>index</b> in the list of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$remove'><b>$remove</b></a>(<small>item</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove the <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$remove'><b>$remove</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove the item at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getItem'><b>$getItem</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the item in the model at <b>index</b>.
+ Return NIL when <b>index</b> is out of range.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getWidget'><b>$getWidget</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the Widget in the view at <b>index</b>.
+ Return NIL when <b>index</b> is out of range.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getWidget'><b>$getWidget</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the Widget in the view for <b>item</b> in the model.
+ Return NIL when not found.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setHighlightIndex'><b>$setHighlightIndex</b></a>(<small>index</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the highlight in the view by index.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setHighlighted'><b>$setHighlighted</b></a>(<small>item</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the highlight in the view for an item in the model.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$addHighlighted'><b>$addHighlighted</b></a>(<small>index</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a highlighted item in the view by index.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$addHighlighted'><b>$addHighlighted</b></a>(<small>item</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a highlighted item in the view for an item in the model.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getHighlighted'><b>$getHighlighted</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the first highlighted item in the view. NIL if there is none.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getHighlightedItem'><b>$getHighlightedItem</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the first highlighted item in the model. NIL if there is none.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$getHighlightIndex'><b>$getHighlightIndex</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest highlighted item index.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setSelectionHandler'><b>$setSelectionHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set a handler for selection events.  Currently only mouse clicks.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$keepSorted'><b>$keepSorted</b></a>(<small>on</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set sorting to <b>on</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#$setSortMethod'><b>$setSortMethod</b></a>(<small>method</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the method to use for sorting.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.ListController.html#clickHandler'><b>clickHandler</b></a>(<small>event</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='ZWT.Panel.html'>ZWT.Panel</A></span> view, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> model, <span class='type'>I_WidgetBuilder&lt;Titem&gt;</span> builder)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Display the items of <b>model</b> in <b>view</b>.
+</p>
+<p class='ptext'> The <b>view</b> must be a Panel, it will show the items of <b>model</b>.
+ The <b>builder</b>  is used to turn <b>Titem</b> into a Widget that can be
+ added to <b>view</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add <b>item</b> to the list of items.
+</p>
+<p class='ptext'> Will update the model and the view.
+<p class='ptext'> When sorted the item will be put in the right place.  When not sorted
+ the item is added to the end of the list.
+<p class='ptext'> Returns the created widget.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addHighlighted'><b>$addHighlighted</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a highlighted item in the view by index.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addHighlighted'><b>$addHighlighted</b></A>(<span class='type'>Titem</span> item)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a highlighted item in the view for an item in the model.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getHighlightIndex'><b>$getHighlightIndex</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest highlighted item index.
+</p>
+<p class='ptext'> Return -1 when there is no highlight.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getHighlighted'><b>$getHighlighted</b></A>() <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the first highlighted item in the view. NIL if there is none.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getHighlightedItem'><b>$getHighlightedItem</b></A>() <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the first highlighted item in the model. NIL if there is none.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getItem'><b>$getItem</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the item in the model at <b>index</b>.
+ Return NIL when <b>index</b> is out of range.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getModel'><b>$getModel</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the current model.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getView'><b>$getView</b></A>() <span class='type'><A class='typehref' href='ZWT.Panel.html'>ZWT.Panel</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the current view.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getWidget'><b>$getWidget</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the Widget in the view at <b>index</b>.
+ Return NIL when <b>index</b> is out of range.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getWidget'><b>$getWidget</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the Widget in the view for <b>item</b> in the model.
+ Return NIL when not found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Insert <b>item</b> at the start of the list of items.
+</p>
+<p class='ptext'> Will update the model and the view.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Insert <b>item</b> before item <b>index</b> in the list of items.
+</p>
+<p class='ptext'> Will update the model and the view.
+<p class='ptext'> When $keepSorted(TRUE) was called then <b>index</b> is ignored.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$keepSorted'><b>$keepSorted</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> on)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set sorting to <b>on</b>.
+</p>
+<p class='ptext'> When adding items with $add() or $insert() they are put in the right
+ place.
+<p class='ptext'> When <b>on</b> is TRUE you need to call $setSortMethod() before updating
+ the model, otherwise an exception will be thrown.
+<p class='ptext'> Note that calling this method does not trigger a sort, when the items
+ are not already sorted the result is unpredictable.  When an item in
+ the model is changed you need to call $update() to keep the items
+ sorted.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'>Titem</span> item)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove the <b>item</b>.
+</p>
+<p class='ptext'> Will update the model and the view.
+ Does noting if the item cannot be found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove the item at <b>index</b>.
+</p>
+<p class='ptext'> Will update the model and the view.
+ Returns the removed item.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setHighlightIndex'><b>$setHighlightIndex</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the highlight in the view by index.
+</p>
+<p class='ptext'> Remove highlight when <b>index</b> is &lt; 0.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setHighlighted'><b>$setHighlighted</b></A>(<span class='type'>Titem</span> item)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the highlight in the view for an item in the model.
+</p>
+<p class='ptext'> Remove highlight when <b>item</b> is NIL or is not in the model.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setModel'><b>$setModel</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> model)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the model to be displayed.
+ Set to NIL to not display any items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setSelectionHandler'><b>$setSelectionHandler</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='ZWT.SelectEvent.html'>ZWT.SelectEvent</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set a handler for selection events.  Currently only mouse clicks.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setSortMethod'><b>$setSortMethod</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; <A class='typehref' href='INT.int.html'>int</A>&gt;</span> method)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the method to use for sorting.
+</p>
+<p class='ptext'> The method must return zero when the two items are equal, &lt; 0 when
+ the first one sorts before the second one and &gt; 0 when the first one
+ sorts after the second one.
+<p class='ptext'> If Titem has the Compare() method you can use:
+<pre class='example'> FUNC sortMethod(Titem a, Titem b) int
+   RETURN a.Compare(b)
+ }
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setView'><b>$setView</b></A>(<span class='type'><A class='typehref' href='ZWT.Panel.html'>ZWT.Panel</A></span> view)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the view to display the items in.
+</p>
+<p class='ptext'> Use NIL to not display the items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$update'><b>$update</b></A>()<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Fill the view with items from the model.
+</p>
+<p class='ptext'> This rebuilds the whole view.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$update'><b>$update</b></A>(<span class='type'>Titem</span> item)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Update the view for <b>item</b>.
+</p>
+<p class='ptext'> Does nothing when <b>item</b> is not found in the model.
+<p class='ptext'> When $keepSorted(TRUE) was called the item will most likely be moved
+ to another position.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$update'><b>$update</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Update the view for the item at position <b>index</b>.
+</p>
+<p class='ptext'> Does nothing when <b>index</b> is out of range.
+<p class='ptext'> When $keepSorted(TRUE) was called the item will most likely be moved
+ to another position.
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='clickHandler'><b>clickHandler</b></A>(<span class='type'><A class='typehref' href='ZWT.Event.html'>ZWT.Event</A></span> event)<span class='attribute'> @file</span></p></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

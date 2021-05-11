@@ -1,0 +1,424 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module INT - integer support
+#
+
+#= Methods for the builtin int type.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE INTModule @public
+
+  #= The builtin type int: 64 bit integer number.
+  #- The object methods can be used on an int variable or value:
+  #% IO.print("0x" .. 1234.toHex())
+  #- Note: When compiled to Javascript an int is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTint @public
+    # For Zudocu: start of int class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in an int.
+  #- Always returns 8, since an int is 64 bits
+  FUNC Size(int this) int @public
+    ###### Only for generating documentation.
+    RETURN 8
+  }
+
+  #= Return the number in decimal form.
+  #- For example, 1234.ToString() returns "1234".
+  FUNC ToString(int this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number in the specified |format|.
+  #- For example, -123.ToString(".5d") returns "-00123",
+  #- -123.ToString("05d") returns "-0123",
+  #- -123.ToString("5d") returns " -123".
+  #
+  #- The |format| has the fields: [width][.precision]{type}.
+  #
+  #- {type} can be d for decimal notation or x for hexadecimal notation.
+  #
+  #- [width] give the minimal width of the result, including any negative
+  #- sign.  When the number starts with zero padding is done with zero
+  #- characters, otherwise with spaces.
+  #
+  #- [.precision] gives the minimum number of digits that will appear.  If the
+  #- value requires fewer digits it is padded on the left with zeroes.  A
+  #- negative sign takes one extra position.  When the precision is zero and
+  #- the value is zero the result is an empty string.
+  FUNC ToString(int this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the type of the int.
+  FUNC Type(int this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 when |other| is larger than this int, zero when |other| is
+  #= equal to this int, and 1 when |other| is smaller than this int.
+  FUNC Compare(int this, int other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this int.
+  FUNC Equal(int this, int other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a string with one character that is equal to the number.
+  #- For example, 61.asString() returns "=".
+  FUNC asString(int this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a byteString with one byte that is equal to the number.
+  #- Only the lower 8 bits of the number are used.
+  FUNC asByteString(int this) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number in decimal form with quotes.
+  #- For example, 1000000.toQuotedString() returns "1'000'000".
+  FUNC toQuotedString(int this) string @public
+    IF this == 0
+      RETURN "0"
+    }
+    # Build the result in |w| in reverse order.
+    IO.StringWriter w = NEW()
+    int r = this > 0 ? this : -this
+    int beforeQuote = 3
+    WHILE r > 0
+      IF beforeQuote == 0
+        w.writeChar('\'')
+        beforeQuote = 3
+      }
+      int n = r % 10
+      w.write(n.ToString())
+      r = r / 10
+      --beforeQuote
+    }
+    IF this < 0
+      w.writeChar('-')
+    }
+    RETURN w.ToString().reverse()
+  }
+
+  #!
+  array<int> letters = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                        'a', 'b', 'c', 'd', 'e', 'f']
+
+  #= Return a string with the hex representation of the number.
+  #- Uses lower case letters
+  #
+  #- For example: 123.toHex() returns "7b". 
+  FUNC toHex(int this) string @public
+    RETURN toHex(this, 1)
+  }
+
+  #= Return a string with the hex representation of the number.
+  #- Uses lower case letters 'a' to 'f'.
+  #
+  #- |minSize| is the minimum size of the string, leading zeroes are added
+  #- when needed.  The string will get longer when needed.
+  #
+  #- For example: 123.toHex(4) returns "007b". 
+  FUNC toHex(int this, int minSize) string @public
+    int val = this
+    # Build the result in |w| in reverse order.
+    IO.StringWriter w = NEW()
+    WHILE val != 0
+      int c = val & 15
+      val = val >> 4
+      IF val < 0
+        # Handle a negative number as it's two-complement by stripping off the
+        # top 4 bits after the first shift.
+        val = val & 0x0fffffffffffffff
+      }
+      w.writeChar(letters[c])
+    }
+    WHILE w.Size() < minSize
+      w.writeChar('0')
+    }
+    RETURN w.ToString().reverse()
+  }
+
+  #= Return a string with the hex representation of the number.
+  #- Uses upper case letters 'A' to 'F'.
+  #
+  #- For example: 123.toHex() returns "7B". 
+  FUNC toHexUpper(int this) string @public
+    RETURN toHex(this).toUpperAscii()
+  }
+
+  #= Return a string with the hex representation of the number.
+  #- Uses upper case letters 'A' to 'F'.
+  #
+  #- |minSize| is the minimum size of the string, leading zeroes are added
+  #- when needed.  The string will get longer when needed.
+  #
+  #- For example: 123.toHex(4) returns "007B". 
+  FUNC toHexUpper(int this, int minSize) string @public
+    RETURN toHex(this, minSize).toUpperAscii()
+  }
+
+  #= Return TRUE if the number is a white space character.
+  #- That is for space, tab, control characters, etc.
+  FUNC isWhite(int this) bool @public
+    # TODO: Unicode white space
+    RETURN this <= ' ' || (this >= 0x7f && this <= 0xa0)
+  }
+
+  #= Return TRUE if the number is a digit character.
+  #- That is for '0' (48, 0x30) up to '9' (57, 0x39).
+  FUNC isDigit(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is a hex digit character.
+  #- That is for '0' (48, 0x30) up to '9' (57, 0x39),
+  #- 'a' up to 'f' and 'A' up to 'F'.
+  FUNC isHexDigit(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is an alphabetical character.
+  #- That is for 'a' to 'z' and 'A' to 'Z'. TODO: Unicode support
+  FUNC isAlpha(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is a lower case alphabetical character.
+  #- That is for 'a' to 'z'. TODO: Unicode support
+  FUNC isLower(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is an upper case alphabetical character.
+  #- That is for 'A' to 'Z'. TODO: Unicode support
+  FUNC isUpper(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is a white space character.
+  #- That is for space, tab and control characters.
+  FUNC isWhiteAscii(int this) bool @public
+    RETURN this <= ' ' || (this >= 0x7f && this <= 0xa0)
+  }
+
+  #= Return TRUE if the number is an alphabetical ASCII character.
+  #- That is for 'a' to 'z' and 'A' to 'Z'
+  FUNC isAlphaAscii(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is a lower case alphabetical ASCII character.
+  #- That is for 'a' to 'z'.
+  FUNC isLowerAscii(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the number is an upper case alphabetical ASCII character.
+  #- That is for 'A' to 'Z'
+  FUNC isUpperAscii(int this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the letter turned in to lower case for ASCII letters.
+  #- Only works for ASCII, thus 'A' - 'Z' becomes 'a' - 'z'. All other
+  #- characters are returned unchanged.
+  FUNC toLowerAscii(int this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return letter turned in to upper case for ASCII letters.
+  #- Only works for ASCII, thus 'a' - 'z' becomes 'A' - 'Z'. All other
+  #- characters are returned unchanged.
+  FUNC toUpperAscii(int this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the absolute value.
+  #- Equivalent to: v < 0 ? -v : v
+  #
+  #- This method returns nat, so that it also works when used on the largest
+  #- negative integer T.int.min
+  FUNC abs(int this) nat @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the largest integral value not greater than the value.
+  #- Same as T.float.floor().
+  FUNC floor(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the smallest integral value not less than the value.
+  #- Same as T.float.ceil().
+  FUNC ceil(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value rounded to integer, toward zero.
+  #- Same as T.float.trunc().
+  FUNC trunc(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value rounded to integer, away from zero.
+  #- Same as T.float.round().
+  FUNC round(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value of e (the base of natural logarithms) raised to the
+  #= power of the value.
+  #- Same as T.float.exp().
+  FUNC exp(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the natural logarithm of the value.
+  #- Same as T.float.log().
+  FUNC log(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the base 10 logarithm of the value.
+  #- Same as T.float.log10().
+  FUNC log10(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the nonnegative quare root of the value.
+  #- Same as T.float.sqrt().
+  FUNC sqrt(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value raised to the power of |x|.
+  #- Same as T.float.pow().
+  FUNC pow(int this, float x) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the sine value, using the value as radians.
+  #- Same as T.float.sin().
+  FUNC sin(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic sine value.
+  #- Same as T.float.sinh().
+  FUNC sinh(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the cosine value, using the value as radians.
+  #- Same as T.float.cos().
+  FUNC cos(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic cosine value.
+  #- Same as T.float.cosh().
+  FUNC cosh(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the tangent value, using the value as radians.
+  #- Same as T.float.tan().
+  FUNC tan(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic tangent value.
+  #- Same as T.float.tanh().
+  FUNC tanh(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc sine of the value.
+  #- Same as T.float.asin().
+  FUNC asin(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc cosine of the value.
+  #- Same as T.float.acos().
+  FUNC acos(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc tangent of the value.
+  #- Same as T.float.atan().
+  FUNC atan(int this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arg tangent of the value divided by
+  #= |x|.
+  #- Same as T.float.atan2().
+  FUNC atan2(int this, float x) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #! For Zudocu: end of int class.
+  CLASS ENDint
+  }
+
+  #= Maximum value of an int.
+  #- Used as T.int.max
+  int max @public
+          = 0x7fff'ffff'ffff'ffff
+
+  #= Minimum value of an int.
+  #- Used as T.int.min
+  int min @public
+          = -0x8000'0000'0000'0000
+}

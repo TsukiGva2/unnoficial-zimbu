@@ -1,0 +1,12 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  RETURN 0
+}
+
+CLASS Test11
+  # func name must start with lower case letter or '_'
+  FUNC Proc() int
+    RETURN 0
+  }
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>DYN.dyn class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='DYN.html'>up:&nbsp;DYN</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.dyn
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type dyn.
+</p>
+<p class='ptext'> This is dynamically typed, it can hold a value of any type.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation for the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a formatted string representation for the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$Type'><b>$Type</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the type of the value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the size of the dyn.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$Compare'><b>$Compare</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return -1 when <b>other</b> sorts after this dyn, zero when <b>other</b> is
+ equal to this dyn, and 1 when <b>other</b> sorts before this dyn.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DYN.dyn.html#$Equal'><b>$Equal</b></a>(<small>other</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when <b>other</b> is equal to this dyn, FALSE otherwise.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Compare'><b>$Compare</b></A>(<span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> other) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return -1 when <b>other</b> sorts after this dyn, zero when <b>other</b> is
+ equal to this dyn, and 1 when <b>other</b> sorts before this dyn.
+</p>
+<p class='ptext'> This works like with &lt; and &gt; operators, for similar types the value is
+ used. This especially matters for numbers.
+<p class='ptext'> When using ?.Compare() on a NIL dyn and <b>other</b> is NIL it returns
+ zero.  When <b>other</b> is not NIL it returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Equal'><b>$Equal</b></A>(<span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> other) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when <b>other</b> is equal to this dyn, FALSE otherwise.
+</p>
+<p class='ptext'> This works like with == and != operators, for similar types the value is
+ used. This especially matters for numbers.
+<pre class='example'> int i = 8
+ dyn xi = i
+ float f = 8.0
+ dyn xf = f
+ IO.print(xi.Equal(xf))  # prints TRUE
+ IO.print(xi == xf)      # prints TRUE
+</pre>
+<p class='ptext'>
+ When using ?.Compare() on a NIL dyn and <b>other</b> is NIL it returns
+ TRUE.  Otherwise when <b>other</b> is NIL returns FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the size of the dyn.
+</p>
+<p class='ptext'> This calls Size() on the item contained in the dyn.
+<p class='ptext'> A NIL dyn also returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation for the value.
+</p>
+<p class='ptext'> This uses the ToString() method of the actual type.
+ If there is no ToString() method the type of the value is returned
+ surrounded by dashes.  E.g. "-object-".
+<pre class='example'> dyn x = getAnX()
+ IO.print("The value of x is " .. x.ToString())
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a formatted string representation for the value.
+</p>
+<p class='ptext'> This uses the ToString(format) method of the actual type.
+ If there is no ToString(format) method the type of the value is returned
+ surrounded by dashes.  E.g. "-object-".
+<pre class='example'> dyn x = getAnX()
+ IO.print("The value of x is " .. x.ToString())
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Type'><b>$Type</b></A>() <span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the type of the value.
+</p>
+<p class='ptext'><pre class='example'> dyn x = getAnX()
+ IO.print("The type of x is " .. x.Type().ToString())
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2013 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,83 @@
+# Test file for class and function templates
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Template @public
+
+  PROC test() @public
+    IO.print("testdir/Template.zu")
+    test1()
+    test2()
+    test3()
+  }
+
+  ###############################################################
+
+  CLASS Foo<Titem>
+    Titem $item
+
+    NEW(Titem s)
+      $item = s
+      lastItem = s
+    }
+
+    FUNC $get() Titem
+      RETURN $item
+    }
+
+    SHARED
+      Titem lastItem
+    }
+  }
+
+  CLASS Bar<Tkey, Tvalue>
+    Tkey   $key
+    Tvalue $value
+
+    NEW()
+    }
+
+    NEW(Tkey key, Tvalue value)
+      $key = key
+      $value = value
+    }
+  }
+
+  PROC test1()
+    Foo<string> fs = NEW("Foo<string>")
+    IO.print(fs.get())
+
+    Foo<int> fi = NEW(123)
+    IO.print(fi.get())
+
+    Bar<string, int> b = NEW()
+    b.key = "hello"
+    b.value = 1234
+    IO.print("Bar key: " .. b.key .. ", value: " .. b.value)
+    b = NEW("akey", 999)
+    IO.print("Bar key: " .. b.key .. ", value: " .. b.value)
+  }
+
+  FUNC enlist<Titem>(Titem one, Titem two) list<Titem>
+    RETURN [one, two]
+  }
+
+  PROC test2()
+    IO.print(enlist("one", "two").ToString())
+    IO.print(enlist(1, 2).ToString())
+    IO.print(enlist(OK, FAIL).ToString())
+  }
+
+  FUNC concat<Titem>(Titem one, Titem two) string
+    RETURN one .. two
+  }
+
+  PROC test3()
+    IO.print(concat(1, 2))       # will deduce type from arguments
+    IO.print(concat("a", "b"))   # will deduce type from arguments
+  }
+
+}

@@ -1,0 +1,230 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for set type
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Util.zu"
+
+MODULE SetTest @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/SetTest.zu")
+    test1()
+    test2()
+    test3()
+    testEnum()
+    testAddSet()
+    testAddList()
+    testSetSet()
+    testRemoveSet()
+    testRemoveNotInSet()
+    testSetList()
+    testUnion()
+    testIntersection()
+    testDifference()
+  }
+
+  PROC test1()
+    set<string> s = NEW()
+    s.add("one")
+    IO.print(s.Size() .. ": " .. s.ToString())
+    s.add("two")
+    s.add("three")
+    IO.print(s.Size() .. ": " .. s.ToString())
+    s.remove("two")
+    s.clear("two")
+    s.add("six")
+    s.clear("six")
+    s.clear("six")
+    IO.print(s.Size() .. ": " .. s.ToString())
+
+    IO.print("s has one: " .. s.has("one"))
+    IO.print("s has four: " .. s.has("four"))
+
+    TRY
+      s.add("three")
+    CATCH E.KeyExists e
+      IO.print("key exists")
+    }
+
+    TRY
+      s.remove("four")
+    CATCH E.KeyNotFound e
+      IO.print("key not found")
+    }
+
+    s.clear("four")
+
+    s.set("three")
+
+    IO.print("copy: " .. s.copy().ToString())
+    IO.print("keys: " .. s.keys().ToString())
+
+    s.clear()
+    IO.print("empty: " .. s.ToString())
+
+    s = ["a", "b", "c"]
+    IO.print(s.Size() .. ": " .. s.ToString())
+  }
+
+  PROC test2()
+    set<int> s = NEW()
+    s.add(1)
+    IO.print(s.Size() .. ": " .. s.ToString())
+    s.add(2)
+    s.add(3)
+    IO.print(s.Size() .. ": " .. s.ToString())
+    s.remove(2)
+    s.clear(2)
+    s.add(6)
+    s.clear(6)
+    s.clear(6)
+    IO.print(s.Size() .. ": " .. s.ToString())
+
+    IO.print("s has one: " .. s.has(1))
+    IO.print("s has four: " .. s.has(4))
+
+    TRY
+      s.add(3)
+    CATCH E.KeyExists e
+      IO.print("key exists")
+    }
+
+    TRY
+      s.remove(4)
+    CATCH E.KeyNotFound e
+      IO.print("key not found")
+    }
+
+    s.clear(4)
+
+    s.set(3)
+
+    IO.print("copy: " .. s.copy().ToString())
+    IO.print("keys: " .. s.keys().ToString())
+
+    s.clear()
+    IO.print("empty: " .. s.ToString())
+  }
+
+  CLASS Foo
+    string $item
+
+    NEW(string s)
+      $item = s
+    }
+
+    FUNC $ToString() string @public
+      RETURN $item
+    }
+  }
+
+  PROC test3()
+    set<bool> bs = NEW()
+    bs.add(TRUE)
+    bs.add(FALSE)
+    IO.print("bool set: " .. bs.ToString())
+
+    set<status> ss = NEW()
+    ss.add(FAIL)
+    ss.add(OK)
+    IO.print("status set: " .. ss.ToString())
+
+    set<Foo> fs = NEW()
+    fs.add(NEW("one"))
+    IO.print("Foo set: " .. fs.ToString())
+  }
+
+  PROC testEnum()
+    ENUM Color
+      black
+      blue
+      red
+      orange
+    }
+    set<Color> cs = NEW()
+    cs.set(Color.black)
+    cs.set(Color.blue)
+    cs.set(Color.orange)
+    IO.print("Colors set: " .. cs.ToString())
+  }
+
+  PROC testAddSet()
+    set<int> s = [1, 2, 3]
+    set<int> other = [4, 5]
+    s.addSet(other)
+    IO.print("addSet: " .. s.ToString())
+    TRY
+      other = [3, 4]
+      s.addSet(other)
+    CATCH E.KeyExists e
+      IO.print("addSet: caught " .. Util.stripLine(e.ToString()))
+    }
+  }
+
+  PROC testAddList()
+    set<int> s = [1, 2, 3]
+    s.addList([4, 5])
+    IO.print("addList: " .. s.ToString())
+    TRY
+      s.addList([3, 4])
+    CATCH E.KeyExists e
+      IO.print("addList: caught " .. Util.stripLine(e.ToString()))
+    }
+  }
+
+  PROC testSetSet()
+    set<int> s = [1, 2, 3]
+    set<int> other = [3, 4, 5]
+    s.setSet(other)
+    IO.print("setSet: " .. s.ToString())
+  }
+
+  PROC testRemoveSet()
+    set<int> s = [1, 2, 3, 4, 5]
+    set<int> other = [2, 4, 6]
+    s.removeSet(other)
+    IO.print("removeSet: " .. s.ToString())
+  }
+
+  PROC testRemoveNotInSet()
+    set<int> s = [1, 2, 3, 4, 5]
+    set<int> other = [2, 4, 6]
+    s.removeNotInSet(other)
+    IO.print("removeNotInSet: " .. s.ToString())
+  }
+
+  PROC testSetList()
+    set<int> s = [1, 2, 3]
+    s.setList([3, 4, 5])
+    IO.print("setList: " .. s.ToString())
+  }
+
+  PROC testUnion()
+    set<int> s = [1, 2, 3]
+    set<int> other = [3, 4, 5]
+    IO.print("union: " .. s.union(other).ToString())
+    IO.print("orig set: " .. s.ToString())
+  }
+
+  PROC testIntersection()
+    set<int> s = [1, 2, 3]
+    set<int> other = [3, 4, 5]
+    IO.print("intersection: " .. s.intersection(other).ToString())
+    IO.print("orig set: " .. s.ToString())
+  }
+
+  PROC testDifference()
+    set<int> s = [1, 2, 3]
+    set<int> other = [3, 4, 5]
+    IO.print("difference: " .. s.difference(other).ToString())
+    IO.print("orig set: " .. s.ToString())
+  }
+}
+

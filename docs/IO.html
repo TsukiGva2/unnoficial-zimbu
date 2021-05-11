@@ -1,0 +1,684 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>IO module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> IO
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Classes, Interfaces and methods for Input/Output.
+ Operations on files and directories.
+</p>
+<p class='ptext'> Stdin, stdout and stderr can be used for normal input and output.
+ The most common methods on these are also available directly.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_ByteWriter.html'><b>I_ByteWriter</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can write a byte.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_CharWriter.html'><b>I_CharWriter</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can write a character.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_Writer.html'><b>I_Writer</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can write a string.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.Writer.html'><b>Writer</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Abstract class that implements I_Writer while only requiring subclasses
+ to implement write(string) by providing the
+ writeByte(), writeChar() and print() implementations.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.File.html'><b>File</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> File for reading and writing.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.Socket.html'><b>Socket</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Socket for reading and writing.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_ByteReader.html'><b>I_ByteReader</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can read a byte.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_CharReader.html'><b>I_CharReader</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can read a UTF-8 character.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='IO.I_CharOrByteReader.html'><b>I_CharOrByteReader</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An interface for any class that can read a byte or a UTF-8 character.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.BytesReader.html'><b>BytesReader</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A ByteReader that reads from a byteString.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.ByteReaderStack.html'><b>ByteReaderStack</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A wrapper around a ByteReader that supports push().
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.StringReader.html'><b>StringReader</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Reader that reads characters from a string.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.CharReaderStack.html'><b>CharReaderStack</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A wrapper around a CharReader that supports push().
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Methods for creating an IO.Socket object.
+</td></tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='IO.SocketProtocol.html'><b>SocketProtocol</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Protocol to use for a socket.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.StringWriter.html'><b>StringWriter</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Writer that stores the text in a string.
+ Use ToString() to get the result.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.ByteWriter.html'><b>ByteWriter</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Writer that stores a sequence of bytes.
+ Call toByteString() to get the result.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='IO.FileInfo.html'><b>FileInfo</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Used for the return value of IO.fileInfo().
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='IO.html#eof'><b>eof</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> End Of File
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span></small>&nbsp;</td><td class='nowrap'><A href='IO.html#stdin'><b>stdin</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Standard input.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span></small>&nbsp;</td><td class='nowrap'><A href='IO.html#stdout'><b>stdout</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Standard output.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span></small>&nbsp;</td><td class='nowrap'><A href='IO.html#stderr'><b>stderr</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Standard error output.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='IO.html#readAllBytes'><b>readAllBytes</b></a>(<small>reader</small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read all bytes from <b>reader</b> and return a byteString with them.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#readAllChars'><b>readAllChars</b></a>(<small>reader</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read all chars from <b>reader</b> and return a string with them.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Methods for creating an IO.File object.
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#fileReader'><b>fileReader</b></a>(<small>fileName</small>) <small><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Opens file <b>fileName</b> for reading.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#fileWriter'><b>fileWriter</b></a>(<small>fileName, truncate</small>) <small><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Opens file <b>fileName</b> for writing.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#clientSocket'><b>clientSocket</b></a>(<small>server, port, protocol</small>) <small><span class='type'><A class='typehref' href='IO.Socket.html'>IO.Socket</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Open a client socket to <b>port</b> on <b>server</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Methods for reading and writing stdin and stdout
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#readByte'><b>readByte</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads and returns one byte from stdin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#readChar'><b>readChar</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads and returns one UTF-8 character from stdin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#readFile'><b>readFile</b></a>(<small>fileName</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the contents file <b>fileName</b> and returns it as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> as "TRUE" or "FALSE" to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> as "FAIL" or "OK" to stdout and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#write'><b>write</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> depending on its actual type to stdout.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> to stdout and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> to stdout and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>nr</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>nr</b> to stdout and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>nr</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>nr</b> to stdout and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>nr</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>nr</b> to stdout and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> to stdout as "FALSE" or "TRUE" and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> to stdout as "FAIL" or "OK" and appends a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> to stdout depending on its actual type.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#print'><b>print</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes a newline to stdout.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#format'><b>format</b></a>(<small>fmt, arguments</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Formats the string and writes it to stdout with a newline.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#writeByte'><b>writeByte</b></a>(<small>byte</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes byte <b>byte</b> to stdout.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#writeChar'><b>writeChar</b></a>(<small>char</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes character <b>char</b> to stdout as an UTF-8 byte sequence.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#flush'><b>flush</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Flushes buffered output on stdout.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Methods for file properties
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#fileInfo'><b>fileInfo</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='IO.FileInfo.html'>IO.FileInfo</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return statistics for <b>name</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#isDirectory'><b>isDirectory</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE if <b>name</b> exists and is a directory.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#isReadable'><b>isReadable</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE if the file <b>name</b> exists and is readable.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#isWritable'><b>isWritable</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE if the file <b>name</b> exists and is writable.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#isExecutable'><b>isExecutable</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE if the file <b>name</b> exists and is executable.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Operations involving directories.
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#chdir'><b>chdir</b></a>(<small>dirName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Change the current directory to <b>dirName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#getdir'><b>getdir</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the current directory.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#mkdir'><b>mkdir</b></a>(<small>dirName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create directory <b>dirName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#rmdir'><b>rmdir</b></a>(<small>dirName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Delete directory <b>dirName</b>.  Only works when it is empty.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#dirList'><b>dirList</b></a>(<small>dirName</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns a list with all entries of directory <b>dirName</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Operations on files
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#delete'><b>delete</b></a>(<small>fileName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Delete file <b>fileName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#rename'><b>rename</b></a>(<small>fromName, toName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Rename file <b>fromName</b> to <b>toName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#move'><b>move</b></a>(<small>fromName, toName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Move file <b>fromName</b> to <b>toName</b> by making a copy and deleting
+ <b>fromName</b>.
+ Not implemented yet.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#copy'><b>copy</b></a>(<small>fromName, toName</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Copy file <b>from</b> to <b>to</b>.
+ Not implemented yet.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#equalFiles'><b>equalFiles</b></a>(<small>name1, name2</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Compare two files and return TRUE if both exist, can be read and contain
+ the same bytes.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3> Operations on file names and paths.
+</td></tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#findExe'><b>findExe</b></a>(<small>exeName</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Finds <b>exeName</b> in $PATH and returns the actual location.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#findExeInDirList'><b>findExeInDirList</b></a>(<small>exeName, dirs</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Searches for <b>exeName</b> in each directory in <b>dirs</b> and returns the
+ first one that exists and is executable.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#modifyExeName'><b>modifyExeName</b></a>(<small>exeName, newName</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Given an executable name returns a different executable name in the same
+ directory.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#concatPath'><b>concatPath</b></a>(<small>first, second</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns <b>first</b> and <b>second</b> concatenated as path parts.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#fullPath'><b>fullPath</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the full path of <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#resolve'><b>resolve</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns <b>fname</b> with all symbolic links resolved.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#tailIndex'><b>tailIndex</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns index of last path component in <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#tail'><b>tail</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the last path component in <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#directory'><b>directory</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the directory name of <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#tailSepIndex'><b>tailSepIndex</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns index of last path component of <b>fname</b>, including separator(s)
+ before it that are not part of the head.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#pastHeadIndex'><b>pastHeadIndex</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns index of first char after leading "c:/", "/", etc.
+ Returns 0 when no head found.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#isPathSep'><b>isPathSep</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE if <b>c</b> is a path separator.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.html#nextPartIndex'><b>nextPartIndex</b></a>(<small>fname, idx</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the index of the next path component, after the next separator.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='eof'><b>eof</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> End Of File
+</p>
+<p class='ptext'> Returned by readByte() and readChar() when there is no more to read.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span>&nbsp;<A name='stderr'><b>stderr</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Standard error output.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span>&nbsp;<A name='stdin'><b>stdin</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Standard input.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span>&nbsp;<A name='stdout'><b>stdout</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Standard output.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='chdir'><b>chdir</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> dirName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Change the current directory to <b>dirName</b>.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='clientSocket'><b>clientSocket</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> server, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> port, <span class='type'><A class='typehref' href='IO.SocketProtocol.html'>IO.SocketProtocol</A></span> protocol) <span class='type'><A class='typehref' href='IO.Socket.html'>IO.Socket</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Open a client socket to <b>port</b> on <b>server</b>.
+</p>
+<p class='ptext'> Returns NIL if the socket cannot be opened.
+ Error messages are written to stderr.
+ TODO: Add a similar method that returns an error message.
+<p class='ptext'> <b>protocol</b> specifies the protocol used.  The default is TCP.
+<p class='ptext'> Example:
+<pre class='example'> IO.Socket socket = IO.clientSocket("freedb.org", 8880)
+ IF socket == NIL
+   THROW "can't open socket"
+ }
+ IO.print(socket.readLine())
+ socket.print("cddb hello bram zimbu.org Zimbu 0.1")
+ IO.print(socket.readLine())
+ socket.close()
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='concatPath'><b>concatPath</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> first, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> second) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns <b>first</b> and <b>second</b> concatenated as path parts.
+</p>
+<p class='ptext'> Inserts a path separator when <b>first</b> doesn't end in one and <b>second</b>
+ doesn't start with one.
+ When <b>first</b> ends in a path separator and <b>second</b> starts with one only
+ one of these will remain.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='copy'><b>copy</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fromName, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> toName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Copy file <b>from</b> to <b>to</b>.
+ Not implemented yet.
+</p>
+<p class='ptext'> Return FAIL or OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='delete'><b>delete</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fileName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Delete file <b>fileName</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='dirList'><b>dirList</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> dirName) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns a list with all entries of directory <b>dirName</b>.
+</p>
+<p class='ptext'> When <b>dirName</b> is empty the current directory "." is listed.
+<p class='ptext'> The entries "." and ".." are not included.  Other entries starting with
+ "." are included.
+<p class='ptext'> Returns NIL if <b>dirName</b> could not be opened.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='directory'><b>directory</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the directory name of <b>fname</b>.
+</p>
+<p class='ptext'> E.g.: for "dir/foo" returns "dir".
+ Returns an empty string when no "/" found.
+<p class='ptext'> On MS-Windows checks for '\' as well as '/'.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='equalFiles'><b>equalFiles</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name1, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name2) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Compare two files and return TRUE if both exist, can be read and contain
+ the same bytes.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='fileInfo'><b>fileInfo</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='IO.FileInfo.html'>IO.FileInfo</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return statistics for <b>name</b>.
+</p>
+<p class='ptext'> When <b>name</b> cannot be inspected (doesn't exist or no permissions)
+ the FileInfo.status field is FAIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='fileReader'><b>fileReader</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fileName) <span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Opens file <b>fileName</b> for reading.
+</p>
+<p class='ptext'> Returns NIL when the file could not be opened.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='fileWriter'><b>fileWriter</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fileName, <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> truncate) <span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Opens file <b>fileName</b> for writing.
+</p>
+<p class='ptext'> Returns NIL when the file could not be opened.
+<p class='ptext'> If the file already exists it is truncated, unless <b>truncate</b> is FALSE.
+ If the file does not exist it is created with default permissions.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='findExe'><b>findExe</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> exeName) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Finds <b>exeName</b> in $PATH and returns the actual location.
+</p>
+<p class='ptext'> When <b>exeName</b> is an absolute path, relative to the current directory or
+ can't be found in $PATH it is returned as-is.
+<p class='ptext'> Resolves symbolic links before returning the result.
+<p class='ptext'> On MS-Windows backslashes are replaced with forward slashes and ".exe" is
+ appened when appropriate.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='findExeInDirList'><b>findExeInDirList</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> exeName, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span> dirs) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Searches for <b>exeName</b> in each directory in <b>dirs</b> and returns the
+ first one that exists and is executable.
+</p>
+<p class='ptext'> Does not resolve symbolic links.
+ Returns NIL when not found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='flush'><b>flush</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Flushes buffered output on stdout.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='format'><b>format</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fmt, <span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> arguments) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Formats the string and writes it to stdout with a newline.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='fullPath'><b>fullPath</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the full path of <b>fname</b>.
+</p>
+<p class='ptext'> <b>fname</b> can be a directory or a file name.  It does not have to exist,
+ but its directory must exist.
+ Returns NIL when failed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getdir'><b>getdir</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the current directory.
+</p>
+<p class='ptext'> In the unlikely case that this fails NIL is returned.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isDirectory'><b>isDirectory</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if <b>name</b> exists and is a directory.
+</p>
+<p class='ptext'> This is equal to using IO.fileInfo() and checking for an OK status and
+ the IO.FileInfo.isDir flag.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isExecutable'><b>isExecutable</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if the file <b>name</b> exists and is executable.
+</p>
+<p class='ptext'> This uses the permissions for the current user.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isPathSep'><b>isPathSep</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if <b>c</b> is a path separator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isReadable'><b>isReadable</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if the file <b>name</b> exists and is readable.
+</p>
+<p class='ptext'> This uses the permissions for the current user.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='isWritable'><b>isWritable</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if the file <b>name</b> exists and is writable.
+</p>
+<p class='ptext'> This uses the permissions for the current user.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='mkdir'><b>mkdir</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> dirName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create directory <b>dirName</b>.
+</p>
+<p class='ptext'> Does not create any directory above <b>dirName</b>.
+ Returns FAIL or OK.
+<p class='ptext'></p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='modifyExeName'><b>modifyExeName</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> exeName, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> newName) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Given an executable name returns a different executable name in the same
+ directory.
+</p>
+<p class='ptext'> This is useful to avoid different behavior on Unix and MS-Windows.
+<p class='ptext'> <b>exeName</b> is the full path or relative path of an existing executable.
+ Including ".exe" or ".com" for MS-Windows.
+<p class='ptext'> <b>newName</b> is the base of the new name, without a path or ".exe".
+<p class='ptext'> Example:
+<pre class='example'> IO.shell(IO.modifyExeName(ARG.exeName, "zimbu2c"))
+</pre>
+ For Unix changes "path/zimbu" into "path/zimbu2c".
+ For MS-Windows changes "path/zimbu.exe" into "path/zimbu2c.exe"
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='move'><b>move</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fromName, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> toName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Move file <b>fromName</b> to <b>toName</b> by making a copy and deleting
+ <b>fromName</b>.
+ Not implemented yet.
+</p>
+<p class='ptext'> This also works over file systems.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='nextPartIndex'><b>nextPartIndex</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the index of the next path component, after the next separator.
+</p>
+<p class='ptext'> Returns -1 when there is no further separator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='pastHeadIndex'><b>pastHeadIndex</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns index of first char after leading "c:/", "/", etc.
+ Returns 0 when no head found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> to stdout and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> to stdout and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(text)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> nr) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>nr</b> to stdout and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(nr)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span> nr) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>nr</b> to stdout and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(nr)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span> nr) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>nr</b> to stdout and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(nr)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> flag) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>flag</b> to stdout as "FALSE" or "TRUE" and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(flag)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span> ok) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>ok</b> to stdout as "FAIL" or "OK" and appends a newline.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(ok)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>(<span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> arg) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>arg</b> to stdout depending on its actual type.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print(arg)
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='print'><b>print</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes a newline to stdout.
+</p>
+<p class='ptext'> Returns FAIL or OK.
+ Does the same as IO.stdout.print()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='readAllBytes'><b>readAllBytes</b></A>(<span class='type'><A class='typehref' href='IO.I_ByteReader.html'>IO.I_ByteReader</A></span> reader) <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read all bytes from <b>reader</b> and return a byteString with them.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='readAllChars'><b>readAllChars</b></A>(<span class='type'><A class='typehref' href='IO.I_CharReader.html'>IO.I_CharReader</A></span> reader) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read all chars from <b>reader</b> and return a string with them.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='readByte'><b>readByte</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads and returns one byte from stdin.
+</p>
+<p class='ptext'> When there is nothing to read returns IO.eof.
+<p class='ptext'> Equal to IO.stdin.readByte().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='readChar'><b>readChar</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads and returns one UTF-8 character from stdin.
+</p>
+<p class='ptext'> When there is nothing to read returns IO.eof.
+<p class='ptext'> Throws E.IllegalByte when encountering an invalid UTF-8 byte.
+<p class='ptext'> Equal to IO.stdin.readChar().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='readFile'><b>readFile</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fileName) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the contents file <b>fileName</b> and returns it as a string.
+</p>
+<p class='ptext'> Throws an exception when the file can't be opened or read.
+ Do not use this method to check if a file exists and can be read, use
+ isReadable() instead.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='rename'><b>rename</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fromName, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> toName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Rename file <b>fromName</b> to <b>toName</b>.
+</p>
+<p class='ptext'> This only works if both are on the same file system.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='resolve'><b>resolve</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns <b>fname</b> with all symbolic links resolved.
+</p>
+<p class='ptext'> When anything fails returns <b>fname</b> as-is.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='rmdir'><b>rmdir</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> dirName) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Delete directory <b>dirName</b>.  Only works when it is empty.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='tail'><b>tail</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the last path component in <b>fname</b>.
+</p>
+<p class='ptext'> E.g.: for "dir/foo" returns "foo".
+ Returns <b>fname</b> when no "/" found.
+ Returns "" when <b>fname</b> ends in "/".
+<p class='ptext'> On MS-Windows checks for '\' as well as '/'.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='tailIndex'><b>tailIndex</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns index of last path component in <b>fname</b>.
+</p>
+<p class='ptext'> E.g.: for "dir/foo" returns 4.
+ Returns 0 when no "/" is found.
+ Returns <b>fname.Size()</b> when <b>fname</b> ends in "/".
+<p class='ptext'> On MS-Windows checks for '\' as well as '/'.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='tailSepIndex'><b>tailSepIndex</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns index of last path component of <b>fname</b>, including separator(s)
+ before it that are not part of the head.
+</p>
+<p class='ptext'> E.g.: for "dir/foo" returns 3.  For "/foo" returns 1.
+ Returns 0 when no "/" found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> number) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>number</b> to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='NAT.nat.html'>nat</A></span> number) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>number</b> to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='FLOAT.float.html'>float</A></span> number) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>number</b> to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> flag) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>flag</b> as "TRUE" or "FALSE" to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span> ok) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>ok</b> as "FAIL" or "OK" to stdout and returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='write'><b>write</b></A>(<span class='type'><A class='typehref' href='DYN.dyn.html'>dyn</A></span> arg) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>arg</b> depending on its actual type to stdout.
+ Returns FAIL or OK.
+</p>
+<p class='ptext'> Does the same as IO.stdout.write()
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='writeByte'><b>writeByte</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> byte) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes byte <b>byte</b> to stdout.
+</p>
+<p class='ptext'> Does the same as IO.stdout.writeByte()
+ Only the lower 8 bits of <b>byte</b> are used, the rest is ignored.
+ Returns FAIL when the byte could not be written.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='writeChar'><b>writeChar</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> char) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes character <b>char</b> to stdout as an UTF-8 byte sequence.
+</p>
+<p class='ptext'> Does the same as IO.stdout.writeChar()
+ Throws E.OutOfRange when <b>char</b> is &lt; 0 or &gt; 0x10ffff.
+ Returns FAIL when the byte could not be written.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

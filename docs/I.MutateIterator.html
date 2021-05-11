@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>I.MutateIterator interface - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='I.html'>up:&nbsp;I</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>INTERFACE</span> I.MutateIterator&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Interface for an iterator that can modify the container.
+</p>
+<p class='ptext'> Sketch of how this is used:
+<pre class='example'>  I.MutateIterator&lt;ItemType&gt; it = foo.Iterator()
+  FOR item IN it
+    IF item.bad()
+      IF it.removeSupported()
+        it.remove()
+      ELSE
+        IO.print("Bad item: " .. item.ToString())
+      }
+    }
+  }
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$setSupported'><b>$setSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when $set() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$set'><b>$set</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Replaces the item that was previously obtained with $next()
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$removeSupported'><b>$removeSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when $remove() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$remove'><b>$remove</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the item that was previously obtained with $next()
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$addSupported'><b>$addSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when $add() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$add'><b>$add</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Adds <b>item</b> after the one that was previously obtained with $next() or
+ $previous().
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$insertSupported'><b>$insertSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when $insert() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.MutateIterator.html#$insert'><b>$insert</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Inserts <b>item</b> before the one that was previously obtained with $next()
+ or $previous()
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='I.Iterator.html'>I.Iterator</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$hasNext'><b>$hasNext</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when there is another item to fetch.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$next'><b>$next</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the next item and advances.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$peekSupported'><b>$peekSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when peek() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$peek'><b>$peek</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the next item without advancing.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table>Known subclasses:<br><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<div><A href='I.BidiMutateIterator.html'>I.BidiMutateIterator</A></div></td></tr></table>
+&nbsp;<br></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Adds <b>item</b> after the one that was previously obtained with $next() or
+ $previous().
+</p>
+<p class='ptext'> This can be used after calling $remove, $set() and $insert() and can be
+ called multiple times.  However, it may fail in some cases.
+<p class='ptext'> When calling $add(one) and then $add(two) the two item will be placed
+ after the one item.
+<p class='ptext'> This is an optional method, when adding is not possible it throws an
+ E.Unsupported exception.
+<p class='ptext'> When adding is not possible FAIL is returned.  Normally the
+ implementation always works when it is implemented, but in rare cases
+ it may fail to add only some items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addSupported'><b>$addSupported</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when $add() is supported.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Inserts <b>item</b> before the one that was previously obtained with $next()
+ or $previous()
+</p>
+<p class='ptext'> This can be used after calling $remove or $set() and can be called
+ multiple times.  However, it may fail in some cases.
+<p class='ptext'> When calling $insert(one) and then $insert(two) the two item will be
+ placed after the one item.
+<p class='ptext'> This can called before $next() and will insert <b>item</b> before the start
+ of the box.
+<p class='ptext'> This is an optional method, when inserting is not possible it throws an
+ E.Unsupported exception.
+<p class='ptext'> When inserting is not possible FAIL is returned.  Normally the
+ implementation always works when it is implemented, but in rare cases
+ it may fail to insert only some items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insertSupported'><b>$insertSupported</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when $insert() is supported.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the item that was previously obtained with $next()
+</p>
+<p class='ptext'> This can be used only once after calling $next().
+ This can not be used after $set().
+<p class='ptext'> This is an optional method, when removing is not possible it throws an
+ E.Unsupported exception.
+<p class='ptext'> When removing is not possible FAIL is returned.  Normally the
+ implementation always works when it is implemented, but in rare cases
+ it may fail to remove only some items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$removeSupported'><b>$removeSupported</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when $remove() is supported.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Replaces the item that was previously obtained with $next()
+</p>
+<p class='ptext'> This can be used only once after calling $next().
+ This can not be called after $remove() or $add().
+<p class='ptext'> This is an optional method, when setting is not possible it throws an
+ E.Unsupported exception.
+<p class='ptext'> When setting is not possible FAIL is returned.  Normally the
+ implementation always works when it is implemented, but in rare cases
+ it may fail to set only some items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setSupported'><b>$setSupported</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when $set() is supported.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2013 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

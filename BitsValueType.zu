@@ -1,0 +1,37 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# BitsValueType class.
+#
+# A Type used to specify a variable for a BITS.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "BitsType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "ValueType.zu"
+
+CLASS BitsValueType EXTENDS ValueType @items=public
+  BitsType             $bitsType
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    BitsValueType ret = NEW($ttype, $name)
+    $copyBitsValueValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyBitsValueValues(BitsValueType ret) @default
+    $copyValueValues(ret)
+    ret.bitsType = $bitsType
+  }
+
+  FUNC $getTypeName(SContext ctx) string @replace
+    RETURN $bitsType.pName
+  }
+}

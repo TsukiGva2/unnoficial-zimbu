@@ -1,0 +1,1124 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Scope class.
+#
+# A Scope is used to keep track of the nested tree of scopes.
+# This is extended for specific scopes, such as a class or method.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Builtin.zu"
+IMPORT "ClassScope.zu"
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "ForLoopInfo.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodScope.zu"
+IMPORT "MethodType.zu"
+IMPORT "PieceScope.zu"
+IMPORT "Output.zu"
+IMPORT "Pos.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiFile.zu"
+
+IMPORT "lib/TModule.zu"
+
+
+CLASS Scope @abstract @items=public
+  Scope     $outer           # Scope that contains this one, NIL for toplevel
+  int       $depth           # depth used for indenting
+
+  string    $importIndent    # indent used for import messages
+
+  string    $scopeName       # used for naming nested items
+  string    $name            # name of the scope: module name, class name,
+                             # function name.
+
+  # Symbols declared in this scope. For a class the items defined in the
+  # SHARED section and classes, enums, etc. defined anywhere in the class.
+  # Can be NIL
+  multiDict<string, Declaration> $declDict
+
+  Declaration $outerDecl     # Declaration that contains this scope.
+  set<Declaration> $usedDecl # Declared symbols used by this scope.
+
+  bool      $needPass        # When TRUE: Something inside this scope requires
+                             # making another pass over it.  E.g. a templated
+                             # class for which a new template was encountered.
+  set<Scope> $scopeDepency   # Scopes where $needPass needs to be set when
+                             # adding declarations in this scope.
+
+  Zui.Attributes $zuiAttr    # attributes, e.g. visibility
+
+  Stype     $scopeType       # scope type, set for IF, FOR, SWITCH, etc.
+  MethodScope $methodScope   # Scope of the method, NIL when not in a method.
+
+  # The statements in this scope.
+  list<Zui.Statement> $statements
+
+  # The following are inherited from outer scopes, when appropriate.
+  int       $pass            # pass number: 1, 2, 3, etc.
+
+  ClassType $classType       # class we are currently inside, need to use
+  string    $thisName        # what to use for THIS; NIL if THIS cannot be used.
+
+  # Flags that are copied from outer to inner scope.
+  BITS InsideBits
+    bool      $insideNew       # inside NEW function
+    bool      $insideInit      # inside $Init method
+    bool      $insideFinish    # inside $Finish method
+    bool      $insideShared    # inside SHARED section
+    bool      $insideTry       # inside TRY statement
+    bool      $isParentMethod  # defining method inherited from parent.
+  }
+  InsideBits $flags
+
+  Type      $returnType      # type for RETURN, NIL in a PROC
+  Type      $switchType      # used for CASE inside SWITCH
+  ForLoopInfo $forLoopInfo   # used in a FOR loop
+
+  bool      $noBacktrace     # no backtracing requested here @backtrace=no
+  bool      $wantBacktrace   # backtracing wanted here or below
+  bool      $primitive       # inside a @primitive method
+  bool      $notOnExit       # inside a @notOnExit method
+
+  string    $retLabel        # Goto label name used by RETURN and loops.
+  bool      $needRetFlag     # Need a flag to indicate RETURN was used.
+  bool      $retFlagInTry    # Flag for $needRetFlag is set inside a TRY
+  bool      $hasEvar         # Written "e" variable declaration.
+
+  bool      $hasBreak        # BREAK used inside loop scope
+  bool      $hasContinue     # CONTINUE used inside loop scope
+
+  IO.StringWriter $afterStmtWriter   # collect text to be written after a
+                                     # statement.
+  IO.StringWriter $endOfScopeWriter  # collect text to be written at the end
+                                     # of the scope
+
+  NEW(Scope outer, list<Zui.Statement> statements) @default
+    IF outer != NIL
+      $fillFromOuterOnCreate(outer)
+    }
+    $statements = statements
+  }
+
+  # For using set<Scope>.
+  # Returns an empty string when the scope does not have a name.
+  FUNC $ToString() string
+    RETURN $scopeName ?: ""
+  }
+
+  # The type of scope, if not specified by subclassing.
+  ENUM Stype
+    unknown
+    libModule
+    libMethod
+    procDef
+    funcDef
+    newDef
+    shared
+    block
+    if
+    elseif
+    else
+    try
+    tryCatch
+    for
+    while
+    do
+    switch
+  }
+
+  # Return TRUE if |$scopeType| is a method.
+  FUNC $isMethodType() bool
+    RETURN $scopeType == Stype.libMethod
+        || $scopeType == Stype.procDef
+        || $scopeType == Stype.funcDef
+        || $scopeType == Stype.newDef
+  }
+
+  # Set values for this scope from containing scope |outer| when creating the
+  # scope.
+  # TODO: remove class-specific things
+  PROC $fillFromOuterOnCreate(Scope outer)
+    $outer = outer
+    $depth = outer.depth + 1
+    $flags = outer.flags
+
+    $methodScope = outer.methodScope
+    $fillFromOuter(outer)
+    # When the new scope is used the outer scope must also be marked as
+    # used.  E.g. when using a method in a class that class is used.
+    $addUsedItem(outer.outerDecl)
+  }
+
+  # Set values for this scope from containing scope |outer| when making
+  # another pass over the scope.
+  PROC $fillFromOuter(Scope outer)
+    IF outer != NIL
+      $returnType = outer.returnType
+      $pass = outer.pass
+      $classType = outer.classType
+      $thisName = outer.thisName  # value changes in the write pass
+      IF outer.noBacktrace
+        $noBacktrace = TRUE
+      }
+      IF outer.wantBacktrace
+        $wantBacktrace = TRUE
+      }
+      IF outer.primitive
+        $primitive = TRUE
+      }
+    }
+  }
+
+  # Return TRUE when in a class scope, not in SHARED section inside a class.
+  FUNC $isClassScope() bool
+    RETURN $classType != NIL && !$flags.insideShared
+  }
+
+  # Return TRUE when in a SHARED section inside a class.
+  FUNC $isSharedScope() bool
+    RETURN $flags.insideShared
+  }
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @abstract
+  }
+
+  # Return TRUE when in a PieceScope.
+  # TODO: should not be needed if THIS ISA PieceScope would work.
+  FUNC $isPieceScope() bool @default
+    RETURN FALSE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @abstract
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @abstract
+  }
+
+  # Can there be non-declaration statements in this Scope?
+  FUNC $hasStatements() bool @abstract
+  }
+
+  # Get the first statement or NIL if there are none.
+  FUNC $getFirstStatement() Zui.Statement
+    RETURN $statements != NIL && $statements.Size() > 0 ? $statements[0] : NIL
+  }
+
+  #= Return the name of this scope, preceded by the name of any outer scopes.
+  FUNC $fullName() string
+    string outerName
+    IF $outer != NIL
+      outerName = $outer.fullName()
+    }
+
+    IF outerName == NIL || outerName == ""
+      IF $name == NIL
+        RETURN ""  # Toplevel
+      }
+      RETURN $name
+    }
+    IF $name == NIL
+      RETURN outerName
+    }
+    RETURN outerName .. "." .. $name
+  }
+
+  # Return TRUE when inside a TRY statement.
+  FUNC $inTry() bool
+    RETURN $flags.insideTry
+  }
+
+  # When in the (nested) scope of a TRY return that scope.
+  # When |isBreak| is TRUE, quit searching when a FOR/WHILE/DO/SWITCH is found.
+  # When |isContinue| is TRUE, quit searching when a FOR/WHILE/DO is found.
+  # Otherwise return NIL.
+  FUNC $tryScope(bool isBreak, bool isContinue) Scope
+    IF !$flags.insideTry
+      RETURN NIL
+    }
+    IF $scopeType == Stype.try
+      RETURN THIS
+    }
+    IF $outer == NIL
+        || !$hasStatements()
+        || $isMethodType()
+        || ((isBreak || isContinue) && $isLoopScope())
+        || (isBreak && $scopeType == Stype.switch)
+      RETURN NIL
+    }
+    RETURN $outer.tryScope(isBreak, isContinue)
+  }
+
+  # Return TRUE if this is the scope of a loop.
+  FUNC $isLoopScope() bool
+    RETURN $scopeType == Stype.for
+        || $scopeType == Stype.while
+        || $scopeType == Stype.do
+  }
+
+  # Return TRUE if this is the scope of a CASE inside a SWITCH.
+  FUNC $isCaseScope() bool
+    RETURN $outer != NIL && $outer.scopeType == Stype.switch
+  }
+
+  # Return TRUE if |decl| is on the stack: declared in this scope or an outer
+  # scope, not going beyond a method scope.
+  # NOTE: this is different from "type %var"
+  FUNC $isNoAlloc(Declaration decl) bool
+    IF $hasStatements()
+      IF $declDict != NIL
+        list<Declaration> declList = $declDict.get(decl.name, NIL)
+        IF declList != NIL
+          FOR d IN declList
+            IF decl IS d
+              RETURN TRUE
+            }
+          }
+        }
+      }
+      IF $outer != NIL
+        RETURN $outer.isNoAlloc(decl)
+      }
+    }
+    RETURN FALSE
+  }
+
+  # Return a new Z.Pos object for a Zui.Position object.
+  FUNC $zcPos(Zui.Position pos) Z.Pos
+    ZimbuFile top = $topZimbuFile()
+    IF top == NIL
+      RETURN NEW("unknown", pos.getLine(), pos.getColumn())
+    }
+    RETURN NEW(top.filename, pos.getLine(), pos.getColumn())
+  }
+
+  # Return a new Pos object for a Zui.Position object.
+  # This gets the filename from the top zimbu file.
+  FUNC $pos(Zui.Position pos) Pos
+    RETURN NEW($zcPos(pos))
+  }
+
+  # Return the FileScope.zimbuFile in this scope or the first outer scope
+  # where it is not NIL.
+  FUNC $topZimbuFile() ZimbuFile @default
+    IF $outer != NIL
+      RETURN $outer.topZimbuFile()
+    }
+    RETURN NIL
+  }
+
+  # If inside a method scope return the MethodScope.
+  # Otherwise return NIL.
+  FUNC $findMethodScope() MethodScope
+    Scope s = THIS
+    WHILE s != NIL
+      IF s ISA MethodScope
+        RETURN s
+      }
+      IF s ISA ClassScope
+        # Can define a class inside a method.
+        RETURN NIL
+      }
+      s = s.outer
+    }
+    RETURN NIL
+  }
+
+
+  # Return TRUE if this scope was used in an IMPORT.ZWT.
+  FUNC $usedAsZwt() bool
+    ZimbuFile topFile = $topZimbuFile()
+    IF topFile != NIL
+      RETURN topFile.usedAsZwt
+    }
+    RETURN FALSE
+  }
+
+  # Return TRUE if this scope was used in an IMPORT.
+  FUNC $usedAsZimbu() bool
+    ZimbuFile topFile = $topZimbuFile()
+    IF topFile != NIL
+      RETURN topFile.usedAsZimbu
+    }
+    RETURN FALSE
+  }
+
+  # Set the $usedDecl set and return the previous set.
+  # To be used around a section where new dependencies might be added.
+  FUNC $swapUsedDecl(set<Declaration> other) set<Declaration>
+    VAR ret = $usedDecl
+    $usedDecl = other
+    RETURN ret
+  }
+
+  # Counterpart of $resetUsedDecl().
+  FUNC $restoreUsedDecl(set<Declaration> other) set<Declaration>
+    # Assume current $usedDecl is smaller than the previous value in |other|,
+    # therefore merge $usedDecl into |other|.
+    # TODO: use set.merge()
+    VAR prev = $usedDecl
+    $usedDecl = other
+    IF prev != NIL
+      FOR d IN prev.keys()
+        $addUsedItem(d)
+      }
+    }
+    RETURN prev
+  }
+
+  # Add |decl| to the Declarations being used in this scope. When this scope
+  # is used then the |decl| is also used.
+  PROC $addUsedItem(Declaration decl)
+    IF decl != NIL
+      IF $usedDecl == NIL
+        $usedDecl = NEW()
+      }
+      $usedDecl.set(decl)
+    }
+  }
+
+  # Add  the Declarations used in |usedDecl| to the Declaration used in this
+  # scope.
+  PROC $addUsedItems(set<Declaration> usedDecl)
+    IF usedDecl != NIL
+      FOR decl IN usedDecl.keys()
+        $addUsedItem(decl)
+      }
+    }
+  }
+
+  # Add  the Declarations used in |scope| to the Declaration used in this
+  # scope.  To be used for a nested scope that is always generated when this
+  # scope is generated.
+  PROC $addUsedScope(Scope scope)
+    $addUsedItems(scope.usedDecl)
+  }
+
+  # Return TRUE if |scope| is the current scope or an outer scope.
+  FUNC $insideScope(Scope scope) bool
+    IF scope IS THIS
+      RETURN TRUE
+    }
+    IF $outer != NIL
+      RETURN $outer.insideScope(scope)
+    }
+    RETURN FALSE
+  }
+
+  # Set the $needPass flag in this scope and outer scopes.
+  PROC $setNeedPass(SContext ctx) @default
+    $needPass = TRUE
+    IF $outer != NIL
+      $outer.setNeedPass(ctx)
+    }
+  }
+
+  # Add a scope where $needPass should be set when adding items to this scope.
+  PROC $addScopeDependency(Scope scope)
+    IF $scopeDepency == NIL
+      $scopeDepency = NEW()
+    }
+    $scopeDepency.set(scope)
+  }
+
+  # Set $needPass flag in dependent scopes.
+  PROC $setNeedPassInDependencies(SContext ctx)
+    IF $scopeDepency != NIL
+      FOR scope IN $scopeDepency.keys()
+        scope.setNeedPass(ctx)
+      }
+    }
+  }
+
+  # If |id| is a predefined type name, return that type.
+  # Otherwise find |id| in the symbols of this scope and outer scopes and
+  # return its type.
+  # If not find return Type.Enum.unknown
+  FUNC $getAType(Zui.Id id, SymUse symUse) Type.Enum
+    Type type = Type.typeFromName(id.getName())
+    IF type != NIL
+      RETURN type.ttype
+    }
+    RETURN $getDeclarationType(id, symUse)
+  }
+
+  # Find |is| in the symbols of this scope and outer scopes and return its
+  # type.
+  FUNC $getDeclarationType(Zui.Id id, SymUse symUse) Type.Enum
+    Declaration decl = $getDecl(id, symUse)
+    IF decl != NIL && decl.type != NIL
+      RETURN decl.type.getTtype()
+    }
+    RETURN Type.Enum.unknown
+  }
+
+  # Append |decl| to the list of members.  Not to be used for object members.
+  # When a symbol with the same name already exists it is replaced.
+  PROC $addMember(Declaration decl)
+    decl.scopeBase = THIS
+    IF $declDict == NIL
+      $declDict = NEW()
+    ELSEIF $declDict.has(decl.name)
+      $declDict.removeAll(decl.name)
+    }
+
+    $declDict.add(decl.name, decl)
+  }
+
+  # Append |decl| to the list of members without side effects.  Not to be used
+  # for object members.
+  PROC $addMemberPlain(Declaration decl)
+    IF $declDict == NIL
+      $declDict = NEW()
+    }
+    $declDict.add(decl.name, decl)
+  }
+
+  # Append |decl| to the list of members.  Like addMember() but doesn't remove
+  # an existing symbol.
+  PROC $addMethod(Declaration.C decl)
+    decl.scopeBase = THIS
+    IF $declDict == NIL
+      $declDict = NEW()
+    }
+    $declDict.add(decl.name, decl)
+  }
+
+  # Remove member |decl|.
+  PROC $removeMember(Declaration decl)
+    IF $declDict != NIL && $declDict.has(decl.name)
+      list<Declaration> l = $declDict.get(decl.name)
+      FOR i IN 0 UNTIL l.Size()
+        IF l[i] IS decl
+          l.remove(i)
+          IF l.Size() == 0
+            $declDict.removeAll(decl.name)
+          }
+          BREAK
+        }
+        ++i
+      }
+    }
+  }
+
+  # Add a Declaration to the head of the list (they will be in reverse order).
+  # Unless the Declaration is already there: in the second round for scopes
+  # where forward declarations are possible.
+  # Return the new Declaration.
+  FUNC $addDecl(string name, Type type, Zui.Declaration zuiDecl,
+                                         bool dupOk, SContext ctx) Declaration
+    Declaration.C newDecl
+    bool        doAdd = TRUE
+
+    Declaration oldDecl
+    IF !dupOk
+      SymUse symUse = NEW(zuiDecl.getPos(), ctx)
+      symUse.adding = TRUE
+      oldDecl = $getDecl(name, zuiDecl.getDollar(), symUse)
+    }
+    IF $pass > 1 && $isForwardDeclare()
+      # In the second round find the symbol that we already added in the
+      # first round.  However, the type may be different now, so set the
+      # values anyway.
+      # And when generating a templated class, we only find it in a later
+      # round, so crete the symbol when needed.
+      IF oldDecl != NIL
+        newDecl = oldDecl
+        doAdd = FALSE
+      }
+    ELSE
+      IF oldDecl != NIL
+        ctx.error("Duplicate Symbol: " .. name, zuiDecl)
+        IF oldDecl.zuiDecl != NIL && oldDecl.zuiDecl.hasPos()
+          ctx.error("Previously defined here", oldDecl.zuiDecl)
+        }
+      }
+    }
+
+    # We keep as much of an already defined Declaration as we can, such
+    # as members and attributes.  That matters for forward declarations.
+    # Do update information that may have been updated since the previous
+    # pass.
+    IF newDecl == NIL
+      VAR declExt = ZuiDeclarationExt.get(zuiDecl)
+      IF declExt.decl == NIL
+        newDecl = NEW(name)
+      ELSE
+        newDecl = declExt.decl
+      }
+      newDecl.type = type
+    ELSE
+      newDecl.name = name
+      newDecl.type = type  # update the type
+    }
+    newDecl.scopeBase = THIS
+    newDecl.zuiDecl = zuiDecl
+    newDecl.zuiPos = zuiDecl.getPos()
+    IF zuiDecl.hasType() && zuiDecl.getType().hasAttr()
+      newDecl.zuiAttr = zuiDecl.getType().getAttr()
+    }
+
+    IF doAdd
+      # We rely on the caller to check for the proper dollar attribute.
+      IF zuiDecl.getDollar()
+        $addObjectDecl(name, zuiDecl, newDecl)
+      ELSE
+        IF $declDict != NIL && $declDict.has(name)
+          # If a symbol was already added for this declaration, remove it.
+          list<Declaration> l = $declDict.get(name)
+          FOR i IN 0 UNTIL l.Size()
+            IF l[i].zuiDecl IS zuiDecl
+              l.remove(i)
+              BREAK
+            }
+          }
+        }
+        # The last added symbol must be first in the list for generateMethod()
+        # to work for overloaded methods.
+        IF $declDict == NIL
+          $declDict = NEW()
+        }
+        $declDict.insert(name, newDecl)
+      }
+    }
+
+    RETURN newDecl
+  }
+
+  # Add a Declaration for a type (class, enum, etc.) to the head of the list
+  # (they will be in reverse order).
+  # When a Declaration with the same name already exists that is an error,
+  # unless |dupOk| is TRUE.
+  PROC $addTypeDecl(Declaration typeDecl, Zui.Declaration zuiDecl,
+                                                     bool dupOk, SContext ctx)
+    IF !dupOk
+      SymUse symUse = NEW(zuiDecl.getPos(), ctx)
+      symUse.adding = TRUE
+      Declaration oldDecl =
+                          $getDecl(typeDecl.name, zuiDecl.getDollar(), symUse)
+      IF oldDecl != NIL
+        ctx.error("Duplicate Symbol: " .. typeDecl.name, zuiDecl)
+        IF oldDecl.zuiDecl != NIL && oldDecl.zuiDecl.hasPos()
+          ctx.error("Previously defined here", oldDecl.zuiDecl)
+        }
+        RETURN
+      }
+    }
+
+    typeDecl.type = typeDecl
+
+    typeDecl.scopeBase = THIS
+    typeDecl.zuiDecl = zuiDecl
+    typeDecl.zuiPos = zuiDecl.getPos()
+    IF zuiDecl.hasType() && zuiDecl.getType().hasAttr()
+      typeDecl.zuiAttr = zuiDecl.getType().getAttr()
+    }
+
+    # We rely on the caller to check for the proper dollar attribute.
+    IF zuiDecl.getDollar()
+      $addObjectDecl(typeDecl.name, zuiDecl, typeDecl)
+    ELSE
+      # The last added symbol must be first in the list for generateMethod()
+      # to work for overloaded methods.
+      IF $declDict == NIL
+        $declDict = NEW()
+      }
+      $declDict.insert(typeDecl.name, typeDecl)
+    }
+  }
+
+  # Add a "Ready" or "EarlyReady" symbol to this scope.
+  # |decl| is the Declaration of the class or module.
+  PROC $addReadySym(string name, Declaration decl)
+    Declaration.C ready
+    bool isEarly = name != "Ready"
+    IF $declDict == NIL
+      $declDict = NEW()
+    ELSE
+      ready = $getDeclInt(name, FALSE, NIL)
+    }
+    bool doAdd
+    IF ready == NIL
+      ready = NEW(name)
+      ready.type = Type.NEW(Type.Enum.bool, "ready")
+      doAdd = TRUE
+    }
+
+    Declaration init = $getDeclInt(isEarly ? "EarlyInit" : "Init", FALSE, NIL)
+    ready.pName = (init == NIL ? decl.pName : init.pName)
+                                                  .. (isEarly ? "__e" : "__r")
+    IF doAdd
+      $declDict.add(name, ready)
+      # When the ready symbol is used the class or module is used.
+      ready.addDependsOn(decl)
+    }
+  }
+
+  # Find |name| in the declarations of this scope and outer scopes.
+  # Does not find object members.
+  # Do not give an error if symUse is NIL
+  FUNC $getDecl(string name, SymUse symUse) Declaration
+    RETURN $getDecl(name, FALSE, symUse)
+  }
+
+  # Find object member |name| in this scope and parent classes.
+  FUNC $getObjectDecl(string name, SymUse symUse) Declaration
+    RETURN $getDecl(name, TRUE, symUse)
+  }
+
+  # Find |id| in the declarations of this scope and outer scopes.
+  # Gives an error when not found.
+  FUNC $getDecl(Zui.Id id, SymUse symUse) Declaration
+    RETURN $getDecl(id.getName(), id.getDollar(), symUse)
+  }
+
+  # Find |decl| in the declarations of this scope and outer scopes.
+  # Gives an error when not found.
+  FUNC $getDecl(Zui.Declaration decl, SymUse symUse) Declaration
+    RETURN $getDecl(decl.getName(), decl.getDollar(), symUse)
+  }
+
+  # Idem, find an object member if |objectMember| is true, a non-object member
+  # otherwise.
+  # |symUse| is where the symbol is being used, for checking visibility.
+  FUNC $getDecl(string name, bool objectMember, SymUse symUse) Declaration
+    IF objectMember && $flags.insideShared
+      IF symUse != NIL
+        symUse.pos.error("Cannot use $member in SHARED section")
+      }
+      RETURN NIL
+    }
+
+    Declaration decl
+    IF !objectMember
+      # Search in predefined symbols.  Not for $member.
+      # This doesn't use symUse, they are always visible.
+      decl = Builtin.findPredefinedDecl(name)
+    }
+
+    IF decl == NIL
+      # Search in local and imported symbols.
+      decl = $getDeclInt(name, objectMember, symUse)
+    }
+    RETURN decl
+  }
+
+  # Find |name| in the current scope or parents.
+  # Do not give an error if symUse is NIL.
+  FUNC $getDeclInt(string name, bool objectMember, SymUse symUse) Declaration
+    IF objectMember && $classType == NIL
+      RETURN NIL
+    }
+
+    # Search in current scope.  For "$member" only if this is the class scope.
+    Declaration decl
+    IF objectMember
+      decl = Declaration.find($getObjectDeclDict(), name)
+    ELSE
+      decl = Declaration.find($declDict, name)
+    }
+    IF decl != NIL && symUse != NIL
+                       && !symUse.adding && !symUse.visibleInScope(decl, THIS)
+      # Can't access private item in another scope.
+      IF symUse.doError
+        symUse.pos.error(name .. " is not visible in this scope")
+        Declaration.reportError("Defined here", decl, symUse.ctx)
+      ELSE
+        decl = NIL
+      }
+    }
+
+    # Search in scope of parent class.
+    IF decl == NIL && $isTopClassScope()
+      ClassType pc = $classType.<ClassType>.parent
+      IF pc != NIL
+        IF objectMember
+          # Note: type is not passed here, always finds any type.
+          decl = pc.findObjectMember(name, symUse, searchParent, TRUE)
+        ELSE
+          decl = pc.findMember(name, symUse)
+        }
+      }
+    }
+
+    # Search in imported symbols.  Not for $member.
+    IF decl == NIL && !objectMember
+      decl = $getDeclInImport(name, symUse)
+    }
+
+    # Search in outer scopes.  For $member don't go above class level.
+    IF decl == NIL && $outer != NIL && (!objectMember || !$isTopClassScope()
+                                       || ($isPieceScope() && !symUse.adding))
+      RETURN $outer.getDeclInt(name, objectMember, symUse)
+    }
+    RETURN decl
+  }
+
+  # Search for a declaration in imported symbols.
+  # Return NIL here, override if this scope has imports.
+  FUNC $getDeclInImport(string name, SymUse symUse) Declaration @default
+    RETURN NIL
+  }
+
+  # Get the list of object declarations.
+  # Return NIL here, override if this scope has object members.
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @default
+    RETURN NIL
+  }
+
+  # Add an object member.
+  PROC $addObjectMember(Declaration decl) @default
+    LOG.internal(
+        "addObjectMember() called for a scope that is not a ClassScope")
+  }
+
+  # Inner part of Scope.addDecl() for object members.
+  PROC $addObjectDecl(string name, Zui.Declaration zuiDecl,
+                                                    Declaration decl) @default
+    LOG.internal("addObjectDecl() called for a scope that is not a ClassScope")
+  }
+
+  # Find |name| in the symbols of this scope and outer scopes and
+  # return its type.
+  # |pos| is used for any error messages.
+  # |symUse| is used for visibility.
+  FUNC $getSymbolTypeEnum(string name, SymUse symUse) Type.Enum
+    Declaration decl = $getDecl(name, FALSE, symUse)
+    IF decl != NIL && decl.type != NIL
+      RETURN decl.type.getTtype()
+    }
+    RETURN Type.Enum.unknown
+  }
+
+  # Return the Symbol for |expr|, stands for the result type of the expression.
+  # Only to be used for types, not for evaluating an expression or expressions
+  # that may contain a call.
+  # Return NIL when it is more complicated than an ID or member of an ID.
+  # Note: does not reset expr.undefined, only increments it.
+  FUNC $findExprDecl(Zui.Expression expr, SContext ctx, SymUse symUse
+                    ) Declaration
+    RETURN $findExprDecl(expr, TRUE, FALSE, FALSE, ctx, symUse)
+  }
+
+  # Like $findExprDecl(), |isType| means we are looking for a type name.
+  FUNC $findExprDecl(Zui.Expression expr, bool isType,
+                                                  SContext ctx, SymUse symUse
+                    ) Declaration
+    RETURN $findExprDecl(expr, TRUE, FALSE, isType, ctx, symUse)
+  }
+
+  # Like $findExprDecl():
+  # |doError| is TRUE when errors are to be reported.
+  # |isType| means we are looking for a type name.
+  # called recursively.
+  FUNC $findExprDecl(Zui.Expression expr,
+                       bool doError, bool isType, SContext ctx, SymUse symUse
+                    ) Declaration
+    RETURN $findExprDecl(expr, TRUE, doError, isType, ctx, symUse)
+  }
+
+  # Like $findExprDecl():
+  # |dotI| is TRUE when MyClass stands for MyClass.I if it has children.
+  FUNC $findExprDecl(Zui.Expression expr, bool dotI,
+                       bool doError, bool isType, SContext ctx, SymUse symUse
+                    ) Declaration
+    Scope scope = ctx.scope
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    SWITCH expr.getType()
+      CASE Zui.ExprType.eID
+        # "name"
+        Declaration decl
+        string name = expr.getId().getName()
+        IF isType
+          # Built-in types are in the T module.  E.g., "thread" is an alias
+          # for "T.thread".
+          decl = TModule.getDecl(name, ctx)
+        }
+        IF decl == NIL
+          decl = $getDecl(expr.getId(), symUse)
+        }
+        IF decl == NIL
+          exprExt.undefined++
+          IF doError
+            ctx.error("Symbol not found: " .. name, expr)
+          }
+        ELSE
+          Type effType = decl.type.getEffType()
+          IF effType ISA ReferenceType
+            Type ref = effType.<ReferenceType.C>.getReferencedType()
+            IF ref != NIL
+              decl = ref
+            }
+          }
+          IF dotI && effType ISA ClassType
+                                        && effType.<ClassType>.hasChildren()
+            # MyClass means MyClass.I if there are child classes.
+            decl = effType.<ClassType>.getInterfaceObjectDeclAuto()
+          }
+        }
+        RETURN decl
+
+      CASE Zui.ExprType.eMEMBER
+        # "expr.name"
+        Zui.Expression left = expr.getLeft()
+        VAR leftExt = ZuiExpressionExt.get(left)
+        Zui.Id id = expr.getRight().getId()
+        string name = id.getName()
+
+        IF left.getType() == Zui.ExprType.eID && left.getId().getName() == "T"
+          # Special handling for T.int, T.list, T.thread, etc.
+          Declaration decl = TModule.getDecl(name, ctx)
+          IF decl == NIL
+            ++exprExt.undefined
+            IF doError
+              ctx.error("T." .. name .. " unknown", expr)
+            }
+          }
+          RETURN decl
+        }
+        leftExt.undefined = 0
+        Declaration decl = $findExprDecl(left, FALSE, doError, isType,
+                                                                  ctx, symUse)
+        exprExt.undefined += leftExt.undefined
+        IF decl != NIL
+          IF name == "C" || name == "I"
+            IF decl.type.ttype != Type.Enum.class
+              exprExt.undefined++
+              IF doError
+                ctx.error("Class expected", left)
+              }
+              RETURN NIL
+            }
+            IF name == "C"
+              # foo.MyClass.C: Class itself
+              RETURN decl.type.getStarType(expr.getRight().getPos(), ctx)
+            }
+            # Class.Name.I: interface of a class
+            RETURN decl.type.<ClassType>.getInterfaceObjectDecl()
+          }
+
+          IF decl.type.ttype == Type.Enum.object
+                                     || decl.type.ttype == Type.Enum.iobject
+            decl = decl.type.findObjectMember(name, symUse, searchParent, FALSE)
+          ELSE
+            decl = decl.type.findMember(name, symUse)
+          }
+          IF decl == NIL
+            exprExt.undefined++
+            IF doError
+              ctx.error("Member " .. name .. " not found in "
+                                          .. ZuiFile.expr2String(left), expr)
+            }
+          ELSEIF dotI && decl.type ISA ClassType
+                                        && decl.type.<ClassType>.hasChildren()
+            # foo.MyClass means foo.MyClass.I if there are child classes.
+            decl = decl.type.<ClassType>.getInterfaceObjectDeclAuto()
+          }
+          RETURN decl
+        }
+
+      CASE Zui.ExprType.eTYPESPEC
+        # "expr<type>"
+        Zui.Expression left = expr.getLeft()
+        VAR leftExt = ZuiExpressionExt.get(left)
+        leftExt.undefined = 0
+        Declaration decl = $findExprDecl(left, FALSE, doError, isType,
+                                                                  ctx, symUse)
+        exprExt.undefined += leftExt.undefined
+        RETURN Generate.generateTemplatedClasstype(expr,
+                                                      decl?.type, ctx, symUse)
+
+      DEFAULT
+        exprExt.undefined++
+        IF doError
+          ctx.error("Unexpected expression type: "
+                                           .. expr.getType().ToString(), expr)
+        }
+    }
+    RETURN NIL
+  }
+
+  # Find the first function (proc/NEW/etc.) with name |name| that matches the
+  # argument list |argList|.
+  # Skip |skip.method| (can be NIL).
+  # When options.findFirst is set only find the first match.
+  # When |options.searchParent| is FALSE only uses the this scope, not outer
+  # ones.
+  # Increments |undef| when something is undefined.
+  FUNC $findMatchingFunc(string name,
+                         bool objectMember,
+                         int &undef,
+                         list<Declaration.C> argList,
+                         MethodType.Skip skip,
+                         MethodType.FindFuncOptions optionsArg,
+                         SContext ctx
+                        ) Declaration
+    multiDict<int, Declaration> funcs = NEW()
+    MethodType.FindFuncOptions options = optionsArg
+    $findMatchingFuncs(name, objectMember, undef, argList, skip, options,
+                                                                   funcs, ctx)
+    IF skip != NIL && skip.foundSkip
+      # When searching for a method matching an already found function only
+      # consider using the same conversion cost.  Allows for defining both a
+      # function with "int" and "int32" argument.
+      IF funcs.has(skip.convCost)
+        RETURN funcs.get(skip.convCost)[0]
+      }
+      RETURN NIL
+    }
+    IF funcs.Size() > 0
+      RETURN funcs.get(funcs.keys().sort()[0])[0]
+    }
+    RETURN NIL
+  }
+
+  # Find functions (proc/NEW/etc.) with name |name| that match the
+  # argument list |argList|.
+  # Skip |skip.method| (can be NIL).
+  # When |options.searchParent| is FALSE only uses the this scope, not outer
+  # ones.
+  # Increments |undef| when something is undefined.
+  PROC $findMatchingFuncs(string name,
+                          bool objectMember,
+                          int &undef,
+                          list<Declaration.C> argList,
+                          MethodType.Skip skip,
+                          MethodType.FindFuncOptions options,
+                          multiDict<int, Declaration> funcs,
+                          SContext ctx)
+
+    list<Declaration> declarations
+    IF objectMember
+      VAR objectDeclDict = $getObjectDeclDict()
+      IF objectDeclDict != NIL
+        declarations = objectDeclDict.get(name, NIL)
+      }
+    ELSEIF !($isClassScope() && options.skipShared)
+      IF $declDict != NIL
+        declarations = $declDict.get(name, NIL)
+      }
+    }
+    IF declarations != NIL
+      MethodType.findMatchingFunctionsInList(declarations, name,
+                                    argList, skip, options, undef, funcs, ctx)
+    }
+
+    # If we find the "skip" method inside a PieceScope don't look for
+    # duplicates outside of the PieceScope.
+    IF skip != NIL && $isPieceScope() && skip.foundSkip
+      RETURN
+    }
+
+    IF funcs.Size() == 0 && options.searchParent && $outer != NIL
+      # When not found look in the parent scope.
+      # When in the class scope don't look in the SHARED section of outer
+      # classes, that causes problems.
+      MethodType.FindFuncOptions oOptions = options
+      IF $isTopClassScope() && !$isPieceScope()
+        IF objectMember
+          # only look in current class
+          RETURN
+        }
+        oOptions.skipShared = TRUE
+      }
+      $outer.findMatchingFuncs(name, objectMember, undef, argList,
+                                                   skip, oOptions, funcs, ctx)
+    }
+
+    # Search in scope of parent class.
+    IF funcs.Size() == 0 && $isTopClassScope()
+                                          && !$isPieceScope() && !objectMember
+      ClassType pc = $classType.<ClassType>.parent
+      IF pc != NIL && pc.scope != NIL
+        pc.scope.findMatchingFuncs(name, FALSE, undef, argList,
+                                                    skip, options, funcs, ctx)
+      }
+    }
+  }
+
+  # List matching functions (proc/NEW/etc.) with name |name|.
+  # When |skipAbstract| is TRUE only non-abstract functions.
+  PROC $listMatchingFunc(string name, bool skipAbstract, SContext ctx)
+    VAR objectDeclDict = $getObjectDeclDict()
+    FOR d IN [$declDict, objectDeclDict]
+      IF d != NIL
+        list<Declaration> l = d.get(name, NIL)
+        IF l != NIL
+          FOR decl IN l
+            IF !(skipAbstract && decl.type.isAbstract())
+              IF decl.zuiPos != NIL
+                IO.write(ctx.zcPos(decl.zuiPos).ToString())
+                IO.write(": ")
+              }
+              IO.print("Candidate: " .. (d IS objectDeclDict ? "$" : "")
+                        .. name
+                        .. MethodType.argTypesAsString(decl.type.<MethodType>))
+            }
+          }
+        }
+      }
+    }
+    IF $outer != NIL
+      $outer.listMatchingFunc(name, skipAbstract, ctx)
+    }
+  }
+
+  FUNC $getAfterStmtWriter() IO.StringWriter
+    IF $afterStmtWriter == NIL
+      $afterStmtWriter = NEW()
+    }
+    RETURN $afterStmtWriter
+  }
+
+  PROC $writeAfterStmt(Output out)
+    IF $afterStmtWriter != NIL
+      out.write($afterStmtWriter.ToString())
+      $afterStmtWriter = NIL
+    }
+  }
+
+  FUNC $getEndOfScopeWriter() IO.StringWriter
+    IF $endOfScopeWriter == NIL
+      $endOfScopeWriter = NEW()
+    }
+    RETURN $endOfScopeWriter
+  }
+
+  # Write whatever was postponed until the end of the scope.
+  # Return TRUE when something was written.
+  FUNC $writeEndOfScope(Output out) bool
+    IF $endOfScopeWriter != NIL
+      out.write($endOfScopeWriter.ToString())
+      $endOfScopeWriter = NIL
+      RETURN TRUE
+    }
+    RETURN FALSE
+  }
+
+  # Return TRUE if this scope or an outer scope is a builtin module scope.
+  FUNC $insideBuiltin() bool @default
+    IF $outer != NIL
+      RETURN $outer.insideBuiltin()
+    }
+    RETURN FALSE
+  }
+}

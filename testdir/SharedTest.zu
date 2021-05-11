@@ -1,0 +1,64 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for SHARED variables in a method
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE SharedTest @public
+
+  PROC test() @public
+    IO.print("testdir/SharedTest.zu")
+    test1()
+    test2()
+    testNested()
+  }
+
+  FUNC initVal() string
+    RETURN "starting"
+  }
+
+  FUNC getPrev(string nextName) string
+    STATIC string lastName = initVal()
+    string r = lastName
+    lastName = nextName
+    RETURN r
+  }
+
+  PROC test1()
+    IO.print(getPrev("one") == "starting")
+    IO.print(getPrev("two"))
+    IO.print(getPrev("three"))
+  }
+
+  FUNC inc() int
+    STATIC int one
+    ++one
+    STATIC int two
+    ++two
+    STATIC int three
+    ++three
+    RETURN one + two + three
+  }
+
+  PROC test2()
+    IO.print(inc())
+    IO.print(inc())
+    IO.print(inc())
+    IO.print(inc())
+  }
+
+  PROC testNested()
+    FUNC get() int
+      STATIC int n = 123
+      RETURN n++
+    }
+    IO.print(get())
+    IO.print(get())
+    IO.print(get())
+  }
+
+}

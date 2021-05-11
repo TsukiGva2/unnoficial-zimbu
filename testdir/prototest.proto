@@ -1,0 +1,87 @@
+// Test protocol buffer.
+
+package test;
+
+message Top {
+  optional string name = 1;
+  optional Bot bot = 2;
+}
+
+message Bot {
+  optional string name = 1;
+  optional Top top = 2;
+}
+
+enum AnEnum {
+  zero = 0;
+  one = 1;
+  two = 2;
+  three = 3;
+}
+
+message AMessage {
+  optional string name = 1;
+  optional int64 number = 2;
+}
+
+message AllTypes {
+  optional bool one_bool = 1;
+  // optional bytes one_bytes = 2;
+  // optional double one_double = 3;
+  optional AnEnum one_enum = 4;
+  // optional fixed32 one_fixed32 = 5;
+  // optional fixed64 one_fixed64 = 6;
+  // optional float one_float = 7;
+  // optional group one_group = 8;
+  optional int one_int = 9;
+  optional int32 one_int32 = 10;
+  optional int64 one_int64 = 11;
+  optional AMessage one_message = 12;
+  // optional sfixed32 one_sfixed32 = 13;
+  // optional sfixed64 one_sfixed64 = 14;
+  // optional sint32 one_sint32 = 15;
+  // optional sint32 one_sint64 = 16;
+  optional string one_string = 17;
+  // optional uint32 one_uint32 = 18;
+  // optional uint32 one_uint64 = 19;
+
+  required bool req_bool = 51;
+  // required bytes req_bytes = 52;
+  // required double req_double = 53;
+  required AnEnum req_enum = 54;
+  // required fixed32 req_fixed32 = 55;
+  // required fixed64 req_fixed64 = 56;
+  // required float req_float = 57;
+  // required group req_group = 58;
+  required int req_int = 59;
+  required int32 req_int32 = 60;
+  required int64 req_int64 = 61;
+  required AMessage req_message = 62;
+  // required sfixed32 req_sfixed32 = 63;
+  // required sfixed64 req_sfixed64 = 64;
+  // required sint32 req_sint32 = 65;
+  // required sint32 req_sint64 = 66;
+  required string req_string = 67;
+  // required uint32 req_uint32 = 68;
+  // required uint32 req_uint64 = 69;
+
+  repeated bool rep_bool = 101;
+  // repeated bytes rep_bytes = 102;
+  // repeated double rep_double = 103;
+  repeated AnEnum rep_enum = 104;
+  // repeated fixed32 rep_fixed32 = 105;
+  // repeated fixed64 rep_fixed64 = 106;
+  // repeated float rep_float = 107;
+  // repeated group rep_group = 108;
+  repeated int rep_int = 109;
+  repeated int32 rep_int32 = 110;
+  repeated int64 rep_int64 = 111;
+  repeated AMessage rep_message = 112;
+  // repeated sfixed32 rep_sfixed32 = 113;
+  // repeated sfixed64 rep_sfixed64 = 114;
+  // repeated sint32 rep_sint32 = 115;
+  // repeated sint32 rep_sint64 = 116;
+  repeated string rep_string = 117;
+  // repeated uint32 rep_uint32 = 118;
+  // repeated uint32 rep_uint64 = 119;
+}

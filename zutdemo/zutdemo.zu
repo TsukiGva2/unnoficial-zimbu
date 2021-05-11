@@ -1,0 +1,43 @@
+#
+# Simplistic demo for ZUT (Zimbu Templates).
+#
+# Main program: Creates an HTTP server and adds servlets to it.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT "ZutDemoPage.zut"
+
+ARG.Int port = NEW("p", "port", 7777, "Port for the HTTP server")
+
+
+FUNC Main() int
+  HTTP.Server server = NEW(port.value())
+  # server.setVerbosity(HTTP.Verbosity.high)
+
+  # Redirect / to /index.html.
+  string indexPath = "index.html"
+  server.redirect("/", "/\(indexPath)")
+
+  # Create the demo page and add the body template.
+  ZUT.Page page = NEW("ZUT demo page")
+  callback<ZUT.HtmlFunc, string> cb = NEW(ZutDemoPage.demoBody, "Click me")
+  page.setBody(cb)
+  page.addPath("/\(indexPath)")
+  server.addPage(page)
+
+  # Start serving.
+  server.start()
+
+  # Open the page in the default browser.
+  string url = "http://localhost:\(port.value())/\(indexPath)"
+  IO.print("Opening " .. url)
+  server.openInBrowser(indexPath)
+
+  # Exit when the application stops.
+  server.waitForExit()
+
+  RETURN 0
+}

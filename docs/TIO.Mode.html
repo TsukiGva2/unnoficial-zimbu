@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>TIO.Mode class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='TIO.html'>up:&nbsp;TIO</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> TIO.Mode
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Stores terminal mode values.
+</p>
+<table><tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.InputMode.html'>TIO.InputMode</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$input'><b>$input</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.OutputMode.html'>TIO.OutputMode</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$output'><b>$output</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.ControlMode.html'>TIO.ControlMode</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$control'><b>$control</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.LocalMode.html'>TIO.LocalMode</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$local'><b>$local</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.Speed.html'>TIO.Speed</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$inputSpeed'><b>$inputSpeed</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIO.Speed.html'>TIO.Speed</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$outputSpeed'><b>$outputSpeed</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$discard'><b>$discard</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$dsusp'><b>$dsusp</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$eof'><b>$eof</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$eol'><b>$eol</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$eol2'><b>$eol2</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$erase'><b>$erase</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$intr'><b>$intr</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$kill'><b>$kill</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$lnext'><b>$lnext</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$min'><b>$min</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$quit'><b>$quit</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$reprint'><b>$reprint</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$start'><b>$start</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$status'><b>$status</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$stop'><b>$stop</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$susp'><b>$susp</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$swtch'><b>$swtch</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$time'><b>$time</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIO.Mode.html#$werase'><b>$werase</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='TIO.Mode.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIO.Mode.html#$setMode'><b>$setMode</b></a>(<small>fd</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set this mode on <b>fd</b>
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='TIO.ControlMode.html'>TIO.ControlMode</A></span>&nbsp;<A name='$control'><b>$control</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$discard'><b>$discard</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$dsusp'><b>$dsusp</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$eof'><b>$eof</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$eol'><b>$eol</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$eol2'><b>$eol2</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$erase'><b>$erase</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='TIO.InputMode.html'>TIO.InputMode</A></span>&nbsp;<A name='$input'><b>$input</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='TIO.Speed.html'>TIO.Speed</A></span>&nbsp;<A name='$inputSpeed'><b>$inputSpeed</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$intr'><b>$intr</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$kill'><b>$kill</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$lnext'><b>$lnext</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='TIO.LocalMode.html'>TIO.LocalMode</A></span>&nbsp;<A name='$local'><b>$local</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$min'><b>$min</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='TIO.OutputMode.html'>TIO.OutputMode</A></span>&nbsp;<A name='$output'><b>$output</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='TIO.Speed.html'>TIO.Speed</A></span>&nbsp;<A name='$outputSpeed'><b>$outputSpeed</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$quit'><b>$quit</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$reprint'><b>$reprint</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$start'><b>$start</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$status'><b>$status</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$stop'><b>$stop</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$susp'><b>$susp</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$swtch'><b>$swtch</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$time'><b>$time</b></A><span class='attribute'> @public</span></p><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$werase'><b>$werase</b></A><span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMode'><b>$setMode</b></A>(<span class='type'><A class='typehref' href='IO.File.html'>IO.File</A></span> fd) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set this mode on <b>fd</b>
+</p>
+<p class='ptext'> Return FAIL if not all modes could be set.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

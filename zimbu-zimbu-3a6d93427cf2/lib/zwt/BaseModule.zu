@@ -1,0 +1,493 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Basic stuff
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE BaseModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= Lowest level ZWT object.  Wraps an HTML Element.  Cannot handle events.
+  CLASS UIObject @abstract @public
+    ZWT.Element $elem  @public    #= The HTML element for this Item.
+
+    list<ZWT.Style> $styles          #!
+
+    list<ZWT.Style> $parentStyles  @public  #! used in CellPanel
+
+    #= Set the main Style for this UIObject to |style|.
+    #- Removes previously set styles.
+    #- When |style| is NIL this clears the style.
+    PROC $setStyle(ZWT.Style style) @default @public
+      $styles = NEW()
+      IF style != NIL
+        $styles.add(style)
+      }
+      ZWT.setElementStyle($elem, $styles)
+    }
+
+    #= Set the list of Styles for this UIObject to |styles|.
+    #- Removes any previously set styles.
+    #- When |styles| is NIL this clears the style.
+    PROC $setStyleList(list<ZWT.Style> styles) @default @public
+      $styles = styles
+      ZWT.setElementStyle($elem, $styles)
+    }
+
+    #= Add |style| to this UIObject, keeping previously set ones.
+    #- When |style| was already present it is not added again.
+    PROC $addStyle(ZWT.Style style) @default @public
+      IF $styles == NIL
+        $setStyle(style)
+      ELSE
+        FOR s IN $styles
+          IF s IS style
+            RETURN
+          }
+        }
+        $styles.add(style)
+        ZWT.setElementStyle($elem, $styles)
+      }
+    }
+
+    #= Remove |style| from this UIObject.
+    #- When |style| is not present nothing happens.
+    PROC $removeStyle(ZWT.Style style) @default @public
+      IF $styles != NIL
+        FOR i IN 0 UNTIL $styles.Size()
+          IF $styles[i] IS style
+            $styles.remove(i)
+            ZWT.setElementStyle($elem, $styles)
+            RETURN
+          }
+        }
+      }
+    }
+
+    #= Return the main Style for this UIObject.
+    #- When there are multiple styles only the first one is returned.
+    #- Returns NIL when no style is set.
+    FUNC $getStyle() ZWT.Style @public
+      IF $styles == NIL || $styles.Size() == 0
+        RETURN NIL
+      }
+      RETURN $styles[0]
+    }
+
+    #= Return the list of Styles for this UIObject.
+    #- Returns NIL when no style is set.
+    FUNC $getStyleList() list<ZWT.Style> @public
+      RETURN $styles
+    }
+
+    #= Return the width of the Element.
+    #- Only works when the Widget is visible.
+    FUNC $getWidth() int @default @public
+      int r
+>>>
+      %r% = %$elem%.offsetWidth;
+<<<
+      RETURN r
+    }
+
+    #= Return the height of the Element.
+    #- Only works when the Widget is visible.
+    FUNC $getHeight() int @default @public
+      int r
+>>>
+      %r% = %$elem%.offsetHeight;
+<<<
+      RETURN r
+    }
+
+    #= Return the vertical position of the Element in the page
+    FUNC $getTop() int @public
+      RETURN $getTop(NIL)
+    }
+
+    #= Return the vertical position of the Element within |container|
+    #- If the Element is not inside |container| return -1.
+    #- If |container| is NIL this works like getTop().
+    FUNC $getTop(UIObject container) int @public
+      int r
+>>>
+      var item = %$elem%;
+      while (item && item != %container.elem%) {
+        %r% += item.offsetTop;
+        item = item.offsetParent;
+      }
+      if (%container% && !item) {
+        return -1;
+      }
+<<<
+      RETURN r
+    }
+
+    #= Return the horizontal position of the Element in the page
+    FUNC $getLeft() int @public
+      RETURN $getLeft(NIL)
+    }
+
+    #= Return the horizontal position of the Element within |container|
+    #- If the Element is not inside |container| return -1.
+    #- If |container| is NIL this works like getLeft().
+    FUNC $getLeft(UIObject container) int @public
+      int r
+>>>
+      var item = %$elem%;
+      while (item && item != %container.elem%) {
+        %r% += item.offsetLeft;
+        item = item.offsetParent;
+      }
+      if (%container% && !item) {
+        return -1;
+      }
+<<<
+      RETURN r
+    }
+
+    #= Set the item to be hidden or displayed.
+    PROC $setHidden(bool hidden) @public
+      string val = hidden ? "none" : ""
+>>>
+      %$elem%.style.display = %val%;
+<<<
+    }
+
+  }
+
+  #= A UIObject that handles events and can be added to panels.
+  #- Needs to be subclassed to be useful.
+  CLASS Widget EXTENDS UIObject @public  # IMPLEMENTS EventListener, HasHandlers
+    UIObject        $parent @protected   #!
+    bool            $active @protected = TRUE #!
+    ZWT.Style       $inactiveStyle       #!
+
+    NEW() @default @public
+    }
+
+    #! Registered handlers for various events.  "anyEvent" is a handler that
+    #! gets them all
+    multiDict<ZWT.EventType, proc<ZWT.Event>> $handlers
+    set<ZWT.EventType> $hasJsHandler #!
+
+    #= Return the parent of this Widget.
+    #- Returns NIL if there is no parent.
+    FUNC $getParent() UIObject @public
+      RETURN $parent
+    }
+
+    #= Returns "Widget".  Should be replaced by subclasses.
+    FUNC $ToString() string @default @public
+      RETURN "Widget"
+    }
+
+    #= Return the text of the Widget.  NIL if there is none.
+    FUNC $getText() string @default @public
+      RETURN NIL
+    }
+
+    #= Set the text to be displayed on hover-over.
+    #- The text is plain text, not HTML.  Use NIL or an empty string to clear.
+    #-
+    #- Returns the Widget for chaining.
+    FUNC $setHoverText(string text) Widget @public
+      IF text == NIL
+>>>
+        %$elem%.title = '';
+<<<
+      ELSE
+>>>
+        %$elem%.title = %text%;
+<<<
+      }
+      RETURN THIS
+    }
+
+    #= Get the text to be displayed on hover-over.
+    #- Returns NIL
+    FUNC $getHoverText() string @public
+      string ret
+>>>
+      if (%$elem%.title) {
+        %ret% = %$elem%.title;
+      } else {
+        %ret% = '';
+      }
+<<<
+      RETURN ret
+    }
+
+    #= Add this widget to |parent|.
+    PROC $addToParent(UIObject parent) @default @public
+      $removeFromParent()
+      $parent = parent
+      IF parent != NIL
+>>>
+        %parent.elem%.appendChild(%$elem%);
+<<<
+      }
+    }
+
+    #= Remove this Widget from its parent.
+    #- If there is no parent nothing happens.
+    PROC $removeFromParent() @default @public
+      IF $parent != NIL
+>>>
+        %$parent.elem%.removeChild(%$elem%);
+<<<
+        $parent = NIL
+      }
+    }
+
+    #= Set |handler| as the only method to be invoked for |eventType|.
+    #- When |handler| is NIL all handlers are removed.
+    PROC $setHandler(ZWT.EventType eventType, proc<ZWT.Event> handler) @public
+      IF $handlers == NIL
+        $handlers = NEW()
+      ELSEIF $handlers.has(eventType)
+        $handlers.clear(eventType)
+      }
+      IF handler == NIL
+        IF eventType == ZWT.EventType.all
+          # Remove low-level handlers for all events, except if there is an
+          # event-specific handler.
+          FOR e IN ZWT.EventType
+            IF e != ZWT.EventType.all && !$handlers.has(e)
+              $removeJsHandler(e)
+            }
+          }
+        ELSE
+          $removeJsHandler(eventType)
+        }
+      ELSE
+        $addHandler(eventType, handler)
+      }
+    }
+
+    #= Add |handler| as a method to be invoked for |eventType|.
+    PROC $addHandler(ZWT.EventType eventType, proc<ZWT.Event> handler) @public
+      IF $handlers == NIL
+        $handlers = NEW()
+      }
+      $handlers.add(eventType, handler)
+      IF eventType == ZWT.EventType.all
+        FOR e IN ZWT.EventType
+          IF e != ZWT.EventType.all
+            $setJsHandler(e)
+          }
+        }
+      ELSE
+        $setJsHandler(eventType)
+      }
+    }
+
+    #! Add the Javascript event handler to the element, if not done yet.
+    PROC $setJsHandler(ZWT.EventType eventType)
+      IF $hasJsHandler == NIL
+        $hasJsHandler = NEW()
+      }
+      IF !$hasJsHandler.has(eventType)
+        $hasJsHandler.add(eventType)
+        Widget wg = THIS
+>>>
+        var f = function(e) { %eventHandler%(%wg%, %eventType%, e); };
+<<<
+        SWITCH eventType
+          CASE ZWT.EventType.click
+>>>
+             %$elem%.onclick = f;
+<<<
+          CASE ZWT.EventType.mouseOver
+>>>
+             %$elem%.onmouseover = f;
+<<<
+          CASE ZWT.EventType.mouseOut
+>>>
+             %$elem%.onmouseout = f;
+<<<
+          CASE ZWT.EventType.key
+>>>
+             %$elem%.onkeypress = f;
+<<<
+          CASE ZWT.EventType.keyDown
+>>>
+             %$elem%.onkeydown = f;
+<<<
+          CASE ZWT.EventType.keyUp
+>>>
+             %$elem%.onkeyup = f;
+<<<
+        }
+      }
+    }
+
+    #! Remove the Javascript event handler from the element, if it was set.
+    PROC $removeJsHandler(ZWT.EventType eventType) @public
+      IF $hasJsHandler == NIL
+        RETURN
+      }
+      IF $hasJsHandler.has(eventType)
+        $hasJsHandler.remove(eventType)
+        SWITCH eventType
+          CASE ZWT.EventType.click
+>>>
+             %$elem%.onclick = null;
+<<<
+          CASE ZWT.EventType.mouseOver
+>>>
+             %$elem%.onmouseover = null;
+<<<
+          CASE ZWT.EventType.mouseOut
+>>>
+             %$elem%.onmouseout = null;
+<<<
+          CASE ZWT.EventType.key
+>>>
+             %$elem%.onkeypress = null;
+<<<
+          CASE ZWT.EventType.keyDown
+>>>
+             %$elem%.onkeydown = null;
+<<<
+          CASE ZWT.EventType.keyUp
+>>>
+             %$elem%.onkeyup = null;
+<<<
+        }
+      }
+    }
+
+    #= Set |handler| as the method to be invoked for a click event on this
+    #= widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    PROC $setClickHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.click, handler)
+    }
+
+    #= Set |handler| as the method to be invoked when the mouse enters the
+    #= area of this widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    PROC $setMouseOverHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.mouseOver, handler)
+    }
+
+    #= Set |handler| as the method to be invoked when the mouse leaves the
+    #= area of this widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    PROC $setMouseOutHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.mouseOut, handler)
+    }
+
+    #= Set |handler| to be invoked when a key is typed in this widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    #
+    #- There will also be keyDown and keyUp events. Usually (depending on the
+    #- browser) the key event is delivered just before the keyUp event.
+    PROC $setKeyHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.key, handler)
+    }
+
+    #= Set |handler| to be invoked when a key is pressed in this widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    PROC $setKeyDownHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.keyDown, handler)
+    }
+
+    #= Set |handler| to be invoked when a key is released in this widget.
+    #- Any previously set handlers are removed.
+    #- When |handler| is NIL there will be no handlers.
+    PROC $setKeyUpHandler(proc<ZWT.Event> handler) @public
+      $setHandler(ZWT.EventType.keyUp, handler)
+    }
+
+    # TODO: $add*Handler(proc<ZWT.Event> handler)
+    # TODO: $removeHandler(ZWT.EventType eventType, proc<ZWT.Event> handler)
+    # TODO: $remove*Handler(proc<ZWT.Event> handler)
+
+    #= Set whether the Widget handles click events.
+    #- When not active the button is given a style set by $setInactiveStyle()
+    #- or a grey text by default.
+    PROC $setActive(bool active) @public
+      IF active != $active
+        $active = active
+        IF active
+>>>
+          %$elem%.disabled = false;
+<<<
+          $removeStyle(inactiveStyle)
+          IF $inactiveStyle != NIL
+            $removeStyle($inactiveStyle)
+          }
+        ELSE
+>>>
+          %$elem%.disabled = true;
+<<<
+          IF $inactiveStyle != NIL
+            $addStyle($inactiveStyle)
+          ELSE
+            IF inactiveStyle == NIL
+              inactiveStyle = NEW().setColor(NEW(127, 127, 127))
+            }
+            $addStyle(inactiveStyle)
+          }
+        }
+      }
+    }
+    #= Return whether the Widget was set to be active.
+    FUNC $isActive() bool @public
+      RETURN $active
+    }
+
+    #= Set the style to be used when the Widget is inactive.
+    #- When not set a default grey color is used for the foreground.
+    #
+    #- Use a NIL |style| to reset to the default.
+    PROC $setInactiveStyle(ZWT.Style style) @public
+      $inactiveStyle = style
+    }
+
+    SHARED
+
+      #! Style used when Widget is not active and the widget does not have its
+      # own inactive style.
+      ZWT.Style inactiveStyle
+
+      #! The event handler set for "onclick" and other Element attributes.
+      PROC eventHandler(Widget w, ZWT.EventType eventType, ZWT.JsEvent jse)
+        ZWT.Event ze = NEW(w, eventType)
+        # IE uses window.event, others pass the event as an argument.
+>>>
+        %ze.jsEvent% = %jse% || window.event;
+<<<
+        IF w.handlers.has(ZWT.EventType.all)
+          FOR h IN w.handlers.get(ZWT.EventType.all)
+            h(ze)
+          }
+        }
+        IF w.handlers.has(eventType)
+          FOR h IN w.handlers.get(eventType)
+            h(ze)
+          }
+        }
+      }
+
+    }
+  }
+
+  #! An item that can be contained in a Tree.  Each item has a uniqe ID.
+  CLASS TreeItem EXTENDS UIObject @public # IMPLEMENTS HasHTML, HasText
+  }
+
+ }
+}

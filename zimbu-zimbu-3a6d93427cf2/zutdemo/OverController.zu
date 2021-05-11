@@ -1,0 +1,111 @@
+#
+# ZUT (Zimbu Templates) demo controller: mouse over/out
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT OverControllerTemplate.zut
+
+CLASS OverController
+
+  string    $id
+  ZUT.Timer $showTimer
+  ZUT.Timer $hideTimer
+  int       $offsetX
+
+  FUNC $over(ZUT.Event event) bool
+    IF $id == NIL
+      # Remember the ID for balloonOut.
+      $id = event.element.getAttribute("data-id")
+    }
+    IF $hideTimer != NIL
+      $hideTimer.cancel()
+    }
+    IF !ZUT.getDisplay($id)
+      $offsetX = event.getOffsetX()
+      IF $showTimer == NIL
+        $showTimer = NEW($display, 500)
+      ELSE
+        $showTimer.restart()
+      }
+    }
+    RETURN FALSE
+  }
+
+  PROC $display()
+    ZUT.Element el = ZUT.getElementById($id)
+    el.setStyle("left", $offsetX + 10)
+    el.setDisplay(TRUE)
+  }
+  
+  PROC $hide()
+    ZUT.setDisplay($id, FALSE)
+  }
+
+  FUNC $move(ZUT.Event event) bool
+    # When the mouse moves after the "over" event remember the position, so
+    # that the balloon can be displayed next to the last known mouse position.
+    IF $showTimer != NIL
+      $offsetX = event.getOffsetX()
+    }
+    RETURN FALSE
+  }
+
+  FUNC $out(ZUT.Event event) bool
+    IF $showTimer != NIL
+      $showTimer.cancel()
+    }
+    IF $id != NIL && ZUT.getDisplay($id)
+      $startHideTimer()
+    }
+    RETURN FALSE
+  }
+
+  PROC $startHideTimer()
+    IF $hideTimer == NIL
+      $hideTimer = NEW($hide, 300)
+    ELSE
+      $hideTimer.restart()
+    }
+  }
+
+  FUNC $balloonOver(ZUT.Event event) bool
+    IF $hideTimer != NIL
+      $hideTimer.cancel()
+    }
+    RETURN FALSE
+  }
+
+  FUNC $balloonOut(ZUT.Event event) bool
+    $startHideTimer()
+    RETURN FALSE
+  }
+
+  #= Create an instance of this class for every element that will use
+  #= OverController.
+  CLASS Decorator @public
+    string $id
+
+    NEW() @public
+      $id = ZUT.uid()
+    }
+
+    #= Return the attributes needed to add the OverController to an element.
+    FUNC $wrapperAttributes() ZUT.Attributes @public
+      RETURN OverControllerTemplate.wrapperAttributes()
+    }
+
+    #= Return the attributes for an element to listen on.
+    #- This can be used several times, once of each element.
+    FUNC $listenAttributes() ZUT.Attributes @public
+      RETURN OverControllerTemplate.listenAttributes($id)
+    }
+
+    #= Return attributes for an element to be shown by OverController.
+    FUNC $balloonAttributes() ZUT.Attributes @public
+      RETURN OverControllerTemplate.balloonAttributes($id)
+    }
+  }
+}

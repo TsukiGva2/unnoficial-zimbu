@@ -1,0 +1,634 @@
+#
+# ZUT template for a Zudocu documentation page.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO ../parser/zui.proto
+
+IMPORT DocItems.zu
+IMPORT Page.zu
+IMPORT Parent.zu
+IMPORT Util.zu
+
+MODULE DocPage @public @items=public
+
+  TEMPLATE docPage(string title, Page page) ZUT.Html
+    [=pageHeader(title, page.parent, page.fullName)]
+    <h1>[=headerLine(page)]</h1>
+    <h2>summary</h2>
+    [=indentStart()]
+      [=page.header]
+      [=implements(page)]
+      <table>
+        [set<string> done = NEW()]
+        # summary of items in this module/class
+        [=page.summary.concatenate(done)]
+        # items inherited from parent classes
+        [=inherited(page, done)]
+        # summarize what is included from pieces
+        [=pieces(page)]
+      </table>
+      [=listOfClasses(getImplementers(page), "Known implementing classes:")]
+      [=listOfClasses(getSubclasses(page), "Known subclasses:")]
+    [=indentEnd()]
+    [=page.tail]
+    [=pageFooter()]
+  }
+
+  TEMPLATE headerLine(Page page) ZUT.Html
+    [=keyword(page.type.toUpper())]
+    [" "][=Util.builtinTranslate(page.fullName)]
+    [IF page.typeSpec != NIL]
+      [=page.typeSpec]
+    [}]
+    [IF page.extends != NIL]
+      [string parentName = page.parentName()]
+      [IF Page.pages.has(parentName)]
+        <small>
+        [" "][=keyword(page.extendsKeyword)]
+        [" "][=pageRef(Page.pages[parentName].fullName)]
+        </small>
+      [}]
+    [}]
+    [Zui.Attributes attr = page.attr]
+    [IF attr.getAbstract()
+        && page.stmt.getDeclaration().getType().getType()
+           == Zui.TypeEnum.eCLASS]
+      [=attributeSmall("@abstract")]
+    [}]
+    [IF attr.getEarlyInit()]
+      [=attributeSmall("@earlyInit")]
+    [}]
+    [=attributeSmall(Util.visName[getVisibility(attr, page)])]
+  }
+
+  # List of interfaces that |page| implements.
+  TEMPLATE implements(Page page) ZUT.Html
+    [IF page.implements.Size() > 0]
+      &nbsp;<br>
+      [FOR impl IN page.implements]
+        <div>Implements [=pageRef(impl)]</div>
+      [}]
+      &nbsp;<br>
+    [}]
+  }
+
+  # Write summary for items that are inherited from the parent class.
+  # Skip items in |done|, add listed items to that.
+  # Calls parents recursively.
+  TEMPLATE inherited(Page page, set<string> done) ZUT.Html
+    [IF page.extends != NIL]
+      [string parentName = page.parentName()]
+      [IF Page.pages.has(parentName)]
+        [Page parentPage = Page.pages[parentName]]
+        [ZUT.Html html = parentPage.summary.concatenate(done)]
+        [IF html.ToString() == ""]
+          <tr><td colspan=3>
+            Parent: [=pageRef(parentPage.fullName)]
+          </td></tr>
+        [ELSE]
+          <tr><td colspan=3>
+            Inherited from [=pageRef(parentPage.fullName)]:
+          </td></tr>
+          [=html]
+        [}]
+        # Recurse into the parent.
+        [=inherited(parentPage, done)]
+      [}]
+    [}]
+  }
+
+  # Write summary for items that are included pieces.
+  # Skip items in |done|, add listed items to that.
+  TEMPLATE pieces(Page page) ZUT.Html
+    [FOR piece IN page.includes ?: []]
+      [IF Page.pages.has(piece)]
+        [Page piecePage = Page.pages[piece]]
+        [ZUT.Html html = piecePage.summary.concatenate(NEW())]
+        [IF html.ToString() != ""]
+          <tr><td colspan=3>
+            Included from [=pageRef(piecePage.fullName)]:
+          </td></tr>
+          [=html]
+        [}]
+      [}]
+    [}]
+  }
+
+  FUNC getImplementers(Page page) list<string>
+    list<string> classNames = NEW()
+    FOR p IN Page.pages
+      FOR impl IN p.implements
+        IF impl == page.fullName
+          classNames.add(p.fullName)
+        }
+      }
+    }
+    RETURN classNames
+  }
+
+  # Write a list of classes.
+  TEMPLATE listOfClasses(list<string> classes, string header) ZUT.Html
+    [IF classes.Size() > 0]
+      [=header]<br>
+      [=indentStart()]
+        [FOR name IN classes.sort()]
+          <div>[=pageRef(name)]</div>
+        [}]
+      [=indentEnd()]
+      &nbsp;<br>
+    [}]
+  }
+
+  FUNC getSubclasses(Page page) list<string>
+    list<string> subClassNames = NEW()
+    FOR p IN Page.pages
+      IF p.extends != NIL && p.parentName() == page.fullName && !p.hide
+        subClassNames.add(p.fullName)
+      }
+    }
+    RETURN subClassNames
+  }
+
+  FUNC getVisibility(Zui.Attributes attr, Page page) Zui.Visibility
+    Zui.Visibility vis = attr.hasVisibility()
+                                ? attr.getVisibility() : Zui.Visibility.eUNSET
+    IF vis == Zui.Visibility.eUNSET
+      IF page.parent == NIL || !page.parent.attr.hasItemsVisibility()
+        vis = Zui.Visibility.eDIRECTORY
+      ELSEIF page.parent.attr.getItemsVisibility() != Zui.Visibility.eUNSET
+        vis = page.parent.attr.getItemsVisibility()
+      ELSE
+        vis = Zui.Visibility.eFILE
+      }
+    }
+    RETURN vis
+  }
+
+  TEMPLATE indexPage(sortedList<Page> classList,
+                     sortedList<Page> moduleList) ZUT.Html
+    [=pageHeader("index", NIL, "index")]
+    <h1>index</h1>
+    [=pageList(classList, "builtin types")]
+    [=pageList(moduleList, "builtin modules")]
+
+    <h3>second level items</h3>
+    [=indentStart()]
+    <table>
+      [FOR key IN Page.pages.keys().sort()]
+        [Page page = Page.pages[key]]
+        [IF page.parent != NIL && !page.noIndex && !page.hide]
+          <tr><td class='topright'>
+          [=keyword(page.type.toUpper())]
+          &nbsp;</td><td class='nowrap'>
+          [=pageRefBold(page.fullName, page.fullName)]
+          &nbsp;</td><td>[=page.comment.replaceAll("\n", " ")]</td></tr>
+        [}]
+      [}]
+    </table>
+    [=indentEnd()]
+
+    [=pageFooter()]
+  }
+
+  FUNC shortPageName(Page page) string
+    string name = page.name
+    IF name.Size() > 1 && name[0].isUpper() && name[1].isLower()
+      # Thread -> thread, SortedList -> sortedList, etc.
+      name = name[0].toLowerAscii().asString() .. name.slice(1)
+    }
+    RETURN name
+  }
+
+  TEMPLATE pageList(sortedList<Page> pages, string headerText) ZUT.Html
+    <h3>[=headerText]</h3>
+    [=indentStart()]
+    <table>
+      [FOR page IN pages]
+        <tr><td class='topright'>
+        [=keyword(page.type.toUpper())]
+        &nbsp;</td><td class='nowrap'>
+        [=pageRefBold(page.fullName, shortPageName(page))]
+        &nbsp;</td><td>[=page.comment.replaceAll("\n", " ")]</td></tr>
+      [}]
+    </table>
+    [=indentEnd()]
+  }
+
+  TEMPLATE pageHeader(string title, Parent parent, string fullName) ZUT.Html
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html><head>
+    <style type="text/css">[=css()]</style>
+    <title>[=title] - Zimbu documentation</title>
+    </head><body>
+    <table width='500'><tr><td>
+      [IF parent != NIL]
+        <A href='[=parent.fullName].html'>up:&nbsp;[=parent.fullName]</A>
+      [}]
+      </td><td>
+        &nbsp;&nbsp;&nbsp;
+      </td><td>
+        [IF fullName != "index"]
+          <A href='index.html'>index</A>
+        [}]
+      </td><td align='right' width='90%'>
+        <A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+      </td></tr>
+    </table>
+  }
+
+  TEMPLATE pageFooter() ZUT.Html
+    </body></html>
+  }
+
+  TEMPLATE css() ZUT.Css
+    body {
+      font-family: arial,sans-serif;
+    }
+    .keyword {
+      color: #774400;
+    }
+    .type {
+      color: #227722;
+    }
+    .attribute {
+      color: #990077;
+    }
+    .typehref {
+      color: #227722;
+      text-decoration: underline;
+    }
+    .example {
+      background-color: #EEFFCC;
+      border-color: #88AA66;
+      border-style: solid none;
+      border-width: 1px medium;
+      padding: 5px;
+    }
+    .commentcode {
+      font-family: monospace;
+      background-color: #EEFFCC;
+    }
+    .ptext {
+      margin-top: 3px;
+      margin-bottom: 3px;
+    }
+    .pheader {
+      margin-bottom: 3px;
+    }
+    small {
+      font-size: 60%;
+    }
+    .topright {
+      text-align: right;
+      vertical-align: top;
+    }
+    .nowrap {
+      white-space: nowrap;
+      vertical-align: top;
+    }
+  }
+
+  FUNC getFname(Parent parent, string name) string
+    IF name == NIL
+      RETURN ""
+    }
+    string fname = name .. ".html"
+    IF parent != NIL
+      fname = parent.fullName .. "." .. fname
+    }
+    RETURN fname
+  }
+
+  # Verbose listing of values of |enum|.
+  TEMPLATE listEnumValues(Zui.EnumType enum) ZUT.Html
+    <h2>values</h2>
+    [=indentStart()]
+    <table>
+      [FOR item IN enum.getItemList()]
+        [DocItems di = NEW(NIL, item)]
+        [IF !di.hide]
+          <tr><td><b>[=item.getName()]</b>&nbsp;</td><td>
+          [IF di.summary != NIL || di.details != NIL]
+            [=paragraph(di.summary)]
+            [=paragraph(di.details)]
+          [}]
+          </td></tr>
+        [}]
+      [}]
+    </table>
+    [=indentEnd()]
+  }
+
+  # Text of an alias.
+  TEMPLATE aliasDetails(Zui.Statement stmt,
+                        Parent parent,
+                        Parent thisClass) ZUT.Html
+    <h2>aliased type</h2>
+    [=indentStart()]
+      [Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()]
+      [=Util.getTypeFromExprHtml(alias.getFrom(), parent, thisClass, FALSE)]
+    [=indentEnd()]
+  }
+
+  TEMPLATE classSummary(string what,
+                        Parent parent,
+                        string name,
+                        Zui.Statement stmt,
+                        DocItems di) ZUT.Html
+    [Zui.Declaration decl = stmt.getDeclaration()]
+    [Zui.Attributes attr = decl.getType().hasAttr()
+                                           ? decl.getType().getAttr() : NEW()]
+    [Zui.Visibility vis = Util.getVisibility(attr, parent)]
+    <tr><td class='topright'>[=keyword(what)]&nbsp;</td>
+    <td class='nowrap'>
+      [=getHref(parent, name, NIL)]
+      [IF stmt.getType() == Zui.StatementType.eCLASS_DECL
+                        && decl.getType().getClassDecl().hasTemplateTypeName()]
+        <small>[=Util.getTypeSpecText(
+                      decl.getType().getClassDecl().getTemplateTypeNameList()
+                      )]</small>
+      [}]
+      [=attributeSmall(Util.visName[vis])]
+    &nbsp;</td>
+    [IF di.summary != NIL]
+      [=tableCell(di.summary)]
+    [}]
+    </tr>
+  }
+
+  TEMPLATE varSummary(Parent parent,
+                      Parent thisClass,
+                      bool member,
+                      string itemName,
+                      Zui.Statement stmt,
+                      DocItems di) ZUT.Html
+    [Zui.Declaration decl = stmt.getDeclaration()]
+    [string name = decl.getName()]
+    [string dollarName = member && name != "NEW" ? "$" .. name : name]
+    [Zui.Visibility vis = Util.getVisibility(
+                              stmt.getDeclaration().getType().getAttr(),
+                                  thisClass == NIL ? parent : thisClass)]
+    <tr><td class='topright'>
+    <small>
+      [=Util.getTypeNameHtml(decl.getType(), parent, thisClass)]
+    </small>&nbsp;</td><td class='nowrap'>
+      <A href='[=itemName].html#[=dollarName]'><b>[=dollarName]</b></A>
+      [=attributeSmall(Util.visName[vis])]&nbsp;
+    </td>
+    [IF di.summary != NIL]
+      [=tableCell(di.summary)]
+    [}]
+    </tr>
+  }
+
+  TEMPLATE methodSummary(string itemName,
+                         string dollarName,
+                         string typeSpec,
+                         Zui.Declaration decl,
+                         Parent parent,
+                         Parent thisClass,
+                         Parent thisMethod,
+                         list<Zui.Declaration> argList,
+                         Zui.MethodType method,
+                         DocItems di) ZUT.Html
+    <tr><td class='topright'>
+    </td><td class='nowrap'>
+      <A href='[=itemName].html#[=dollarName]'><b>[=dollarName]</b></A>[=optTypeSpec(typeSpec)](<small>[=Util.getArgumentNames(argList)]</small>)
+    [IF method.hasReturnType()]
+      [" "]<small>
+      [=returnTypes(method, parent, thisMethod)]
+      </small>
+    [}]
+    [Zui.Visibility vis = Util.getVisibility(decl.getType().getAttr(),
+                                        thisClass == NIL ? parent : thisClass)]
+    [=attributeSmall(Util.visName[vis])]&nbsp;</td>
+    [IF di.summary != NIL]
+      [=tableCell(di.summary)]
+    [}]
+    </tr>
+  }
+
+  TEMPLATE varEntry(Zui.Declaration decl,
+                    Parent parent,
+                    Parent thisClass,
+                    string name,
+                    DocItems di) ZUT.Html
+    <p>
+    [=Util.getTypeNameHtml(decl.getType(), parent, thisClass)]
+    &nbsp;<A name='[=name]'><b>[=name]</b></A>
+    [Zui.Visibility vis = Util.getVisibility(decl.getType().getAttr(),
+                                thisClass == NIL ? parent : thisClass)]
+    [=attribute(Util.visName[vis])]
+    </p>
+    [IF di.summary != NIL || di.details != NIL]
+      [=indentStart()]
+      [=paragraph(di.summary)]
+      [=paragraph(di.details)]
+      [=indentEnd()]
+    [}]
+  }
+
+  TEMPLATE returnTypes(Zui.MethodType method,
+                       Parent parent,
+                       Parent thisMethod) ZUT.Html
+    [string comma = ""]
+    [FOR t IN method.getReturnTypeList()]
+      [=comma]
+      [=Util.getTypeNameHtml(t, parent, thisMethod)]
+      [comma = ", "]
+    [}]
+  }
+
+  TEMPLATE methodEntry(Zui.Declaration decl,
+                       Zui.MethodType method,
+                       string methodName,
+                       string typeSpec,
+                       list<Zui.Declaration> argList,
+                       Parent parent,
+                       Parent thisClass,
+                       Parent thisMethod,
+                       DocItems di) ZUT.Html
+    <p class='pheader'>
+    [IF decl.getType().getType() == Zui.TypeEnum.eFUNC]
+      [=keyword("FUNC")]
+    [ELSE]
+      [=keyword("PROC")]
+    [}]
+    &nbsp;<A name='[=methodName]'><b>[=methodName]</b></A>[=typeSpec]([=arguments(argList, parent, thisMethod)])
+    [IF decl.getType().getType() == Zui.TypeEnum.eFUNC]
+      [" "][=returnTypes(method, parent, thisMethod)]
+    [}]
+    [Zui.Attributes attr = decl.getType().getAttr()]
+    [IF attr.getAbstract()]
+      [=attribute("@abstract")]
+    [}]
+    [IF attr.getIsdefault()]
+      [=attribute("@default")]
+    [}]
+    [IF attr.getReplace()]
+      [=attribute("@replace")]
+    [}]
+    [Zui.Visibility vis = Util.getVisibility(decl.getType().getAttr(),
+                                        thisClass == NIL ? parent : thisClass)]
+    [=attribute(Util.visName[vis])]
+    </p>
+    [IF di.summary != NIL || di.details != NIL]
+      [=indentStart()]
+      [=paragraph(di.summary)]
+      [=paragraph(di.details)]
+      [=indentEnd()]
+    [}]
+  }
+
+  TEMPLATE arguments(list<Zui.Declaration> argList,
+                     Parent parent,
+                     Parent thisClass) ZUT.Html
+    [string comma = ""]
+    [FOR arg IN argList]
+      [=comma]
+      # "int ref" vs "int &ref"
+      [string space = arg.getType().getType() != Zui.TypeEnum.eREF ? " " : ""]
+      [=Util.getTypeNameHtml(arg.getType(), parent, thisClass)][=space][=arg.getName()]
+      [comma = ", "]
+    [}]
+  }
+
+  TEMPLATE memberList(dict<string, ZUT.Html> vars,
+                      dict<string, ZUT.Html> members,
+                      dict<string, ZUT.Html> sharedVars,
+                      dict<string, ZUT.Html> sharedMembers
+                      ) ZUT.Html
+    <h2>members (alphabetically)</h2>
+    [=indentStart()]
+    [IF vars.Size() > 0 || members.Size() > 0]
+      [=sortMembers(vars)]
+      [=sortMembers(members)]
+    [}]
+    [IF sharedVars.Size() > 0 || sharedMembers.Size() > 0]
+      [=indentEnd()]
+      <h2>shared (alphabetically)</h2>
+      [=indentStart()]
+      [=sortMembers(sharedVars)]
+      [=sortMembers(sharedMembers)]
+    [}]
+    [=indentEnd()]
+  }
+
+  # Sort member entries and concatenate them into one string.
+  TEMPLATE sortMembers(dict<string, ZUT.Html> members) ZUT.Html
+    [FOR key IN members.keys().sort()]
+      [=members[key]]
+    [}]
+  }
+
+  TEMPLATE extraItems(list<list<ZUT.Html>> extra) ZUT.Html
+    [FOR section IN extra]
+      <h2>[=section[0]]</h2>
+      [=indentStart()]
+      [FOR i IN 1 UNTIL section.Size()]
+        [=section[i]]
+      [}]
+      [=indentEnd()]
+    [}]
+  }
+
+  TEMPLATE optTypeSpec(string typeSpec) ZUT.Html
+    [IF typeSpec != ""]
+      <small>[=typeSpec]</small>
+    [}]
+  }
+
+  # Get a reference to the file#item that defines parent.name.
+  TEMPLATE getHref(Parent parent, string name, string item) ZUT.Html
+    [string fname = getFname(parent, name)]
+    [string frag = item != NIL ? "#" .. item : ""]
+    <A href='[=fname][=frag]'><b>[=name == NIL ? item : name]</b></A>
+  }
+
+  TEMPLATE indentStart() ZUT.Html
+    <table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+  }
+
+  TEMPLATE indentEnd() ZUT.Html
+    </td></tr></table>
+  }
+
+  TEMPLATE wrapType(string lead, ZUT.Html type) ZUT.Html
+    <A class='typehref' href='[=lead].html'>[=type]</A>
+  }
+
+  TEMPLATE wrapType(string lead, string type) ZUT.Html
+    <A class='typehref' href='[=lead].html'>[=type]</A>
+  }
+
+  TEMPLATE typeSpan(ZUT.Html type) ZUT.Html
+    <span class='type'>[=type]</span>
+  }
+
+  TEMPLATE keyword(string word) ZUT.Html
+    <span class='keyword'>[=word]</span>
+  }
+
+  # Strip the type spec from a type: "list<Type>" -> "list"
+  FUNC stripTypeSpec(string name) string
+    int idx = name.find('<')
+    IF idx < 0
+      RETURN name
+    }
+    RETURN name.slice(0, idx - 1)
+  }
+
+  TEMPLATE simpleRef(string url, string text) ZUT.Html
+    <A href="[=url]">[=text]</A>
+  }
+
+  TEMPLATE pageRef(string fullName, string name = NIL) ZUT.Html
+    <A href='[=stripTypeSpec(fullName)].html'>[=name ?: fullName]</A>
+  }
+
+  TEMPLATE pageRefBold(string fullName, string name = NIL) ZUT.Html
+    <A href='[=stripTypeSpec(fullName)].html'><b>[=name ?: fullName]</b></A>
+  }
+
+  TEMPLATE attributeSmall(string text) ZUT.Html
+    <span class='attribute'><small> [=text]</small></span>
+  }
+
+  TEMPLATE attribute(string text) ZUT.Html
+    <span class='attribute'> [=text]</span>
+  }
+
+  TEMPLATE textStart() ZUT.Html
+    <p class='ptext'>
+  }
+
+  TEMPLATE paragraph(string text) ZUT.Html
+    [IF text != NIL]
+      <p class='ptext'>[=text]</p>
+    [}]
+  }
+
+  TEMPLATE paragraph(ZUT.Html html) ZUT.Html
+    [IF html != NIL]
+      <p class='ptext'>[=html]</p>
+    [}]
+  }
+
+  TEMPLATE tableCell(ZUT.Html html) ZUT.Html
+    [IF html != NIL]
+      <td>[=html]</td>
+    [}]
+  }
+
+  TEMPLATE tableRow3(ZUT.Html html) ZUT.Html
+    <tr><td colspan=3>[=html]</td></tr>
+  }
+
+  TEMPLATE tableSep() ZUT.Html
+    <tr><td>&nbsp;</td></tr>
+  }
+}

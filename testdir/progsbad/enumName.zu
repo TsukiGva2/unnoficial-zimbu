@@ -1,0 +1,10 @@
+# Small test program: Verify that this does not compile.
+
+# Name must start with capital.
+ENUM foo
+  nothing
+}
+
+FUNC Main() int
+  RETURN 0
+}

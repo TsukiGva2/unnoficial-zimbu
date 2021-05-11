@@ -1,0 +1,76 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for SWITCH.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE SwitchTest @public
+
+  PROC test() @public
+    test1()
+    test2()
+  }
+
+  ENUM Color
+    blue
+    red
+    black
+  }
+
+  PROC test1()
+    VAR e = Color.blue
+    SWITCH e
+      CASE Color.red
+        # PROCEED  # gives an error
+        IO.write("red\n")
+      CASE Color.blue
+        {
+          IO.write("bl")
+        }
+        {
+          IO.write("ue\n")
+        }
+        PROCEED
+      CASE Color.black
+        IO.write("black\n")
+        # PROCEED  # gives an error
+    }
+
+    e = Color.red
+    SWITCH e
+      CASE Color.red; IO.write("red\n")
+        PROCEED
+      CASE Color.blue
+         IO.write("blue\n"); BREAK
+
+CASE Color.black
+    {
+      IO.write("not black\n")
+    }
+    {
+      IO.write("black\n")
+    }
+     BREAK
+    }
+  }
+
+  # Check that a function ending in a SWITCH is OK if all branches end in
+  # RETURN/EXIT/THROW
+  FUNC test2() int
+    int x
+    SWITCH x
+      CASE 1
+        THROW "wrong"
+      CASE 2
+        EXIT 8
+      DEFAULT
+        RETURN 3
+    }
+  }
+}
+
+

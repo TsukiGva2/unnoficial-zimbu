@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZUT.Page class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZUT.html'>up:&nbsp;ZUT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZUT.Page
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The properties of an HTML page.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#NEW'><b>NEW</b></a>(<small>title</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a page with Title <b>title</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#$setBody'><b>$setBody</b></a>(<small>body</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the template to call to fill the body of the page.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#$renderBody'><b>$renderBody</b></a>(<small>context</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Render the body template, passing <b>context</b> if needed.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#$setHtml5'><b>$setHtml5</b></a>(<small>html5</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set whether the page should use an HTML 5 declaration.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#$addPath'><b>$addPath</b></a>(<small>path</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a path for which this page should display.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.Page.html#$addCss'><b>$addCss</b></a>(<small>css</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add CSS to be inserted in the page header.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> title)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a page with Title <b>title</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addCss'><b>$addCss</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> css)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add CSS to be inserted in the page header.
+</p>
+<p class='ptext'> Note that <b>css</b> is included as-is, not processed like a template.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addPath'><b>$addPath</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> path)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a path for which this page should display.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$renderBody'><b>$renderBody</b></A>(<span class='type'><A class='typehref' href='ZUT.Context.html'>ZUT.Context</A></span> context) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Render the body template, passing <b>context</b> if needed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setBody'><b>$setBody</b></A>(<span class='type'><A class='typehref' href='ZUT.HtmlFunc.html'>ZUT.HtmlFunc</A></span> body)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the template to call to fill the body of the page.
+</p>
+<p class='ptext'> Use a callback to pass arguments to the template, e.g.:
+<pre class='example'> ZUT.page page = NEW("ZUT demo page")
+ callback&lt;ZUT.HtmlFunc, string&gt; cb = NEW(ZutDemoPage.page, "Hello world!")
+ page.setBody(cb)
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setHtml5'><b>$setHtml5</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> html5)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set whether the page should use an HTML 5 declaration.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

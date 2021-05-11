@@ -1,0 +1,31 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to a Zui message.
+# Include this piece in a Zui*Ext.zu class to use the get() method.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+# NOTE: The class that includes ZuiExt must declare undefinedInit.
+PIECE ZuiExt<Tmsg, Textension> @items=public
+  int    $undefined
+
+  SHARED
+
+    FUNC get(Tmsg msg) Textension
+      Textension r
+      IF msg.extension == NIL
+        r = NEW()
+        r.undefined = undefinedInit
+        msg.extension = r
+      ELSE
+        r = msg.extension
+      }
+      RETURN r
+    }
+
+  }
+}

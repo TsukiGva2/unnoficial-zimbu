@@ -1,0 +1,320 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module BYTESTRING - byte string support
+#
+
+#= Methods for the byteString type.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE BYTESTRINGModule @public
+
+  #= The builtin type byteString.
+  #- A byteString is a sequence of bytes (octets) with any value, including NUL.
+  #
+  #- The object methods can be used on a byteString value:
+  #% byteString buffer = "foobar"
+  #% IO.print(buffer.asString())
+  CLASS STARTbyteString @public
+    # For Zudocu: start of byteString class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in the byteString.
+  #- The size is stored thus this method is efficient.  It does not go over
+  #- the characters to find the end.
+  #
+  #- The empty byteString returns zero.
+  FUNC Size(byteString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Convert the byteString to a string.
+  #- Same as $latin1ToString().
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC ToString(byteString this) string @public
+    IFNIL
+      RETURN NIL
+    }
+    IO.StringWriter w = NEW()
+    FOR c IN this
+      w.write(c.asString())
+    }
+    RETURN w.ToString()
+  }
+
+  #= Convert the byteString to a string and then apply |format|.
+  #- Same as $latin1ToString().ToString(format).
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC ToString(byteString this, string format) string @public
+    IFNIL
+      RETURN NIL
+    }
+    IO.StringWriter w = NEW()
+    FOR c IN this
+      w.write(c.asString())
+    }
+    RETURN w.ToString().ToString(format)
+  }
+
+  #= Assuming that the byteString contains Latin1 characters, return a string
+  #= encoded in utf-8.
+  #
+  #- Takes each byte and converts it to an UTF-8 character.  The resulting
+  #- string size (counting characters) is equal to the size of the byteString.
+  #- The byte size of the string may be up to twice that.
+  #
+  #- For example: "foo".convertLatin1() returns "foo". 
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC latin1ToString(byteString this) string @public
+    IFNIL
+      RETURN NIL
+    }
+    RETURN ToString(this)
+  }
+
+  #= Return -1, 0 or 1 when |other| is larger, equal to or smaller than this
+  #= byteString.
+  #
+  #- When using ?.Compare() on a NIL byteString and |other| is NIL it returns
+  #- zero.  When |other| is not NIL it returns -1.
+  FUNC Compare(byteString this, byteString other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this byteString, FALSE otherwise.
+  #
+  #- When using ?.Compare() on a NIL byteString and |other| is NIL it returns
+  #- TRUE.  Otherwise when |other| is NIL returns FALSE.
+  FUNC Equal(byteString this, byteString other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the byteString as a string.
+  #- Throws an exception if the byteString is not valid UTF-8.
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC asString(byteString this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Convert the byteString to a varString.  Equivalent to
+  #= `$latin1ToString().toVarString().`
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC toVarString(byteString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Convert the byteString to a varByteString.
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC toVarByteString(byteString this) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the byte at position |idx|.
+  #- Throws an exception if |idx| is < 0 or beyond the end of the byteString.
+  #
+  #- When using ?.get() and the byteString is NIL this returns zero.
+  FUNC get(byteString this, int idx) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the byte at position |idx|.
+  #- Throws an exception if |idx| is < 0 or beyond the end of the byteString.
+  #
+  #- When using ?.getByte() and the byteString is NIL this returns zero.
+  FUNC getByte(byteString this, int idx) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the UTF-8 encoded character at position |idx|.
+  #- Throws an exception if |idx| is < 0 or beyond the end of the byteString.
+  #- Returns -1 if the byte sequence does not start with a leading byte or
+  #- when it is truncated.
+  #
+  #- When using ?.getChar() and the byteString is NIL this returns zero.
+  FUNC getChar(byteString this, int idx) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the byte size of the UTF-8 encoded character at position |idx|.
+  #- Throws an exception if |idx| is < 0 or beyond the end of the byteString.
+  #- Returns -1 if the byte sequence does not start with a leading byte or
+  #- when it is truncated.
+  #- Returns 1 for a NUL byte.
+  #
+  #- When using ?.getCharSize() and the byteString is NIL this returns zero.
+  FUNC getCharSize(byteString this, int idx) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where byteString |b| appears.
+  #- Returns -1 when |b| does not appear.
+  #
+  #- When using ?.find() and the byteString is NIL returns -1.
+  FUNC find(byteString this, byteString b) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where byte |b| appears.
+  #- Returns -1 when |b| does not appear.
+  #
+  #- Throws an exception when b < 0 or b > 255.
+  #
+  #- When using ?.find() and the byteString is NIL returns -1.
+  FUNC find(byteString this, int b) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index where byteString |b| appears.
+  #- Returns -1 when |b| does not appear.
+  #
+  #- When using ?.findLast() and the byteString is NIL returns -1.
+  FUNC findLast(byteString this, byteString b) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index where byte |b| appears.
+  #- Returns -1 when |b| does not appear.
+  #
+  #- Throws an exception when b < 0 or b > 255.
+  #
+  #- When using ?.findLast() and the byteString is NIL returns -1.
+  FUNC findLast(byteString this, int b) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when the byteString starts with |b|.
+  #
+  #- When using ?.startsWith() and the byteString is NIL returns -1.
+  FUNC startsWith(byteString this, byteString b) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE when the byteString ends with |b|.
+  #
+  #- When using ?.endsWith() and the byteString is NIL returns -1.
+  FUNC endsWith(byteString this, byteString b) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a number that is a hash value of the byteString.
+  #- A byteString value always results in the same hash value.
+  #- Two different byteString can result in the same hash value, but the
+  #- chance of this happening is small.
+  #
+  #- The hash method is fast and has a reasonable distribution.
+  #
+  #- TODO: this should return a nat
+  FUNC hash(byteString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return a copy of the byteString, starting at index |start|.
+  #- A negative index is relative to the end of the byteString, `slice(-1)`
+  #- returns a byteString with only the last byte.
+  #
+  #- If |start| is equal to or larger than the size of the byteString an empty
+  #- byteString is returned.
+  #- If |start| is negative and the absolute value is larger than the
+  #- byteString size the whole byteString is returned.
+  #
+  #- When using ?.slice() on a NIL byteString the result is NIL.
+  FUNC slice(byteString this, int start) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the byteString, starting at index |start| and ending at
+  #= |end|, inclusive.
+  #- A negative index is relative to the end of the byteString. `slice(0, -1)`
+  #- returns the whole byteString. `slice(-1, -1)` only the last byte.
+  #
+  #- If |start| is equal to or larger than the size of the byteString an empty
+  #- byteString is returned.
+  #- If |start| is negative and the absolute value is larger than the returned
+  #- byteString starts at index zero.
+  #- If the |start| byte is after the |end| byte an empty byteString is returned.
+  #
+  #- When using ?.slice() on a NIL byteString the result is NIL.
+  FUNC slice(byteString this, int start, int end) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the byteString split into pieces, split at white space.
+  #- Empty parts are omitted.
+  #
+  #- Example:  "foo  bar ".split() returns ["foo", "bar"].
+  #
+  #- When the byteString is NIL this returns NIL.
+  FUNC split(byteString this) list<byteString> @public
+    IFNIL
+      RETURN NIL
+    }
+    list<byteString> res = NEW()
+    int i
+    WHILE i < this.Size()
+      WHILE this[i].isWhite()
+        IF ++i == this.Size()
+          RETURN res
+        }
+      }
+      int j = i + 1
+      WHILE j < this.Size() && !this[j].isWhite()
+        ++j
+      }
+      res.add(this.slice(i, j - 1))
+      i = j
+    }
+    RETURN res
+  }
+
+  #= Return a list with the byteString split into pieces, split at |sep|.
+  #- The matches with the |sep| byteString are omitted.
+  #
+  #- |sep| must match exactly.
+  #
+  #- When there are no byteString between two |sep| matches, or at the end or
+  #- start of the byteString, the list will contain an empty byteString item.
+  #% "one, two,three".asByteString().split(", ")
+  #% # result: ["one", "two,three"]
+  #
+  #- When using ?.split() on a NIL byteString the result is NIL.
+  FUNC split(byteString this, byteString sep) list<byteString> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #! For Zudocu: end of byteString class.
+  CLASS ENDbyteString
+  }
+
+}

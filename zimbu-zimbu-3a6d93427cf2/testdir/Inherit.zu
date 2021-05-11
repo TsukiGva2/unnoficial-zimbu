@@ -1,0 +1,595 @@
+# Test file for classes, interfaces, inheritance, etc.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Inherit @public
+
+  PROC test() @public
+    IO.print("testdir/Inherit.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    test6()
+    test7()
+    test8()
+    test9()
+    testListInit()
+    testGetMember()
+  }
+
+  ###############################################################
+
+  CLASS Toppy
+    string $name
+    int    $number
+    FUNC $getName() string @default
+      RETURN $name
+    }
+    FUNC $getNumber() int @default
+      RETURN $number
+    }
+    PROC $setName(string _name)
+      $name = _name
+    }
+
+    SHARED
+      PROC asdf()
+      }
+      int asdfasdfasd
+    }
+  }
+
+  CLASS Childy EXTENDS Toppy
+    int $nothing
+    FUNC $getNumber() int @replace
+      RETURN $number + 1
+    }
+    PROC $doNothing() @default
+    }
+  }
+
+  CLASS Leafy EXTENDS Childy
+    int $final
+    FUNC $getName() string @replace
+      RETURN $name .. "!"
+    }
+    PROC $setSomething(string x)
+      $name = x
+    }
+    PROC $doNothing() @replace
+    }
+  }
+
+  PROC test1()
+    Toppy.C t = NEW()
+    t.name = "t"
+    t.number = 11
+    Childy.C c = NEW()
+    c.name = "c"
+    c.number = 22
+    c.nothing = 2
+    Leafy l = NEW()
+    l.name = "l"
+    l.number = 33
+    l.final = 42
+
+    IO.print("Top name: " .. t.name .. "/" .. t.getName())
+    IO.print("Top number: " .. t.number .. "/" .. t.getNumber())
+    IO.print("Child name: " .. c.name .. "/" .. c.getName())
+    IO.print("Child number: " .. c.number .. "/" .. c.getNumber())
+    IO.print("Leaf name: " .. l.name .. "/" .. l.getName())
+    IO.print("Leaf number: " .. l.number .. "/" .. l.getNumber())
+
+    Toppy i = t
+    IO.print("Top name: " .. i.name .. "/" .. i.getName())
+    IO.print("Top number: " .. i.number .. "/" .. i.getNumber())
+    i.name = "top name"
+    i.number = 111
+    IO.print("Top name: " .. i.name .. "/" .. i.getName())
+    IO.print("Top number: " .. i.number .. "/" .. i.getNumber())
+
+    i = c
+    IO.print("Child name: " .. i.name .. "/" .. i.getName())
+    IO.print("Child number: " .. i.number .. "/" .. i.getNumber())
+    i.name = "child name"
+    i.number = 222
+    IO.print("Child name: " .. i.name .. "/" .. i.getName())
+    IO.print("Child number: " .. i.number .. "/" .. i.getNumber())
+
+    i = l
+    IO.print("Leaf name: " .. i.name .. "/" .. i.getName())
+    IO.print("Leaf number: " .. i.number .. "/" .. i.getNumber())
+    i.name = "leaf name"
+    i.number = 333
+    IO.print("Leaf name: " .. i.name .. "/" .. i.getName())
+    IO.print("Leaf number: " .. i.number .. "/" .. i.getNumber())
+
+    # Childy xi = t  # should not work
+    Childy ci = c
+    IO.print("Childy name: " .. ci.name .. "/" .. ci.getName())
+    IO.print("Childy number: " .. ci.number .. "/" .. ci.getNumber())
+    ci = l
+    IO.print("Leafy name: " .. ci.name .. "/" .. ci.getName())
+    IO.print("Leafy number: " .. ci.number .. "/" .. ci.getNumber())
+    ci.nothing = 1234
+  }
+
+  #####################################################################
+
+  CLASS Abby @abstract
+    string $text
+    FUNC $getText() string
+      RETURN $text
+    }
+    PROC $setText(string s) @abstract
+    }
+  }
+
+  CLASS Impl EXTENDS Abby
+     PROC $setText(string s) @define
+     $text = s
+    }
+  }
+
+  PROC test2()
+    # Abby noab     # error
+    Impl im = NEW()
+    Abby ab
+    # ab = NEW()    # error
+    ab = im
+    ab.text = "nothing"
+    ab.setText("something")
+    IO.print("got " .. ab.getText())
+  }
+
+  #####################################################################
+  #
+  # Example for virtual method from Wikipedia
+  #
+  CLASS Animal
+    PROC $eat() @default
+      IO.print("I eat like a generic Animal.")
+    }
+  }
+   
+  CLASS Wolf EXTENDS Animal
+    PROC $eat() @replace
+      IO.print("I eat like a wolf!")
+    }
+  }
+   
+  CLASS Fish EXTENDS Animal
+    PROC $eat() @replace @default
+      IO.print("I eat like a fish!")
+    }
+  }
+   
+  CLASS GoldFish EXTENDS Fish @final
+    PROC $eat() @replace
+      IO.print("I eat like a goldfish!")
+    }
+  }
+   
+  CLASS OtherAnimal EXTENDS Animal
+  }
+   
+  # This fails, GoldFish is final
+  #CLASS BadFish EXTENDS GoldFish
+  #}
+
+  PROC test3()
+    list<Animal> animals = NEW()
+    animals.add(Animal.NEW())
+    animals.add(Wolf.NEW())
+    animals.add(Fish.NEW())
+    animals.add(GoldFish.NEW())
+    animals.add(OtherAnimal.NEW())
+   
+    FOR animal IN animals
+      animal.eat()
+    }
+
+    dict<string, Animal> zoo = NEW()
+    zoo["animal"] = Animal.NEW()
+    zoo["wolf"] = Wolf.NEW()
+    zoo["fish"] = Fish.NEW()
+    zoo["goldfish"] = GoldFish.NEW()
+    zoo["other"] = OtherAnimal.NEW()
+    # todo: use zoo.keys() or zoo.iterkeys()
+    FOR name IN ["animal", "wolf", "fish", "goldfish", "other"]
+      zoo[name].eat()
+    }
+  }
+
+  ######################################################################
+  #
+  # Test polymorphism
+  #
+  CLASS BaseN @abstract
+    string $name
+    FUNC $getName() string @abstract
+    }
+  }
+
+  CLASS ChildOne EXTENDS BaseN
+     FUNC $getName() string @define
+      RETURN "One " .. $name
+    }
+  }
+
+  CLASS ChildTwo EXTENDS BaseN
+    FUNC $getName() string @define
+      RETURN "Two " .. $name
+    }
+  }
+
+  CLASS ChildThree EXTENDS BaseN
+    FUNC $getName() string @define
+      RETURN "Three " .. $name
+    }
+  }
+
+  CLASS Nanny
+    FUNC $getName(ChildOne child) string
+      RETURN "One Nanny " .. child.getName()
+    }
+    FUNC $getName(ChildTwo child) string
+      RETURN "Two Nanny " .. child.getName()
+    }
+    # No method for ChildThree.
+    FUNC $getName(BaseN child) string
+      RETURN "Generic Nanny " .. child.getName()
+    }
+  }
+
+  CLASS Daddy
+    FUNC $getName(ChildOne child) string
+      RETURN "One Daddy " .. child.getName()
+    }
+    FUNC $getName(ChildTwo child) string
+      RETURN "Two Daddy " .. child.getName()
+    }
+    FUNC $getName(ChildThree child) string
+      RETURN "Three Daddy " .. child.getName()
+    }
+    # No method for BaseN.
+  }
+
+  PROC test4()
+    BaseN child
+    Nanny nanny = NEW()
+    Daddy daddy = NEW()
+    child = ChildOne.NEW()
+    child.name = "one"
+    IO.print(nanny.getName(child))
+    IO.print(daddy.getName(child))
+    child = ChildTwo.NEW()
+    child.name = "two"
+    IO.print(nanny.getName(child))
+    IO.print(daddy.getName(child))
+    child = ChildThree.NEW()
+    child.name = "three"
+    IO.print(nanny.getName(child))  # will use Generic Nanny
+    IO.print(daddy.getName(child))  # will use Three Daddy
+  }
+
+  #####################################################################
+  #  Using class as an interface
+  CLASS One
+    FUNC $getNr() int
+      RETURN 1
+    }
+    SHARED
+      int asdfx
+      PROC doSome()
+      }
+    }
+  }
+
+  CLASS Two IMPLEMENTS One.I
+    FUNC $getNr() int @define
+      RETURN 2
+    }
+  }
+
+  PROC test5()
+    One oneOrTwo = One.NEW()
+    IO.print("One: " .. oneOrTwo.getNr())
+    oneOrTwo = Two.NEW()
+    IO.print("Two: " .. oneOrTwo.getNr())
+  }
+
+  ######################################################################
+  #
+  # Visitor pattern from wikipedia
+  #
+
+  INTERFACE I_CarElementVisitor
+    PROC $visit(Wheel wheel)
+    }
+    PROC $visit(Engine engine)
+    }
+    PROC $visit(Body body)
+    }
+    PROC $visit(Car car)
+    }
+  }
+
+  INTERFACE I_CarElement
+    PROC $accept(I_CarElementVisitor visitor)
+    }
+  }
+
+  CLASS Wheel IMPLEMENTS I_CarElement
+    string $name
+    NEW(string _name)
+      $name = _name
+    }
+    FUNC $getName() string
+      RETURN $name
+    }
+    PROC $accept(I_CarElementVisitor visitor) @define
+      visitor.visit(THIS)
+    }
+  }
+   
+  CLASS Engine IMPLEMENTS I_CarElement
+    PROC $accept(I_CarElementVisitor visitor) @define
+      visitor.visit(THIS)
+    }
+  }
+   
+  CLASS Body IMPLEMENTS I_CarElement
+    PROC $accept(I_CarElementVisitor visitor) @define
+      visitor.visit(THIS)
+    }
+  }
+   
+  CLASS Car IMPLEMENTS I_CarElement
+    list<I_CarElement> $elements
+    FUNC $getElements() list<I_CarElement>
+      RETURN $elements
+    }
+    NEW()
+      $elements = NEW()
+      $elements.add(Wheel.NEW("front left"))
+      $elements.add(Wheel.NEW("front right"))
+      $elements.add(Wheel.NEW("back left"))
+      $elements.add(Wheel.NEW("back right"))
+      $elements.add(Body.NEW())
+      $elements.add(Engine.NEW())
+    }
+    PROC $accept(I_CarElementVisitor visitor) @define
+      visitor.visit(THIS)
+    }
+  }
+   
+  CLASS CarElementPrintVisitor IMPLEMENTS I_CarElementVisitor
+    PROC $visit(Wheel wheel) @define
+      IO.print("Visiting " .. wheel.getName() .. " wheel")
+    }
+    PROC $visit(Engine engine) @define
+      IO.print("Visiting engine")
+    }
+    PROC $visit(Body body) @define
+      IO.print("Visiting body")
+    }
+ 
+    PROC $visit(Car car) @define
+      IO.print("Visiting car")
+      FOR element IN car.getElements()
+        element.accept(THIS)
+      }
+      IO.print("Visited car")
+    }
+  }
+   
+  CLASS CarElementDoVisitor IMPLEMENTS I_CarElementVisitor
+    PROC $visit(Wheel wheel) @define
+      IO.print("Kicking my " .. wheel.getName() .. " wheel")
+    }
+    PROC $visit(Engine engine) @define
+      IO.print("Starting my engine")
+    }
+    PROC $visit(Body body) @define
+      IO.print("Moving my body")
+    }
+    PROC $visit(Car car) @define
+      IO.print("Starting my car")
+      FOR carElement IN car.getElements()
+        carElement.accept(THIS)
+      }
+      IO.print("Started car")
+    }
+  }
+   
+  PROC test6()
+    Car car = NEW()
+    car.accept(CarElementPrintVisitor.NEW())
+    car.accept(CarElementDoVisitor.NEW())
+  }
+
+  ######################################################################
+
+  INTERFACE I_Iter
+    FUNC $hasNext() bool
+    }
+    FUNC $getNext() string   # TODO: use template
+    }
+  }
+
+  INTERFACE I_HasSize
+    FUNC $getSize() int
+    }
+  }
+
+  CLASS SomeList IMPLEMENTS I_Iter, I_HasSize
+    list<string> $theList
+    int          $idx = -1
+    NEW(list<string> list)
+      $theList = list
+    }
+    FUNC $hasNext() bool
+      RETURN $idx + 1 < $theList.Size()
+    }
+    FUNC $getNext() string
+      $idx++
+      RETURN $theList[$idx]
+    }
+    PROC $reset()
+      $idx = -1
+    }
+    FUNC $getSize() int
+      RETURN $theList.Size()
+    }
+  }
+
+  PROC test7()
+    SomeList sl = NEW(["one", "two", "three"])
+    WHILE sl.hasNext()
+      IO.print(sl.getNext())
+    }
+    sl.reset()
+    I_Iter it = sl
+    WHILE it.hasNext()
+      IO.print(it.getNext())
+    }
+  }
+
+  ######################################################################
+
+  CLASS Class1
+    int  $number
+    NEW(int number)
+      $number = number
+    }
+    FUNC $getNumber() int @default
+      RETURN $number
+    }
+  }
+
+  CLASS Class2 EXTENDS Class1
+    FUNC $getNumber() int @replace
+      RETURN $number + 10
+    }
+  }
+
+  # Use a object method reference.
+  PROC test8()
+    Class1.C.func< => int> getOne
+    getOne = Class1.getNumber
+    Class1.C o1 = Class1.NEW(5)
+    IO.print("Class1.getNumber: " .. o1.(getOne)())
+
+    Class1.func< => int> getIt
+    Class1 o2 = Class2.NEW(7)
+    getIt = Class1.getNumber
+    IO.print("Class1.getNumber: " .. o2.(getIt)())
+    getIt = Class2.getNumber
+    IO.print("Class2.getNumber: " .. o2.(getIt)())
+  }
+
+  ######################################################################
+
+  CLASS OneClass
+    int  $number
+  }
+
+  CLASS EmptyClass
+  }
+
+  CLASS EmptyChildClass EXTENDS EmptyClass
+  }
+
+  # Use an interface of a class that doesn't have children
+  # and a class that doesn't have members.
+  PROC test9()
+    OneClass one = OneClass.NEW()
+    one.number = 9
+    IO.print("ClassOne.number: " .. one.number)
+
+    EmptyClass e = EmptyClass.NEW()
+    IF e ISNOTA EmptyClass
+      IO.print("EmptyClass is wrong")
+    }
+
+  }
+
+  ######################################################################
+
+  CLASS BarParent
+    int $nr
+    
+    NEW(list<int> l)
+      $nr = l[0]
+    }
+  }
+
+  CLASS BarChild EXTENDS BarParent
+    string $name
+  }
+
+  PROC testListInit()
+    BarChild child = [88]
+    IO.print("child: " .. child.ToString())
+    BarParent parent
+    parent = [99]
+    IO.print("parent: " .. parent.ToString())
+  }
+
+  CLASS NewCall
+    string $name
+    NEW() @default
+      NEW("blaaah")
+    }
+    NEW(string name) @default
+      $name = name
+    }
+    FUNC $echo(string s) string @default
+      RETURN "NewCall"
+    }
+    FUNC $nope() string
+      RETURN "nope"
+    }
+  }
+  CLASS AnotherCall EXTENDS NewCall
+    NEW() @replace
+      PARENT.NEW("another")
+    }
+    NEW(int nr)
+      NEW("new " .. nr)
+    }
+    FUNC $echoParent(string s) string
+      RETURN PARENT.echo(s)
+    }
+    FUNC $echo(string s) string @replace
+      RETURN "AnotherCall"
+    }
+  }
+  CLASS DeeperCall EXTENDS AnotherCall
+    NEW(string s) @replace
+      PARENT.PARENT.NEW(s .. "pp")
+    }
+    FUNC $echoTop(string s) string
+      string sx = PARENT.nope()   # should find NewCall.nope()
+      RETURN PARENT.PARENT.echo(s)
+    }
+  }
+
+  PROC testGetMember()
+    NewCall.C newOne = NEW()
+    NewCall.C newTwo = NEW("two")
+    AnotherCall.C newAnother = NEW()
+    AnotherCall.C newNumber = NEW(5)
+    IO.print("one: " .. newOne.name
+            .. ", two: " .. newTwo.name
+            .. ", another: " .. newAnother.name
+            .. ", number: " .. newNumber.name)
+  }
+
+}

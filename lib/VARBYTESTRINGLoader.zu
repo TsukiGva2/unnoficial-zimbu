@@ -1,0 +1,50 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# VARBYTESTRING module loader
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE VARBYTESTRINGLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin VARBYTESTRING module.
+  FUNC prepare() Builtin
+    # We need the pName of the functions where they are called.
+    DeclStore.wantPName("MVARBYTESTRINGModule", "Fsplit")
+
+    Builtin b = NEW()
+    b.moduleName = "VARBYTESTRINGModule"
+    b.fileName = "VARBYTESTRINGModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the VARBYTESTRING module is used, after it was processed first
+  # time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("VARBYTESTRING", builtin)
+      ModuleType mt = moduleDecl.type.<ModuleType>
+
+      # Remove the methods added for docs only, the real ones are defined
+      # below or elsewhere.
+      FOR k IN ["size", "Size"]
+        Declaration d = mt.findMember(k, NIL)
+        IF d != NIL
+          mt.removeMember(d)
+        }
+      }
+    }
+  }
+}

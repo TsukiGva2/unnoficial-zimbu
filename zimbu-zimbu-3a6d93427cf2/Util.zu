@@ -1,0 +1,33 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Util module: various stuff
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Util @items=public   # TODO: restrict visibility
+
+  # Return directory of |fname|.  If |fname| does not contain a slash the
+  # result is an empty string.
+  # TODO: should be in a system library.
+  FUNC dirName(string fname) string
+    int tail = fname.findLast('/')
+    IF tail < 0
+      RETURN ""
+    }
+    RETURN fname.slice(0, tail - 1)
+  }
+
+  # Concatenate file name |fname| to directory name |dir|.
+  # When |dir| is empty returns |fname|.
+  FUNC concat(string dir, string fname) string
+    IF dir == ""
+      RETURN fname
+    }
+    RETURN dir .. "/" .. fname
+  }
+
+}

@@ -1,0 +1,6 @@
+# Scratch area to try out new features and reproduce bugs.
+
+FUNC Main() int
+
+  RETURN 0
+}

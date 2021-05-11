@@ -1,0 +1,114 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Label
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE LabelModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Label is a simple widget that contains text, a HTML SPAN.
+  #- This is an inline element, setting width and height does not work.
+  #- Alternatively use a TextBlock.
+  CLASS Label EXTENDS ZWT.Widget @public
+    #!
+    string $labelText
+
+    #!
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('span');
+<<<
+    }
+
+    #= Create a new Label with |text| as the text.
+    NEW(string text) @public
+      $setText(text)
+    }
+
+    #= Create a new Label with |text| as the text and |style| as the style.
+    NEW(string text, ZWT.Style style) @public
+      $setText(text)
+      $setStyle(style)
+    }
+
+    #= Replace the text of the Label with |text|.
+    PROC $setText(string text) @public
+      IF text != $labelText
+        $labelText = text
+        # Most modern browsers have textContent.
+        # Fall back to innerText if not supported.
+>>>
+  if (typeof(%$elem%.textContent) != "undefined") {
+    %$elem%.textContent = %text%;
+  } else {
+    %$elem%.innerText = %text%;
+  }
+<<<
+      }
+    }
+
+    #= Return the Label text.
+    FUNC $getText() string @replace @public
+      RETURN $labelText
+    }
+
+    #= Return "Label(text)", where "text" is the Label text.
+    FUNC $ToString() string @replace @public
+      RETURN "Label(" .. $labelText .. ")"
+    }
+
+  }
+
+  #= A TextBlock is a simple widget that contains text, a HTML DIV.
+  #- This is a block element, the width and height can be set explicitly.
+  #- Alternatively use a Label.
+  CLASS TextBlock EXTENDS ZWT.Widget @public
+    #!
+    string $text
+
+    #!
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('div');
+<<<
+    }
+
+    #= Create a new TextBlock with |text| as the text.
+    NEW(string text) @public
+      $setText(text)
+    }
+
+    #= Replace the text of the TextBlock with |text|.
+    PROC $setText(string text) @public
+      IF text != $text
+        $text = text
+        # Most modern browsers have textContent.
+        # Fall back to innerText if not supported.
+>>>
+  if (typeof(%$elem%.textContent) != "undefined") {
+    %$elem%.textContent = %text%;
+  } else {
+    %$elem%.innerText = %text%;
+  }
+<<<
+      }
+    }
+
+    #= Return the TextBlock text.
+    FUNC $getText() string @replace @public
+      RETURN $text
+    }
+
+    #= Return "TextBlock(text)", where "text" is the TextBlock text.
+    FUNC $ToString() string @replace @public
+      RETURN "TextBlock(" .. $text .. ")"
+    }
+  }
+
+ }
+}

@@ -1,0 +1,162 @@
+# Test file for TYPE
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Typedef @public
+
+  PROC test() @public
+    IO.print("testdir/Typedef.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    test6()
+    test7()
+  }
+
+  TYPE int Size @protected
+  TYPE int Weight @public
+
+  PROC doit(Size s)
+    IO.print("size is " .. s)
+  }
+
+  # Test TYPE for int
+  PROC test1()
+    Size size = 4
+    Weight weight = size * 2
+    size = weight + 3
+    int n = size
+    weight = n
+    size = 5
+    weight = 9
+    size += 3
+    IO.print("size: " .. size .. ", weight: " .. weight)
+    doit(size)
+    doit(23)
+    # doit(weight) would fail
+    doit(weight.<Size>)
+    doit(41.<Size>)
+  }
+
+  # Test TYPE for tuple
+  PROC test2()
+    TYPE tuple<string, int> NameNumber
+    NameNumber tup = ["two", 2]
+    IO.print(tup.ToString())
+    string s = tup[0]
+    int v = tup[1]
+    IO.print("[" .. s .. ", " .. v .. "]")
+
+    NameNumber oth = ["one", 1]
+    tup = oth
+
+    PROC show(NameNumber nn)
+      IO.print(nn.ToString())
+    }
+    show(tup)
+  }
+
+  # Test TYPE for array, dict, list
+  PROC test3()
+    TYPE array<string> Names
+    TYPE array<string> Streets
+    Names nms = ["one", "two"]
+    Streets sts = ["here", "there"]
+    IO.print(nms.ToString())
+    IO.print(sts.ToString())
+
+    TYPE list<int> Numbers
+    TYPE list<int> Sizes
+    Numbers nrs = [1, 2, 3]
+    Numbers szs = [10, 20, 30]
+    nrs.extend(szs)
+    IO.print(nrs.ToString())
+
+    TYPE dict<string, int> NameNumber
+    TYPE dict<string, int> KeyValue
+    NameNumber nn = ["foo": 1, "bar": 2]
+    KeyValue kv = ["k1": 11, "k2": 22]
+    FOR k IN nn.keys()
+      kv[k] = nn[k]
+    }
+    IO.print(kv.ToString())
+  }
+
+  # Test TYPE for classes
+  PROC test4()
+    CLASS Foo
+      int $foo
+    }
+    TYPE Foo TheFoo
+    TYPE Foo NotTheFoo
+    TheFoo f = NEW()
+    f.foo = 8
+    NotTheFoo b = NEW()
+    b.foo = 9
+
+    CLASS Bar<Tkey>
+      Tkey $bar
+    }
+
+    TYPE Bar<string> StringBar
+    StringBar sb = NEW()
+    sb.bar = "yes"
+
+    Bar<string> abar = sb
+
+    TYPE Bar<int> IntBar
+    IntBar ib = NEW()
+    ib.bar = 123
+    IO.print(ib.bar)
+  }
+
+  # Test TYPE for method ref
+  PROC test5()
+    FUNC add(int one, int two) int
+      RETURN one + two
+    }
+
+    TYPE func<int, int => int> Op
+    Op a = add
+    IO.print(a(2, 4))
+  }
+
+  # Test TYPE for enum
+  PROC test6()
+    ENUM LongName
+      blue
+      red
+      green
+    }
+    ENUM WrongName
+      blue
+      red
+      green
+    }
+    TYPE LongName ShortName
+    ShortName color = ShortName.red
+    color = ShortName.green
+
+    LongName l = color
+    l = color
+    IO.print(l.ToString())
+  }
+
+  # Test TYPE for bits
+  PROC test7()
+    BITS FooBits
+      bool   $yes
+      int4   $small
+    }
+    TYPE FooBits Fb
+    Fb fb
+    fb.yes = TRUE
+    fb.small = 3
+    IO.print(fb.ToString())
+  }
+}

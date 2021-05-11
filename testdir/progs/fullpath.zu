@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  string p = IO.fullPath("testdir")
+  RETURN 0
+}

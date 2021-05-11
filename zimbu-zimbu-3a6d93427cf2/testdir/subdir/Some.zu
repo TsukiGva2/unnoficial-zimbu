@@ -1,0 +1,9 @@
+# Test file for a subdirectory
+
+IMPORT ../Something_2.zu   # test relative path
+
+MODULE Some @public
+  PROC print() @public
+    IO.write("testdir/subdir/Some.zu\n")
+  }
+}

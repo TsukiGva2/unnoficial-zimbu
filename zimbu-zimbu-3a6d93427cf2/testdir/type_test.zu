@@ -1,0 +1,30 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tests for Type() and "type".
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS Foo
+  FUNC $getType() type
+    RETURN $Type()
+  }
+  FUNC $getThisType() type
+    RETURN THIS.Type()
+  }
+}
+
+# Check that THIS.Type() and $Type() both work.
+FUNC test_Type() status
+  Foo foo = NEW()
+  TEST.equal("object of Foo", foo.getType().ToString())
+  TEST.equal("object of Foo", foo.getThisType().ToString())
+  TEST.equal(foo.getType(), foo.getThisType())
+
+  RETURN OK
+}

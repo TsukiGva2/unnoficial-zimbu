@@ -1,0 +1,35 @@
+testdir/ThreadTest.zu
+threadOneFunc(0)
+threadTwoFunc(0)
+threadOneFunc(1)
+threadTwoFunc(1)
+started simpleFunc()
+simpleFunc()
+test3()
+still alive 3
+still alive 6
+in the test4 thread
+from test4 thread
+got the lock
+released the lock
+got the lock again
+released the lock again
+testdir/PipeTest.zu
+Mon
+Tue
+Wed
+Thu
+Fri
+from thread: hello thread!
+from thread: NIL
+also hello from THREAD.eval()
+hello from the thread
+from FUNC: hello through the pipe
+hello world
+hello there
+testdir/HttpTest.zu
+testdir/GarbageThread.zu
+Filling the dict
+Starting to collect the garbage
+Looped 100100 times
+Ran the GC 40 times

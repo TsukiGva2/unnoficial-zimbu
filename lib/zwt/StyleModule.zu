@@ -1,0 +1,838 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: everything related to Style
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE StyleModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #
+  #= Specifies a color to be used for a Style.
+  #- It can be set as red-green-blue values or with ColorName.
+  CLASS Color @public
+    int       $red       @public  #= red value
+    int       $green     @public  #= green value
+    int       $blue      @public  #= blue value
+    ColorName $colorName @public  #= name of the color
+
+    #= Create a Color with color name |_colorName|.
+    NEW(ColorName colorName) @public
+      $colorName = colorName
+    }
+
+    #= Create a Color with Red, Green and Blue values.
+    #- The values  will be limited to the range 0 to 255.
+    NEW(int r, int g, int b) @public
+      $red = r
+      $green = g
+      $blue = b
+      $limit()
+    }
+
+    #= Set the red value to |red|.
+    PROC $setRed(int red) @public
+      $red = red
+      $limit()
+    }
+
+    #= Set the green value to |green|.
+    PROC $setGreen(int green) @public
+      $green = green
+      $limit()
+    }
+
+    #= Set the blue value to |blue|.
+    PROC $setBlue(int blue) @public
+      $blue = blue
+      $limit()
+    }
+
+    #! Check limits and correct.
+    PROC $limit()
+      IF $red < 0
+        $red = 0
+      ELSEIF $red > 255
+        $red = 255
+      }
+      IF $green < 0
+        $green = 0
+      ELSEIF $green > 255
+        $green = 255
+      }
+      IF $blue < 0
+        $blue = 0
+      ELSEIF $blue > 255
+        $blue = 255
+      }
+    }
+
+    #= Return "Color(r, g, b)" or "Color(name)"
+    FUNC $ToString() string @public
+      IF $colorName != ColorName.none
+        RETURN "Color(" .. $colorName.ToString() .. ")"
+      }
+      RETURN "Color(" .. $red .. ", " .. $green .. ", " .. $blue .. ")"
+    }
+  }
+
+  #= Values to be used when creating a Color object.
+  #- Instead of this the red/green/blue values can be specified to get many more
+  #- different colors.
+  ENUM ColorName @public
+    none        #= no color specified, use default
+    aqua        #=> <span style="color:aqua;">this color</span>
+    black       #=> <span style="color:black">this color</span>
+    blue        #=> <span style="color:blue">this color</span>
+    fuchsia     #=> <span style="color:fuchsia">this color</span>
+    gray        #=> <span style="color:gray">this color</span>
+    green       #=> <span style="color:green">this color</span>
+    lime        #=> <span style="color:lime">this color</span>
+    maroon      #=> <span style="color:maroon">this color</span>
+    navy        #=> <span style="color:navy">this color</span>
+    olive       #=> <span style="color:olive">this color</span>
+    orange      #=> <span style="color:orange">this color</span>
+    purple      #=> <span style="color:purple">this color</span>
+    red         #=> <span style="color:red">this color</span>
+    silver      #=> <span style="color:silver">this color</span>
+    teal        #=> <span style="color:teal">this color</span>
+    white       #=> <span style="color:white;background-color:black">this color</span>
+    yellow      #=> <span style="color:yellow">this color</span>
+    inherit     #= use color of parent item
+    transparent #= no color, show what is below
+  }
+
+  #= Values to be used when setting a size.
+  # see unitNames
+  ENUM Unit @public
+    pixel     #= px
+    percent   #= percentage (of space available)
+    em        #= the current font size
+    ex        #= x-height of the font (usually about half the font-size)
+    cm        #= 10 mm
+    mm        #= millimeters, 1/1000 of a meter
+    inch      #= 25.4 mm
+    point     #= 1/72 inch, 0.352777778 mm
+    pica      #= 12 points, 1/6 inch, 4.23333333 mm
+  }
+
+  #= Values to be used in setBorder() and setBorderStyle().
+  ENUM BorderStyle @public
+    none      #= No border.
+    solid     #=> <span style='border-style: solid'>Solid border</span>.
+    double    #=> <span style='border-style: double'>Double border</span>.
+    dotted    #=> <span style='border-style: dotted'>dotted border</span>.
+    dashed    #=> <span style='border-style: dashed'>dashed border</span>.
+  }
+
+  #= Horizontal alignment.
+  ENUM HorAlign @public
+    none       #= not specified, use default
+    left
+    middle     #= same as center
+    center     #= same as middle
+    right
+  }
+
+  #= Vertical alignment.
+  ENUM VerAlign @public
+    none       #= not specified, use default
+    top
+    middle     #= same as center
+    center     #= same as middle
+    bottom
+  }
+
+  #= A style to be attached to a Widget or Table cell.
+  #= Specifies various properties for the item.
+  CLASS Style @public
+    string    $name     @public   #= name used for CSS
+    int       $styleNr            #! used for the style name
+    int       $ruleNr             #! index in styleSheets[] rules, -1 when the
+                                  #  style has not been used yet
+
+    string    $fontName           #!
+    string    $fontSize           #!
+
+    dict<string, string> $properties  #!
+
+    #= Create a new, default Style.
+    #- sets |name| to a unique name.
+    NEW() @public
+      $properties = NEW()
+      $styleNr = styleCount++
+      $name = "zwt" .. $styleNr
+      $ruleNr = -1
+    }
+
+    #= Remove all properties.
+    PROC $clear() @public
+      $properties = NEW()
+      $fontName = NIL
+      $fontSize = NIL
+      $update()
+    }
+    
+    #= Return a copy of this style that can be modified.
+    FUNC $copy() Style @public
+      Style r = NEW()
+      r.fontName = $fontName
+      r.fontSize = $fontSize
+      FOR prop IN $properties.keys()
+        r.properties[prop] = $properties[prop]
+      }
+      RETURN r
+    }
+
+    #= Set the name.  It's up to the caller to make sure it's unique.
+    PROC $setName(string newName) @public
+      IF newName != $name
+        $name = newName
+        $update()
+      }
+    }
+
+    #! If the style is not active, add it to the CSS.
+    #  Documentation:
+    #  http://www.howtocreate.co.uk/tutorials/javascript/domstylesheets
+    PROC $activate() @directory
+      IF $ruleNr < 0
+        # Some plugin may insert a stylesheet at any time, thus we need to check
+        # if ours has moved.
+>>>
+   if ($doc.styleSheets[$sheetIndex].title != 'zwt') {
+     $findSheetIndex();
+   }
+<<<
+        # Can't cache rules, on Chrome it changes when adding more elements.
+>>>
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.cssRules) {
+     %$ruleNr% = sheet.cssRules.length;
+   } else {
+     %$ruleNr% = sheet.rules.length;
+   }
+<<<
+        $setRule()
+      }
+    }
+
+    #! If the style is active, update it.
+    PROC $update()
+      IF $ruleNr >= 0
+        # Some plugin may insert a stylesheet at any time, thus we need to check
+        # if ours has moved.
+>>>
+   if ($doc.styleSheets[$sheetIndex].title != 'zwt') {
+     $findSheetIndex();
+   }
+<<<
+
+        # Style was already set, need to delete it and add it again.
+        # Updating is reported not to work properly.
+        # removeRule() is needed for IE8 and older.
+>>>
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.cssRules) {
+     sheet.deleteRule(%$ruleNr%);
+   } else {
+     sheet.removeRule(%$ruleNr%);
+   }
+<<<
+        $setRule()
+      }
+    }
+
+    #! Set the rule for this style at position |ruleNr|.
+    PROC $setRule()
+      # create the CSS rule
+      string s = ""
+      FOR prop IN $properties.keys()
+        s ..= prop .. ": " .. $properties[prop] .. "; "
+      }
+
+      string r = "." .. $name
+>>>
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.insertRule) {
+     sheet.insertRule(%r% + '{' + %s% + '}', %$ruleNr%);
+   } else {
+     sheet.addRule(%r%, %s%, %$ruleNr%);
+   }
+<<<
+    }
+
+    ############ generic property functions.
+
+    #= Generic way to add a property value.
+    FUNC $setValue(string prop, string v) Style @public
+      $properties[prop] = v
+      $update()
+      RETURN THIS
+    }
+
+    #= Return the string value for |prop|.  Returns ""1 if there is no value.
+    FUNC $getValue(string prop) string @public
+      IF $properties.has(prop)
+        RETURN $properties[prop]
+      }
+      RETURN ""
+    }
+
+    #= TODO: add "em" and "ex", with a float value
+    FUNC $setPixelValue(string prop, int v) Style @public
+      $properties[prop] = v .. "px"
+      $update()
+      RETURN THIS
+    }
+
+    #= Return the pixel value for |prop|.  Returns -1 if there is no pixel
+    #= value.
+    FUNC $getPixelValue(string prop) int @public
+      IF $properties.has(prop)
+        string s = $properties[prop]
+        IF s.slice(-2, -1) == "px"
+          RETURN s.slice(0, -3).toInt()
+        }
+      }
+      RETURN -1
+    }
+
+    #= "in", "cm", "mm", "pt" and "pc" are not generally used.
+    #- TODO: value should be float
+    FUNC $setUnitValue(string prop, int v, Unit u) Style @public
+      $properties[prop] = v .. unitNames[u.ToString()]
+      $update()
+      RETURN THIS
+    }
+
+    #= Set color property |prop| to |color|.
+    FUNC $setColorProp(string prop, Color color) Style @public
+      IF color.colorName != ColorName.none
+        $properties[prop] = color.colorName.ToString()
+      ELSE
+        int r = color.red < 0 ? 0 : color.red > 255 ? 255 : color.red
+        int g = color.green < 0 ? 0 : color.green > 255 ? 255 : color.green
+        int b = color.blue < 0 ? 0 : color.blue > 255 ? 255 : color.blue
+        # TODO: #rrggbb format is more compact
+        $properties[prop] = "rgb(" .. r .. "," .. g .. "," .. b .. ")"
+      }
+      $update()
+      RETURN THIS
+    }
+
+    #= Clear the value for property |prop| if it exists.
+    FUNC $clearValue(string prop) Style @public
+      IF $properties.has(prop)
+        $properties.remove(prop)
+        $update()
+      }
+      RETURN THIS
+    }
+
+
+    ############ margins
+
+    #= Set the left margin in pixels / units
+    FUNC $setMarginLeft(int v) Style @public
+      RETURN $setPixelValue("margin-left", v)
+    }
+    #= Get the left margin value in pixels / units
+    FUNC $getMarginLeft() int @public
+      RETURN $getPixelValue("margin-left")
+    }
+    #= Set the left margin to |v| in unit |u|.
+    FUNC $setMarginLeft(int v, Unit u) Style @public
+      RETURN $setUnitValue("margin-left", v, u)
+    }
+    #= Clear the left margin.
+    FUNC $clearMarginLeft() Style @public
+      RETURN $clearValue("margin-left")
+    }
+
+    #= Set the right margin in pixels / units
+    FUNC $setMarginRight(int v) Style @public
+      RETURN $setPixelValue("margin-right", v)
+    }
+    #= Get the right margin value in pixels / units
+    FUNC $getMarginRight() int @public
+      RETURN $getPixelValue("margin-right")
+    }
+    #= Set the right margin to |v| in unit |u|.
+    FUNC $setMarginRight(int v, Unit u) Style @public
+      RETURN $setUnitValue("margin-right", v, u)
+    }
+    #= Clear the right margin.
+    FUNC $clearMarginRight() Style @public
+      RETURN $clearValue("margin-right")
+    }
+
+    #= Set the top margin in pixels / units
+    FUNC $setMarginTop(int v) Style @public
+      RETURN $setPixelValue("margin-top", v)
+    }
+    #= Get the top margin value in pixels / units
+    FUNC $getMarginTop() int @public
+      RETURN $getPixelValue("margin-top")
+    }
+    #= Set the top margin to |v| in unit |u|.
+    FUNC $setMarginTop(int v, Unit u) Style @public
+      RETURN $setUnitValue("margin-top", v, u)
+    }
+    #= Clear the top margin.
+    FUNC $clearMarginTop() Style @public
+      RETURN $clearValue("margin-top")
+    }
+
+    #= Set the bottom margin in pixels / units
+    FUNC $setMarginBottom(int v) Style @public
+      RETURN $setPixelValue("margin-bottom", v)
+    }
+    #= Set the bottom margin in pixels / units
+    FUNC $setMarginBot(int v) Style @public
+      RETURN $setPixelValue("margin-bottom", v)
+    }
+    #= Get the bottom margin value in pixels / units
+    FUNC $getMarginBot() int @public
+      RETURN $getPixelValue("margin-bottom")
+    }
+    #= Get the bottom margin value in pixels / units
+    FUNC $getMarginBottom() int @public
+      RETURN $getPixelValue("margin-bottom")
+    }
+    #= Set the bottom margin to |v| in unit |u|.
+    FUNC $setMarginBottom(int v, Unit u) Style @public
+      RETURN $setUnitValue("margin-bottom", v, u)
+    }
+    #= Set the bottom margin to |v| in unit |u|.
+    FUNC $setMarginBot(int v, Unit u) Style @public
+      RETURN $setUnitValue("margin-bottom", v, u)
+    }
+    #= Clear the bottom margin.
+    FUNC $clearMarginBottom() Style @public
+      RETURN $clearValue("margin-bottom")
+    }
+    #= Clear the bottom margin.
+    FUNC $clearMarginBot() Style @public
+      RETURN $clearValue("margin-bottom")
+    }
+
+    ############ padding
+
+    #= Set padding on all sides in pixels / units
+    FUNC $setPadding(int v) Style @public
+      $setPaddingLeft(v)
+      $setPaddingRight(v)
+      $setPaddingTop(v)
+      $setPaddingBot(v)
+      RETURN THIS
+    }
+
+    #= Set left padding in pixels / units
+    FUNC $setPaddingLeft(int v) Style @public
+      RETURN $setPixelValue("padding-left", v)
+    }
+    #= Set the left padding to |v| in unit |u|.
+    FUNC $setPaddingLeft(int v, Unit u) Style @public
+      RETURN $setUnitValue("padding-left", v, u)
+    }
+    #= Get the left padding value in pixels / units
+    FUNC $getPaddingLeft() int @public
+      RETURN $getPixelValue("padding-left")
+    }
+    #= Clear the left padding.
+    FUNC $clearPaddingLeft() Style @public
+      RETURN $clearValue("padding-left")
+    }
+
+    #= Set right padding in pixels / units
+    FUNC $setPaddingRight(int v) Style @public
+      RETURN $setPixelValue("padding-right", v)
+    }
+    #= Set the right padding to |v| in unit |u|.
+    FUNC $setPaddingRight(int v, Unit u) Style @public
+      RETURN $setUnitValue("padding-right", v, u)
+    }
+    #= Get the right padding value in pixels / units
+    FUNC $getPaddingRight() int @public
+      RETURN $getPixelValue("padding-right")
+    }
+    #= Clear the right padding.
+    FUNC $clearPaddingRight() Style @public
+      RETURN $clearValue("padding-right")
+    }
+
+    #= Set top padding in pixels / units
+    FUNC $setPaddingTop(int v) Style @public
+      RETURN $setPixelValue("padding-top", v)
+    }
+    #= Set the top padding to |v| in unit |u|.
+    FUNC $setPaddingTop(int v, Unit u) Style @public
+      RETURN $setUnitValue("padding-top", v, u)
+    }
+    #= Get the top padding value in pixels / units
+    FUNC $getPaddingTop() int @public
+      RETURN $getPixelValue("padding-top")
+    }
+    #= Clear the top padding.
+    FUNC $clearPaddingTop() Style @public
+      RETURN $clearValue("padding-top")
+    }
+
+    #= Set bottom padding in pixels / units
+    FUNC $setPaddingBottom(int v) Style @public
+      RETURN $setPixelValue("padding-bottom", v)
+    }
+    #= Set bottom padding in pixels / units
+    FUNC $setPaddingBot(int v) Style @public
+      RETURN $setPixelValue("padding-bottom", v)
+    }
+    #= Set the bottom padding to |v| in unit |u|.
+    FUNC $setPaddingBottom(int v, Unit u) Style @public
+      RETURN $setUnitValue("padding-bottom", v, u)
+    }
+    #= Set the bottom padding to |v| in unit |u|.
+    FUNC $setPaddingBot(int v, Unit u) Style @public
+      RETURN $setUnitValue("padding-bottom", v, u)
+    }
+    #= Get the bottom padding value in pixels / units
+    FUNC $getPaddingBot() int @public
+      RETURN $getPixelValue("padding-bottom")
+    }
+    #= Get the bottom padding value in pixels / units
+    FUNC $getPaddingBottom() int @public
+      RETURN $getPixelValue("padding-bottom")
+    }
+    #= Clear the bottom padding.
+    FUNC $clearPaddingBottom() Style @public
+      RETURN $clearValue("padding-bottom")
+    }
+    #= Clear the bottom padding.
+    FUNC $clearPaddingBot() Style @public
+      RETURN $clearValue("padding-bottom")
+    }
+
+    ############ align
+
+    #= Set the horizontal alignment to |align|
+    FUNC $setHorAlign(HorAlign align) Style @public
+      IF align == HorAlign.none
+        $clearValue("text-align")
+        $clearValue("margin-left")
+        $clearValue("margin-right")
+        RETURN THIS
+      }
+      IF align == HorAlign.middle
+        # text-align "center" works for text, setting margin-left and
+        # margin-right to "auto" works for blocks.
+        $setValue("text-align", "center")
+        $setValue("margin-left", "auto")
+        $setValue("margin-right", "auto")
+      ELSE
+        $setValue("text-align", align.ToString())
+      }
+      RETURN THIS
+    }
+
+    #= Get the horizontal alignment.
+    FUNC $getHorAlign() HorAlign @public
+      string s = $getValue("text-align")
+      IF s != ""
+        FOR n IN HorAlign
+          IF s == n.ToString()
+            RETURN n
+          }
+        }
+      }
+      RETURN HorAlign.none
+    }
+
+    #= Clear the horizontal alignment.
+    FUNC $clearHorAlign() Style @public
+      RETURN $clearValue("text-align")
+    }
+
+    #= Set the vertical alignment to |align|
+    FUNC $setVerAlign(VerAlign align) Style @public
+      IF align == VerAlign.none
+        RETURN $clearValue("vertical-align")
+      }
+      RETURN $setValue("vertical-align",
+                       align == VerAlign.center ? "middle" : align.ToString())
+    }
+
+    #= Get the vertical alignment.
+    FUNC $getVerAlign() VerAlign @public
+      string s = $getValue("vertical-align")
+      IF s != ""
+        FOR n IN VerAlign
+          IF s == n.ToString()
+            RETURN n
+          }
+        }
+      }
+      RETURN VerAlign.none
+    }
+
+    #= Clear the vertical alignment.
+    FUNC $clearVerAlign() Style @public
+      RETURN $clearValue("vertical-align")
+    }
+
+    ############ wrap
+
+    #= Set text wrapping on or off.
+    #- When |on| is TRUE works like Wrap.none.
+    #- When |on| is FALSE works like Wrap.normal.
+    FUNC $setWrap(bool on) Style @public
+      RETURN $setValue("white-space", on ? "normal" : "nowrap")
+    }
+
+    ENUM Wrap @public
+      normal         #= collapse white space, wrap when needed
+      none           #= no wrapping at all
+      linebreak      #= collapse white space, wrap when needed and on linebreak
+      preserve       #= preserve all white space, wrap only on linebreak
+      preservewrap   #= preserve white space, wrap on linebreak and when needed
+    }
+
+    #= Set text wrapping specifically
+    FUNC $setWrap(Wrap how) Style @public
+      string s
+      SWITCH how
+        CASE Wrap.normal; s = "normal"
+        CASE Wrap.none; s = "nowrap"
+        CASE Wrap.linebreak; s = "pre-line"
+        CASE Wrap.preserve; s = "pre"
+        CASE Wrap.preservewrap; s = "pre-wrap"
+      }
+      RETURN $setValue("white-space", s)
+    }
+
+    ############ width and height
+
+    #= Set the width to |width| pixels.
+    FUNC $setWidth(int width) Style @public
+      RETURN $setPixelValue("width", width)
+    }
+
+    #= Set the width to |width| in unit |u|.
+    FUNC $setWidth(int width, Unit u) Style @public
+      RETURN $setUnitValue("width", width, u)
+    }
+
+    #= Set the width to 100%.
+    FUNC $setFullWidth() Style @public
+      $setUnitValue("width", 100, Unit.percent)
+      RETURN THIS
+    }
+
+    #= Set the height to |height| pixels.
+    FUNC $setHeight(int height) Style @public
+      RETURN $setPixelValue("height", height)
+    }
+
+    #= Set the height to |height| in unit |u|.
+    FUNC $setHeight(int height, Unit u) Style @public
+      RETURN $setUnitValue("height", height, u)
+    }
+
+    #= Set the height to 100%.
+    FUNC $setFullHeight() Style @public
+      RETURN $setUnitValue("height", 100, Unit.percent)
+    }
+
+    ############ borders
+
+    #= Set the border thickness to |thickness| pixels , style to |bs| and color
+    #= to |c|.
+    FUNC $setBorder(int thickness, BorderStyle bs, Color c) Style @public
+      $setPixelValue("border-width", thickness)
+      $setBorderStyle(bs)
+      RETURN $setColorProp("border-color", c)
+    }
+
+    #= Set the border thickness to |thickness| pixels.
+    FUNC $setBorderThickness(int thickness) Style @public
+      RETURN $setPixelValue("border-width", thickness)
+    }
+
+    #= Set the border thickness to |thickness| in unit |u|.
+    FUNC $setBorderThickness(int thickness, Unit u) Style @public
+      RETURN $setUnitValue("border-width", thickness, u)
+    }
+
+    #= Clear the border thickness, no border.
+    FUNC $clearBorderThickness() Style @public
+      RETURN $clearValue("border-width")
+    }
+
+    #= Set the border style to |bs|.
+    FUNC $setBorderStyle(BorderStyle bs) Style @public
+      IF bs == BorderStyle.none
+        RETURN $clearBorderStyle()
+      }
+      RETURN $setValue("border-style", bs.ToString())
+    }
+
+    #= Get the border style.
+    FUNC $getBorderStyle() BorderStyle @public
+      string s = $getValue("border-style")
+      FOR n IN BorderStyle
+        IF s == n.ToString()
+          RETURN n
+        }
+      }
+      RETURN BorderStyle.none
+    }
+
+    #= Clear the border style.
+    FUNC $clearBorderStyle() Style @public
+      RETURN $clearValue("border-style")
+    }
+
+    #= Set the border color to |c|.
+    FUNC $setBorderColor(Color c) Style @public
+      RETURN $setColorProp("border-color", c)
+    }
+
+    # TODO: getBorderColor()
+
+    #= Clear the border color.
+    FUNC $clearBorderColor() Style @public
+      RETURN $clearValue("border-color")
+    }
+
+    ############ colors
+
+    #= Set the foreground color to |c|.
+    FUNC $setColor(Color c) Style @public
+      RETURN $setColorProp("color", c)
+    }
+
+    #= Set the foreground color to |colorName|.
+    FUNC $setColorName(ColorName colorName) Style @public
+      RETURN $setColorProp("color", NEW(colorName))
+    }
+
+    #= Clear the color, back to black.
+    FUNC $clearColor() Style @public
+      RETURN $clearValue("color")
+    }
+
+    #= Set the background color to |c|.
+    FUNC $setBGColor(Color c) Style @public
+      RETURN $setColorProp("background-color", c)
+    }
+
+    #= Set the background color to |colorName|.
+    FUNC $setBGColorName(ColorName colorName) Style @public
+      RETURN $setColorProp("background-color", NEW(colorName))
+    }
+
+    #= Clear the background color.
+    FUNC $clearBGColor() Style @public
+      RETURN $clearValue("background-color")
+    }
+
+    #= Set the opacity to |percent|.
+    FUNC $setOpacity(int percent) Style @public
+      string val
+      # TODO: fix when float is supported
+      IF percent >= 100
+        val = (percent / 100) .. "." .. (percent % 100)
+      ELSEIF percent < 10
+        val = "0.0" .. percent
+      ELSE
+        val = "0." .. percent
+      }
+      $setValue("opacity", val)
+      RETURN THIS
+    }
+
+    ############ font
+
+    #= Set the font name.
+    #- Example: setFontName("arial,sans-serif")
+    #- Pass an empty string to clear.
+    FUNC $setFontName(string fontName) Style @public
+      $fontName = fontName
+      RETURN $setValue("font-family", fontName)
+    }
+
+    #= Set the font size in pixels.
+    FUNC $setFontSize(int v) Style @public
+      $fontSize = v .. "px"
+      RETURN $setValue("font-size", $fontSize)
+    }
+
+    #= Get the font size value in pixels.
+    #- Returns -1 if the font size was not set or not set in pixels.
+    FUNC $getFontSize() int @public
+      IF $fontSize != NIL && $fontSize.slice(-2, -1) == "px"
+        RETURN $fontSize.slice(0, -3).toInt()
+      }
+      RETURN -1
+    }
+
+    #= Set the font size to |v| in unit |u|.
+    FUNC $setFontSize(int v, Unit u) Style @public
+      $fontSize = v .. unitNames[u.ToString()]
+      RETURN $setValue("font-size", $fontSize)
+    }
+
+    #= Clear the font size.
+    FUNC $clearFontSize() Style @public
+      $fontSize = NIL
+      RETURN $clearValue("font-size")
+    }
+
+    ############
+
+    SHARED
+      int styleCount   #! Every style gets a name: "zwt0", "zwt1" ...
+
+      dict<string, string> unitNames = [
+          "pixel":   "px",
+          "percent": "%",
+          "em":      "em",
+          "ex":      "ex",
+          "cm":      "cm",
+          "mm":      "mm",
+          "inch":    "in",
+          "point":   "pt",
+          "pica":    "pc",
+      ] #!
+    }
+  }
+
+  #! Set the style of |elem| to |styles|.
+  #  If |styles| is NIL or empty this clears the style.
+  #  Otherwise activates the Styles (adds it to the ruleset).
+  PROC setElementStyle(ZWT.Element elem, list<Style> styles) @public
+    IF styles == NIL || styles.Size() == 0
+>>>
+      %elem%.className = null;
+<<<
+    ELSE
+      string name
+      FOR s IN styles
+        s.activate()
+        IF name == NIL
+          name = s.name
+        ELSE
+          name ..= " " .. s.name
+        }
+      }
+>>>
+      %elem%.className = %name%;
+<<<
+    }
+  }
+
+ }
+}

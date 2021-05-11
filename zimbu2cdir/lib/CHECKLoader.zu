@@ -1,0 +1,35 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# CHECK module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+
+MODULE CHECKLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin CHECK module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "CHECKModule"
+    b.fileName = "CHECKModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the CHECK module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("CHECK", builtin)
+    }
+  }
+
+}

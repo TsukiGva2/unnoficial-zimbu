@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutCssJavascript.zut
+
+FUNC Main() int
+  # CSS / Javascript
+  ZUT.Javascript js = NEW().add("xxx")
+  string fail = Testing.inCssJavascript(js).ToString()
+  RETURN 0
+}

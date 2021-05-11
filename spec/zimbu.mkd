@@ -1,0 +1,3980 @@
+Zimbu Language Specification
+============================
+
+Last Change: 2014 Nov 17
+
+<img src="underconstruction.png">&nbsp;UNDER CONSTRUCTION
+
+This page contains both an informal explanation and a formal specification of
+the Zimbu programming language.<br>
+More information on <a href="https://sites.google.com/site/zimbuweb/language-specification">the Zimbu website</a>.
+
+The notation used to specify the exact syntax can be found <a href="#Exact%32Syntax%32Notation">near the end</a>.
+
+
+Contents
+-------
+
+
+Zimbu File
+==========
+
+A Zimbu file is always UTF-8 encoded.
+
+The file name must end in ".zu".
+
+For an imported file the file name up to ".zu" must match the toplevel item in
+the file (class, module, enum, etc.) exactly.
+
+
+Preprocessing
+-------------
+
+Before a file is parsed the following operations are performed:
+
+-  All CR characters (ASCII 0x0d) are silently discarded.
+-  All Unicode BOM characters are silently discarded.
+-  All ASCII control characters, except for NL (ASCII 0x0a) cause an error.
+   This implies that NUL (ASCII 0x00) and TAB characters (ASCII 0x09) are not
+   allowed.
+-  Invalid UTF-8 causes an error.
+
+
+File Level
+----------
+
+A Zimbu file usually starts with comments.  You should describe what is in the
+file, what the code is intended to do. You can also add a copyright statement
+and license.  The Apache license is recommended.
+
+IMPORT statements come next. They must appear before any other items, except
+comments.  It is recommended to group imports by directory and sort them
+alphabetically.
+
+The main program file must define the Main() method somewhere.
+Other items can come before and after it, in any order.
+There is no requirement to define an item before using it in the file scope.
+
+The Main program file will look like this:
+<zimbu>
+# Description of what this program does, arguments, etc.
+# Copyright, license.
+
+IMPORT "SomeClass.zu"
+
+# Methods and other things go here.
+
+FUNC Main() int
+  # your code goes here
+  RETURN exitVal
+}
+
+# More methods and other things go here.
+</zimbu>
+
+
+### Main()
+
+The Main() method is the entry point to the program.  It will be called after
+initializations are done, see the [[Startup Sequence|Startup Sequence]] section.
+
+Command line arguments are not passed to Main(), they can be obtained with
+the <a href="https://zimbu.googlecode.com/hg/docs/ARG.html">ARG module</a>.
+
+The Main method returns an int, which is the exit code for the program.  The
+convention is that zero is returned for success and a positive number for
+failure.  Alternatively the program ends with an EXIT statement or when an
+exception is thrown that is not caught.
+
+### Exact syntax
+
+MAINFILE is the starting point for a Zimbu program file.
+IMPORTFILE is the starting point for an imported file.
+
+<pre>
+MAINFILE        ->  skip
+                    import*
+                    file-item*
+                    main
+                    file-item*
+                    ;
+IMPORTFILE      ->  skip
+                    import*
+                    common-item
+                    ;
+file-item       ->  ( common-item | var-def | method-def ) ;
+common-item     ->  ( module-def | class-def | interface-def | piece-def | enum-def | bits-def )
+main            ->  "FUNC"  sep  "Main()"  sep  "int"  sep-with-eol
+                      block-item+
+                    block-end  ;
+</pre>
+
+
+IMPORT
+-------
+
+An IMPORT specifies a file to include.
+
+The imported file must define exacly one item, usually a class or module.  The
+name of this item must match the file name up to the ".zu".  Thus when defining
+a class "FooBar" the file name must be "FooBar.zu".  This way, at every place
+where the file is imported, you know exactly what symbol is going to be defined
+by that import.
+
+Zimbu files can import each other, the compiler takes care of cyclic
+dependencies.
+
+There is no need to import builtin modules, such as IO, ARG and E.  The
+compiler will take care of that automatically.
+
+### IMPORT AS
+
+If the symbol that the IMPORT defines conflicts with another symbol, the AS
+part can be used to give the imported symbol another name in this file only.
+The name after "AS" must follow the naming rules of what is being imported: it
+must start with an upper case letter and have a lower case letter somewhere.
+
+This example uses the name OldParser for the Parser defined in the second
+imported file.  Thus both Parser and OldParser can be used.
+
+<zimbu>
+IMPORT "Parser.zu"
+IMPORT "old/Parser.zu" AS OldParser
+</zimbu>
+
+### IMPORT plugin
+
+An IMPORT can specify a plugin to use.  A Zimbu plugin converts the specified
+file and turns it into Zimbu code.  The Zimbu code is then what gets imported.
+
+NOTE: Custom plugins have not been implemented yet.
+
+At the start of the filename $PLUGIN can be used.  This refers to the "plugin"
+directory.  This can be used by plugins to find files imported in the generated
+Zimbu file, for example:
+<zimbu>
+IMPORT "$PLUGIN/proto/Message.zu"
+</zimbu>
+
+Imports using a plugin should be put before other imports, so that they are
+easy to spot.
+
+
+### IMPORT.PROTO
+
+A builtin plugin is PROTO, it generates Zimbu code from a .proto file.  This is
+used in the Zimbu compiler:
+
+<zimbu>
+IMPORT.PROTO "zui.proto"
+</zimbu>
+
+How the PROTO plugin works is specified elsewhere.
+TODO: add a link
+
+
+### IMPORT.ZUT
+
+Another builtin plugin is ZUT, which stands for Zimbu Templates and can be
+used to create active web pages.  This uses CSS and HTML, mixed with Zimbu code
+to create them dynamically and controllers to make them interactive. More
+information can be found in the separate zut.html document.
+
+
+### IMPORT.ZWT
+
+Another builtin plugin is ZWT, which stands for Zimbu Web Toolkit and can be
+used to built a GUI.  This is specified
+<a href="https://sites.google.com/site/zimbuweb/documentation/zwt-a-javascript-ui">on the ZWT page</a>.
+
+
+### IMPORT.CHEADER
+
+The CHEADER plugin can be used to directly include a C header file in the
+program.  See the [[Native code_IMPORT.CHEADER|native code section]].
+
+When using a plugin the OPTIONS part can be used to pass command line arguments
+to the plugin.  Example:
+
+<zimbu>
+IMPORT.WavToBytes "poing.wav" OPTIONS "--multiline --name=poingSound"
+</zimbu>
+
+### Exact syntax
+
+<pre>
+import          ->  "IMPORT"  plugin?  sep
+                      ( """  file-name  """ | "<"  file-name  ">" )
+                      ( import-as?  import-options? | import-options? import-as? )
+                      sep-with-eol ;
+plugin          ->  "." ( var-name | "PROTO" | "ZWT" | "ZUT" | "CHEADER" )  ;
+import-as       ->  sep  "AS"  sep  var-name  ;
+import-options  ->  sep  "OPTIONS"  sep  \(g  ;
+</pre>
+
+
+Declarations
+==========
+
+MODULE
+-------
+
+TODO
+
+The module name must start with an upper case character and must be followed by
+at least one lower case letter.
+
+### Exact syntax
+
+<pre>
+module-def  ->  "MODULE"  sep  group-name  sep-with-eol
+                  block-item*
+                block-end  ;
+</pre>
+
+
+CLASS
+-------
+
+The Zimbu CLASS is much like C++ and Java, but not exactly the same:
+-  Single inheritance is supported with EXTEND.
+-  Composition is supported with INCLUDE.
+-  Interfaces implemented by the class are explicitly listed with IMPLEMENTS.
+-  Every class implicitly defines its own interface.
+-  Templated classes are supported.  
+
+<rationale>
+### Rationale
+
+Programmers often get confused by thinking that objects in a computer program
+are real-world objects.  They are not!  For example, a real-world book cannot
+read.  You need a person to read a book.  A book only has properties, it cannot
+do anything by itself.  On the other hand, a person can do lots of things, but
+most of them are irrelevant in a computer program.  You most likely want to
+store a persons name and address, not implement a method for a person to read a
+book.  Not because it's not possible, but because your program doesn't need
+that functionality.
+
+In a computer program an object is a data type.  You can store data in it and
+implement methods to manipulate that data.  Thus you can create a book object,
+implement methods to write text in it and to read back that text.  Although
+there are analogies with a real-world book, it's different: a book object can
+read the text that it stores, a real-world book cannot.
+
+So, even though we talk about objects, keep in mind they are actually data
+types.  This is important when designing a class hierarchy: The data fields and
+methods of a child class must add something.  That's why we have the EXTEND
+keyword, the child class extends the parent class.  Avoid the pointless
+discussion of whether a rectangle is a kind of square or the other way around.
+In practice it depends on what is inside the classes.  Don't start by deciding
+what you call something, first find out what data it stores and what methods
+you need, then decide what it should be called.
+</rationale>
+
+The class name must start with an upper case letter and must be followed by at
+least one lower case letter.  The second character cannot be an underscore.
+Builtin types start with a lower case letter, that nicely creates two
+namespaces and allows for adding more builtin types later.
+
+### EXTEND
+
+TODO
+
+
+### IMPLEMENTS
+
+TODO
+
+
+### INCLUDE
+
+An INCLUDE block can be used to compose a CLASS from other classes and pieces.
+
+<zimbu>
+CLASS Address
+  string $street
+  string $city
+}
+PIECE Locator
+  FUNC $location() string
+    RETURN $street .. ", " .. $city
+  }
+}
+CLASS Person
+  string $name
+  INCLUDE
+    Address   $address
+    Locator   $locator
+  }
+}
+Person p = NEW()
+p.name = "John Doe"
+p.street = "Langstraat 42"  # equivalent to setting p.address.street
+p.city = "Amsterdam"
+IO.print(p.location())      # prints: "Langstraat 42, Amsterdam"
+</zimbu>
+
+
+### SHARED
+
+Fields and methods declared in the SHARED section are available to all objects,
+they are shared between all objects.  In C++ and Java these are called "static"
+(which is a weird name).
+
+Fields and methods in the SHARED section do not start with a $, that makes them
+easy to recognize.
+
+The methods in the SHARED section cannot directly access members of an object
+or call object methods.  Thus members that start with a $.  They can be
+accessed if the object reference is passed in:
+
+<zimbu>
+CLASS Foo
+  int $nr
+  SHARED
+    FUNC right(Foo f) int
+      RETURN f.nr
+    }
+    FUNC wrong() int
+      RETURN $nr  # ERROR!
+    }
+  }
+}
+</zimbu>
+
+There can be multiple SHARED sections in a CLASS. This is convenient for
+keeping the shared members close to where they are used.
+
+Calling a method that is defined in the SHARED section of a class
+does not require specifying the class name:
+-  in the class itself
+-  in its SHARED section of the class
+-  in child classes
+
+But not in the SHARED section of an inner class (a class defined in the scope
+of the class).
+
+### Constructor
+
+An object is constructed from a class by calling a NEW() method.  Before the
+statements in NEW() are executed the object is initialized.  This may involve
+an $Init() method defined in the class.  This is explained in the section
+[[Object Initialization Sequence|Object Initialization Sequence]].
+
+There can be several NEW() methods with different types of arguments.
+Which one is used is explained at the section [[Method call|Method call]].
+
+If a class does not define a NEW() method then invoking NEW() on that class
+will create an object with all members set to their default values.
+
+If a class defines a NEW() method that accepts a list it is used when a list is assigned to a variable of this class.  Similarly for a dict.  Examples:
+
+<zimbu>
+CLASS MyList
+  list<string> $items
+  NEW(list<string> l)
+    $items = l
+  }
+}
+CLASS MyDict
+  dict<string, int> $lookup
+  NEW(dict<string, int> d)
+    $lookup = d
+  }
+}
+...
+MyList foo = ["one", "two", "three"]            # Invokes MyList NEW()
+MyDict bar = ["one": 1, "two": 2, "three": 3]   # Invokes MyDict NEW()
+</zimbu>
+
+
+### Destructor
+
+See [[Object Destruction|Object Destruction]].
+
+
+### Exact syntax
+
+<pre>
+class-def   ->  "CLASS"  sep  group-name  sep-with-eol
+                   block-item*
+                block-end  ;
+</pre>
+
+
+INTERFACE
+-------
+
+TODO
+
+The interface name must start with "I_" and must be followed by at least one
+lower case letter.
+
+### Exact syntax
+
+<pre>
+interface-def  ->  "INTERFACE"  sep  group-name  sep-with-eol
+                     block-item*
+                   block-end  ;
+</pre>
+
+PIECE
+-------
+
+TODO
+
+The piece name must start with an upper case character and must be followed by
+at least one lower case letter.
+
+### Exact syntax
+
+<pre>
+piece-def      ->  "PIECE"  sep  group-name  sep-with-eol
+                      block-item*
+                    block-end  ;
+include-block  ->  "INCLUDE" sep-with-eol
+                     block-item*
+                   block-end  ;
+</pre>
+
+
+ENUM
+-------
+
+TODO
+
+Example:
+
+<zimbu>
+ENUM Color
+  black
+  white
+  red
+  green
+}
+Color one = Color.green
+IO.print("Color: \(one)")  # invokes one.ToString()
+</zimbu>
+
+The enum name must start with an upper case character and must be followed by
+at least one lower case letter.
+
+The enum values must start with a lower case character and can be followed by
+letters, numbers and an underscore (not two together).
+
+### Enum value methods
+
+Using the ToString() method on an enum value returns the name as specified in
+the enum declaration as a string, as illustrated in the above example.
+To do the opposite use FromString() on the Enum, see below.
+
+Using the value() method on an enum value returns the integer that is used for
+that value.  The values are numbered sequentially, starting with zero.  Note
+that this means that the values change whenever the list of values is changed.
+
+
+### Enum methods
+
+Using the FromString(name) method on the enum returns the associated enum
+value.  The name must match excactly.  When the name does not have a match the
+first value is returned.  Example:
+<zimbu>
+Color red = Color.FromString("red")
+Color fail = Color.FromString("xxx")  # will return Color.black
+</zimbu>
+
+Using FromStringOrThrow(name) is similar to FromString(name), but when the name
+does not have a match then it throws E.BadValue.  Example:
+<zimbu>
+Color c
+string name = "xxx"
+TRY
+  c = Color.FromStringOrThrow(name)
+CATCH E.BadValue e
+  IO.print("There is no Color called " .. name)
+}
+</zimbu>
+
+The Type() method returns a type describing the Enum.
+
+Not implemented yet: Define a method in the ENUM.
+
+### Exact syntax
+
+<pre>
+enum-def   ->  "ENUM"  sep  group-name  sep-with-eol
+                  (( var-name sep )*  var-name  sep-with-eol )?
+               block-end ;
+</pre>
+
+BITS
+----
+
+BITS is an integer where each bit or group of bits is given a specific meaning.
+It's an efficient way to store several flags and small values in one value,
+with the convenience of accessing them as if they were individual items.
+
+BITS is a value type, thus a copy is made when it is passed around.  It does
+not need to be allocated, which makes it as efficient as an int.
+
+A BITS is often used to pass settings to a chain of functions, and allows the
+fields to be changed when it is passed to another function.  For example, to
+specify how a file is to be written:
+<zimbu>
+BITS WriteFlags
+  bool     $create           # create file when it does not exist
+  bool     $overwrite        # truncate an existing file
+  OnError  $errorHandling    # what to do on an error
+  nat4     $threads          # number of threads to be used for writing
+}
+FUNC write(string name) status
+  RETURN write(name, create + overwrite + errorHandling=return)
+}
+FUNC writeFast(string name, WriteFlags flags) status
+  RETURN write(name, flags + threads=8)
+}
+FUNC write(string name, WriteFlags flags) status
+  ...
+</zimbu>
+
+These types are supported in a BITS:
+-  bool
+-  int1  ...  int32
+-  nat1  ...  nat32
+-  EnumType
+
+The current limitation is that up to 64 bits can be used.
+
+### Assignment
+
+The assignment to a BITS variable is just like an assignment to any other value
+type variable.  The expression on the right must evaluate to the correct BITS
+type.
+
+There is one special value: Assigning zero to a BITS type resets all the fields
+to their default value.
+
+### Values
+
+The value of an individual field is assigned with the equal sign and followed
+by the value, without any white space.  Examples:
+<zimbu>
+create=TRUE
+errorHandling=return
+threads=3
+</zimbu>
+
+The values of fields are combined with the plus sign, which must be surrounded
+by white space.  Example:
+<zimbu>
+create=TRUE + errorHandling=no + threads=3
+</zimbu>
+
+### Expressions
+
+The plus operator can be used to set fields to a value, using a field value as
+specified above.  Example:
+<zimbu>
+WriteFlags wf1 = create + threads=2
+WriteFlags wf2 = wf2 + threads=4    # assign 4 to wf2.threads
+</zimbu>
+
+The value of individual fields can be accessed like with object members:
+variable-name dot field-name.
+
+### Methods
+
+The Standard method ToString() returns a string representation of the BITS.
+NOT IMPLEMENTED YET, currently returns the int value.
+
+Methods can be defined inside the BITS.  This mostly works like methods defined in a CLASS.
+NOT IMPLEMENTED YET.
+
+### Exact syntax
+
+<pre>
+bits-def  ->  "BITS"  sep  group-name  sep-with-eol
+                block-item*
+              block-end  ;
+</pre>
+
+The bits name must start with an upper case character and must be followed by
+at least one lower case letter.
+
+
+Method Declaration
+------------
+
+A method name used with PROC or FUNC must start with a lower case character,
+unless it is a [[Method Declaration_Predefined methods|predefined method]].
+
+### Function Overloading
+
+A method can be defined multiple times with the same name if the arguments are
+different.  When there are optional arguments the arguments before them must be
+different. When the last argument has "..." (varargs) then the arguments before
+it must be different.  In short: the non-optional arguments must be different.
+
+What is considered to be different arguments depends on the rules for automatic
+conversion.  This is explained at the section [[Method call|Method call]].
+
+It is recommended to use the same name for methods that do almost the same
+thing.  When the intention of the functions is different it's better to use a
+different name than just using different arguments.
+For example, if there is a method "append(int x)" there should not be a method
+"append(int x, bool insert)", which inserts instead of appends.
+
+
+### NEW
+
+NEW() is used to create an object from a class.  It is the object constructor.
+This is not a normal method, it does not contain a RETURN statement, but the
+caller will get the newly created object as if it was returned.
+
+See [[CLASS_Constructor|Constructor]].
+
+
+### PROC
+
+A procedure is declared like this:
+<zimbu>
+PROC write(string text)
+  fd.write(text)
+}
+</zimbu>
+
+A procedure can also be defined in an expression.
+In that case the name is omitted:
+<zimbu>
+proc<int> callback = PROC (int result)
+  IO.print("Received: " .. result)
+}
+</zimbu>
+Only use this for short methods, for longer ones it's better to define them
+elsewhere.  When the argument types can be figured out from the context it is
+possible to use a Lambda expression or method, see the sections below.
+
+
+### FUNC
+
+A function is just like a procedure, but additionally returns a value.  The
+type of the return value goes after the arguments:
+<zimbu>
+FUNC write(string text) status
+  RETURN fd.write(text)
+}
+</zimbu>
+
+The RETURN statement with an expression of the specified return type is the
+only way a FUNC may end.
+
+Multiple values can be returned at once.  The types are listed separated with a
+comma.  And the RETURN statement has a comma separated list of expressions.
+Example:
+<zimbu>
+FUNC $read() string, status
+  IF $closed
+    RETURN "", FAIL
+  }
+  RETURN $fd.read(), OK
+}
+</zimbu>
+
+It is recommended to add a comment about what is returned, especially if this
+is not obvious:
+<zimbu>
+FUNC minMax() int /* minimum */, int /* maximum */
+  ...
+  RETURN min, max
+}
+</zimbu>
+
+To use only one of the returned values add a subscript:
+<zimbu>
+FUNC tryIt() int, string
+  RETURN 33, "yes"
+}
+...
+IO.print(tryIt()[0])  # prints "33"
+IO.print(tryIt()[1])  # prints "yes"
+</zimbu>
+
+Do not return more than a few values, otherwise it may be difficult to
+understand what the code is doing.
+
+A function can also be defined in an expression.
+In that case the name is omitted:
+<zimbu>
+func<int => int> nextNr = FUNC (int increment) int
+  counter += increment
+  RETURN counter
+}
+</zimbu>
+Only use this for short methods, for longer ones it's better to define them
+elsewhere.  When the argument and return types can be figured out from the
+context it is possible to use a Lambda expression or method, see the next
+sections.
+
+
+### Lambda expression
+
+This is shorthand for defining a PROC or a FUNC that only evaluates one
+expression.  Lambda functions are especially useful for the map() and keyMap()
+methods of containers:
+<zimbu>
+intDict.map({ v => v + 3 })                    # add 3 to every item
+stringDict.keyMap({ k, v => k .. ": " .. v })  # every items becomes "key: value"
+</zimbu>
+The types of the arguments and the return type are inferred from the context.
+Therefore the context must have these types.  Illustration:
+<zimbu>
+VAR callback = { a, b => a * b }                  # ERROR: types can't be inferred.
+func<int, int => int> callback = { a, b => a * b }  # OK
+</zimbu>
+
+Before the => is the comma separated list of arguments.  This is like in a
+method declaration, but without types.  If there are no arguments use white
+space.
+
+After the => goes a single expression.  For a FUNC this is what is returned.
+For a PROC it must have a side effect to be useful.
+
+
+### LAMBDA method
+
+This is shorthand for defining a nameless PROC or a FUNC.  Lambda methods are
+especially useful for the map() and keyMap() methods of containers that consist
+of a few statements:
+<zimbu>
+intDict.map(LAMBDA (v); count(); RETURN v + 3; })      # add 3 to every item
+stringDict.keyMap(LAMBDA (k, v)
+    IO.print("processing " .. k)
+    RETURN k .. ": " .. v  # every items becomes "key: value"
+  })
+</zimbu>
+The types of the arguments and the return type are inferred from the context.
+Therefore the context must have these types.  Illustration:
+<zimbu>
+VAR callback = LAMBDA (a, b); RETURN a * b; }    # ERROR: types can't be inferred.
+func<int, int => int> callback = LAMBDA (a, b); RETURN a * b; }  # OK
+</zimbu>
+
+Inside the parenthesis after LAMBDA is the list of arguments.  This is like in
+a method declaration, but without types.  If there are no arguments use "()".
+
+The statements can either be on a separate line, or separated with a semicolon.
+
+### Optional arguments
+
+Arguments can be declared to have a default value.  In that case the argument can be omitted and the default value will be used.
+
+When an argument has a default value, all following arguments must have a default value.
+
+<zimbu>
+PROC foo(int x, int y = 0, int z = 0)
+  IO.print("x:\(x) y:\(y) z:\(z)")
+}
+foo(3)         # prints "x:3 y:0 z:0"
+foo(3, 7)      # prints "x:3 y:7 z:0"
+foo(3, 7, 11)  # prints "x:3 y:7 z:11"
+</zimbu>
+
+
+### Variable number of arguments (varargs)
+
+The last argument may have "..." between the type and the name.  This means
+this argument can be present zero or more times in the call.
+
+Example:
+<zimbu>
+FUNC add(int ... numbers) int
+  int result
+  FOR nr IN numbers.values
+    result += nr
+  }
+  RETURN result
+}
+IO.print(add(1, 2, 3))   # prints 6
+IO.print(add())          # prints 0
+</zimbu>
+
+When using the argument in the method the type is a tuple with two arrays:
+tuple&lt;array&lt;string&gt; names, array&lt;arg-type&gt; values&gt;.
+This tuple and the arrays cannot be changed.
+
+A short name for the tuple is varargs&lt;arg-type&gt;.
+
+Example:
+<zimbu>
+PROC show(int ... numbers)
+  FOR idx IN 0 UNTIL numbers.values.Size()
+    IO.print("\(numbers.names[idx]) is \(numbers.values[idx])")
+  }
+}
+show(one = 1, five = 5)   # prints "one is 1", "five is 5"
+</zimbu>
+
+To pass the varargs to another method, or to pass a tuple as the varargs
+argument, pass it by name.  Example using the show() function from above:
+<zimbu>
+  varargs<int> tup = [["a", "b"], [3, 9]]
+  show(numbers = tup)
+</zimbu>
+Note that "numbers" is the name of the varargs argument.
+
+A function cannot have both optional arguments and varargs.
+
+
+### Closure and USE arguments
+
+A method can pick up variables from its context.  The method is then called a
+closure.
+
+Let's start with an example for USE by value:
+<zimbu>
+string m = "one"
+PROC display(USE m)
+  IO.print(m)
+}
+display()  # displays "one"
+m = "two"
+display()  # displays "one"
+proc<> p = display
+m = "three"
+p()        # displays "one"
+</zimbu>
+
+You can see that the value of "m" is taken at the moment when the PROC is
+defined.  Changing "m" later has no effect.
+
+To use the changed value of "m" it has to be a USE by reference:
+<zimbu>
+string m = "one"
+PROC display(USE &m)
+  IO.print(m)
+}
+display()  # displays "one"
+m = "two"
+display()  # displays "two"
+proc<> p = display
+m = "three"
+p()        # displays "three"
+</zimbu>
+
+If the variable is not a simple name, it must be given one with AS:
+<zimbu>
+CLASS Foo
+  SHARED
+    string foo = "foo"
+    string bar = " bar"
+  }
+}
+Foo.foo = "two"
+PROC display(USE Foo.foo AS f, Foo.bar AS b)
+  IO.print(f .. b)
+}
+display()  # displays "two bar"
+</zimbu>
+
+The USE keyword must come after the normal arguments.  There must be a space
+before and after USE. When there is no normal argument there must be a space
+after it only.  There is no comma before USE.
+
+An example that has a bit more usefulness (translated from the Python example on Wikipedia):
+<zimbu>
+FUNC getCounter() proc<int>
+  int x
+  PROC increment(int y USE &x)
+    x += y
+    IO.print("total: " .. x)
+  }
+  RETURN increment
+}
+VAR increment1 = getCounter()
+VAR increment2 = getCounter()
+increment1(1)     # prints 1
+increment1(7)     # prints 8
+increment2(1)     # prints 1
+increment1(1)     # prints 9
+increment2(1)     # prints 2
+</zimbu>
+
+What happens here is that the variable "x" in getCounter() is referenced by the
+callback stored in increment1, even though the function itself has returned and
+the scope no longer exists.  Zimbu recognizes this situation and puts "x" into
+allocated memory.  This happens every time getCounter() is called, thus
+increment1 and increment2 each have their own instance of "x".
+
+The USE arguments can also be used with lambda functions.
+Here is an example with a lambda function and a thread:
+<zimbu>
+string m = "world"
+pipe<string> sp = Z.evalThread<string>.NEW().eval({ USE m => "hello " .. m })
+IO.print(sp.read())
+</zimbu>
+
+### Predefined methods
+
+Method names starting with an upper case letter are reserved for predefined
+methods.  You can define these methods in your class or module. They must
+behave as specified, have the specified arguments and return type.
+
+<zimbu>
+    FUNC Main() int
+</zimbu>
+Main() is the program entrance point.  It can only appear at the toplevel of
+the main program file.  Also see [[File Level_Main()|File Level]].
+
+<zimbu>
+    FUNC Init() status
+</zimbu>
+Used in a module or shared section of a class.  Invoked during the
+[[Startup Sequence|startup sequence]].
+
+<zimbu>
+    FUNC EarlyInit() status
+</zimbu>
+Used in a module or shared section of a class.  Invoked during the
+[[Startup Sequence|startup sequence]].
+
+<zimbu>
+    FUNC $ToString() string
+</zimbu>
+Returns a string representation of the object.  If a class does not define a
+ToString method, one is generated that lists the value of every member, using
+curly braces, similar to an initializer for the object.
+<zimbu>
+    CLASS NoToString
+      int $value
+      string $name
+    }
+    NoToString nts = NEW()
+    nts.value = 555
+    nts.name = "foobar"
+    IO.print(nts.ToString())  # result: {value: 555, name: "foobar"}
+</zimbu>
+
+<zimbu>
+    FUNC $Type() type
+</zimbu>
+Returns a type object, which contains information about the type.
+Especially useful to find out what a "dyn" variable contains.
+
+<zimbu>
+    FUNC $Size() int
+</zimbu>
+Returns the number of items.  For a primitive type (int, nat, float, etc.) this
+can be the number of bytes.  For a string it is the number of characters, for a byteString it is the number of bytes.
+
+<zimbu>
+    FUNC $Equal(Titem other) bool
+</zimbu>
+Makes it possible to compare the value of two objects. It must return TRUE when
+the value of the object is equal to "other".
+
+This does not necessarily mean all members of the object have the same value.
+For example, cached results of computations can be ignored.
+
+Defining the $Equal() method on an object makes it possible to use the "==" and
+"!=" operators.
+
+<zimbu>
+    FUNC $Compare(Titem other) int
+</zimbu>
+Must return zero when the object value is equal to "other", smaller than zero
+when the object value is smaller than "other", and larger than zero when the
+object value is larger than "other".
+
+If the relevant value of the object is "int $value", it can be implemented like this:
+<zimbu>
+FUNC $Compare(Titem other) int
+  RETURN $value - other.value
+}
+</zimbu>
+
+Defining the $Compare() method on an object makes it possible to use the "&gt;",
+"&gt;=", "&lt;" and "&lt;=" operators.
+
+<zimbu>
+    FUNC $Init() status
+</zimbu>
+Used for initializing an object.
+See [[Object Initialization Sequence|Object Initialization Sequence]].
+
+<zimbu>
+    FUNC $Finish() status
+    FUNC $Finish(Z.FinishReason fr) status
+</zimbu>
+Used when an object is about to be destructed.
+
+When the Z.FinishReason is <b>unused</b> or <b>called</b>, and the method
+returns OK it will not be called again.  When it returns FAIL it will be called
+again the next time when the object is about to be destructed.
+
+When the Z.FinishReason is <b>leave</b> or <b>exit</b> Finish() is only called
+once.  The return value is ignored.
+
+See [[Object Destruction|Object Destruction]].
+
+
+### Exact syntax
+
+TODO: lambda method
+
+TODO: PROC and FUNC without a name, used in an expression
+
+<pre>
+method-def     ->  func-def | proc-def | new-def ;
+func-def       ->  "FUNC"  sep  var-name  method-args  ":"  sep  type  method-common ;
+proc-def       ->  "PROC sep var-name  method-args method-common  ;
+new-def        ->  "NEW"  method-args  method-common  ;
+method-args    ->  "(" sep-with-eol?  arg-defs? ")"
+arg-defs       ->  arg-def  ( ","  sep  arg-def ) *  skip  ;
+arg-def        ->  type  sep  "&"?  var-name ;
+arguments      ->  "&"?  expr  ( ","   sep   "&"?  expr )*  ;
+method-common  ->  sep-with-eol
+                     block-item*
+                   block-end  ;
+</pre>
+
+
+Variable Declaration
+------------
+
+Variables can be declared in these scopes:
+1.  Inside a method.  The variable is then available for use until the end of
+    the statement block.  It cannot be used before the declaration.
+2.  In the scope of a class, with $ prepended to the name.  The variable
+    becomes a member of the class and can be used before its declaration.
+2.  Inside a module.  The variable becomes a member of the module and can also
+    be used before its declaration.
+2.  Inside a SHARED section in a class.  The variable becomes a member of the
+    class and can also be used before its declaraiton.
+2.  In the main program file.  It can be used in that file, also before its
+    declaration.
+
+It is not allowed to declare a variable with the same name as a method.
+
+It is not allowed to declare a variable with the same name, where it could be
+used.
+
+Variables can be declared with these statements:
+<zimbu>
+Type varName         # simple variable declaration
+Type varName = expr  # simple variable declaration with initialization
+Type var1, var2      # declare multiple variables of the same type
+</zimbu>
+Note that when declaring multiple variables it is not possible to initialize
+any of them.
+
+
+### VAR
+
+In a variable declaration *VAR* can be used instead of the type.  The type will
+then be inferred from the first assignment.  If the variable has an
+initializer that is the first assignment.
+<zimbu>
+    VAR s = "string"  # type inferred from initializer
+    VAR n
+    n = 15 * 20       # int type inferred from first assignment
+    n = "string"      # ERROR, n is an int
+</zimbu>
+
+Note that *VAR* and the *dyn* type are very different.  *VAR* gets it type at
+runtime, the compiler infers it from how the variable is used.  A variable of
+the *dyn* type can store any type of value.
+<zimbu>
+    dyn s = "string"  # type of s is a string
+    s = 15 * 20       # type of s is now an int
+    s = "string"      # type of s is a string again
+</zimbu>
+
+When the initialization value is a constant or a computation of constants, and
+the value does not fit in the variable the compiler produces an error.  When
+the initialization is an expression this does not happen.
+
+### STATIC
+
+A variable declared inside a method normally only exists while executing the
+method, it is located on the stack.
+To have a variable exist forever, prepend STATIC.  The variable will then be
+located in static memory.
+<zimbu>
+PROC printStartTime()
+  STATIC int startTime
+  IF startTime == 0
+    startTime = TIME.current()
+  }
+  IO.print(TIME.Values.NEW(startTime).ToString())
+}
+printStartTime()  # prints the current time
+TIME.sleepSec(3)
+printStartTime()  # prints the same time again
+</zimbu>
+
+Variables declared with STATIC are shared by all calls to the method.
+Only one variable exists, no matter how often the method is called.
+Still, the variable can only be accessed inside the method, it is not visible
+outside the method.
+
+The static variable can be initialized.  The expression must evaluate to a
+constant.
+
+There is no thread safety, all methods share the same variable.
+
+
+### Simplified Syntax
+
+<pre>
+[STATIC] type name [attribute-list] [= expression]
+</pre>
+| [STATIC]       |  | optional |
+| type           |  | The type name, such as "int", "string" or "MyClass".  VAR
+                      can also be used here. |
+| name           |  | The variable name, e.g., "$foo" or "foo". |
+| attribute-list |  | Optional attributes, such as @public. |
+| = expression   |  | Initializer.  When using the VAR type also infers the
+                      variable type. |
+
+Examples:
+<zimbu>
+int i
+string hello = "Hello"
+VAR ref @public
+STATIC int startTime
+</zimbu>
+
+### Exact syntax
+
+<pre>
+var-def   ->  type  sep  var-decl ( skip  ","  sep  var-decl )*  line-sep ;
+var-decl  ->  var-name  attribute*  var-init? ;
+var-init  ->  sep  "="  sep  expr ;
+</pre>
+
+### Variable Names
+
+In a class, not in the SHARED section, all variable names start with a dollar
+and then a lower case letter.  Example:
+
+<zimbu>
+CLASS Foo
+  string $name
+}
+</zimbu>
+
+Everywhere else the variable names start with a lower case letter. Example:
+
+<zimbu>
+PROC foo()
+  string name
+}
+</zimbu>
+
+
+### Attributes
+
+TODO
+
+The @local attribute can be used on members and methods of a class and a piece.
+The effect is that the declaration is local to the scope where it is defined.
+It is not visible in child classes, interfaces and, for a piece, the class
+where it is included.
+
+For example, this piece keeps $done and $maxVal local.  A class that includes
+this piece may define $done and $maxVal without causing a conflict.
+<zimbu>
+PIECE Max
+  bool $done @local
+  int  $maxVal @local
+       = T.int.min
+
+  FUNC $max() int
+    IF !$done
+      $done = TRUE
+      FOR n IN $Iterator()
+        IF n > $maxVal
+          $maxVal = n
+        }
+      }
+    }
+    RETURN $maxVal
+  }
+}
+</zimbu>
+
+
+### Initializer
+
+TODO
+
+
+Types
+==========
+
+Although Zimbu does not follow the "everything is an object" concept, you can
+use every type like it was an object.  For example, you can invoke a method on
+a value type:
+
+<zimbu>
+bool nice
+IO.print(nice.ToString())
+IO.print(1234.toHex())
+</zimbu>
+
+
+Value types
+---------
+
+Value types, such as int and bool, are passed around by value.  Every time it
+is passed as an argument to a method and when assigned to another variable a
+copy is made.  When changing the original value the copy remains unchanged.
+
+<zimbu>
+int aa = 3       # |aa| is assigned the value 3
+someMethod(aa)   # |aa| is still 3, no matter what someMethod() does.
+int bb = aa      # the value of |aa| is copied to |bb|
+bb = 8           # |aa| is still 3, changing |bb| has no effect on that.
+</zimbu>
+
+Value types always have a valid value, there is no "undefined" state.  There is
+a default value, but you can't tell whether that was from an assignment or not.
+
+See [[Builtin Types_Value types|below]] for the list of builtin value types.
+
+[[BITS|BITS]] is a special kind of value type. It contains several small
+fields, like a class.  But it is passed by value, unlike objects.
+
+
+Reference types
+--------------
+
+Reference types, such as string, list and objects, are passed around by
+reference.  When two variables reference to the same item, changing one also
+changes the other.
+
+<zimbu>
+list<string> aa = ["one"]
+someMethod(aa)            # |aa| may have been changed by someMethod()
+list<string> bb = aa      # |bb| refers to the same list as |aa|
+bb.add("two")             # |aa| is now ["one", "two"], as is |bb|
+</zimbu>
+
+However, the reference itself is a value that is copied.  Example:
+
+<zimbu>
+list<string> aa = ["one"]
+list<string> bb = aa
+bb = ["two"]            # |aa| is unchanged
+</zimbu>
+
+The default value for all reference types is NIL.  That means it refers to
+nothing.  Trying to use the NIL value usually leads to an E.NilAccess
+exception.  You usually call NEW() to create an instance of a reference type.
+
+See [[Builtin Types_String types|below]] for the list of builtin reference
+types: [[Builtin Types_String types|string types]],
+[[Builtin Types_Container types|container types]] and
+[[Builtin Types_Other types|other types]].
+
+### Reference to a variable
+
+Any variable, also value typed variables, can be referred to with the "&"
+operator.  This results in a reference to the variable and must be declared as
+such.
+
+<zimbu>
+int aa = 4
+someMethod(&aa)    # |aa| may have been changed by someMethod()
+</zimbu>
+
+Use this with care, it can be confusing.  Especially when referencing a
+variable of reference type.  For returning more than one value from a function
+you can do this directly.  It is useful for passing a variable both for input
+and output, e.g. a counter.
+
+
+### Reference to a method
+
+There are three method reference types:
+
+|+ proc     | reference to a PROC  |
+|  func     | reference to a FUNC  |
+|  callback | reference to a PROC or FUNC with extra arguments  |
+
+Type declaration examples:
+<zimbu>
+proc<string>       # A reference to a PROC taking one string argument.
+proc<>             # A reference to a PROC without arguments.
+func<int => int>   # A reference to a FUNC taking one int argument and returning an int.
+func< => string>   # A reference to a FUNC without arguments and returning a string.
+callback<proc<int>, int>  # A reference to a PROC with two int arguments, one of which is stored in the callback.
+</zimbu>
+Note the use of "=>" between arguments and the return type of a FUNC.
+You can pronounce "=>" as "gives".
+There is always a space before and after the "=>".
+
+Calling a method using the reference is just like a method call:
+<zimbu>
+func<int => string> f = { n => "number " .. n }
+IO.print(f(3))
+# output: number 3
+</zimbu>
+
+A callback has two method type specifications:
+1. The inner method, the type specification used when passing around the
+   callback and when invoking the method.
+2. The outer method, the actually called method, using the arguments of the
+   inner method plus the other types in the callback.
+
+Example:
+<zimbu>
+PROC add(int val, int inc)
+  IO.print(val + inc)
+}
+callback<proc<int>, int> addFive = NEW(add, 5)
+callback<proc<int>, int> addEight = NEW(add, 8)
+addFive(10)   # prints 15
+addEight(10)  # prints 18
+</zimbu>
+
+Once a callback is created, it can be passed around as if it is reference to
+the inner method.  That the callback stores the extra argument is transparent,
+it has the type of the inner method.  The argumens stored inside the callback
+only become visible when the callback is invoked.
+
+Continuing the example above:
+<zimbu>
+proc<int> p = addFive
+p(20)  # prints 25
+</zimbu>
+
+Note that the extra arguments of the outer method always come after the
+arguments of the innter method.  There is no way to change that.
+
+A method reference for a method with USE arguments is very similar to a
+callback but the way it is created is different.  See
+[[Method Declaration_Closures and USE arguments|Closures]].
+
+
+Template types
+--------
+
+Classes, interfaces and methods can be defined with template types.  The type
+is declared by adding the actual types in angle brackets:
+<zimbu>
+list<string>          # list with string items
+dict<int, bool>       # dict with int key and bool items
+MyContainer<Address>  # MyContainer class with Address objects
+I.Iterable<int>       # I.Iterable interface for iterating over ints
+</zimbu>
+
+
+Runtime type checking
+---------
+
+For most code types should be specified at compile time and will be checked at
+compile time.  This catches mistakes as early as possible.  E.g., if you
+declare a *string* variable and pass it to a method that requires
+an *int* the compiler will tell you this is wrong.
+<zimbu>
+  string word = "hello"
+  increment(word)         # Compile time error: int required.
+</zimbu>
+
+### dyn
+
+For more flexibility, at the cost of performance and causing mistakes to be
+discovered only when the program is being executed, the *dyn* type can be used.
+A variable of this type can contain any kind of value or reference.  Assignment
+to a *dyn* variable never fails.  However, using the variable where a specific
+type is expected will invoke a runtime type check.  For this purpose
+the *dyn* type stores information about the actual type.
+
+The *dyn* type is most useful in containers.  This example stores key-value
+pairs where the value can be any type:
+<zimbu>
+dict<string, dyn> keyValue = NEW()
+parseFile("keyvalue.txt", keyValue)
+FOR key IN keyValue.keys()
+  dyn value = keyValue[key]
+  SWITCH value.Type()
+    CASE T.int;     IO.print(key .. " is number " .. value)
+    CASE T.string;  IO.print(key .. " is string '" .. value .. "'")
+    DEFAULT;        IO.print(key .. " is not a number or string")
+  }
+}
+</zimbu>
+
+Methods for the *dyn* type are documented in
+the <a href="https://zimbu.googlecode.com/hg/docs/DYN.dyn.html">dyn class</a>.
+
+Identity
+--------
+
+Value typed variables have no identity, only a value.  You can not tell one
+FALSE from another.
+
+Reference typed variables can have exactly the same value and still reference
+to another instance.  Therefore we have different operators to compare the
+value and the identity:
+
+<zimbu>
+string a = "one1"
+string b = "one" .. 1
+IO.print(a == b)    # TRUE
+IO.print(a IS b)    # FALSE
+</zimbu>
+
+Note: String constants are de-duplicated.  Also when the compiler can perform
+concatenation at compile time:
+<zimbu>
+string a = "one"
+string b = "o" .. "ne"
+IO.print(a == b)   # TRUE
+IO.print(a IS b)   # TRUE !
+</zimbu>
+
+
+Builtin Types
+------------
+
+All builtin type names start with a lower case letter.
+The types defined in Zimbu code must start with an upper case letter.
+That way new types can be added later without breaking an existing program.
+
+When used in an expression the standard types need to be preceded with "T.":
+<zimbu>
+thread t = T.thread.NEW()
+</zimbu>
+It's rarely needed though, in the example you would normally leave out
+"T.thread." and NEW() would work with the inferred type.
+
+### Value types
+
+|* type name |  contains  |
+| <a href="$$DOCS/BOOL.bool.html">bool</a>
+    | TRUE or FALSE |
+| <a href="$$DOCS/STATUS.status.html">status</a>
+    | FAIL or OK |
+| <a href="$$DOCS/INT.int.html">int</a>
+    | 64 bit signed number |
+| int8       | 8 bit signed number |
+| int16      | 16 bit signed number |
+| int32      | 32 bit signed number |
+| int64      | 64 bit signed number, identical to int |
+| nat        | 64 bit unsigned number |
+| nat8       | 8 bit unsigned number |
+| nat16      | 16 bit unsigned number |
+| nat32      | 32 bit unsigned number |
+| nat64      | 64 bit unsigned number, identical to nat |
+| float      | 64 bit floating point number |
+| float32    | 32 bit floating point number |
+| float64    | 64 bit floating point number, identical to float |
+| float80    | 80 bit floating point number |
+| float128   | 128 bit floating point number |
+| fixed1     | 64 bit signed number with one decimal: 1.1 |
+| fixed2     | 64 bit signed number with two decimals: 1.12 |
+| ...        |  |
+| fixed15    | 64 bit signed number with 15 decimals: 1.123456789012345 |
+
+See [[Default Values|Default Values]] for what value a variable has when not
+explicitly initialzed.
+
+status is similar to bool, but with clearer meaning for success/failure. It is
+often used as return value for methods.
+
+NOTE: fixed types have not been implemented yet
+
+fixed1, fixed2, ... fixed15 are used for computations where the number of
+digits behind the point needs to be fixed.  fixed2 is specially useful for
+money, fixed3 for meters, etc.
+
+
+### String types
+
+Use the link under the type name to go to the type documentation.
+
+|* type name |  functionality  |
+| <a href="$$DOCS/STRING.string.html">string</a>
+    | a sequence of utf-8 encoded Unicode characters, immutable |
+| <a href="$$DOCS/BYTESTRING.byteString.html">byteString</a>
+    | a sequence of 8-bit bytes, immutable |
+| <a href="$$DOCS/VARSTRING.varString.html">varString</a>
+    | a sequence of utf-8 encoded Unicode characters, mutable |
+| <a href="$$DOCS/VARBYTES.varByteString.html">varBytesString</a>
+    | a sequence of 8-bit bytes, mutable |
+
+All string types can contain a NUL character.  The length is remembered,
+getting the length of a very long string is not slow, like it is with NUL
+terminated strings.
+
+String and byteString use the same storage format and can be typecast to each
+other without conversion.  Same for varString and varByteString.
+
+Varstring and varByteString are mutable.  They are implemented in a way that does
+not require reallocating memory and copying text for every mutation.
+
+When using a varString where a string is expected, the varString is
+automatically converted using the ToString() method.  And the other way around, using the toVarstring() method.
+
+When using a varByteString where a byteString is expected, the varByteString is automatically
+converted using the toBytes() method.  And the other way around, using the
+toVarbytes() method.
+
+These conversions also work for NIL, so that this works:
+<zimbu>
+varString vs    # NIL by default
+string s = vs   # no problem.
+</zimbu>
+Most other operations on string types fail when the value is NIL.
+
+
+### Container types
+
+Use the link under the type name to go to the type documentation.
+
+|* type name  |  functionality  |
+| <a href="$$DOCS/ARRAY.array.html">array</a>
+   | multi-dimentional vector of known size |
+| <a href="$$DOCS/LIST.list.html">list</a> 
+   | one-dimensional, can insert |
+| <a href="$$DOCS/SORTEDLIST.SortedList.html">sortedList</a>
+   | one-dimensional, can insert, ordered |
+| <a href="$$DOCS/DICT.dict.html">dict</a>
+   | lookup by key, no duplicate keys |
+| <a href="$$DOCS/MULTIDICT.MultiDict.html">multiDict</a>
+   | lookup by key, duplicate keys allowed |
+| <a href="$$DOCS/SET.Set.html">set</a>
+   | lookup by key, no duplicate keys |
+| <a href="$$DOCS/MULTISET.MultiSet.html">multiSet</a>
+   | lookup by key, duplicate keys allowed |
+
+All containers contain items of the same type.
+However, the type can be <b>dyn</b>, in which case the container can hold items
+of any type.
+
+### Tuple type
+
+|* type name |  functionality  |
+| <a href="$$DOCS/TUPLE.tuple.html">tuple</a>
+   | structure with one or more items of a specified type |
+
+A tuple requires the type of every item it contains to be specified.  It is
+convenient for when a function returns more than one thing:
+<zimbu>
+# Read a line. Returns a tuple with:
+# |status| OK or FAIL
+# |string| the text when |status| is OK, an error message when |status| is FAIL
+FUNC readLine() tuple<status, string>
+</zimbu>
+
+The items in a tuple can be accessed with an index, starting at zero, like with
+a list.  With square brackets on the left side of an assignment all items can
+be obtained at once:
+<zimbu>
+tuple<int, string> tup = NEW()   # sets all values to their default
+tup = [5, "foo"]                 # Create tuple and initialize from a list.
+tup[0] = 7
+tup[1] = "bar"
+int i = tup[0]                   # get 7
+string s = tup[1]                # get "bar"
+[i, s] = tup                     # unpack the tuple, get 7 and "bar" at once
+</zimbu>
+
+To make clear what each item in the tuple is for names can be added.  The items
+can then be accessed by that name, like a class member:
+<zimbu>
+tuple<int x, int y, string title> tup = NEW(5, 10, "hello")
+int xval = tup.x           # same as int xval = tup[0]
+string title = tup.title   # same as string title = tup[2]
+t.y = 3                    # same as t[1] = 3
+t.title = "there"          # same as t[2] = "there"
+</zimbu>
+
+It is not possible to add a method to a tuple.
+If you need that use a CLASS instead.
+
+### Thread related types
+
+Use the link under the type name to go to the type documentation.
+
+|* type name |  functionality  |
+| <a href="$$DOCS/PIPE.Pipe.html">pipe</a>
+   | synchronized stream |
+| <a href="$$DOCS/THREAD.Thread.html">thread</a>
+   | unit of execution |
+| <a href="$$DOCS/THREAD.EvalThread.html">evalThread</a>
+   | unit of execution to evaluate an expression |
+| <a href="$$DOCS/THREAD.Lock.html">lock</a>
+   | object used to get exclusive access |
+| <a href="$$DOCS/THREAD.Cond.html">cond</a>
+   | condition to wait on |
+
+### Other types
+
+
+The standard libraries define many useful types, but they do not have a short
+type name, e.g.
+
+|* type name |  functionality  |
+| <a href="$$DOCS/IO.File.html">IO.File</a>
+   | opened file |
+| <a href="$$DOCS/IO.Stat.html">IO.Stat</a>
+   | information about a file |
+| <a href="$$DOCS/Z.Pos.html">Z.Pos</a>
+   | position in a file |
+
+Use the link under the type name to go to the type documentation.
+
+
+ALIAS and TYPE
+------------
+
+Some type declarations can become long and using a short name instead makes
+code easier to read.  Zimbu offers two ways for this: ALIAS and TYPE.  ALIAS is
+nothing else than a different name for the same type.  The name still stands
+for the same type and can be used instead of that type.  TYPE defines a new
+type and restricts how that type can be used.
+
+### Simplified Syntax
+
+<pre>
+TYPE type name
+ALIAS type name
+</pre>
+| type           |  | The type name, such as "int", "string" or "MyClass". |
+| name           |  | The declared name, e.g., "BirdName" or "Length". |
+
+### ALIAS
+
+ALIAS is used to give a short name to a type, method or variable. Example:
+
+<zimbu>
+  ALIAS Token.Type TType
+</zimbu>
+
+Here the name TType stands for Token.Type.
+
+This can also be used to define a name in a module or class as if it
+is part of that module or class, while it is actually defined elsewhere.
+For example, the ZWT library defines items that are actually defined in another file.
+
+<zimbu>
+IMPORT "zwt/PanelModule.zu"
+...
+MODULE ZWT
+...
+    ALIAS PanelModule.Panel    @public Panel
+}
+</zimbu>
+
+Now the Panel class defined in PanelModule can be used as ZWT.Panel.
+
+### TYPE
+
+TYPE is used to define a new type from another type. There are two reasons to
+do this:
+1. Improve type checking. The compiler will give an error when passing a wrong
+   type.  This avoids mistakes.
+2. Define a short name for a complex type. This makes the code easier to read
+   and the type can be changed without having to change all the code that
+   uses it.
+
+Example for the first reason:
+<zimbu>
+  TYPE int WeightPerMeter
+  TYPE int Length
+  TYPE int Weight
+  WeightPerMeter w = 8
+  Length         l = 100
+  Weight         t = w * l
+  w = l  # Error!
+</zimbu>
+
+Here WeightPerMeter, Length and WeightPerMeter are all integers, but they are a
+different type.  When assigning l (which is Length) to w (which is
+WeightPerMeter) the compiler will generate an error.
+
+When operating on a typedef'ed type it loses its special meaning and the type
+it stands for is used instead.  Therefore the result of multiplying w and l can
+be assigned to t, even though its type is different.
+
+Also, the typedef'ed type can be assigned to and from the type it stands for.
+This is more apparent when using container types:
+
+<zimbu>
+  TYPE dict<string, int> KeyValue
+  TYPE dict<string, int> NameNumber
+  KeyValue   kv = NEW()
+  NameNumber nn = NEW()
+  dict<string, int> xx = kv
+  nn = ["hello": 5]
+  kv = nn  # Error!
+</zimbu>
+
+
+
+Statements
+==========
+
+Block Statements
+------------
+
+In a block it is possible to declare a class, method, enum, etc.  These items
+will then only be visible inside the block.  Just like other items declared in
+the block.
+
+A nested block can be used to restrict the visibility of declared items.
+
+The NOP statement does nothing.
+
+### Exact syntax
+
+<pre>
+block-item     ->  ( file-item
+                   | assignment
+                   | method-call
+                   | conditional
+                   | switch
+                   | try
+                   | while
+                   | do-until
+                   | for-in
+                   | break
+                   | continue
+                   | nop
+                   | block
+                   ) ;
+nop          ->  "NOP"  line-sep  ;
+block        ->  "{"  line-sep
+                    block-item+
+                 block-end  ;
+</pre>
+
+Assignment
+-----------
+
+### Simple Assignment
+
+A simple assignment has the form:
+<zimbu>
+variable = expression
+</zimbu>
+
+The type of the expression must match the type of the variable, or it must be
+possible to convert the value without loss of information.  E.g. you can assign
+a byte to an int variable, but not the other way around.  The same applies to
+the other kinds of assignment below.
+
+When the expression is a constant or a computation using only constants, and
+the value does not fit in the variable the compiler produces an error.
+
+### Multiple Assignment
+
+It is possible to assign multiple values at the same time:
+<zimbu>
+var1, var2 = multiFunc()
+var3, var4 = someTuple
+</zimbu>
+Here multiFunc() returns two values and someTuple results in a tuple type with
+two values.
+
+It is also possible to swap two variables, rotate three or do related
+assignments at the same time:
+<zimbu>
+x, y = y, x
+a, b, c = b, c, a
+r, g, b = red, green, blue
+</zimbu>
+There is no limit on the number of variables, but it quickly becomes unreadable
+with more than three.  Only use this when it makes sense, otherwise split into
+multiple assignments.
+
+### Multiple Assignment with declaration
+
+It is possible to do multiple assignments and declare some variables at the
+same time:
+<zimbu>
+string var1, status var2 = getStringWithStatus()
+var3, list<int> var4 = getCountAndList()
+</zimbu>
+
+Note that there cannot be a line break between the type and the variable name,
+because the compiler would see this as a declaration and an assignment:
+<zimbu>
+string var1, status
+var2 = someFunction()
+</zimbu>
+
+This declares a variable named status as a string and assigns the result of
+someFunction() to var2.
+
+### Operator Assignment
+
+<zimbu>
+lhs += expr     # add expr to lhs (numbers only)
+lhs -= expr     # subtract expr from lhs (numbers only)
+lhs *= expr     # multiple lhs by expr (numbers only)
+lhs /= expr     # divide lhs by expr (numbers only)
+lhs ..= expr    # concatenate expr to lhs (strings only)
+</zimbu>
+This works like "lhs = lhs OP expr", except that "lhs" is only evaluated once.  This matters when evaluating "lhs" has side effects.
+
+### Exact syntax
+
+<pre>
+assignment   ->  comp-name  sep  "="  sep  expr  line-sep ;
+TODO: more types
+</pre>
+
+Method call
+--------
+
+TODO
+
+NEW() can be used as an expression when the type can be inferred from the
+context.  This is usually the case when assigned to a variable:
+<zimbu>
+list<string> names = NEW()    # empty list of strings
+array<int> numbers = NEW(8)   # one-dimensional array containing 8 ints
+</zimbu>
+
+Otherwise the class must be specified:
+<zimbu>
+VAR names = NameList.NEW()
+</zimbu>
+
+### Passing arguments by name
+
+Normally arguments are passed by position, their sequence at the call and the
+method being called is the same.  When passing arguments by name, the order can
+differ.  When an argument is passed by name, all following argument must be
+passed by name.
+
+The following example outputs "There are 3 red desks" and "There are 2 green
+chairs".
+<zimbu>
+  PROC show(string color, string what, int amount)
+    IO.print("There are \(amount) \(color) \(what)")
+  }
+  show("red", "desks", 3)
+  show(amount = 2, what = "chairs", color = "green")
+</zimbu>
+
+This has advantages and disadvantages.  The main advantage is that you can see
+at the caller side what the argument means.  When there are several booleans
+and you pass TRUE or FALSE, it is easy to get confused about what each value is
+used for.
+
+The main disadvantage is that you can't change the name used in the method
+without also changing it for all callers.  This can be a problem when adding a
+new argument which makes the meaning of an existing argument unclear.  Or when
+the name turns out to be a bad choice.
+
+
+### Selecting the method to be called
+
+Since there can be multiple methods with the same name there are rules about
+which one to call, depending on the arguments used.
+
+The return type, and whether the method is a PROC or a FUNC, does not matter
+for selecting the method.
+
+Generally, the method with the lowest argument conversion cost is selected.  If
+there is more than one method with the lowest cost, this results in a compile
+time error, since the compiler does not know which one to use.  For computing
+the conversion cost add up the conversion cost for each argument, as explained
+in the following section.
+
+When the argument name is used in the call ("name = expression") the name
+itself is used, not the type of the expression.  All arguments passed by name
+must exist.
+
+Optional arguments, the ones specified with a default value and the varargs
+argument, are not used to select the method.
+
+
+### Automatic argument conversion
+
+When a method is called with an argument that is of different type than the
+type specified for the function, the compiler will attempt an automatic
+conversion.
+
+When the method arg is a typedef and the used argument is not a typedef, the
+method arg is considered to be what the typedef is defined to be.  For example,
+if the argument is a typedef Length, which is an int, conversion cost for using
+an int is zero.  If the used argument is a typedef Width, which is also an int,
+no conversion is possible.
+
+When two ways of conversion are possible the one with the lower cost is used.
+
+Cost 0: When no conversion is to be done. This includes:
+-  The types are equal.
+-  The method arg type is a class and the used argument is an object of that class. 
+-  The method arg type is a bits and the used argument is an int or nat.
+-  The method arg type is a FUNC type or FUNC reference type and the used
+   argument is a FUNC type or FUNC reference type
+-  The method arg type is a PROC type or PROC reference type and the used
+   argument is a PROC type or PROC reference type
+-  The used argument is a callback and the method arg type matches first
+   argument in the callback.
+-  The method arg type is a typedef and the used argument is the same typedef.
+-  The method arg type is a reference type and the used argument is NIL.
+-  The used argument type is unknown
+-  a negative number constant to int
+-  a positive number constant to nat
+-  a floating point constant to float
+
+Cost 1: When the method arg type is of the same type as the used argument but
+bigger.  This includes:
+-  byte to nat16, nat32 or nat
+-  int8 to int16, int32 or int
+-  nat16 to nat32 or nat
+-  int16 to int32 or int
+-  nat32 to nat
+-  int32 to int
+-  float32 to float, float80 or float128
+-  float to float80 or float128
+-  float80 to float128
+-  a positive number constant to nat8, nat16, nat32
+-  a negative number constant to int8, int16, int32
+-  a floating point constant to float32, float80 or float128
+
+Cost 2: When the method arg type is very similar and no information will be lost.
+-  byte to int16, int32 or int
+-  nat16 to int32 or int
+-  nat32 to int
+-  a positive number constant to int8, int16, int32, float, float32, float80 or
+   float128
+-  a negative number constant to float, float32, float80 or float128
+
+Cost 100: When the conversion is cheap
+-  The method arg type is dyn.
+-  The method arg type is a class, object or interface and the used argument is
+   a matching class, an object of a matching class or matching interface.
+   Matching means that it is the same class or a subclass of that class.
+
+Cost 10000: When the conversion takes some effort
+-  The method arg type is string and the used argument is int, bool, status or
+   varString.
+-  The method arg type is varString and the used argument is int, bool, status
+   or string.
+-  The method arg type is varbyteString and the used argument is byteString.
+-  The method arg type is byteString and the used argument is varByteString.
+
+Some resulting choices:
+-  If the used argument is a positive number constant, a method with nat
+   argument is preferred over a method with an int argument.
+-  A method with argument is dyn is preferred over a method with argument
+   string when called with int, bool, status, etc., because conversion to
+   string is more expensive than conversion to dyn.
+
+
+### Exact syntax
+
+<pre>
+method-call  ->  comp-name  skip  "("  arguments?  ")"  line-sep ;
+</pre>
+
+
+RETURN
+--------
+
+The RETURN statement causes the flow of execution to return to the caller.
+When inside a TRY statement any FINALLY block will be executed before
+returning.  When DEFER statements were executed, their function calls will be
+executed, in reverse order.
+
+A PROC can have a RETURN statement without any arguments.
+
+A FUNC must end in a RETURN statement and the argument or arguments must match
+the return type or return types of the function.  When there is more than one
+return type they are separated with commas, like the arguments to a function.
+
+No statements may directly follow RETURN.  They would never be executed.
+
+
+### Exact syntax
+
+<pre>
+return       ->  "RETURN"  ( sep  expr )?  ( "," sep expr)*  line-sep  ;
+</pre>
+
+
+EXIT
+--------
+
+The EXIT statement causes the program to end.  However, a TRY statement may
+catch the E.Exit exception and continue execution.
+
+The EXIT statement has one integer argument, which is used as the exit status for the program.
+
+
+### Exact syntax
+
+<pre>
+exit         ->  "EXIT"  sep  expr  line-sep  ;
+</pre>
+
+
+IF
+------------
+
+### Exact syntax
+
+<pre>
+conditional  ->  "IF"  sep  expr  line-sep
+                   block-item+
+                 elseif-part*
+                 else-part?
+                 block-end  ;
+elseif-part  ->  "ELSEIF"  sep  expr  line-sep
+                   block-item+  ;
+else-part    ->  "ELSE"  line-sep
+                   block-item+  ;
+</pre>
+
+
+IFNIL
+------------
+
+IFNIL is just like IF, except that it does not take an expression.  Its
+condition is TRUE when THIS (the object the method is invoked on) is NIL.
+
+<zimbu>
+  FUNC $values() list<int>
+    IFNIL
+      RETURN []
+    }
+    RETURN $members.values()
+  }
+  FUNC $Size() int
+    IFNIL
+      RETURN 0
+    }
+    ...
+  }
+  FUNC $find(int c) int
+    IFNIL
+      RETURN -1  # not found
+    }
+    ...
+  }
+</zimbu>
+
+IFNIL must be the very first statement in the method.  It can only be used
+inside a method of a class.
+
+Without IFNIL an E.NilAccess exception will be thrown.
+
+An alternative is to use the ?. operator, it will result in the default return
+value.  The advantage of IFNIL is that you can return any value, such as an
+emptly list for $values() above, or -1 for $find() above.
+
+When inheritance is involved a NIL object can be one of several classes.  All
+the classes that the object could be an instance of should use IFNIL in the
+called method.  Otherwise the program may crash.  If @replace is not used then
+it will always work.
+
+
+SWITCH
+------------
+
+Multiple CASE statements, without other code in between, cause the following
+block to be executed.
+
+When there is another statement after a CASE statement, execution jumps to the
+end of the SWITCH statement.
+
+A BREAK statement in one of the CASE blocks causes execution to jump to the end of the SWITCH statement.
+
+There can be only one DEFAULT statement, it must come after all the CASE
+statements and if there is a CASE before it there must be code in between.
+
+
+### Exact syntax
+
+<pre>
+switch       ->  "SWITCH"  sep  expr  line-sep
+                   switch-item+
+                 block-end  ;
+switch-item  ->  ( ( "CASE"  sep  expr  line-sep )+ | "DEFAULT"  line-sep )
+                    block-item+
+                  ;
+</pre>
+
+
+WHILE
+------------
+
+A BREAK statement inside the loop causes execution to jump to the end of the
+WHILE statement.
+
+A CONTINUE statement inside the loop causes execution to jump back to the start of the WHILE statement, evaluationg the condition again.
+
+### Exact syntax
+
+<pre>
+while    ->  "WHILE"  loop-name?  sep  expr  line-sep
+                block-item+
+              block-end  ;
+break    ->  "BREAK"  loop-name?  line-sep  ;
+continue ->  "CONTINUE"  loop-name?  line-sep  ;
+</pre>
+
+
+DO - UNTIL
+------------
+
+BREAK and CONTINUE work as with WHILE.
+
+The condition of the UNTIL is evaluated in the context of the loop block.
+That allows checking a variable defined in that block.  Example:
+
+<zimbu>
+DO
+  bool doPass = ++loop < 3
+UNTIL !doPass
+</zimbu>
+
+
+### Exact syntax
+
+<pre>
+do-until  ->  "DO"  loop-name?  line-sep
+                 block-item+
+               "UNTIL"  sep  expr sep-with-eol  ;
+</pre>
+
+
+FOR
+------------
+
+The FOR loop is used to iterate over anything that can be iterated over.
+
+A number range:
+<zimbu>
+# TO is inclusive
+FOR i IN 1 TO 5               # i is set to 1, 2, 3, 4 and 5
+  IO.write(i)
+}
+
+# UNTIL is exclusive
+FOR i IN 0 UNTIL list.Size()  # i is set to 0, 1, .. list.Size() - 1
+   IO.write(list[i])
+}
+</zimbu>
+
+A backwards range:
+<zimbu>
+FOR i IN 5 TO 0 STEP -1     # range is inclusive
+   #  i = 5, 4, 3, 2, 1, 0
+}
+</zimbu>
+
+Characters in a string:
+<zimbu>
+FOR c IN "1234"        # c is set to each character in the string
+  IO.write(c)
+}
+</zimbu>
+
+Values of an enum:
+<zimbu>
+ENUM Some
+  one
+  two
+}
+FOR v IN Some          # v is set to each value in the enum
+  IO.write(v.ToString())
+}
+</zimbu>
+
+Items in a list (array is the same):
+<zimbu>
+FOR item IN [1, 2, 3]  # item is set to each item in the list
+  IO.write(item)
+}
+</zimbu>
+
+Items in a list with the index:
+<zimbu>
+FOR index, item IN ["zero", "one", "two", "three"]
+  IO.write(index .. ": " .. item)
+}
+</zimbu>
+
+Items in a dictionary, using only the values
+<zimbu>
+FOR item IN [1: "one", 2: "two", 3: "three"]  # item is set to each string
+  IO.write(item)
+}
+</zimbu>
+
+Items in a dictionary, using the keys and the values
+<zimbu>
+FOR key, val IN [1: "one", 2: "two", 3: "three"]
+  # key is set to each number, val is set to each string
+  IO.write(key .. ": " .. item)
+}
+</zimbu>
+
+Any class that implements I.Iterable can be iterated over:
+<zimbu>
+FOR name IN nameList   # name is obtained with nameList.Iterator()
+  IO.write(name.ToString())
+}
+</zimbu>
+
+Any class that implements I.KeyIterable can be iterated over with two loop
+variables:
+<zimbu>
+FOR key, name IN nameList   # name is obtained with nameList.KeyIterator()
+  IO.write(key .. ":" .. name.ToString())
+}
+</zimbu>
+
+For the above, if the variable to be iterated over is NIL, this works as if
+there are no items.  Thus it does not throw an E.NilAccess exception.
+
+BREAK and CONTINUE work as with WHILE.
+
+
+### Looping over more than one iterable
+
+There can be multiple, comma separated iterable expressions after IN.  There
+must be one loop variable for each iterable.  The loop uses one item from
+each iterable on each iteration.  The loop ends when one of the iterables runs
+out of items.
+
+<zimbu>
+  list<string> week_en = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+  list<string> week_nl = ["ma", "di", "wo", "do", "fr"]
+  list<string> week_de = ["Mo", "Di", "Mi", "Do", "Fr"]
+  FOR en, nl, de IN week_en, week_nl, week_de
+    IO.print("English: " .. en .. ", Dutch: " .. nl .. ", German: " .. de)
+  }
+</zimbu>
+
+None of the iterable expressions can be a I.KeyIterator.
+
+
+### Loop variable
+
+The type of the loop variable(s) is inferred from what is being iterated over.
+
+When using two loop variables and one expression the first variable is the
+index or key and the second the value.
+
+For a class a FOR loop with one variable will use the I.Iterator interface,
+with two variables the I.KeyIterator interface.  If an object is given, the
+Itorator() and KeyIterator() methods will be used to obtain the iterator.
+
+The loop variable is available in the scope of the FOR block.  If it needs to
+be available elsewhere, explicitly declare a variable and use it with the USE
+keyword:
+<zimbu>
+int idx
+FOR USE idx IN 0 UNTIL list.Size()
+  IF list[idx] == 0
+    BREAK
+  }
+}
+IO.print("valid size: " .. idx)
+</zimbu>
+
+### Exact syntax
+
+<pre>
+for-in    ->  "FOR"  loop-name?  sep
+                    ( "USE"?  key-var-name )?
+                    "USE"?  item-var-name
+                    "IN"  expr
+                    ( ("TO" | "UNTIL")  expr)?
+                    ( "STEP" expr )?
+                    line-sep
+                 block-item+
+               block-end  ;
+</pre>
+
+
+DEFER
+--------
+
+A DEFER statement has one argument, which must be a method call.  This call is
+postponed until the end of the current method.  The arguments for the method
+call are evaluated at the time the DEFER statement is executed.
+
+DEFER is most useful right after a resource is allocated.  The argument is then
+a call to free up the resource.  Example:
+<zimbu>
+PROC copy()
+  IO.File in = IO.fileReader("source")
+  DEFER in.close()
+  IO.File out = IO.fileWriter("destination")
+  DEFER out.close()
+  ... copy from in to out, possibly throws an exception
+  # out.close() is called here
+  # in.close() is called here
+}
+</zimbu>
+
+The callbacks are invoked in reverse order, the callback from the first DEFER
+statement is called first.
+
+It is possible to use a DEFER statement inside a loop. Keep in mind that the
+arguments for the called method are evaluated when the DEFER statement is
+executed:
+<zimbu>
+  FOR idx IN 1 TO 3
+    DEFER IO.print("loop " .. idx)
+  }
+  # At the end of the method will print:
+  #   loop 3
+  #   loop 2
+  #   loop 1
+</zimbu>
+
+If somewhere in the method an exception is thrown, that is not caught by a
+TRY/CATCH, the callbacks for the executed DEFER statements are invoked before
+the exception is handled.  This also happens for nested methods, going up the
+stack until either Main() is handled or a TRY/CATCH handles the exception.
+
+When the method being called throws an exception, this is reported on stderr
+and the processing of callbacks continues.  Note that this means that executing
+the deferred methods happens inside a TRY/CATCH, which has some overhead.
+
+This could also be done with exception handling, but this has more overhead and
+gets messy when there are several resources to free.
+
+Another alternative is to use a Finish() method in a class.  This has the
+advantage that it does not require an extra statement.  A disadvantage is that
+it won't be called until the garbage is collected.  Unless a not allocated
+variable is used.
+
+### Exact syntax
+
+<pre>
+defer       ->  "DEFER"  sep  expr  line-sep  ;
+</pre>
+
+
+TRY - CATCH - ELSE - FINALLY
+------------
+
+TRY can be used to handle an exception.  The TRY block contains statements that might cause an exception to be throw. CATCH blocks are used to deal with them:
+
+<zimbu>
+string s
+TRY
+  IO.File f = openFile("does not exist")
+CATCH E.AccessDenied e
+  IO.print("Could not open file: " .. e.toString())
+ELSE
+  IF f == NIL
+    IO.print("File does not exist")
+  ELSE
+    TRY
+      s = f.read()
+    FINALLY
+      f.close()
+    }
+  }
+}
+</zimbu>
+
+This example uses the openFile() method, which returns NIL when the file does
+not exist.  That is the normal way to fail, thus it does not throw an
+exception but returns NIL.  Another way to fail is that the file exists, but
+cannot be accessed. This throws an E.AccessDenied exception, which is caught by
+the CATCH statement.
+
+The ELSE block is executed when no exception was thrown in the TRY block.
+
+Note that the variable "f" that was declared n the TRY block is also available
+in the ELSE block.  They use the same scope.
+
+The FINALLY block is always executed.  Also when an exception is thrown in a
+CATCH or ELSE block. In that case the exception is thrown again at the end of
+the FINALLY block.  However, if an exception is thrown inside the FINALLY
+block, this will not happen.
+
+Also, when BREAK, CONTINUE or RETURN was used, the FINALLY block is executed
+and the statement takes affect at the end of it.
+
+The exceptions throws in the CATCH, ELSE and FINALLY blocks are not caught by
+this TRY statement.  Except that this may cause the FINALLY block to be
+executed.
+
+### Exact syntax
+
+<pre>
+try           ->  "TRY"  line-sep
+                    block-item+
+                  catch-part*
+                  else-part?
+                  finally-part?
+                  block-end  ;
+catch-part    ->  "CATCH"  sep  type ( ","  sep  type)* sep  var-name  line-sep
+                     block-item+  ;
+else-part     ->  "ELSE"  line-sep
+                     block-item+  ;
+finally-part  ->  "FINALLY"  line-sep
+                    block-item+  ;
+</pre>
+
+
+THROW
+------------
+
+TODO
+
+
+Native code
+----------
+
+### Using a C type
+
+When writing a module that uses a C type, it can be included in a class like
+this:
+
+<zimbu>
+C(pthread_t)  thread_id
+</zimbu>
+
+The text between C( and ) is used literally in the produced C code.
+There cannot be a line break between C( and ).
+
+This does not automatically define the type, see the next section about
+including the C header file.
+
+NOTE: Variables defined this way will NOT be garbage-collected!  You must take
+care of this yourself, possibly using a Finish() method.
+
+
+### IMPORT.CHEADER
+
+For C header files you can use IMPORT.CHEADER.
+That makes sure the header file is included early and only once.
+
+The include statement will appear near the start of the generated C
+code.  The compiler discards duplicate names.  The meaning of using "" or
+&lt;&gt; matters, it is passed on to the C code.
+Example:
+
+<zimbu>
+IMPORT.CHEADER <ncurses.h>
+</zimbu>
+
+
+### Using a C expression
+
+For small pieces of C code you can use C(code):
+<zimbu>
+  bool special = (value & C(SPECIAL_MASK)) != 0
+</zimbu>
+
+There Zimbu compiler does not check the code, if you do something wrong the C
+compiler will produce errors or warnings.
+
+
+### Native code block
+
+Text between ">>>" and "<<<" is copied as-is to the generated C or Javascript
+file.
+
+<zimbu>
+>>> blockgc
+   FILE *fd = fopen("temp", "r");
+<<<
+</zimbu>
+
+Both the "<<<" and the ">>>" must appear at the start of the line without any
+preceding white space.  They can not appear halfway a statement.
+
+<zimbu>
+string x =
+>>>
+  "This does not work!";
+<<<
+</zimbu>
+
+Comments are allowed in the same line after ">>>" and "<<<":
+
+<zimbu>
+>>>   # debug code
+   printf("hello\n");
+<<<   # end of debug code
+</zimbu>
+
+The "blockgc" argument means the garbage collector (GC) should not run while
+inside this block. "blockgc" must be used for a block that contains an unsafe
+function.  An unsafe function is any function that is not safe, as indicated by
+the POSIX standard.  This includes a function that allocates memory.
+
+"fopen" is an unsafe function, it allocates memory, and the GC must not be run
+while this is happening.  Unfortunately, "fopen" may take a while, and blocks
+any pending GC.  This should be avoided.
+
+After a block marked with "blockgc" the GC will run if it was postponed.
+
+To test for missing "blockgc" run your code compiled with the --exitclean
+argument.
+
+Inside >>> and <<< references to Zimbu variables and methods can be used.
+Examples:
+<pre>
+  %var%
+  %obj.member%
+  %funcName%
+</pre>
+
+For functions this results in a callback.  If this is not wanted, the function
+name itself is to be obtained, use %[ expr ]% instead:
+<pre>
+  %[$funcName]%
+</pre>
+
+Zimbu expressions can be used as: %{ expression }%.
+Examples:
+<pre>
+   %{var + 5}%
+   %{ myFunc("foobar") }%
+</pre>
+
+Note that mixing C and Zimbu variables can be tricky.  Look at the generated
+code to make sure this is what you wanted.
+
+To specify what items the native code depends on, so that it gets added to the program, the uses() item is put after ">>>":
+<zimbu>
+>>> uses(getCstring)
+>>> uses(sys_types, socket, hostname, unistd, getCstring)
+</zimbu>
+
+Items available in uses() and what they make available:
+
+|+* name     | made available  |  comment |
+| ctype_h | ctype.h include file |  |
+| dirent | dirent.h include file |  |
+| errno | errno.h include file  |  |
+| fcntl | fcntl.h include file |  |
+| gcRun | garbage collection | rarely needed |
+| getCstring | ZgetCstring(s)  | converts a Zimbu string to a C "char *" NUL terminated string |
+| hostname | netdb.h include file  |  |
+| limits | limits.h include file |  |
+| pthread | pthread.h include file | also adds pthread library to link with |
+| setjmp_h | setjmp.h include file |  |
+| socket    | include files needed for sockets  | also adds socket library to link with |
+| string_h | string.h include file |  |
+| sys_stat | sys/stat.h include file |  |
+| sys_time | sys/time.h include file |  |
+| sys_types | sys/types.h include file |  |
+| sys_wait | sys/wait.h include file | not available on MS-Windows |
+| time_h | time.h include file |  |
+| unistd | unistd.h include file |  |
+| windows_h | window.h include file | only available on MS-Windows |
+
+
+Conditional Compilation
+----------
+
+The GENERATE_IF statement can be used to produce output only
+when a condition is true or false.  All alternative code paths are still
+parsed and verified.  This is useful in libraries where different
+code must be produced depending on the situation.
+
+The BUILD_IF statement can be used to build code only when
+a condition is true or false.  This allows skipping code which would not
+compile, e.g. a missing enum value.  This can be used to build
+code with different versions of the compiler, with different features
+or for different purposes (testing, profiling).
+
+
+### GENERATE_IF
+
+Example:
+<zimbu>
+GENERATE_IF Z.lang == "C"
+>>>
+  fputs("this is C code", stdout);
+<<<
+GENERATE_ELSEIF Z.lang == "JS"
+>>>
+  alert("this is JavaScript");
+<<<
+GENERATE_ELSE
+  Z.error("Language " .. Z.lang .. " not supported)
+}
+</zimbu>
+
+All alternative code paths are still parsed and resolved.  Thus even when
+producing C code an error in the JavaScript code will be noticed.
+
+The structure of the statement is:
+<zimbu>
+GENERATE_IF boolean_expr
+   statements
+GENERATE_ELSEIF boolean_expr
+   statements
+GENERATE_ELSE
+   statements
+}
+</zimbu>
+
+The GENERATE_ELSEIF can appear any number of times.
+
+The GENERATE_ELSE is optional.
+
+For "boolean_expr" see the Compile time expression section below.
+
+### BUILD_IF
+
+NOT IMPLEMENTED YET
+
+Examples:
+<zimbu>
+BUILD_IF Z.has("thread")  # compiler has thread support
+   # run jobs in parallel
+   job1.start()
+   job2.start()
+   job1.wait()
+   job2.wait()
+BUILD_ELSE
+   # run jobs sequentially
+   job1.run()
+   job2.run()
+}
+
+BUILD_IF Color.has("purple")
+   c = Color.purple  # purple is available
+BUILD_ELSE
+   c = Color.red     # there is no purple, use red
+}
+</zimbu>
+
+The alternate code paths are all parsed, to be able to find the
+end of the BUILD_IF statements.  Thus the syntax must be
+correct, a missing } will be noticed.  But only when the condition
+evaluates to true will the code be resolved and produced.  This
+allows for using variables that don't exist, enum values that are
+not defined, etc.
+
+The structure of the statement is:
+<zimbu>
+BUILD_IF boolean_expr
+   statements
+BUILD_ELSEIF boolean_expr
+   statements
+BUILD_ELSE
+   statements
+}
+</zimbu>
+
+The BUILD_ELSEIF can appear any number of times.
+
+The BUILD_ELSE is optional.
+
+For "boolean_expr" see the next section.
+
+
+### GENERATE_ERROR
+
+When compilation is not supported, then GENERATE_ERROR can be used inside a
+GENERATE_IF to produce an error at compile time. This avoids that broken code
+is produced, causing a cryptic error from the C compiler or an error message at
+runtime.
+
+GENERATE_ERROR takes one argument, which must evaluate to a string at compile
+time.
+
+<zimbu>
+GENERATE_IF Z.lang == "C"
+>>>
+  printf("%d", %nr%);
+<<<
+GENERATE_ELSE
+  GENERATE_ERROR "Unsupported"
+}
+</zimbu>
+
+
+### Compile time expression
+
+The boolean_expr supports these operators:
+<zimbu>
+     ||    # OR
+     &&    # AND
+     ==    # equal
+     !=    # not equal
+</zimbu>
+
+These values are supported:
+<zimbu>
+    TRUE
+    FALSE
+    "string literal"
+    Z.lang           # string: "C" when producing C code, or "JS" when producing JavaScript
+    Z.have("backtrace")  # boolean, TRUE when stack backtrace is available
+</zimbu>
+
+
+Expressions
+========
+
+Expressions are evaluated according to the operator precedence and then from
+left to right.
+
+Operator precedence
+---------
+
+|+ expr1    | expr2 ?: expr1        | if-nil           |  |
+|  expr2    | expr3 ? expr1 : expr1 | ternary operator |  |
+|  expr3    | expr4 || expr3        | boolean or       |  |
+|  expr4    | expr5 && expr4        | boolean and      |  |
+|  expr5    | expr6 == expr6<br>
+              expr6 != expr6<br>
+              expr6 &gt;= expr6<br>
+              expr6 &gt; expr6<br>
+              expr6 <= expr6<br>
+              expr6 < expr6<br>
+              expr6 IS expr6<br>
+              expr6 ISNOT expr6<br>
+              expr6 ISA expr6<br>
+              expr6 ISNOTA expr6
+                       | equal<br>
+                         not equal<br>
+                         greater than or equal<br>
+                         greater than<br>
+                         smaller than or equal<br>
+                         smaller than<br>
+                         same object<br>
+                         not same object<br>
+                         same class<br>
+                         not same class  |  |
+|  expr6    | expr7 .. expr6 | string concatenation |  |
+|  expr7    | expr8 & expr7<br>
+              expr8&nbsp;| expr7<br>
+              expr8 ^ expr7<br>
+                       | logical and<br>
+                         logical or<br>
+                         logical xor |  |
+|  expr8    | expr9 << expr9<br>
+              expr9 >> expr9
+                       | bitwise left shift<br>
+                         bitwise right shift |  |
+|  expr9    | expr10 + expr9<br>
+              expr10 - expr9
+                       | add<br>
+                         subtract |  |
+|  expr10    | expr11 * expr11<br>
+              expr11 / expr11<br>
+              expr11 % expr11
+                       | multiply<br>
+                         divide<br>
+                         remainder |  |
+|  expr11   | ++expr12<br>
+                 --expr12<br>
+                expr12++<br>
+                expr12--
+                       | pre-increment<br>
+                         pre-decrement<br>
+                         post-increment<br>
+                         post-decrement | can be combined |
+|  expr12   | -expr13<br>
+              !expr13<br>
+              ~expr13<br>
+              &expr13
+                       | negate<br>
+                         boolean invert<br>
+                         bitwise invert<br>
+                         reference  | not in front of a number |
+|  expr13     | expr14.name<br>
+                expr14?.name<br>
+                expr14(expr1 ...)<br>
+                expr14.name(expr1 ...)<br>
+                expr14?.name(expr1 ...)<br>
+                expr14.(expr1 ...)<br>
+                expr14[expr1 ...]<br>
+                expr14.name[expr1 ...]<br>
+                expr14=name<br>
+                expr14&lt;expr1 ...&gt;<br>
+                expr14.&lt;expr1 ...&gt;
+                       | member<br>
+                         not-nil member<br>
+                         method call<br>
+                         object method call<br>
+                         not-nil method call<br>
+                         method reference call<br>
+                         get item<br>
+                         get object item<br>
+                         bits item value<br>
+                         template<br>
+                         typecast |  |
+|  expr14     | ( expr1 )<br>
+                1234<br>
+                -1234<br>
+                0x1abc<br>
+                0b010110<br>
+                'c'<br>
+                "string"<br>
+                R"string"<br>
+                ''"string"''<br>
+                name<br>
+                $name<br>
+                [ expr1, ... ]<br>
+                { expr1: expr1, ... }<br>
+                NIL<br>
+                THIS<br>
+                PARENT<br>
+                NEW(expr1, ...)<br>
+                PROC (args) .. }<br>
+                FUNC (args) type .. }<br>
+                TRUE<br>
+                FALSE<br>
+                FAIL<br>
+                OK
+                       | grouping<br>
+                         number<br>
+                         negative number<br>
+                         hex number<br>
+                         binary number<br>
+                         character constant<br>
+                         string literal<br>
+                         raw string literal<br>
+                         multi-line string literal<br>
+                         identifier<br>
+                         member<br>
+                         list initializer<br>
+                         dict initializer |  |
+
+Note that compared to C the precedence of &, | and ^ is different.  In C their
+precedence is lower than for comparative operators, which often leads to
+mistakes.
+
+Note that with "-1234" the minus sign belongs to the number, while otherwise
+"-" is a separate operator.  This matters for members:
+<zimbu>
+-1234.toHex()    # apply toHex() on -1234
+-var.member      # apply "-" to "var.member"
+-var.func()      # apply func() on "var", then apply "-"
+</zimbu>
+
+Operators
+---------
+
+### ?: If-nil
+
+This is a binary operator that evaluates to the left value when it is not zero
+or NIL and the right value otherwise.  This is referred to as the
+null-coalescing operator or Elvis operator in other languages.
+
+Example, where a translated message is used if it exists, otherwise the
+untranslated message is used:
+<zimbu>
+getValue(translateMessage(msg) ?: msg)
+</zimbu>
+
+Simplified syntax:
+<pre>
+left ?: right
+</pre>
+When "left" has its default value then the result is "right".
+Otherwise the result is "left".
+
+This is equivalent to:
+<pre>
+left != NIL ? left : right
+</pre>
+Except that "left" is evaluated only once.
+
+
+### ? : Ternary operator
+
+This operator uses a condition and two value expressions:
+<pre>
+cond ? left : right
+<pre>
+
+When the condition evaluates to TRUE the result is the left expression,
+otherwise the right expression.  The expression that is not used is not
+evaluated.
+
+
+### || Boolean OR
+
+Simplified syntax:
+<pre>
+left || right
+</pre>
+The result is TRUE when "left" or "right" or both evaluate to TRUE.
+The result is FALSE when both "left" and "right" evaluate to FALSE.
+
+When "left" evaluates to TRUE then "right" is not evaluated.
+
+The compiler will generate an error when "right" or "true" do not evaluate to a
+bool type.
+
+
+### && Boolean AND
+
+TODO
+
+
+### ==, != equal and unequal
+
+TODO
+
+<zimbu>
+left == right      # equal value
+left != right      # unequal value
+</zimbu>
+
+"left" and "right" must be of the same type, but size does not matter.  Thus
+you can compare an int8 with int64.  Also, signedness does not matter, you can
+compare a nat with an int.
+TODO: what if the nat value doesn't fit in an int?
+
+Comparing Strings:
+-  When s1 and s2 are both NIL evaluates to TRUE.
+-  When s1 or s2 is NIL evaluates to FALSE.
+-  Otherwise evaluates to TRUE when the strings are equal.
+
+It is possible to compare a Bits value with zero.  The result is TRUE if all
+fields in the Bits are at their default value.
+
+When comparing objects the Equal() method is used.  When there is no Equal()
+method this is a compilation error.
+
+
+### >, >=, <, <= Comperators
+
+TODO
+
+<zimbu>
+left > right     # larger than
+left >= right    # larger or equal
+left < right     # smaller than
+left <= right    # smaller or equal
+</zimbu>
+
+
+### IS, ISNOT
+
+TODO
+
+Using IS for string values may give unexpected results, because concatenation
+of string constants is done at compile time, and equal string values point to
+the same string.  Therefore this condition evaluates to TRUE:
+<zimbu>
+IF "Hello" IS "Hel" .. "lo"
+</zimbu>
+
+
+### ISA, ISNOTA
+
+<zimbu>
+IF e ISA E.NilAccess
+IF decl ISNOTA Declaration
+</zimbu>
+
+Simplified syntax:
+<pre>
+left ISA right
+left ISNOTA right
+</pre>
+The "left" expression must evaluate to a value.
+The "right" expression must evaluate to a type.
+
+For ISA, if "left" is not NIL and can be typecast to "right", then
+the result is TRUE, otherwise it is FALSE.
+
+For ISNOTA the result the opposite.  These two expressions are equivalent:
+<zimbu>
+left ISNOTA right
+!(left ISA right)
+</zimbu>
+
+To test for whether a value is a specific class and not a child of that class, use ".C" for "right" to make a typecast invalid for child classes:
+<zimbu>
+VAR left = ChildOfFoo.NEW()
+left ISA Foo    # TRUE
+left ISA Foo.C  # FALSE
+</zimbu>
+
+See [[Operators_.<Typecast>|.<Typecast>]] for when a typecast is valid.
+
+
+### .. String concatenation
+
+TODO
+
+<pre>
+left .. right
+</pre>
+
+If "left" or "right" is not a string automatic conversion is done for these
+types, using their ToString() method:
+-  int, int8, int16, int32
+-  nat, byte, nat16, nat32
+-  float, float32
+-  bool
+-  status
+-  varString
+-  dyn
+
+
+### &, |, ^ Logical operators
+
+TODO
+
+<zimbu>
+left & right       # bitwise AND
+left | right       # bitwise OR
+left ^ right       # bitwise XOR
+</zimbu>
+
+"left" and "right" must be of a number or bits type.
+
+When "left" and "right" are of the Bits type the operator is applied to all
+fields.
+
+
+### <<, >> bitwise shift
+
+TODO
+
+
+### +, - add and subtract
+
+TODO
+
+
+### *, /, % multiply, divide and remainder
+
+TODO
+
+
+### ++, -- Increment and decrement
+
+TODO
+
+
+### Unary operators
+
+TODO
+
+
+### .member
+
+TODO
+
+
+### .member() object call
+
+TODO
+
+
+### ?.member
+
+The "?." operator, called dotnil operator, works like ".", unless the
+expression before the "?." evaluates to NIL.  In that case using "." would
+throw an E.NilAccess exception.
+When using "?." the result is the default value: zero, NIL or FALSE.
+
+<zimbu>
+var?.member   # value of "var.member" or 0/FALSE/NIL if var is NIL
+</zimbu>
+
+Simplified syntax:
+<pre>
+left?.right
+</pre>
+When "left" is NIL then the result is the default value for "right".
+Otherwise the result is equal to "left.right".
+
+This is equivalent to:
+<pre>
+left == NIL ? 0 : left.right
+</pre>
+Except that "left" is evaluated only once.
+
+<zimbu>
+foo?.member = "value"  # Does not work!
+</zimbu>
+
+Using "?." on a member in the left-hand-side of a assignment will still throw
+E.NilAccess, since there is no place to write the value.
+
+
+### ?.member()
+
+The "?." operator, called dotnil operator, works like ".", unless the
+expression before the "?." evaluates to NIL.  In that case using "." would
+throw an E.NilAccess exception (unless
+[[IFNIL|IFNIL]] is used, see below).
+When using "?." the result is  usually the
+default return value: zero, NIL or FALSE.
+
+<zimbu>
+var?.Size()   # size of "var", or 0 if var is NIL
+</zimbu>
+
+Simplified syntax:
+<pre>
+left?.right()
+</pre>
+When "left" is NIL then the result is the default return value for "right()".
+Otherwise the result is equal to "left.right()".
+
+This is equivalent to:
+<pre>
+left == NIL ? 0 : left.right()
+</pre>
+Except that "left" is evaluated only once.
+
+<zimbu>
+mylist?.add("value")   # Does not work!
+</zimbu>
+
+Using "?." on a method that modifies the object will still throw E.NilAccess,
+since there is no sensible fallback.
+
+Note that when using [[IFNIL|IFNIL]] as the first statement in a method then
+"." behaves like "?.".  And the behavior of both depends on the statements inside the [[IFNIL|IFNIL]] block.
+
+
+### name[] get item
+
+TODO
+
+
+### =name Bits item value
+
+TODO
+
+
+### <Type> Template
+
+TODO
+
+
+### .<Typecast>
+
+<zimbu>
+foo.<ChildOfFoo>.childOfFooMethod()
+</zimbu>
+
+This operator is most useful when invoking a method on an object which was
+declared to be of a parent class, while the method exists on a child class.
+
+Simplified syntax:
+<pre>
+left.<Type>
+</pre>
+
+In general, a type is cast from the type of "left" to a more specific type. At
+compile time there is only a check if this typecast would be possible for some
+value of "left".  If the typecast is never possible that is an error.
+
+At runtime there will be a check if "left" is indeed of the type being casted
+to, or a child of it.  If not than an E.WrongType exception will be thrown.
+
+
+### Exact syntax
+
+<pre>
+expr             ->  alt-expr  ;
+alt-expr         ->  or-expr  ( sep  "?"  sep  alt-expr  sep  ":"  sep  alt-expr )?  ;
+or-exp           ->  and-expr  ( sep  "||"  sep  and-expr )*  ;
+and-expr         ->  comp-expr  ( sep  "&&"  sep  comp-expr )*  ;
+comp-expr        ->  concat-expr  ( sep  ( "==" | "!=" | ">" | >=" | "<" | "<=" | "IS" | "ISNOT" | "ISA" | "ISNOTA" )  sep  concat-expr )*  ;
+concat-expr      ->  bitwise-expr  ( sep   ".."  sep  bitwise-expr )* ;
+bitwise-expr     ->  shift-expr ( sep  ( "&" | "|"  | "^" )  sep  shift-expr )* ;
+shift-expr       ->  add-expr  ( sep ( ">>" | "<<" )  sep  add-expr )* ;
+add-expr         ->  mult-expr  ( sep  ( "+" | "-" )  sep  mult-expr )*  ;
+mult-expr        ->  incr-expr  ( sep  ( "*" | "/" | "%" )  sep  incr-expr )*  ;
+incr-expr        ->  ( "++" | "--" )?  mult-expr  ( "++" | "--" )?  ;
+neg-expr         ->  ( "-" | "!" )?  dot-expr  ;
+dot-expr         ->  paren-expr  ( TODO )?  ;
+paren-expr       ->  "("  skip  expr  skip  ")"  |  base-expr ;
+base-expr        ->  ( "EOF" | "NIL" | "THIS" | "TRUE" | "FALSE" | "OK" | "FAIL" | new-item | string | char | number | list | dict | comp-name )  ;
+</pre>
+
+
+Composite Names
+----------
+
+### Exact syntax
+
+<pre>
+type           ->  comp-name  ;
+comp-name      ->  var-name  comp-follow*
+                   | member-name  comp-follow*
+                   | group-name  comp-follow+
+                   ;
+comp-follow    ->  ( dot-item  |  paren-item  |  bracket-item  |  angle-item  )  ;
+dot-item       ->  sep-with-eol?  "."  ( var-name | member-name ) ;
+paren-item     ->  "("  arguments?  ")"  ;
+bracket-item   ->  "[" skip  expr  skip  "]"  ;
+angle-item     ->  "&lt;"  arguments  "&gt;"  ;
+</pre>
+
+
+Identifiers
+--------
+
+Using clear names for variables, classes, methods, etc. is very important to
+make a program easy to understand.  Here are a few recommendations:
+-  The larger the scope where the name is visible, the longer.  E.g., in a
+   block of a few lines you can use "i" for a list index.  In a larger scope
+   you would use "listIndex".
+-  Use abbreviations sparingly.  E.g., everybody knows that "int" stands for
+   "integer", thus that is OK.  Few people will know that "ymd" stands for
+   "YearMonthDay", avoid that.
+
+A few rules are enforced when using names:
+-  User defined types, thus the name of a class, enum and bits must start with
+   an upper case letter and have at leat one lower case letter.
+-  Module names follow the rules for type names.
+-  Members, both variables and methods, must start with a lower case letter.
+   Except predefined methods, see below.
+-  Variables start with a lower case letter.
+
+Using CamelCase is recommended, but not enforced.
+<zimbu>
+  bool camelCaseName          # recommended
+  bool underscore_separated   # discouraged
+</zimbu>
+
+It is possible to use the builtin type names for variable names, if you really
+want:
+<zimbu>
+  string string = "foo"
+  bool bool = TRUE
+  dict<string, int> dict = ["foo": 6]
+  func< => int> func = { => 6 }
+</zimbu>
+
+### Reserved names
+
+When Zimbu grows and more features are added we want to make sure that your
+existing programs keep on working.  Therefore you can not use names that are
+reserved for the language itself and for builtin libraries.
+
+All words made out of upper case letters, underscores and digits are reserved.
+When there is at least one lower case letter the word is not reserved.
+Examples:
+<pre>
+    MY
+    THERE_
+    MY_NAME
+    _OPEN
+    KEY2
+</pre>
+
+Names cannot contain two or more consecutive underscores.
+Examples:
+<pre>
+    My__name
+    __Foo
+    there_____too
+</pre>
+
+Type names starting with a lower case letter are reserved for predefined types.
+This applies to the name of classes, enums, modules, etc.  Not to member
+variables and methods, which actually must start with a lower case letter.
+Examples:
+<pre>
+    bigInt
+    bool
+    string
+    dict
+    multiDict
+</pre>
+
+Method and member names starting with an upper case letter are reserved for
+predefined methods and members.  The methods can be defined in your class or
+module, so long as the arguments and return type match the predefined method,
+see [[Method Declaration_Predefined methods|predefined method]].
+Examples:
+<zimbu>
+    FUNC $ToString() string
+    FUNC $Equal(Titem other) bool
+    FUNC Main() int
+</zimbu>
+
+
+### Exact syntax
+
+<pre>
+loop-name     ->  "."  var-name ;
+file-name     ->  ( ! NL ) + ;
+group-name    ->  upper  id-char*  lower  id-char* ;
+var-name      ->  lower  id-char* ;
+member-name   ->  upper  id-char*  lower  id-char* | lower  id-char* ;
+id-char       ->  alpha | digit | "_" ;
+alpha         ->  upper | lower ;
+upper         ->  "A" .. "Z" ;
+lower         ->  "a" .. "z" ;
+digit         ->  "0" .. "9" ;
+block-end     ->  "}"  sep-with-eol
+</pre>
+
+
+Values
+--------
+
+The type of a value depends on the context.  For example, using "123" can be an
+int or a nat, depending on where it is used.  You will get an error if the
+value does not match the expected type. For example, using "1000" for a byte
+does not work, a byte can only store a number from 0 to 255.
+
+<zimbu>
+   int a = 1234      # 1234 used as an int
+   nat b = 1234      # 1234 used as a nat
+   byte c = 1234     # Error!  1234 does not fit in a byte
+   list<int> la = [1, 2, 3]   # 1, 2 and 3 used as an int
+   list<dyn> la = [1, 2, 3]   # 1, 2 and 3 used as a dyn
+</zimbu>
+
+### Numbers
+
+Examples:
+<zimbu>
+0                                     # int or nat
+-123                                  # int
+32239234789382798039480923432734343   # bigInt or bigNat
+0xff00                                # int or nat
+0b11110000                            # int or nat
+0.01                                  # float
+</zimbu>
+
+It can be difficult to see the value of large numbers.  Zimbu allows using
+single quotes to separate groups of digits.  For Java programmers an underscore
+can be used as well.  But the single quote is recommended, it's easier to read.
+Swiss bankers use it!
+
+<zimbu>
+1'000'000
+0xffff'00ff
+0b1010'0000'1111'1111
+
+1_000_000
+0xffff_00ff
+0b1010_0000_1111_1111
+</zimbu>
+
+### Strings
+
+A string value is mostly written with double quotes: "string".  It cannot
+contain a literal line break.  Special characters start with a backslash:
+<pre>
+\\          \
+\'          '
+\"          "
+\a          BEL 0x07
+\b          BS  0x08
+\f          FF  0x0c
+\n          NL  0x0a
+\r          CR  0x0d
+\t          TAB 0x09
+\v          VT  0x0b
+\123        octal byte, must have three digits, start with 0, 1, 2 or 3
+\x12        hex byte, must have two hex digits
+\u1234      hex character, must have four hex digits
+\U12345678  hex character, must have eight hex digits
+</pre>
+Note that with the \x item it's easy to create invalid UTF-8, only use this for
+byteString, not for string.
+
+<zimbu>
+IO.write("\u00bb mark \u00ab ¡really!\n")
+# output: » mark « ¡really!
+</zimbu>
+All Unicode characters can be entered directly, the backslash notation is only
+required for control characters.
+
+A raw string is written as R"string".  Only the double quote character is
+special, it must be doubled to get one.  A raw string cannot contain a line
+break: a literal line break is not allowed and \n does not stand for a line
+break.
+<zimbu>
+IO.print(R"contains a \ backslash and a "" quote")
+# output: contains a \ backslash and a " quote
+</zimbu>
+
+A long string can contain line breaks.  Only "'' is special: it always
+terminates the string.
+<zimbu>
+IO.write(''"line one
+line two
+    line three
+"'')
+# output: line one
+# line two
+#    line three
+</zimbu>
+Note that leading space is included, also what comes before "''.
+
+
+### String Expressions
+
+A string can contain an expression in \(), for example:
+<zimbu>
+list<string> names = ["Peter", "John"]
+IO.print("The \( names.Size() ) names are \( names )")
+# prints: The 2 names are ["Peter", "John"]
+</zimbu>
+After the expression inside \() is evaluated it is converted to a string, as if
+calling ToString().
+
+Inside the \() spaces are optional.  Usually it's easier to read when the \( is followed by a space and there is a space before the ).
+
+Just after the \( a format can be specified.  This format is passed to the
+ToString() method.  Example:
+<zimbu>
+int number = 111
+int result = -8
+IO.print("the \(.5d number) is \(5d result)")
+# prints: the 00111 is    -8
+</zimbu>
+There must be no space between the \( and the format.
+
+All the parts are concatenated into one string result.  The string expression:
+<zimbu>
+"the \(5d number ) is \( result )"
+</zimbu>
+is equivalent to:
+<zimbu>
+"the " .. number.ToString("5d") .. " is " .. result.ToString()
+</zimbu>
+
+
+### Lists
+
+<zimbu>
+[1, 2, 3]
+["one", "two", "three", ]  # trailing comma is allowed
+[1, "two", [3, 3, 3]]      # mix of types can be used for list<dyn>
+[]                         # empty list
+</zimbu>
+
+The type of the items is inferred from the context.
+
+A list can also be used to intialize an array and a tuple.  In the case of a
+tuple the type of each value must be correct.
+
+
+### Dicts
+
+Dict constants:
+<zimbu>
+[1: "one", 2: "two", ]   # trailing comma is allowed
+O[1: "one", 2: "two"]    # with ordered keys
+[:]                      # empty dict
+</zimbu>
+
+The type of the keys and items is inferred from the context.
+
+
+### Objects
+
+An object initializer can only be used when assigned to an object of a known
+class.  The compiler will verify the type of each value.
+
+<zimbu>
+{name: "Peter",
+  address: {
+    street: "Gracht",
+    nr: 1234,
+    city: "Amsterdam",
+  }
+  phone: ["+3120987644", "+31623423432"],
+}
+</zimbu>
+
+As the example shows nesting is allowed.  Not only with objects, also with
+lists, arrays and dicts.
+
+The class must support a NEW() method without arguments.  It is used to create
+an object before applying the values.
+
+The last comma is optional.
+
+
+### Exact syntax
+
+<pre>
+string           ->  """  ( "^\"" | "\"  ANY )*  """  ;
+char             ->  "'"  ( "^\'" | "\"  ANY )  "'"  ;
+number           ->  decimal-number | hex-number | binary-number  ;
+decimal-number   ->  digit  ( digit | "'")*  ;
+hex-number       ->  ( "0x" | "0X" ) ( "0" .. "9" | "a" .. "f" | "A" .. "F" | "'" )+  ;
+binary-number    ->  ( "0b" | "0B" ) ( "0" | "1" | "'" )+  ;
+list             ->  "["  ( skip  ( expr  ","  sep )*  expr  ( ","  sep)? )?  skip  "]"  ;
+dict             ->  empty-dict | non-empty-dict ;
+empty-dict       ->  "[:]" ;
+non-empty-dict   ->  "["  ( skip  ( dict-item  ","  sep )*  dict-item  ","? )?  skip  "]"  ;
+dict-item        ->  expr  skip  ":"  sep  expr  ;
+new-item         ->  "NEW"  "("  arguments?  ")"  ;
+</pre>
+
+
+Execution
+========
+
+Default Values
+-----------
+
+When a variable has not been explicitly initialized it will have the default
+value.  This also applies to all members of an object.  At the lowest level all
+bytes have the value zero.
+
+<rationale>
+### Rationale
+
+Some languages, such as C, do not use default values.  When allocating memory
+it can contain anything.  This avoids the time needed to clear the memory.
+However, it has several disadvantages:
+
+-  The memory often contains data that was previously freed.  This may cause
+   private information to leak out. An example is that the structure used by
+   the getpwuid() library function showed up in output when a NUL character was
+   missing.
+-  Tests may pass accidentally, depending on the sequence of events.
+-  The programmer must decide which variables to explicitly initialize.  It's
+   easy to forget to initialize a variable.  Some compilers help by giving a
+   warning when using an unititilized variable.  That is not reliable though.
+-  When the computer supports parity check, reading unititilized memory may
+   cause the program to crash.
+-  The explicit initializations take up space, while they often use the default
+   value.
+
+Now that computers are very efficient, the time needed to clear the memory is
+so small that the disadvantages of not clearing the memory have become more
+important.
+</rationale>
+
+
+### Default values for types
+
+|* type       | value  | also for |
+| bool        | FALSE  |      |
+| status      | FAIL   |      |
+| int         | 0      | int8 int16 int32 int64 bigInt |
+| nat         | 0      | byte nat8 nat16 nat32 nat64 bigNat |
+| float       | 0.0    | float32 float64 float80 float128 |
+| fixed10     | 0      | fixed1 fixed 2 ... fixed15 |
+| enum        | the first item |
+| string      | NIL    | byteString varString varbyteString |
+| container   | NIL    | list, dict, set, etc.    |
+| object      | NIL    |      |
+
+For a bits every field will have the default value.
+
+
+Startup Sequence
+------------
+
+Modules and classes can define an Init() method to initialze things when the
+program is starting.  In its simplest form this executes code that does
+not depend on other initializations.  Example:
+<zimbu>
+MODULE Foo
+  list<string> weekendDays
+  FUNC Init() status
+    weekendDays = NEW()
+    weekendDays.add("Saturday")
+    weekendDays.add("Sunday")
+    return OK
+  }
+}
+</zimbu>
+
+The EarlyInit() method is used in the same way, but it is called before the
+command line arguments are processed.
+
+If an Init() or EarlyInit() method depends on other initialization to be done,
+and that has not been done yet, it should return FAIL.  It will then be called
+again after making a round through all modules and classes.
+
+This is how it works exactly:
+
+1. All "static variables" are set to their default value. "static variables"
+   are the variables at the module level, variables in the SHARED section of
+   a class and variables declared with STATIC in a method.
+2. The "static variables" with a constant initializer are initialized.
+2. The "static variables" in builtin modules are initialized.
+2. One by one, in undetermined order, the "static variables" that have the
+   @earlyInit attribute and an assignment are initialized.  This includes
+   objects of a class that has the @earlyInit attribute, such as the command
+   line flags in the ARG module.<br>
+   Note that the expression is evaluated while
+   other "static variables" may not have been initialized yet.  It is possible
+   to create command line arguments, but they cannot be used yet.
+2. The EarlyInit() methods are invoked in undetermined order.  This is repeated
+   until they all return OK.  An EarlyInit() method is only called again when
+   it previously returned FAIL.<br>
+   This is aborted with an error after 1000 rounds.<br>
+   This allows for anything that needs to be done before command line
+   arguments are processed, including calling ARG.replaceRawList() and even a
+   complete replacement of the ARG module.<br>
+   The Foo.EarlyReady flag indicates
+   whether the Foo module or class has finished early initialization.  It is
+   TRUE when there is no EarlyInit() method or the EarlyInit() method has
+   returned OK.
+2. Command line arguments are processed, unless ARG.disable() was invoked in
+   one of the previous steps.
+2. One by one, in undetermined order, the "static variables" that have an
+   assignment and no @earlyInit attribute are initialized.<br>
+   Note that the expression is evaluated while other "static variables" may not
+   have been initialized yet.  It is possible to use command line arguments.
+2. All defined Init() methods are invoked in undetermined order.  This is
+   repeated until they all return OK.  An Init() method is only called again
+   when it previously returned FAIL.<br>
+   For classes only the Init() method in the SHARED section is invoked, not the
+   $Init() method.<br>
+   This is aborted with an error after 1000 rounds.<br>
+   This allows modules and classes to perform initializations that depend on
+   other modules and classes.<br>
+   The Foo.Ready flag indicates whether the Foo module or class finished
+   initialization.  It is TRUE when there is no Init() method or the Init()
+   method has returned OK.
+2. Main() is called.
+
+Illustration:
+<zimbu>
+MODULE Foo
+  # A boolean command line argument "-v" or "--verbose".
+  # This will be initialized in step 3, because ARG.Bool has the @earlyInit attribute.
+  ARG.Bool verbose = NEW("v", "verbose", FALSE, "Verbose messages")
+
+  # This will be initialized in step 6, after "verbose".
+  string leader = verbose.value() ? "Foo module: " : ""
+
+  # This will be invoked in step 7, after "leader" was initialized.
+  FUNC Init() status
+    IF Bar.Ready    # when Bar has been initialized
+      Bar.setLeader(leader)
+      RETURN OK     # initialization of Foo is done
+    }
+    RETURN FAIL     # we need another round
+  }
+}
+</zimbu>
+
+If a class extends a class that has an Init method, and it does not define its
+own Init method, the Init method of the parent is invoked. Only one "Ready"
+flag is used to avoid calling it again after it returns OK.
+
+Note that the initialization happens in one thread. If an Init() or EarlyInit()
+blocks then the whole program startup is blocked.  It is not a good idea to
+block on something that takes longer than reading a file.  Internet connections
+are better not used, unless the program really can't do anything without them.
+
+
+Object Initialization Sequence
+------------
+
+When NEW() is invoked to create a new object, this happens:
+
+1. The object is allocated with all members set to their default value.
+2. If members are assigned a value in the declaration, these are executed. This
+   happens in the order the members are declared.  If the class extends a
+   parent, this is first done in that parent (and its parent, etc.).
+2. If an $Init() method exists it is invoked.  If the class extends a parent,
+   its $Init() method is invoked first (and in the parent of the parent, etc.).
+   But the method is always invoked in the context of the created class, thus
+   replaced methods are invoked.
+2. The NEW() method is executed.
+
+The $Init() method is a PROC without arguments.
+
+It is allowed to call $Init() again later. It will execute both the assignments
+for members and the body of the $Init() method.  That includes the parent
+class, and its parent, etc.  Note that none of the NEW() methods are called.
+
+Best is to do simple initializations in the declaration, e.g.:
+
+<zimbu>
+CLASS Example
+  list<int> $numbers = NEW()
+  string $message = "this is an example"
+}
+</zimbu>
+
+More complicated initializations belong in $Init():
+
+<zimbu>
+CLASS Example
+  list<int> $numbers = NEW()
+  string $message
+
+  PROC $Init()
+    FOR i IN 1 TO 10
+      $numbers.add(i)
+    }
+    IF Lang.current == Lang.ID.nl
+      $message = "dit is een voorbeeld"
+    ELSE
+      $message = "this is an example"
+    }
+  }
+}
+</zimbu>
+
+Keep in mind that these initializations cannot be overruled in sub-classes.
+Use NEW() if you do want that.
+
+
+Object Destruction
+------------
+
+Garbage collection (GC) will find allocated objects that are no longer used and
+free the associated memory.  This is done automatically, the programmer does
+not need to keep track of what objects are in use.  The GC can be invoked
+intentionally with:
+<zimbu>
+GC.run()
+</zimbu>
+
+Normally there are no side effects when an object is destructed, other than the
+memory becoming available.  If a side effect is desired, a Finish method can be
+defined. For example, when an object is used to keep track of a temp file:
+
+<zimbu>
+CLASS TempFileName
+  string $tempFileName
+
+  NEW()
+    $tempFileName = createTempFile()
+  }
+
+  FUNC $Finish() status
+    IF $tempFileName != NIL
+      IO.delete($tempFileName)
+      $tempFileName = NIL  # only delete it once
+    }
+    RETURN OK
+  }
+}
+</zimbu>
+
+NOTE: $Finish() is only supported for generated C code, not for Javascript.  <br>
+NOTE: $Finish() is not called when memory management has been disabled at
+compile time with --manage=none. <br>
+NOTE: An alternative is to use a DEFER statement.  The advantage is that the
+work is done at the end of the function, not later when the object is
+garbage collected.  The disadvantage is that it requires an extra statement.
+
+Finish has one optional argument: Z.FinishReason.  This specifies the reason
+why it was called.
+
+An attribute <b>@notOnExit</b> can be added to the Finish method.  It will then
+not be called when the program is exiting.  This is used by IO.File.Finish() to
+prevent the stdin/stdout/stderr files to be closed when exiting.
+
+The Finish method can do anything.  For allocated objects, if Finish() is
+called with <b>unused</b> and it returns FAIL this prevents
+the object from being freed. Also, when executing the
+Finish() method causes the object to be referenced from another object that is
+in use, the object will not be freed.
+
+If a Finish method throws an exception it is caught and a message is written to
+stderr.  Finish will not be called again, just like when it returned OK.
+However, running out of memory or another fatal error may cause the program to
+exit, and some Finish methods may not be called.
+
+For not allocated objects, e.g., on the stack, the Finish() method is called
+once when leaving the block it was defined in, with an argument <b>leave</b>.
+Exceptions will be thrown as usual.  This can be used to automatically executed
+code at the end of the block:
+
+<zimbu>
+FOR name IN ["1", "22", "333"]
+  TempFileName %tf = NEW()
+  doSomething(tf, name)  # uses the temp file.
+  # %tf.Finish() called here, because leaving the block where %tf is declared
+}
+</zimbu>
+
+When an exception causes the block to be left, the same happens as when the
+block is left in a normal way, thus Finish() is called with <b>leave</b>.
+
+In a single-threaded application Finish methods will be called by the GC,
+and thus delay execution of the program.  To avoid this put work to be done in
+a work queue (e.g. using a pipe), and invoke it at a convenient time.
+
+In a multi-threaded application Finish methods will be called by the same
+thread that executes the GC. This is usually OK, but if a Finish method takes
+very long it prevents from the next GC round to happen.  To avoid this run a
+separate thread to do the work, using a pipe to send the work from the Finish
+method to that thread.
+
+One can also call Finish directly.  This is useful to avoid waiting for the GC
+to kick in.  You are expected to pass the <b>called</b> argument, but this is
+not enforced.  Returning OK will prevent the method from being called again.
+The method can be called this way multiple times, also when it returned OK
+previously. Exceptions are not caught like when Finish is called by the GC.
+
+This is how objects with a Finish method are handled by the GC:
+
+1. GC will locate objects that are no longer used and have a Finish method that
+   did not return OK yet.  These are moved to the toFinish list.
+   Unused objects that have a Finish method that were already called and
+   returned OK will be freed.
+2. The members of objects in the toFinish list are marked as used, and its
+   members recursively.
+2. If there is at least one object in the toFinish list that is not marked (not
+   referenced by other objects in the toFinish list),
+   the marked objects are removed (put back in the list of used objects).
+   Otherwise all objects are kept (they refer to each other somehow).
+2. The Finish methods of the objects in the toFinish list are invoked. The
+   return value is remembered, if it is OK the Finish method will not be called
+   by the GC again.
+2. The objects are moved back from the toFinish list to the list of used
+   objects.
+
+The result is that an object with a Finish() method is not freed in the first
+GC round, but only in the GC round after it returned OK.
+
+On exit (also when exiting because of an exception) the following happens:
+
+1. All objects that have a Finish method that did not return OK yet are moved
+   to the toFinish list.
+2. The Finish method of the objects in the toFinish list is invoked.
+   The Z.exiting flag can be used to detect that Finish was called because the
+   program is exiting.
+
+The program may hang on exit when a Finish() method hangs.  It is up to the
+programmer to make sure this does not happen.  When a Finish() method throws an
+exception that is does not catch itself, e.g. when running out of memory or a
+NIL pointer access, the exception will be written to stderr.  If an error
+occurs that is not caught the program will exit with some Finish() methods not
+being called.
+
+
+Syntax
+========
+
+White Space and Comments
+------------
+
+### Comments
+
+There are two types of comments.  The first type starts with a # and continues
+until the end of the line. Multi-line comments require repeating the # in every line.
+
+The second type of comment starts with /* and ends with */.  This comment must
+not contain a line break.
+
+Comments can be used in many places, but not inside a string.
+
+Recommended is to make the comment either a short note or a full sentence.  A
+sentence starts with a capital letter and ends in a full stop, while a short
+note does not.
+<zimbu>
+# Whole line comments are usually a sentence.
+idx++  # next item
+b = 0  # Reset b so that blah blah blah blah blah blah blah blah.
+</zimbu>
+
+Zudocu can be used to generate documentation from source code.  Special markers
+in the comments are used. A wiki-like syntax is used for formatting.  See
+the <a href="http://www.zimbu.org/documentation/generating-docs">web page</a>.
+This is extensively used in the Zimbu library code.
+
+### White space
+
+Zimbu is very strict about use of white space.  This ensures that every Zimbu
+program that compiles has at least the basic spacing right.  Examples:
+<zimbu>
+  a="foo"    # Error: Must have white space before and after the "=".
+  a = "foo"  # OK
+  f(1,2)     # Error: A comma must be followed by white space.
+  f(1, 2)    # OK
+  f( 1)      # Error: No white space after "(" if text follows.
+  f(1 )      # Error: No white space before ")" if text precedes.
+  f(1)       # OK
+</zimbu>
+
+Zimbu uses line breaks to separate statements, so that there is no need for a
+semicolon.  This is done in a natural way, the exact syntax specifies what the
+rules are.
+
+If you do want to put several statements in one line, use a semicolon as a
+statement separator:
+<zimbu>
+SWITCH count
+  CASE 0; $write("no items"); RETURN FAIL
+  CASE 1; $write("1 item"); RETURN OK
+  DEFAULT; $write("\(count) items"); RETURN OK
+}
+</zimbu>
+
+### Notes on the exact syntax
+
+| line-sep     |  | Line separator: Either a semicolon or an NL with optional
+                    white space and comments. |
+| semicolon    |  | A semicolon with mandatory following white space. This is
+                    only used to separate statements. |
+| sep-with-eol |  | At least one line break, with optional comments and white
+                    space. |
+| sep          |  | Mandatory white space with optional comments and line
+                    breaks. |
+| skip         |  | Optional white space, comments and line breaks. |
+| white        |  | One or more spaces. |
+| comment      |  | One comment, continues until the end of the line. |
+
+### Exact syntax
+
+<pre>
+line-sep      ->  semicolon | sep-with-eol ;
+semicolon     ->  ";" white
+sep-with-eol  ->  ( white comment )?  NL  skip ;
+sep           ->  ( white | NL ) skip ;
+skip          ->  ( ( white | NL ) ( white | comment | NL )* )? ;
+white         ->  " "+ ;
+comment       ->  "#" ( ! NL )* ;
+</pre>
+
+
+Exact Syntax Notation
+--------
+
+<pre>
+one-item    non-terminal
+"abc"       terminal representing string literal "abc"
+"a" .. "z"  terminal: a character in the range from "a" to "z"
+"^abc"      terminal: any character but "a", "b" or "c"
+NL          terminal, New Line character, ASCII 0x0a
+ANY         terminal, any character not discarded by the preprocessor
+
+->          produces
+|           alternative
+;           end of rule
+()          group items into one non-terminal
+?           preceding item is optional
+*           preceding item appears zero or more times
++           preceding item appears one or more times
+!           anything but next item
+</pre>
+
+Copyright
+========
+
+Copyright 2013 Bram Moolenaar  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+The License can be found it in the LICENSE file, or you may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+License for the specific language governing permissions and limitations
+under the License.
+
+vim: et tw=0 sw=2

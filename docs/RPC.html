@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>RPC module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> RPC
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Classes, Interfaces and methods for Remote Procedure Calls.
+</p>
+<p class='ptext'> Still very much under development.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='RPC.State.html'><b>State</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The state used in the client to track the progress of an RPC call.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='RPC.Control.html'><b>Control</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Control object is passed with an RPC to store its status and be able to
+ cancel it.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='RPC.html#rpc'><b>rpc</b></a>(<small>control, serviceName, request, done</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Start an RPC.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='rpc'><b>rpc</b></A>(<span class='type'><A class='typehref' href='RPC.Control.html'>RPC.Control</A></span> control, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> serviceName, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> request, <span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='RPC.Control.html'>RPC.Control</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span> done) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Start an RPC.
+</p>
+<p class='ptext'> The <b>control</b> object is used to keep the status and allows cancelling the
+ RPC.  It is passed to the <b>done</b> callback.
+ When the RPC returns or is cancelled the <b>done</b>  callback is invoked.
+ The second argument of <b>done</b> is the returned message.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>THREAD.AutoLock class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='THREAD.html'>up:&nbsp;THREAD</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.autoLock
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type autoLock: an object that keeps a lock and releases it
+ when destructed.
+</p>
+<p class='ptext'> Put the object on the stack to make sure the destructor is called when
+ leaving the block.  Otherwise it only happens when the garbage collector
+ finds the object unused, which may be much later.
+<p class='ptext'> Typical use:
+<pre class='example'>  {
+    autoLock %al = NEW(myLock)
+    # Do something that might crash
+  } # %al.Finish() calls myLock.end() here, always
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='THREAD.AutoLock.html#NEW'><b>NEW</b></a>(<small>lock</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Calls <b>lock</b>.begin().
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.AutoLock.html#$Finish'><b>$Finish</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Destructor: calls end() on the lock the object was created with.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='THREAD.Lock.html'>THREAD.Lock</A></span> lock)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Calls <b>lock</b>.begin().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Finish'><b>$Finish</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Destructor: calls end() on the lock the object was created with.
+</p>
+<p class='ptext'> Can be called multiple times, end() will only be called once.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

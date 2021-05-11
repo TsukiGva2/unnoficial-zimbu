@@ -1,0 +1,218 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Statement evaluation context.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "EnumType.zu"
+IMPORT "Generate.zu"
+IMPORT "Output.zu"
+IMPORT "Pos.zu"
+IMPORT "Resolve.zu"
+IMPORT "Scope.zu"
+IMPORT "TopScope.zu"
+IMPORT "ZimbuFile.zu"
+
+# Context for evaluating a statement.
+# Passed around for statement and expression generation.
+CLASS SContext @items=public                   # TODO: restrict visibility
+  TopScope      $topScope   # toplevel scope
+  Scope         $scope      # block scope
+  Resolve       $gen        # for generating code
+  Output        $out        # where to write code
+  Output.Group  $outs       # where to write other things
+  bool          $giveError  # produce errors even when not writing
+  Zui.Statement $stmt       # statement we are currently processing
+
+  NEW(TopScope topScope, Scope scope,
+                                 Resolve gen, Output.Group outs, Output out)
+    $topScope = topScope
+    $scope = scope
+    $gen = gen
+    $outs = outs
+    $out = out
+  }
+  
+  NEW(TopScope topScope, Scope scope, Resolve gen, Output.Group outs)
+    NEW(topScope, scope, gen, outs, outs.out)
+  }
+  
+  # Create from existing SContext with new scope and outs.
+  NEW(SContext ctx, Scope scope, Output.Group outs)
+    NEW(ctx.topScope, scope, ctx.gen, outs, outs.out)
+    $stmt = ctx.stmt
+  }
+  
+  # Return a copy of this object.
+  FUNC $copy() SContext
+    SContext copy = NEW($topScope, $scope, $gen, $outs, $out)
+    copy.stmt = $stmt
+    RETURN copy
+  }
+
+  # Return a copy of this object with $out replaced.
+  FUNC $copy(Output out) SContext
+    SContext copy = NEW($topScope, $scope, $gen, $outs, out)
+    copy.stmt = $stmt
+    RETURN copy
+  }
+
+  # Return a copy of this object with a new Output.
+  FUNC $copyNewOut() SContext
+    Output out = NEW()
+    out.writing = $out.writing
+    RETURN $copy(out)
+  }
+
+  # Return a copy of this object with no Output.
+  # In this context addUsedItem() will be a no-op.
+  FUNC $copyNoOut() SContext
+    RETURN $copy(Output.noOut)
+  }
+
+  # Return a copy of this object with no Output.
+  # In this context addUsedItem() will work normally
+  FUNC $copyNoOutUseItems() SContext
+    RETURN $copy(Output.noOutUseItems)
+  }
+
+  # Return TRUE if not using the output.
+  FUNC $isNoOut() bool
+    RETURN $out IS Output.noOut
+  }
+
+  # Return a copy of this object with no Output. When |giveError| is TRUE and
+  # this context does errors, make the copy give errors.
+  FUNC $copyNoOut(bool giveError) SContext
+    SContext ret = $copyNoOut()
+    ret.giveError = giveError && $doError()
+    RETURN ret
+  }
+
+  # Add Declaration |decl| to the used items of the current scope.
+  # Don't do it when not using the output.
+  # Don't do it when already writing (must have been done earlier).
+  PROC $addUsedItem(Declaration decl)
+    IF !$isNoOut() && !$gen.writing
+      $scope.addUsedItem(decl)
+    }
+  }
+
+  # Add all used Declarations in |scope| to the used items of the current
+  # scope.
+  PROC $addUsedScope(Scope scope)
+    IF !$isNoOut() && !$gen.writing
+      $scope.addUsedScope(scope)
+    }
+  }
+
+  PROC $usingEnumName(EnumType type)
+    # We use a special Declaration to mark the usage of the member names.
+    # The enumType itself is marked as used without using the names.
+    IF type.usedValueName == NIL
+      type.usedValueName = NEW("usedValueName")
+    }
+    $addUsedItem(type.usedValueName)
+  }
+
+  # Only for when writing code that depends on code that will be generated
+  # later: Mark an item as used when actually writing.
+  PROC $setDeclUsed(Declaration decl)
+    IF $gen.writing
+      $gen.setDeclUsed(decl)
+    }
+  }
+
+  # Return TRUE when writing to output and in the final pass.
+  # It's possible to be in the final pass but not actually writing, e.g., when
+  # trying different target types for an expression.  We don't produe an error
+  # message then.
+  # The $giveError flag overrides.
+  # Also give errors when in an extra pass to report undefined items.
+  FUNC $doError() bool
+    RETURN ($out.writing && $gen.writing) || $giveError
+                                      || (Generate.reportUndef && !$isNoOut())
+  }
+
+  # Give an error with the position of |decl|.
+  PROC $error(string msg, Zui.Declaration decl)
+    $error(msg, decl.getPos())
+  }
+
+  # Give an error with the position of |stmt|.
+  PROC $error(string msg, Zui.Statement stmt)
+    $error(msg, stmt.getPos())
+  }
+
+  # Give an error with the position of |expr|.
+  PROC $error(string msg, Zui.Expression expr)
+    $error(msg, expr.getPos())
+  }
+
+  # Give an error with the position of |id|.
+  PROC $error(string msg, Zui.Id id)
+    $error(msg, id.getPos())
+  }
+
+  # Give an error with the position of |type|.
+  PROC $error(string msg, Zui.Type type)
+    $error(msg, type.getPos())
+  }
+
+  # Give an error with the position of |type|.
+  PROC $error(string msg, Zui.Position pos)
+    LOG.error(msg, $zcPos(pos))
+  }
+
+  # Give an error with the position of |type|.
+  PROC $error(string msg, Z.Pos pos)
+    LOG.error(msg, pos)
+  }
+
+  # Give an error prepended with "INTERNAL: "
+  PROC $internalError(string msg, Zui.Position pos)
+    LOG.internal(msg, $zcPos(pos))
+  }
+
+  # Return a new Z.Pos object for a Zui.Position object.
+  FUNC $zcPos(Zui.Position pos) Z.Pos
+    string fname = pos.getFilename()
+    IF fname != NIL
+      RETURN NEW(fname, pos.getLine(), pos.getColumn())
+    }
+    RETURN $scope.zcPos(pos)
+  }
+
+  # Return a new Pos object for a Zui.Position object.
+  FUNC $pos(Zui.Position pos) Pos
+    CHECK.notNil($scope)
+    RETURN $scope.pos(pos)
+  }
+
+  # Check that the name of this node starts with an upper case letter.
+  # Used for Class, Enum, Bits, etc.
+  PROC $checkDeclName(Zui.Declaration decl, string what)
+    string name = decl.getName()
+    IF name[0] < 'A' || name[0] > 'Z'
+      $error(what .. " name must start with an upper case letter", decl)
+    }
+    IF what == "interface"
+      IF !name.startsWith("I_")
+        $error("interface name must start with I_", decl)
+      }
+    ELSEIF name.Size() > 0 && name[1] == '_'
+                     && !(what == "class" && name.startsWith("E_"))
+      # Class starting with E_ that is not an exception checked elsewhere.
+      $error(what .. " name cannot have an underscore as the second character",
+                                                                         decl)
+    }
+  }
+
+}

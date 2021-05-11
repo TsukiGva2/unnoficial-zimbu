@@ -1,0 +1,21 @@
+Writing a Zimbu compiler plugin
+
+
+See the plugin/proto directory for an example.
+The only special thing about it is that it uses the name PROTO, which is a
+reserved name, since it's a builtin plugin.
+
+
+In the generated file you can import your library modules:
+
+       IMPORT "$PLUGIN/pluginname/lib.zu"
+
+Here $PLUGIN is the Zimbu plugin directory, normally ends in "plugin".
+"pluginname" is the name of your plugin, the subdirectory in "plugin".
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

@@ -1,0 +1,72 @@
+# Nothing to read here
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "its_Another.zu"
+
+CLASS Something @public
+  string $text @public
+
+  NEW(string val) @public
+    $text = val
+  }
+
+  FUNC $get() Something @public
+    Something n = NEW("foo")
+    RETURN n
+  }
+
+  CLASS TryThis
+    int $tryCount
+  }
+
+  SHARED
+    string xxname @public = " nothing "
+
+    FUNC getFive() int @public
+      Foobar x = NEW(5)
+      Another.testRecurse()
+      int asdf = 5
+      RETURN x.number
+    }
+
+    FUNC nope() string @public
+      TryThis try = NEW()
+      ++try.tryCount
+      Something n = NEW("boo")
+      RETURN n.text
+    }
+
+    Something nothing
+    Something something = NEW("asdf")
+    TryThis sharedTry = NEW()
+
+    CLASS Foobar @public
+      Barbar $next  @public
+      int    $number
+
+      NEW(int val) @public
+        $number = val
+        ++sharedTry.tryCount
+      }
+
+      FUNC $get() int @public
+        TryThis try = NEW()
+        ++try.tryCount
+        RETURN $number
+      }
+    }
+
+    CLASS Barbar @directory
+      int    $number
+
+      NEW(int val)
+        ++sharedTry.tryCount
+        $number = val
+      }
+    }
+  }
+}

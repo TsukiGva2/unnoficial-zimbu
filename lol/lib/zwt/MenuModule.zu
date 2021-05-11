@@ -1,0 +1,27 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Menu stuff
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE MenuModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #! A standard menu bar widget.
+  CLASS MenuBar EXTENDS ZWT.Widget @public
+  }
+
+  #! An entry in a MenuBar.  Each item has a uniqe ID.
+  CLASS MenuItem EXTENDS ZWT.UIObject @public  # IMPLEMENTS HasHTML, HasText
+  }
+
+  #! A separator in a MenuBar.
+  CLASS MenuItemSeparator EXTENDS ZWT.UIObject @public
+  }
+
+ }
+}

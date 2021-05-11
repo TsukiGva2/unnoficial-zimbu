@@ -1,0 +1,126 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Input class.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+# NOTE: Don't add imports here that drag in parts of the compiler, it blows up
+# pluginproto.
+
+
+#= Input source: either |fd| is set to read from a file or |text| to read from
+#= a string.
+CLASS Input @items=public                   # TODO: restrict visibility
+  IO.File     $fd             # input stream
+  string      $text           # input string (used when $fd is NIL)
+  int         $textIdx        # next character to read from |text|
+  Z.Pos       $pos            # input file position
+  int         $prevLineCol    # last "col" in previous line
+  list<int>   $charStack      # pushed back characters
+  string      $indent         # for messages
+  bool        $allowTabs
+  IO.StringWriter $recordWriter
+
+  # Create an Input for an opened file |fd| with name |fname|.
+  # |fname| is to be used for error messages.
+  # If |record| is TRUE record the characters read.  They can be obtained with
+  # $getRecord().
+  NEW(IO.File fd, string fname, string indent, bool record = FALSE)
+    $fd = fd
+    $pos = NEW(fname)
+    $charStack = NEW()
+    $indent = indent
+    IF record
+      $recordWriter = NEW()
+    }
+  }
+
+  # Create a new input for string "s".
+  # Pretend it to start at |startpos|.
+  NEW(string s, Z.Pos startpos)
+    $text = s
+    $textIdx = 0
+    $pos = startpos.copy()
+    $charStack = NEW()
+    $indent = ""
+  }
+
+  # Low level input function.
+  # Gets one character at a time, removing CR characters.
+  # Uses a pushed character if there is one.
+  # Returns File.eof when there is nothing more to read.
+  FUNC $get() int
+    int c
+    IF $charStack.Size() > 0
+      c = $charStack.remove()
+      $pos.col++
+    ELSEIF $fd == NIL
+      IF $textIdx >= $text.Size()
+        c = IO.eof
+      ELSE
+        c = $text[$textIdx]
+        ++$textIdx
+        $pos.col++
+      }
+    ELSE
+      DO
+        c = $fd.readChar()
+        $pos.col++
+        # TODO: what about 0xa0, NBSP?
+        IF (c >= 0 && c <= 31) || (c >= 127 && c <= 0xa0)
+          IF c == 0
+            LOG.error("found NUL character", $pos)
+            c = ' '
+          ELSEIF c == '\t'
+            IF !$allowTabs
+              LOG.error("found Tab character", $pos)
+            }
+            c = ' '
+          ELSEIF c != '\r' && c != '\n'
+            LOG.error("found control character", $pos)
+            c = ' '
+          }
+        }
+      UNTIL c != '\r'    # CR character is ignored
+         && c != 0xfeff  # Unicode BOM is ignored
+    }
+    IF c == '\n'
+      $prevLineCol = $pos.col
+      $pos.nextLine()
+    }
+
+    IF $recordWriter != NIL && c != IO.eof
+      $recordWriter.writeChar(c)
+    }
+
+    RETURN c
+  }
+
+  # Push |c| back, a following get() will use it.
+  PROC $push(int c)
+    IF c != IO.eof
+      $charStack.add(c)
+      IF c == '\n'
+        $pos.col = $prevLineCol
+        $pos.lnum--
+      ELSE
+        $pos.col--
+      }
+      IF $recordWriter != NIL
+        $recordWriter.remove()
+      }
+    }
+  }
+
+  # Return the recorded characters and clear the record.
+  FUNC $getRecord() string
+    string s = $recordWriter.ToString()
+    $recordWriter.clear()
+    RETURN s
+  }
+
+}

@@ -1,0 +1,38 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TIME module loader: various time related stuff
+#
+# Copyright 2010 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../SContext.zu"
+
+MODULE TIMELoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin TIME module.
+  FUNC prepare() Builtin
+    DeclStore.wantPName("MTIMEModule", "Fcurrent")
+
+    Builtin b = NEW()
+    b.moduleName = "TIMEModule"
+    b.fileName = "TIMEModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the TIME module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("TIME", builtin)
+    }
+  }
+
+}

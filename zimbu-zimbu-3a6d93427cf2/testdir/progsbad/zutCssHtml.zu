@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutCssHtml.zut
+
+FUNC Main() int
+  # CSS / Html
+  ZUT.Html html = NEW().add("xxx")
+  string fail = Testing.inCssHtml(html).ToString()
+  RETURN 0
+}

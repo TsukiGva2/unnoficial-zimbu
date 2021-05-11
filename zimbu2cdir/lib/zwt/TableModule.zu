@@ -1,0 +1,294 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Table
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE TableModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A cell in a Table.
+  #- It may occupy multiple rows and columns, but we still keep one cell at each
+  #- table position.  The ones that are covered by previous cells have their
+  #- |elem| not as a child in the row.
+  CLASS TableCell EXTENDS ZWT.UIObject @public
+    ZWT.Widget   $widget      #! can be NIL
+    int          $rowspan     #!
+    int          $colspan     #!
+
+    #= Create a new cell that contains |widget|.
+    NEW(ZWT.Widget widget)
+      $widget = widget
+      $rowspan = 1
+      $colspan = 1
+>>>
+      %$elem% = $doc.createElement('td');
+<<<
+      IF widget != NIL
+>>>
+        %$elem%.appendChild(%widget.elem%);
+<<<
+      }
+    }
+
+    #= Return the result of ToString() on the widget in the cell.
+    #- Return NIL if there is no widget in the cell.
+    FUNC $ToString() string
+      IF $widget == NIL
+        RETURN "NIL"
+      }
+      RETURN $widget.ToString()
+    }
+
+    #= Set the widget in this cell to |widget|.
+    PROC $setWidget(ZWT.Widget widget)
+      IF $widget != NIL
+        $widget.removeFromParent()
+      }
+      $widget = widget
+      IF widget != NIL
+        widget.addToParent(THIS)
+      }
+    }
+
+  }
+
+  #= A row in the table.
+  #- The number of entries is flexible, each row can have a different size.
+  CLASS TableRow EXTENDS ZWT.UIObject @public
+    list<TableCell>  $entries   #! NIL values where the entry was not set yet.
+
+    #= Create a new, empty table row.
+    NEW()
+      $entries = NEW()
+>>>
+      %$elem% = $doc.createElement('tr');
+<<<
+    }
+
+    #= Return "Row(item, item, ...)"
+    FUNC $ToString() string
+      string ret = "Row("
+      string comma = ""
+      FOR e IN $entries
+        IF e == NIL
+          ret ..= comma .. "NIL"
+        ELSE
+          ret ..= e.ToString()
+        }
+        comma = ", "
+      }
+      RETURN ret .. ")"
+    }
+
+    #= Return the size of the row, the number of entries.
+    FUNC $Size() int
+      RETURN $entries.Size()
+    }
+
+    #= Resize the row to be |len| entries long.
+    PROC $resize(int len)
+      WHILE $entries.Size() < len
+        $addCell()
+      }
+      IF len >= 0
+        WHILE $entries.Size() > len
+          $deleteCell(len)
+        }
+      }
+    }
+
+    #= Add an empty cell to the row.
+    # Creates a <td> item and adds it to the <tr>.
+    PROC $addCell()
+      TableCell cell = NEW(NIL)
+      $entries.add(cell)
+>>>
+      %$elem%.appendChild(%cell.elem%);
+<<<
+    }
+
+    #= Delete cell |idx| from the row.
+    PROC $deleteCell(int idx)
+      IF idx < 0 || idx >= $entries.Size()
+        RETURN
+      }
+      TableCell cell = $entries.remove(idx)
+      cell.setWidget(NIL)
+>>>
+      %$elem%.removeChild(%cell.elem%);
+<<<
+    }
+
+    #= Set the widget at position |idx|.  Resizes the row as needed.
+    PROC $setWidget(int idx, ZWT.Widget widget)
+      IF idx < 0
+        RETURN
+      }
+      IF $entries.Size() <= idx
+        $resize(idx + 1)
+      }
+      $entries[idx].setWidget(widget)
+    }
+
+    #= Get the Widget at column |colIdx|.
+    #- Returns NIL when not found
+    FUNC $getWidget(int colIdx) ZWT.Widget
+      IF colIdx < 0 || colIdx >= $entries.Size()
+        RETURN NIL
+      }
+      RETURN $entries[colIdx].widget
+    }
+
+    #= Set the style for the widget at column |colIdx|
+    #- Doesn't work well.
+    PROC $setColStyle(int colIdx, ZWT.Style style)
+      IF colIdx >= 0 && colIdx < $entries.Size()
+        $entries[colIdx].setStyle(style)
+      }
+    }
+  }
+
+  #= A table can hold a Widget in each cell.  The number of columns and rows is
+  #= adjusted dynamically.
+  CLASS Table EXTENDS ZWT.Panel @public
+    list<TableRow>   $rows = NEW()  #! The Rows of this table.
+    ZWT.Element      $body          #!
+     
+    #= Create a new, empty Table.
+    NEW() @replace @public
+    }
+
+    #!
+    PROC $Init()
+      # Create an empty table, assign the body element to "body".
+      # Remove borders.
+>>>
+      %$elem% = $doc.createElement('table');
+      %$elem%.border = 0;
+      %$elem%.cellPadding = 0;
+      %$elem%.cellSpacing = 0;
+      %$body% = $doc.createElement('tbody');
+      %$elem%.appendChild(%$body%);
+<<<
+    }
+
+    #= Remove all cells from the Table.
+    PROC $clear() @replace @public
+      $resizeRows(0)
+    }
+
+    #= Return "Table(row, row, ...)"
+    FUNC $ToString() string @replace @public
+      string ret = "Table("
+      string comma = ""
+      FOR r IN $rows
+        ret ..= comma .. r.ToString()
+        comma = ", "
+      }
+      RETURN ret .. ")"
+    }
+
+    #! Overrule the Panel method.
+    PROC $add(ZWT.Widget widget) @replace
+      ZWT.error("Table.add() cannot be used")
+    }
+
+    #! Overrule the Panel method.
+    PROC $remove(ZWT.Widget widget) @replace
+      ZWT.error("Table.remove() cannot be used")
+    }
+
+    #= Put Widget |widget| at row |rowIdx| and column |colIdx|.
+    #- Replace any widget that was there.  Use NIL to remove a widget.
+    #- Make the table bigger when needed.
+    PROC $setWidget(int rowIdx, int colIdx, ZWT.Widget widget) @public
+      IF rowIdx >= $rows.Size()
+        $resizeRows(rowIdx + 1)
+      }
+      $rows[rowIdx].setWidget(colIdx, widget)
+    }
+
+    #= Get Widget at row |rowIdx| and column |colIdx|.
+    #- Returns NIL when not found
+    FUNC $getWidget(int rowIdx, int colIdx) ZWT.Widget @public
+      IF rowIdx < 0 || rowIdx >= $rows.Size()
+        RETURN NIL
+      }
+      RETURN $rows[rowIdx].getWidget(colIdx)
+    }
+
+    #= Set the style to be used for row |rowIdx|.
+    PROC $setRowStyle(int rowIdx, ZWT.Style style) @public
+      IF rowIdx >= 0 && rowIdx < $rows.Size()
+        $rows[rowIdx].setStyle(style)
+      }
+    }
+
+    #= Set the style to be used for cell |rowIdx|, |colIdx|.
+    #- This is different from setting the style of the Widget in the cell.
+    PROC $setCellStyle(int rowIdx, int colIdx, ZWT.Style style) @public
+      IF rowIdx >= 0 && rowIdx < $rows.Size()
+        $rows[rowIdx].setColStyle(colIdx, style)
+      }
+    }
+
+    #= Add an empty row below the table.  Creates the "tr" element.
+    PROC $addRow() @public
+      TableRow r = NEW()
+      $rows.add(r)
+>>>
+      %$body%.appendChild(%r.elem%);
+<<<
+    }
+
+    #= Delete a row.  Removes the "tr" element.
+    PROC $deleteRow(int idx) @public
+      IF idx < 0 || idx >= $rows.Size()
+        RETURN
+      }
+      TableRow r = $rows.remove(idx)
+>>>
+      %$body%.removeChild(%r.elem%);
+<<<
+    }
+
+    #= Set the number of rows to |rowSize|.
+    #- Limit the number of columns to |colSize|.
+    PROC $resize(int rowSize, int colSize) @public
+      $resizeRows(rowSize)
+      $resizeColumns(colSize)
+    }
+
+    #= Set the number of rows to |size|.
+    #- If there currently are less rows, empty rows are added.
+    #- If there currently are more rows, they are deleted.
+    PROC $resizeRows(int size) @public
+      IF size >= 0
+        WHILE $rows.Size() < size
+          $addRow()
+        }
+        WHILE $rows.Size() > size
+          $deleteRow(size)
+        }
+      }
+    }
+
+    #= Limit the number of columns to |size|.
+    #- Any row that has more columns is truncated.
+    #- Doesn't add new columns.
+    PROC $resizeColumns(int size) @public
+      FOR r IN $rows
+        IF r.Size() > size
+          r.resize(size)
+        }
+      }
+    }
+  }
+
+ }
+}

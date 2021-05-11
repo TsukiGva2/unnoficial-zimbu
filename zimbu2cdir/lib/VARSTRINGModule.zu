@@ -1,0 +1,520 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module VARSTRING - varString support
+#
+
+#= Methods for the varString type.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE VARSTRINGModule @public
+
+  #= The builtin type varString.
+  #- The varString can contain any sequence of Unicode characters, including
+  #- NUL.
+  #
+  #- VarString is mutable. The characters are stored in an optimal way,
+  #- depending on the mutations.  When possible a string is used. When
+  #- appending strings a list of strings is used to avoid reallocation and
+  #- copying.  When appending characters extra space is allocated to reduce
+  #- reallocations.
+  #% varString s = "foo"  # initialize from a string constant
+  #% s.append("bar")      # "foobar"
+  #% s.makeUpper()        # "FOOBAR"
+  #
+  #- The characters are UTF-8 encoded.  Illegal byte sequences may appear but
+  #- cause an exception for operations that work with characters.
+  #
+  #- The storage is identical to varByteString, a varString can be typecast to
+  #- varByteString and the other way around without conversion:
+  #% varString vs = getString()
+  #% varByteString vb = vs.asVarBytes()   # quick, no conversion
+  CLASS STARTvarString @public
+    # For Zudocu: start of the varString class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the size of the varString in characters.
+  #- Note that this is different from the number of bytes if there are
+  #- multi-byte characters.
+  #
+  #- The size is stored thus this method is efficient.  It does not go over
+  #- the characters to find the end.
+  #
+  #- The empty varString returns zero.
+  #- When used on NIL Size() returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+#! not implemented yet
+#  #= Return -1, 0 or 1 when |other| is larger, equal to or smaller than this
+#  #= varString.
+#  #
+#  #- When using ?.Compare() on a NIL varString and |other| is NIL it returns
+#  #- zero.  When |other| is not NIL it returns -1.
+#  FUNC Compare(varString this, varString other) bool @public
+#    ###### Only for generating documentation.
+#    RETURN FALSE
+#  }
+
+#! not implemented yet
+#  #= Return TRUE when |other| is equal to this varString, FALSE otherwise.
+#  #
+#  #- When using ?.Compare() on a NIL varString and |other| is NIL it returns
+#  #- TRUE.  Otherwise when |other| is NIL returns FALSE.
+#  FUNC Equal(varString this, varString other) bool @public
+#    ###### Only for generating documentation.
+#    RETURN FALSE
+#  }
+
+  #= Return the varString as a string.
+  #- When the varString is NIL this returns NIL.
+  FUNC ToString(varString this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varString as-is, this is a no-op.
+  #- Also works on NIL
+  FUNC toVarString(varString this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varString as a varByteString.
+  #- This does not do any conversion, it only changes the type of the object.
+  #- Also works on a NIL.
+  FUNC asVarbyteString(varString this) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varString as a varByteString.
+  #- Equivalent to asVarbyteString()
+  FUNC toVarbyteString(varString this) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the digits at the start of the varString converted to a number.
+  #- For example, `"1234".toInt()` returns 1234.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a
+  #- digit or a minus sign.
+  #
+  #- When using ?.toInt() on a NIL varString the result is zero.
+  FUNC toInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the varString converted to a number.
+  #- For example, `"1234".toInt()` returns 1234.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a digit or a minus
+  #- sign.
+  #- Also returns |default| when the varString is NIL and ?.toInt() was
+  #- used.
+  FUNC toInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the varString converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"100'000".quotedToInt()` returns 100000.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a
+  #- digit or a minus sign.
+  #
+  #- When using ?.quotedToInt() on a NIL varString the result is zero.
+  FUNC quotedToInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the varString converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"100'000".quotedToInt()` returns 100000.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a digit or a minus
+  #- sign.  When using ?.quotedToInt() also when the varString is NIL.
+  FUNC quotedToInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the varString converted to a number.
+  #- For example, `"a2b4".hexToInt()` returns 0xa2b4.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a hex
+  #- digit.  Also when it starts with "-".
+  #
+  #- When using ?.hexToInt() on a NIL varString the result is zero.
+  FUNC hexToInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the varString converted to a number.
+  #- For example, `"a2b4".hexToInt()` returns 0xa2b4.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a hex digit.  That
+  #- includes "-".
+  #- Also returns |default| when the varString is NIL and ?.hexToInt() was
+  #- used.
+  FUNC hexToInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the varString converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"ffff'ffff".quotedHexToInt()` returns 16777215.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a hex
+  #- digit.  That includes "-".
+  #
+  #- When using ?.quotedHexToInt() on a NIL varString the result is zero.
+  FUNC quotedHexToInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the varString converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"ffff'ffff".quotedHexToInt()` returns 16777215.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a hex digit.
+  #- That includes "-".
+  #- Also returns |default| when the varString is NIL and ?.quotedHexToInt()
+  #- was used.
+  FUNC quotedHexToInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the varString converted to a
+  #= number.
+  #- For example, `"010101".binToInt()` returns 21.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a 0
+  #- or 1.
+  #
+  #- When using ?.binToInt() on a NIL varString the result is zero.
+  FUNC binToInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the varString converted to a
+  #= number.
+  #- For example, `"010101".binToInt()` returns 21.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a 0 or 1.
+  #- Also returns |default| when the varString is NIL and ?.binToInt() was
+  #- used.
+  FUNC binToInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the varString converted to a
+  #= number, ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"1001'0101".quotedBinToInt()` returns 149.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the varString does not start with a 0
+  #- or 1.
+  #
+  #- When using ?.quotedBinToInt() on a NIL varString the result is zero.
+  FUNC quotedBinToInt(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the varString converted to a
+  #= number, ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"1001'0101".quotedBinToInt()` returns 149.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the varString does not start with a 0 or 1 and
+  #- when using ?.quotedBinToInt() on a NIL varString.
+  FUNC quotedBinToInt(varString this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return a copy of the varString with all characters lower-cased.
+  #- TODO: Currently only works for latin1 characters
+  #
+  #- When using toLower() on a NIL varString the result is NIL.
+  FUNC toLower(varString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varString with all ASCII characters lower-cased.
+  #- This only handles ASCII letters and leaves all other characters
+  #- unchanged.
+  #
+  #- When using toLowerAscii() on a NIL varString the result is NIL.
+  FUNC toLowerAscii(varString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varString with all characters upper-cased.
+  #- TODO: Currently only works for latin1 characters
+  #
+  #- When using toUpper() on a NIL varString the result is NIL.
+  FUNC toUpper(varString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varString with all ASCII characters upper-cased.
+  #- This only handles ASCII letters and leaves all other characters
+  #- unchanged.
+  #
+  #- When using toUpperAscii() on a NIL varString the result is NIL.
+  FUNC toUpperAscii(varString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the lowest index where varString |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #- When not found returns -1.
+  #- When |s| is longer than this varString it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?.find() and the varString is NIL returns -1.
+  FUNC find(varString this, varString s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC find(varString this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where the varString |s| appears at or after |start|.
+  #- When |start| is zero this works the same as find(s).
+  #- When not found returns -1.
+  #- When found returns |start| or more.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC find(varString this, varString s, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c| at or after |start|.
+  #- When |start| is zero this works the same as find(c).
+  #
+  #- When |c| is found returns |start| or more.
+  #
+  #- When |c| is not found returns -1.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC find(varString this, int c, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index where varString |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #
+  #- When not found returns -1.
+  #- When |s| is longer than this varString it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC findLast(varString this, varString s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC findLast(varString this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when the varString starts with |s|.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC startsWith(varString this, varString s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE when the varString ends with |s|.
+  #
+  #- When using ?. and the varString is NIL returns -1.
+  FUNC endsWith(varString this, varString s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a number that is a hash value of the varString.
+  #- A varString value always results in the same hash value.
+  #- Two different varStrings can result in the same hash value, but the
+  #- chance of this happening is small.
+  #
+  #- The hash method is fast and has a reasonable distribution.
+  #
+  #- TODO: this should return a nat
+  FUNC hash(varString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Append a string to the varString.
+  #- Returns the modified varString.
+  #
+  #- When the varString is NIL throws a NilAccess exception, also when using
+  #- ?.
+  FUNC add(varString this, string s) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varString, starting at index |start|.
+  #- A negative index is relative to the end of the varString, `slice(-1)`
+  #- returns a varString with only the last character.
+  #
+  #- This counts characters, not bytes.  To count bytes first use
+  #- $asByteString().
+  #
+  #- If |start| is equal to or larger than the size of the varString an empty
+  #- varString is returned.
+  #- If |start| is negative and the absolute value is larger than the varString
+  #- size the whole varString is returned.
+  #
+  #- When using ?.slice() on a NIL varString the result is NIL.
+  FUNC slice(varString this, int start) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varString, starting at index |start| and ending at
+  #= |end|, inclusive.
+  #- A negative index is relative to the end of the varString. `slice(0, -1)`
+  #- returns the whole varString. `slice(-1, -1)` only the last character.
+  #
+  #- If |start| is equal to or larger than the size of the varString an empty
+  #- varString is returned.
+  #- If |start| is negative and the absolute value is larger than the returned
+  #- varString starts at index zero.
+  #- If the |start| character is after the |end| character an empty varString is
+  #- returned.
+  #
+  #- When using ?.slice() on a NIL varString the result is NIL.
+  FUNC slice(varString this, int start, int end) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the varString split at white space.
+  #- Empty parts are omitted.
+  #
+  #- Example:  "foo  bar ".split() returns ["foo", "bar"].
+  FUNC split(varString this) list<string> @public
+    IFNIL
+      RETURN NIL
+    }
+    # TODO: make this more efficient, avoid the conversion.
+    RETURN this.ToString().split()
+  }
+
+  #= Return a list with the varString split into pieces, split at |sep|.
+  #- The matches with the |sep| string are omitted.
+  #
+  #- |sep| must match exactly.
+  #
+  #- When there are no characters between two |sep| matches, or at the end or
+  #- start of the varString, the list will contain an empty string item.
+  #% "one, two,three".split(", ")
+  #% # result: ["one", "two,three"]
+  #
+  #- When using ?.split() on a NIL varString the result is NIL.
+  FUNC split(varString this, string sep) list<string> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the varString split at the characters in |charSet|.
+  #- Empty strings are omitted.
+  #
+  #- Example:  "foo/bar: yes ".split("/: ") returns ["foo", "bar", "yes"].
+  FUNC splitAnyOf(varString this, string charSet) list<string> @public
+    IFNIL
+      RETURN NIL
+    }
+    # TODO: make this more efficient, avoid the conversion.
+    RETURN this.ToString().splitAnyOf(charSet)
+  }
+
+  #! For Zudocu: end of varString class.
+  CLASS ENDvarString
+  }
+
+}

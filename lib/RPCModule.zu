@@ -1,0 +1,72 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module RPC
+#
+
+#= Classes, Interfaces and methods for Remote Procedure Calls.
+#
+#- Still very much under development.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE RPCModule @public
+
+  #= The state used in the client to track the progress of an RPC call.
+  ENUM State @public
+    init        #= able to set options
+    sending     #= RPC is being send out (queued, writing on channel)
+    sent        #= RPC sent, waiting for response
+    receiving   #= response received, reading it
+    callback    #= invoking "done" callback
+    done        #= "done" callback finished
+    aborted     #= skipped from any state above except |init| and |done|
+  }
+
+  #= A Control object is passed with an RPC to store its status and be able to
+  #= cancel it.
+  #- It can be extended to pass values from the rpc() call to the |done|
+  #- callback.
+  CLASS Control @public @items=public
+    State      $state   #= progress of the RPC
+    status     $status  #= OK while still busy
+    string     $error   #= filled in when |status| is FAIL
+
+    #= Cancel a pending RPC.
+    #- Will try to cancel if possible.
+    #- TODO: not implemented yet
+    PROC $cancel()
+    }
+  }
+
+  #= Start an RPC.
+  #- The |control| object is used to keep the status and allows cancelling the
+  #- RPC.  It is passed to the |done| callback.
+  #- When the RPC returns or is cancelled the |done|  callback is invoked.
+  #- The second argument of |done| is the returned message.
+  FUNC rpc(Control control,
+          string serviceName,
+          string request,
+          proc<Control, string> done) status @public
+    GENERATE_IF Z.lang == "JS"
+      string addr = "rpc?name=" .. serviceName
+>>> uses(xhr)
+      var request = $createXMLHttpRequest();
+      request.open("POST", %addr%, true);
+      request.setRequestHeader("Content-type", "binary/octet-stream");
+      request.onreadystatechange = $createRequestChangeHandler(%control%, request, %done%);
+      request.send(%request%);
+<<<
+      control.state = State.sent
+      RETURN OK
+    GENERATE_ELSE
+      # TODO: RPC call in C
+      RETURN FAIL
+    }
+  }
+
+}

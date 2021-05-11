@@ -1,0 +1,103 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ARG module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../Generate.zu"
+IMPORT "../Output.zu"
+IMPORT "../Resolve.zu"
+IMPORT "../SContext.zu"
+IMPORT "../genC/WriteC.zu"
+
+MODULE ARGLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin ARG module.
+  FUNC prepare() Builtin
+    # We need the pName below.
+    DeclStore.wantPName("MARGModule", "VrawName")
+    DeclStore.wantPName("MARGModule", "VexeName")
+    DeclStore.wantPName("MARGModule", "VrawArgs")
+    DeclStore.wantPName("MARGModule", "VnrawArgs")
+    DeclStore.wantPName("MARGModule", "VcleanArgs")
+    DeclStore.wantPName("MARGModule", "FinitExeName")
+    DeclStore.wantPName("MARGModule", "Finit")
+
+    Builtin b = NEW()
+    b.moduleName = "ARGModule"
+    b.fileName = "ARGModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the ARG module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("ARG", builtin)
+
+      # Write lines to main() later.
+      WriteC.mainEarlyinitWriters.add(writeMainEarlyinit)
+      WriteC.mainInitWriters.add(writeMainInit)
+
+      ctx.addUsedItem(Declaration.newList)
+
+      # When ARG.exeName is used then initExeName() will be called from early
+      # inits.
+      DeclStore.getDecl("MARGModule", "VexeName").addDependsOn(
+                               DeclStore.getDecl("MARGModule", "FinitExeName"))
+
+      # When ARG.cleanArgs was used (e.g., through ARG.Size()) then it needs
+      # to be initialized by calling ARG.init()
+      DeclStore.getDecl("MARGModule", "VcleanArgs").addDependsOn(
+                                      DeclStore.getDecl("MARGModule", "Finit"))
+    }
+  }
+
+  PROC writeMainEarlyinit(WriteC gen, Output out)
+    IF moduleDecl != NIL
+      out.write("\n")
+      IF !Generate.skipUnused()
+                || gen.isDeclUsed(DeclStore.getDecl("MARGModule", "VrawName"))
+        string rawName = DeclStore.getPName("MARGModule", "VrawName")
+        out.write(" " .. rawName .. " = Zstr(argv[0]);\n")
+      }
+
+      IF !Generate.skipUnused()
+                || gen.isDeclUsed(DeclStore.getDecl("MARGModule", "VexeName"))
+        string initName = DeclStore.getPName("MARGModule", "FinitExeName")
+        out.write(" " .. initName .. "();\n")
+      }
+
+      IF !Generate.skipUnused()
+                || gen.isDeclUsed(DeclStore.getDecl("MARGModule", "VrawArgs"))
+        string rawArgs = DeclStore.getPName("MARGModule", "VrawArgs")
+        out.write(" " .. rawArgs .. ''" = ZnewList(&string__T, 0);"'')
+        out.write(''"
+ {
+  int i;
+  for (i = 1; i < argc; ++i) {
+   ZLa("'' .. rawArgs .. ''", -1, (Tz)(void*)Zstr(argv[i]));
+  }
+ }
+"'')
+      }
+    }
+  }
+
+  PROC writeMainInit(WriteC gen, Output out)
+    IF !Generate.skipUnused()
+                   || gen.isDeclUsed(DeclStore.getDecl("MARGModule", "Finit"))
+      string argInit = DeclStore.getPName("MARGModule", "Finit")
+      out.write(" " .. argInit .. "();\n")
+    }
+  }
+}

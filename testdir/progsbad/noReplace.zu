@@ -1,0 +1,23 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  RETURN 0
+}
+
+CLASS Parent
+  int $nr
+  
+  PROC $set(int nr) @default
+    $nr = nr
+  }
+}
+
+CLASS Child EXTENDS Parent
+  string $x
+
+  # This method has @replace but does not replace a method.
+  PROC $set(int nr, int x) @replace
+    $nr = nr
+    $x = x
+  }
+}

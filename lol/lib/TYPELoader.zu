@@ -1,0 +1,46 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TYPE module loader
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE TYPELoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin TYPE module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "TYPEModule"
+    b.fileName = "TYPEModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the TYPE module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("TYPE", builtin)
+      ModuleType mt = moduleDecl.type
+
+      # Remove the methods added for docs only, the real ones are defined
+      # below or elsewhere.
+      FOR k IN ["ToString", "name"
+               ]
+        Declaration d = mt.findMember(k, NIL)
+        IF d != NIL
+          mt.removeMember(d)
+        }
+      }
+    }
+  }
+}

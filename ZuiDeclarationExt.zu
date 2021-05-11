@@ -1,0 +1,40 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.Declaration message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "Parse.zu"
+IMPORT "PieceScope.zu"
+IMPORT "Type.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiDeclarationExt @items=public
+  Declaration       $decl
+  Type              $typeObj
+
+  # For a method copied from a parent class.
+  int               $parentLevel
+
+  # Stores information about an included piece.
+  PieceScope        $pieceScope
+
+  # Dependencies in the initialize expression.
+  set<Declaration>  $initUsedDecl
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.Declaration, ZuiDeclarationExt> $ext
+  }
+
+  SHARED
+    int undefinedInit = 76
+  }
+}

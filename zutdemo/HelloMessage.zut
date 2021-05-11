@@ -1,0 +1,28 @@
+#
+# ZUT (Zimbu Templates) demo page: message
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "OverController.zu"
+
+MODULE HelloMessage @public
+
+  CSS
+    .hello {
+      color: blue;
+    }
+  }
+
+  HTML show(string text) @public
+    <div class="hello"
+         zcontroller="OverController"
+         zaction="mouseOver: over, mouseOut: out">
+      [=text]
+    </div>
+    <div>This is not a
+    [#] comment</div>
+  }
+}

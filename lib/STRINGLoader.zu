@@ -1,0 +1,61 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# STRING module loader
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE STRINGLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin STRING module.
+  FUNC prepare() Builtin
+    # We need the pName of the functions where they are called.
+    DeclStore.wantPName("MSTRINGModule", "Fescape")
+    DeclStore.wantPName("MSTRINGModule", "Fformat")
+    DeclStore.wantPName("MSTRINGModule", "FpadLeft")
+    DeclStore.wantPName("MSTRINGModule", "FpadRight")
+    DeclStore.wantPName("MSTRINGModule", "Freplace")
+    DeclStore.wantPName("MSTRINGModule", "FreplaceAll")
+    DeclStore.wantPName("MSTRINGModule", "Freverse")
+    DeclStore.wantPName("MSTRINGModule", "Fsplit")
+    DeclStore.wantPName("MSTRINGModule", "FsplitAnyOf")
+    DeclStore.wantPName("MSTRINGModule", "Ftrim")
+
+    Builtin b = NEW()
+    b.moduleName = "STRINGModule"
+    b.fileName = "STRINGModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the STRING module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("STRING", builtin)
+      ModuleType mt = moduleDecl.type
+
+      # Remove the methods added for docs only, the real ones are defined
+      # below or elsewhere.
+      FOR k IN ["size", "Size", "toInt", "quotedToInt", "hexToInt",
+                "quotedHexToInt", "binToInt", "quotedBinToInt", "find",
+                "findLast", "startsWith", "endsWith",
+               ]
+        Declaration d = mt.findMember(k, NIL)
+        IF d != NIL
+          mt.removeMember(d)
+        }
+      }
+    }
+  }
+}

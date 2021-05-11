@@ -1,0 +1,67 @@
+#
+# ZUT (Zimbu Templates) demo: scroll controller
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT ZutDemoPage.zut
+
+CLASS ScrollController
+
+  FUNC $topleft(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.ensureVisible(ZUT.getElementById("tlDiv"))
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $botright(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.ensureVisible(ZUT.getElementById("brDiv"))
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $middle(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.ensureVisible(ZUT.getElementById("middleDiv"))
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $left(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.scrollLeft()
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $right20(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.setHorizontalScroll(el.getHorizontalScroll() + 20)
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $right(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.scrollRight()
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $top(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.scrollTop()
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $down20(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.setVerticalScroll(el.getVerticalScroll() + 20)
+    RETURN FALSE  # Do not bubble up.
+  }
+
+  FUNC $bottom(ZUT.Event event) bool
+    ZUT.Element el = ZUT.getElementById("scrollDiv")
+    el.scrollBottom()
+    RETURN FALSE  # Do not bubble up.
+  }
+
+}

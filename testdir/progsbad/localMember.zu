@@ -1,0 +1,15 @@
+# Small test program: Verify that this does not compile.
+
+CLASS Foo
+  int $value @local
+}
+
+CLASS Bar EXTENDS Foo
+  # $value will not be available here.
+}
+
+FUNC Main() int
+  Bar b = NEW()
+  int i = b.value
+  RETURN 0
+}

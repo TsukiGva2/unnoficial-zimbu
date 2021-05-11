@@ -1,0 +1,444 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for not managed memory: on stack, static.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE NotManaged @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/NotManaged.zu")
+    testOnStack()
+    testGlobals()
+    testSharedInMethod()
+    testSharedInClass()
+    testIobject()
+    testFinish()
+    testFinish2()
+    testFinish4()
+    testFinishIobject()
+    testFinishInChild()
+    testFinishStatic()
+    IO.print("testdir/NotManaged.zu done")
+  }
+
+  CLASS Foo
+    int  $nr
+    string $name
+
+    PROC $set(int nr)
+      $nr = nr
+    }
+
+    FUNC $get() int
+      RETURN $nr
+    }
+  }
+
+  CLASS Bar
+    int  $nr
+
+    PROC $Init()
+      $nr = 8
+    }
+
+    NEW()
+    }
+
+    NEW(int nr)
+      $nr = nr
+    }
+    NEW(list<int> nrs)
+      $nr = nrs[0]
+    }
+    NEW(dict<string, int> nrs)
+      $nr = nrs["one"]
+    }
+  }
+
+  CLASS FooBar
+    Foo $foo
+    Bar $bar
+  }
+
+  PROC testOnStack()
+    Foo %nmfoo = NEW()
+    %nmfoo = NEW()
+
+    Bar %nmbar = NEW()
+    IO.print(%nmbar.ToString())
+    %nmbar = NEW(1)
+    IO.print(%nmbar.ToString())
+    %nmbar = [12]
+    IO.print(%nmbar.ToString())
+    %nmbar = ["one": 123]
+    IO.print(%nmbar.ToString())
+
+    %nmfoo.nr = 1234
+    IO.print(%nmfoo.nr)
+    %nmfoo.set(999)
+    IO.print(%nmfoo.get())
+    %nmfoo.name = "yes"
+    IO.print(%nmfoo.ToString())
+
+    array<int> %array = NEW(4)
+    %array = NEW(3)
+    %array = [1, 2, 3]
+    IO.print(%array.ToString())
+
+    list<int> %list = NEW()
+    IO.print(%list.ToString())
+    %list = NEW()
+    %list.add(11)
+    IO.print(%list.ToString())
+    %list = [4, 5, 6]
+    IO.print(%list.ToString())
+
+    dict<string, int> %dict = NEW()
+    %dict = NEW()
+    IO.print(%dict.ToString())
+    %dict.add("one", 1)
+    IO.print(%dict.ToString())
+    %dict = ["a": 1, "b": 2, "c": 3]
+    IO.print(%dict.ToString())
+
+    tuple<string, int, int> %tup = NEW()
+    IO.print(%tup.ToString())
+    %tup = NEW("yes", 1, 2)
+    IO.print(%tup.ToString())
+    %tup = ["no", 3, 4]
+    IO.print(%tup.ToString())
+
+    FUNC compare(string left, string right, int &count) int
+      count++
+      RETURN left.Compare(right)
+    }
+    PROC sort(list<string> names, func<string, string => int> cmp)
+      int r
+      r = cmp(names[0], names[1])
+      r = cmp(names[1], names[2])
+      r = cmp(names[2], names[3])
+    }
+
+    int count
+    callback<func<string, string => int>, int &> %cb = NEW(compare, &count)
+    list<string> names = ["one", "two", "foo", "bar"]
+    sort(names, %cb)
+    IO.print("compare() called " .. count .. " times")
+
+    varString %vs = NEW()
+    %vs = "blah"
+    IO.print(%vs)
+
+    varByteString %vb = NEW()
+    %vb = "bytes"
+    IO.print(%vb.ToString())
+
+    FooBar fb = NEW()
+    fb.foo = %nmfoo
+    fb.bar = %nmbar
+  }
+
+  CLASS Barx
+    int  $nri
+    int  $nr
+
+    PROC $Init()
+      $nri = 8
+    }
+
+    NEW(list<int> nrs)
+      $nr = nrs[0]
+    }
+    NEW(dict<string, int> nrs)
+      $nr = nrs["one"]
+    }
+  }
+
+  list<int> %globlist
+  tuple<string, string, string> %gtup
+  FooBar %gfb = NEW()
+  set<int> %setje = [1, 2, 3, 4]
+  Barx %gbarList = [12]
+  Barx %gbarDict = ["one": 123]
+
+  PROC testGlobals()
+    %globlist = NEW()
+    IO.print(%globlist.ToString())
+    %globlist = [1, 2, 3]
+    IO.print(%globlist.ToString())
+
+    %gtup = ["one", "two", "three"]
+    IO.print(%gtup.ToString())
+    %gtup[1] = "other"
+    IO.print(%gtup.ToString())
+
+    %gfb.foo = NEW()
+    %gfb.bar = NEW()
+    IO.print(%gfb.ToString())
+
+    IO.print(%setje.ToString())
+    IO.print(%gbarList.ToString())
+    IO.print(%gbarDict.ToString())
+  }
+
+  PROC testSharedInMethod()
+    STATIC list<int> %mloblist
+    STATIC tuple<string, string, string> %mtup
+    STATIC FooBar %mfb = NEW()
+    STATIC set<string> %aset = ["aap", "noot"]
+
+    %mloblist = NEW()
+    IO.print(%mloblist.ToString())
+    %mloblist = [1, 2, 3]
+    IO.print(%mloblist.ToString())
+
+    %mtup = ["one", "two", "three"]
+    IO.print(%mtup.ToString())
+    %mtup[1] = "other"
+    IO.print(%mtup.ToString())
+
+    %mfb.foo = NEW()
+    %mfb.bar = NEW()
+    IO.print(%mfb.ToString())
+
+    IO.print(%aset.ToString())
+  }
+
+  CLASS Sharing
+    string $something
+
+    SHARED
+      list<int> %cloblist
+      tuple<string, string, string> %ctup
+      FooBar cgfb = NEW()
+    }
+  }
+
+  PROC testSharedInClass()
+    Sharing.cloblist = NEW()
+    IO.print(Sharing.cloblist.ToString())
+    Sharing.cloblist = [1, 2, 3]
+    IO.print(Sharing.cloblist.ToString())
+
+    Sharing.ctup = ["one", "two", "three"]
+    IO.print(Sharing.ctup.ToString())
+    Sharing.ctup[1] = "other"
+    IO.print(Sharing.ctup.ToString())
+
+    Sharing.cgfb.foo = NEW()
+    Sharing.cgfb.bar = NEW()
+    IO.print(Sharing.cgfb.ToString())
+  }
+
+  CLASS BarParent
+    int $nr
+    
+    NEW()
+    }
+
+    NEW(list<int> l)
+      $nr = l[0]
+    }
+  }
+
+  CLASS BarChild EXTENDS BarParent
+    string $name
+  }
+
+  BarParent %abar = NEW()
+
+  PROC testIobject()
+    STATIC BarParent %mbar
+    BarParent %sbar
+    %mbar = BarChild.NEW()
+    %sbar = NEW()
+    %abar.nr = 8
+    IO.print("global Bar: " .. %abar.ToString())
+    %mbar.nr = 7
+    IO.print("shared Bar: " .. %mbar.ToString())
+    %sbar.nr = 6
+    IO.print("onstack Bar: " .. %sbar.ToString())
+
+    %mbar = [111]
+
+    BarParent %p
+    BarChild c = NEW()
+    c.nr = 6
+    %p = c
+    IO.print("object2iobject: " .. %p.ToString())
+
+    BarParent pp = NEW()
+    pp.nr = 7
+    %p = pp
+    IO.print("iobject2noalloc: " .. %p.ToString())
+
+    BarParent %npp = NEW()
+    %npp.nr = 8
+    %p = %npp
+    IO.print("iobject2noalloc: " .. %p.ToString())
+  }
+
+  CLASS WithFinish
+    string $name
+    FUNC $Finish(Z.FinishReason fr) status
+      IO.print("Finishing " .. $name .. " for " .. fr.ToString())
+      RETURN OK
+    }
+  }
+
+  PROC testFinish()
+    WithFinish %wf = NEW()
+    %wf.name = "overwritten"
+
+    %wf = NEW()  # will call Finish() on previous object
+    %wf.name = "peter"
+
+    # Finish() will be called at next GC.run()
+    WithFinish awf = NEW()
+    awf.name = "not peter"
+
+    WithFinish %nilwf = NEW()
+    %nilwf.name = "nilled"
+    %nilwf = NIL  # Will call Finish()
+
+    WithFinish %nwf
+
+    # Finish() invoked on wf when method returns, not on nwf or awf
+    IO.print("testFinish() done")
+  }
+
+  PROC testFinish2()
+    IO.print("testFinish2")
+
+    WithFinish %twf = NEW()
+    %twf.name = "top"
+
+    IF TRUE
+      WithFinish %wf = NEW()
+      %wf.name = "pan"
+      # Finish() invoked on wf when block ends
+    }
+    IO.print("testFinish2 after IF")
+
+    FOR i IN 1 TO 3
+      WithFinish %wf = NEW()
+      %wf.name = "loop " .. i
+      # Finish() invoked on wf when block ends
+    }
+    IO.print("testFinish2 after FOR")
+
+    FOR i IN 1 TO 100
+      WithFinish %wf = NEW()
+      %wf.name = "break " .. i
+      IF i == 2
+        BREAK
+      }
+      IO.print("still going")
+      # Finish() invoked on wf when block ends
+    }
+    IO.print("testFinish2 after FOR with BREAK")
+  }
+
+  PROC testFinish4()
+    IO.print("testFinish4")
+    TRY
+      throwAnException()
+    CATCH E.NilAccess e
+      IO.print("Exception caught")
+    }
+  }
+
+  PROC throwAnException()
+    WithFinish %wf = NEW()
+    %wf.name = "throw object"
+
+    FinishParent %fp = NEW()
+    %fp.name = "throw iobject"
+
+    # Finish() will be called at next GC.run(), not when catching.
+    FinishParent nfp = NEW()
+    nfp.name = "throw iobject later"
+
+    list<int> l
+    l.add(1)  # will throw exception, %wf.Finish() must be called
+  }
+
+  CLASS FinishParent
+    string $name
+    FUNC $Finish(Z.FinishReason fr) status
+      IO.print("Finishing " .. $name .. " for " .. fr.ToString())
+      RETURN OK
+    }
+  }
+  CLASS FinishChild EXTENDS FinishParent
+    int $nr
+  }
+
+  PROC testFinishIobject()
+    FinishParent %p = NEW()
+    %p.name = "overwritten parent"
+
+    %p = NEW()  # Will invoke Finish() on overwritten object
+    %p.name = "parent"
+
+    # Finish() will be called at next GC.
+    FinishParent nfp = NEW()
+    nfp.name = "parent later"
+
+    FinishChild %c = NEW()
+    %c.name = "child"
+
+    FinishParent %nilp = NEW()
+    %nilp.name = "nilled iobject"
+    %nilp = NIL  # Will call Finish()
+
+    IO.print("testFinishIobject")
+  }
+
+  CLASS NoFinishParent
+    string $name
+  }
+  CLASS DoFinishChild EXTENDS NoFinishParent
+    int $nr
+    FUNC $Finish(Z.FinishReason fr) status
+      IO.print("Finishing " .. $name .. " for " .. fr.ToString())
+      RETURN OK
+    }
+  }
+
+  PROC testFinishInChild()
+    NoFinishParent %p = NEW()
+    %p.name = "parent"
+    DoFinishChild %c = NEW()
+    %c.name = "child"
+    NoFinishParent %p2 = NEW()
+    %p2 = DoFinishChild.NEW()
+    %p2.name = "child as parent"
+    IO.print("testFinishInChild")
+  }
+
+  PROC testFinishStatic()
+    %gwf = NEW()
+    %gwf.name = "at exit"
+
+    %gnfp = DoFinishChild.NEW()
+    %gnfp.name = "child at exit"
+
+    IF FALSE
+      # needed to mark %notSet as used
+      IO.print(%notSet.name)
+    }
+  }
+
+  WithFinish     %gwf
+  WithFinish     %notSet
+  NoFinishParent %gnfp
+
+}
+

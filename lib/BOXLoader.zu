@@ -1,0 +1,34 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# BOX module loader
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+
+MODULE BOXLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin BOX module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "BOXModule"
+    b.fileName = "BOXModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the BOX module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("BOX", builtin)
+    }
+  }
+}

@@ -1,0 +1,38 @@
+#
+# ZUT (Zimbu Templates) dialog button controller
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT Dialog.zu
+
+CLASS DialogController
+
+  FUNC $ok(ZUT.Event event) bool
+    $backgroundElement(event).triggerListeners(FALSE)
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $cancel(ZUT.Event event) bool
+    $backgroundElement(event).triggerListeners(TRUE)
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $backgroundElement(ZUT.Event event) ZUT.Element
+    ZUT.Element el = event.element
+    WHILE !el.hasListener()
+      ZUT.Element parent = el.getParent()
+      IF parent == NIL
+        BREAK
+      }
+      el = parent
+    }
+    RETURN el
+  }
+}

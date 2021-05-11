@@ -1,0 +1,428 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Stuff for Dict
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../ContainerType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DictStuff.zu"
+IMPORT "../ExprArg.zu"
+IMPORT "../Generate.zu"
+IMPORT "../ListStuff.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "WriteJS.zu"
+
+MODULE WriteDictJS @public @items=public       # TODO: restrict visibility
+
+  Declaration dictGetDef = NEW("dictGetDef")
+  Declaration dictRemove = NEW("dictRemove")
+  Declaration dictCopy = NEW("dictCopy")
+  Declaration dictClear = NEW("dictClear")
+  Declaration dictKeys = NEW("dictKeys")
+  Declaration dictValues = NEW("dictValues")
+  Declaration dictMap = NEW("dictMap")
+  Declaration dictKeyMap = NEW("dictKeyMap")
+
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr, bool lvalue,
+                                                 SContext ctx, Type destType
+                        ) Type
+    # TODO: implement lvalue
+    Type ret = generateGet(type,
+                          expr.getLeft(), expr.getRight(), NIL, ctx, destType)
+    RETURN ret
+  }
+
+  FUNC generateGet(ContainerType type, Zui.Expression dictExpr,
+                                                       Zui.Expression keyExpr,
+                         Zui.Expression defExpr, SContext ctx, Type destType
+                 ) Type
+    IF defExpr == NIL
+      Generate.genExpr(dictExpr, ctx)
+      ctx.out.write("[")
+      genKeyArg(type, keyExpr, ctx)
+      ctx.out.write("]")
+    ELSE
+      ctx.setDeclUsed(dictGetDef)
+      ctx.out.write("ZDictGetDef(")
+      Generate.genExpr(dictExpr, ctx)
+      ctx.out.write(", ")
+      Generate.genExprDoConv(keyExpr, ctx, type.keyType)
+      ctx.out.write(", ")
+      Generate.genExprDoConv(defExpr, ctx, type.itemType)
+      ctx.out.write(")")
+    }
+    IF type.itemType != NIL
+      RETURN type.itemType
+    }
+    RETURN destType
+  }
+
+  FUNC generateMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+    bool dotnil = name.hasDotnil() && name.getDotnil()
+
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == OK
+        ctx.out.write("ZDictToString(")
+        # Write the object and arguments for key and item type.
+        Generate.generateVarname(object, ctx, type)
+        WriteJS.oneToStringArgument(type.keyType, call, TRUE, ctx)
+        WriteJS.oneToStringArgument(type.itemType, call, TRUE, ctx)
+        # TODO: format argument
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "Type"
+      IF ctx.doError()
+        ctx.error("Type() is not yet supported for dict", call.getPos())
+      }
+    ELSEIF methodName == "get"
+      IF Generate.checkArgCount(call, 1, 2, ctx) == OK
+        retType = ctx.gen.dictGet(type, object, argList[0],
+                     call.sizeArgument() > 1 ? argList[1] : NIL,
+                                                                ctx, destType)
+      }
+    ELSEIF methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        genKeyArg(type, argList[0], ctx)
+        ctx.out.write(" in ")
+        Generate.genExpr(object, ctx, type)
+        retType = Type.aBool
+      }
+    ELSEIF methodName == "add" || methodName == "set"
+      IF Generate.checkArgCount(call, 2, 2, ctx) == OK
+        ctx.out.write("ZDictAdd(")
+        ctx.out.write(methodName == "add" ? "0, " : "1, ")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(", ")
+        Zui.Expression arg0 = argList[0]
+        Zui.Expression arg1 = argList[1]
+        genKeyArg(type, arg0, ctx)
+        genValueArg(type, arg1, ctx)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "remove"
+                       || (methodName == "clear" && call.sizeArgument() > 0)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        ctx.setDeclUsed(dictRemove)
+        Zui.Expression arg = argList[0]
+        ctx.out.write("ZDictRemove(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(", ")
+        genKeyArg(type, arg, ctx)
+        IF methodName == "clear"
+          ctx.out.write(", 0)")  # no exception
+          retType = DictStuff.newDict(type)
+        ELSE
+          ctx.out.write(", 1)")  # exception when key not found
+          retType = type.itemType
+        }
+      }
+    ELSEIF methodName == "clear"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.setDeclUsed(dictClear)
+        ctx.out.write("ZDictClear(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "keys"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.setDeclUsed(dictKeys)
+        ctx.out.write("ZDictKeys(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(dotnil ? ", 1)" : ", 0)")
+        retType = ListStuff.newList(type)
+        retType.<ContainerType>.itemType = type.keyType
+      }
+    ELSEIF methodName == "values"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.setDeclUsed(dictValues)
+        ctx.out.write("ZDictValues(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(dotnil ? ", 1)" : ", 0)")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        IF methodName == "map"
+          ctx.setDeclUsed(dictMap)
+          ctx.out.write("ZDictMap(")
+        ELSE
+          ctx.setDeclUsed(dictKeyMap)
+          ctx.out.write("ZDictKeyMap(")
+        }
+        ctx.error("Sorry, map and keymap not implemented yet", object)
+        Generate.genExpr(object, ctx, type)
+
+        ctx.out.write(", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg,
+                 methodName == "map" ? NIL : type.keyType, type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.setDeclUsed(dictCopy)
+        ctx.out.write("ZDictCopy(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(".size")
+      }
+      retType = Type.anInt
+    ELSEIF ctx.gen.writing
+      ctx.error("Method " .. methodName .. "() not supported for Dict",
+                                                              call.getPos())
+    }
+
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  # Generate the key argument for |expr|.
+  # Outputs ":" + key.
+  PROC genKeyArg(ContainerType type, Zui.Expression expr, SContext ctx)
+    ctx.out.write("':' + ")
+    Generate.genExprDoConv(expr, ctx, type.keyType ?: Type.anInt)
+  }
+
+  # Generate the value argument for |expr|.
+  # Outputs ", val".
+  PROC genValueArg(ContainerType type, Zui.Expression expr, SContext ctx)
+    ctx.out.write(", ")
+    Generate.genExprDoConv(expr, ctx, type.itemType ?: Type.anInt)
+  }
+
+  PROC writeBody(WriteJS gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.dict)
+      # "ow" is the overwrite flag.  When zero it's not allowed to overwrite
+      # an existing entry.
+      fd.write(''"
+function ZDictAdd(ow, d, key, value) {
+  if (d[key]) {
+    if (!ow) alert("dict item already exists: " + key);
+  } else {
+    d.size++;
+  }
+  d[key] = value;
+  return d;
+}
+
+function ZnewDict(keyType, valType) {
+  var d = {size: 0};
+  d['keyType'] = keyType;
+  d['valType'] = valType;
+  return d;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.itemToString)
+      # TODO: support more than int and string
+      fd.write(''"
+function ZDictToString(d, keyUseq, itemUseq) {
+  var res = "{";
+  var first = 1;
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      if (first == 0)
+        res = res + ", ";
+      else
+        first = 0;
+      res = res + ZitemToString(key.substring(1), d['keyType'], keyUseq);
+      res = res + ": ";
+      res = res + ZitemToString(d[key], d['itemType'], itemUseq);
+    }
+  }
+  return  res + "}";
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetDef)
+      fd.write(''"
+function ZDictGetDef(d, key, def) {
+  var ckey = ':' + key;
+  if (ckey in d)
+    return d[ckey];
+  return def;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictKeys)
+      fd.write(''"
+function ZDictKeys(d, dn) {
+  var l = [];
+  var i = 0;
+  if (d == null) {
+   if (dn) return null;
+    /* TODO: throw exception */
+  }
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      if (d.keyType == 2)
+        l[i++] = parseInt(key.substring(1));
+      else  /* assume string */
+        l[i++] = key.substring(1);
+    }
+  }
+  return l;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictValues)
+      fd.write(''"
+function ZDictValues(d, dn) {
+  var l = [];
+  var i = 0;
+  if (d == null) {
+   if (dn) return null;
+    /* TODO: throw exception */
+  }
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      l[i++] = d[key];
+    }
+  }
+  return l;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictRemove)
+      fd.write(''"
+function ZDictRemove(d, key, remove) {
+  var r;
+  if (key in d) {
+    d.size--;
+    r = d[key];
+    delete d[key];
+  } else if (remove) {
+    /* TODO: throw exception? */
+    alert("EXCEPTION: ZDictRemove: " + key);
+  }
+  if (remove)
+    return r;
+  return d;
+}
+
+"'')
+    }
+
+    IF gen.isDeclUsed(dictClear)
+      fd.write(''"
+function ZDictClear(d) {
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      delete d[key];
+    }
+  }
+  d.size = 0;
+  return d;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictCopy)
+      fd.write(''"
+function ZDictCopy(d) {
+  var newd = {};
+  for (var key in d) {
+    newd[key] = d[key];
+  }
+  return newd;
+}
+"'')
+    }
+
+  }
+
+  # [key1: value1, key2: value2] ->
+  #    ZDictAdd(0, ZDictAdd(0, ZnewDict(), key1, value1), key2, value2)
+  # TODO: check for duplicate keys at compile time.
+  # Return type of dict in ret.
+  PROC generateNewDict(Zui.Expression expr,
+                             SContext ctx, ContainerType ret, Type destType)
+    # Write an add function head for each item.
+    FOR item IN expr.getDictItemList() ?: []
+      ctx.out.write("ZDictAdd(0, ")
+    }
+
+    IF expr.sizeDictItem() > 0
+      # Figure out the type from the first item.
+      Zui.ExprPair pair = expr.getDictItem(0)
+      Type keyType
+      Type valType
+      IF destType.ttype == Type.Enum.dict
+        ContainerType containerType = destType
+        IF containerType.keyType != NIL
+          keyType = containerType.keyType
+        }
+        IF containerType.itemType != NIL
+          valType = containerType.itemType
+        }
+      }
+      ret.keyType = Generate.genExpr(pair.getKey(), ctx.copyNoOut(), keyType)
+      ret.itemType = Generate.genExpr(pair.getValue(), ctx.copyNoOut(), valType)
+    }
+
+    # Create the dict.
+    writeDictAlloc(ret, NIL, NIL, ctx)
+
+    # Write the end of the add function for each item.
+    FOR item IN expr.getDictItemList() ?: []
+      ctx.out.write(", ")
+      # write the key argument
+      genKeyArg(ret, item.getKey(), ctx)
+      ctx.out.write(", ")
+      # write the value argument
+      Generate.genExprDoConv(item.getValue(), ctx, ret.itemType)
+      ctx.out.write(")")
+    }
+  }
+
+  PROC writeDictAlloc(ContainerType type, string noAllocName,
+                                            Zui.MethodCall call, SContext ctx)
+    ctx.out.write("ZnewDict(")
+    IF type.keyType.ttype == Type.Enum.string
+      ctx.out.write("1, ")
+    ELSEIF type.keyType.ttype == Type.Enum.int
+      ctx.out.write("2, ")
+    ELSE
+      ctx.out.write("0, ")
+    }
+    IF type.itemType.ttype == Type.Enum.string
+      ctx.out.write("1)")
+    ELSE
+      ctx.out.write("0)")
+    }
+  }
+
+}

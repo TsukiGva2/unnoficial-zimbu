@@ -1,0 +1,48 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module INT16 - integer support
+#
+
+#= Methods for the builtin int16 type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE INT16Module @public
+
+  #= The builtin type int16: 16 bit integer number.
+  #- Although this is a separate type, the methods for int are used.
+  #- Listed here are only the methods that differ from the int methods.
+  #
+  #- Note: When compiled to Javascript an int16 is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTint16 @public
+    # For Zudocu: start of int16 class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in an int16.
+  #- Always returns 2, since an int16 is 16 bits
+  FUNC Size(int16 this) int @public
+    ###### Only for generating documentation.
+    RETURN 2
+  }
+
+  #! For Zudocu: end of int16 class.
+  CLASS ENDint16
+  }
+
+  #= Maximum value of an int16.
+  #- Used as T.int16.max
+  int max @public
+          = 0x7fff
+
+  #= Minimum value of an int16.
+  #- Used as T.int16.min
+  int min @public
+          = -0x8000
+}

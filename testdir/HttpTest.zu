@@ -1,0 +1,52 @@
+# Test file for HTTP module.
+# This only tests compiling the code, there is no output.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE HttpTest @public
+
+  PROC test() @public
+    IO.print("testdir/HttpTest.zu")
+    test1()
+  }
+
+  ###############################################################
+
+
+  PROC test1()
+    HTTP.Server server = NEW(8888)
+    string exe = ARG.exeName
+    server.setFileRoot(exe.slice(0, IO.tailSepIndex(exe)) .. "pages")
+
+    HTTP.FileServlet fs = NEW("index.html")
+    fs.addPath("index.html")
+    fs.addPath("index.htm")
+    fs.setFile("index.html")
+    server.addServlet(fs)
+
+    fs = HTTP.FileServlet.NEW("zimbu.png")
+    fs.addPath("zimbu.png")
+    fs.setMimeType("image/png")
+    server.addServlet(fs)
+
+    string hello = "hello"
+    HTTP.StringServlet ss = NEW(hello)
+    ss.addPath("hello.html")
+    server.addServlet(ss)
+
+    FUNC varz(HTTP.Context context) string
+      RETURN "something"
+    }
+    HTTP.FunctionServlet ps = NEW(varz)
+    ps.addPath("varz")
+    server.addServlet(ps)
+
+    server.start()
+
+    ss.setBody("hello there!")
+  }
+
+}

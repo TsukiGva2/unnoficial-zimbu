@@ -1,0 +1,62 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Code
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE CodeModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Code is a widget that contains preformatted text.
+  #- The text is displayed with a monospaced font and white space is preserved.
+  #- It uses a <pre> item in HTML.
+  CLASS Code EXTENDS ZWT.Widget @public
+    #!
+    string $codeText
+
+    #!
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('pre');
+<<<
+    }
+
+    #= Create a new Code with |text| as the text.
+    NEW(string text) @public
+      $setText(text)
+    }
+
+    #= Replace the text of the Code with |text|.
+    PROC $setText(string text) @public
+      IF text != $codeText
+        $codeText = text
+        # Most modern browsers have textContent.
+        # Fall back to innerText if not supported.
+>>>
+  if (typeof(%$elem%.textContent) != "undefined") {
+    %$elem%.textContent = %text%;
+  } else {
+    %$elem%.innerText = %text%;
+  }
+<<<
+      }
+    }
+
+    #= Return the Code text.
+    FUNC $getText() string @replace @public
+      RETURN $codeText
+    }
+
+    #= Return "Code(text)", where "text" is the Code text.
+    FUNC $ToString() string @replace @public
+      RETURN "Code(" .. $codeText .. ")"
+    }
+
+  }
+
+ }
+}

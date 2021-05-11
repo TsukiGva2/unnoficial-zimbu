@@ -1,0 +1,187 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module CTX
+#
+
+#= Methods for passing objects downwards through the call stack.
+#- A method can add an object to the context and called methods can get this
+#- object from the context.  Without methods in between explicitly passing the
+#- object.  An object is identified by its type.
+#
+#- This is useful when at a high level a decision is made about what must
+#- happen at a lower level.  For example, a server handles requests for
+#- backends A, B and C.  Most of the code is the same no matter what backend
+#- is used and doesn't use a backend.  Instead of passing a "Backend" argument
+#- to many functions, which then have to pass it to functions they call,
+#- before it finally ends up at the place where the backend is actually used.
+#- This would be the solution without CTX:
+#% FUNC handle(Request req) Result
+#%   Backend b = getBackend(req)
+#%   RETURN intermediate1(req, b)
+#% }
+#% FUNC intermediate1(Request req, Backend b) Result
+#%   ...
+#%   intermediate2(arg, b)
+#%   ...
+#% }
+#% PROC intermediate2(Arg arg, Backend b)
+#%   ...
+#%   intermediate3(val, b)
+#%   ...
+#% }
+#% PROC intermediate3(Value val, Backend b)
+#%   ...
+#%   b.write(val)
+#%   ...
+#% }
+#- Obviously this gets much more complicated when there would be multiple
+#- backends, one quickly ends up creating a Context class to pass down the
+#- information.  And then different Context classes to avoid dependencies.
+#- Using CTX we get rid of all the Backend arguments:
+#% FUNC handle(Request req) Result
+#%   CTX.add(Backend.Type(), getBackend(req))
+#%   RETURN intermediate1(req)
+#% }
+#% FUNC intermediate1(Request req) Result
+#%   ...
+#%   intermediate2(arg)
+#%   ...
+#% }
+#% PROC intermediate2(Arg arg)
+#%   ...
+#%   intermediate3(val)
+#%   ...
+#% }
+#% PROC intermediate3(Value val)
+#%   ...
+#%   CTX.get(Backend.Type()).write(val)
+#%   ...
+#% }
+#- When adding another type of backend we add a CTX.add() in handle() and a
+#- CTX.get() where it's used, nothing else needs to change.
+#
+#- This is also useful for testing, a mock object can be created and added to
+#- the context at any level of the call stack, without flags or other ways to
+#- tell the lower layers to use a mock object.
+#
+#- Avoid this:
+#% FOR stuff IN stuffList
+#%   CTX.add(stuff)  # BAD: The context will grow every time!
+#%   doSomething()
+#% }
+#- Instead, use a Provider:
+#% CTX.Provider p = NEW()
+#% CTX.addProvider(Stuff.Type(), p)
+#% FOR stuff IN stuffList
+#%   p.set(stuff)  # Good: replaces the previous one
+#%   doSomething()
+#% }
+#
+#- One can add objects to the context and get them, but not replace ones set
+#- by a calling function.  This avoids a function down the call stack changing
+#- an object and forgetting to restore it.  One can add an object of the same
+#- class, it will be used instead of the object from higher up.
+#
+#- When starting a thread the context of where thread.start() is invoked is
+#- passed on to the new thread.
+#
+#- Warning: It is easy to abuse CTX and make code very difficult to
+#- understand.  Only use it when actually passing context to called methods.
+#- An alternative for objects of which only ever one instance exist is to use
+#- a global variable.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE CTXModule @items=public @public
+
+  #= Add |object| with type |type| to the context.  It is removed as soon as
+  #= the current method returns.
+  #- If there already was an object with type |type| in the context, it will
+  #- be shadowed, a following get(|type|) will return |object|.
+  PROC add(type type, dyn object)
+>>> uses(ctx) blockgc
+ CtxAdd(%type%, %object%);
+<<<
+  }
+
+  #= Add |object| with its native |type| to the context.
+  #- It is removed as soon as the current method returns.
+  #
+  #- This does the same as:
+  #% CTX.add(object.Type(), object)
+  PROC add(dyn object)
+    add(object.Type(), object)
+  }
+
+  #= Get an instance of |type| from the context.
+  #- The last added instance is returned.
+  #
+  #- This only finds an exact match with the type with which the object was
+  #- added.  Not a type with the same interface or a type that is a child
+  #- class.
+  #
+  #- NIL is returned if there is no |type| in the context.
+  FUNC get(type type) dyn
+    dyn r
+>>> uses(ctx) blockgc
+ %r% = CtxGet(%type%);
+<<<
+    RETURN r
+  }
+
+  #= The interface used for objects passed to addProvider().
+  INTERFACE I_Provider @public
+    #= Returns the provided object.
+    #- It may be NIL.
+    FUNC $provide() dyn
+    }
+  }
+
+  #= A simple provider that allows setting the object to provide.
+  CLASS Provider IMPLEMENTS I_Provider @public
+    dyn $object #!
+
+    #= Store the object to be provided.
+    PROC $set(dyn object) @public
+      $object = object
+    }
+
+    #= Returns the object previously set with set().
+    #- Returns NIL if set() was not yet called.
+    FUNC $provide() dyn @public
+      RETURN $object
+    }
+  }
+
+  #= Add |provider| as the provider for |type| to the contex.
+  #- It is removed as soon as the current method returns.
+  #
+  #- Not implemented yet for Javascript.
+  PROC addProvider(type type, I_Provider provider)
+    GENERATE_IF Z.lang == "C"
+      # This relies on provide() to be the first method in I_Provider.
+>>> uses(ctx) blockgc
+ CtxAddProvider(%type%, %provider%.ptr, %provider%.table[1]);
+<<<
+    GENERATE_ELSE
+>>> uses(ctx) blockgc
+ CtxAddProvider(%type%, %provider%, %provider%.provide);
+<<<
+    }
+    # Make sure the provide() method on the interface is marked as used, this
+    # causes all the implementing methods to be generated.  But don't actually
+    # execute the code.
+>>>
+/*
+<<<
+    dyn x = provider.provide()
+>>>
+*/
+<<<
+  }
+}

@@ -1,0 +1,1140 @@
+# A Zimbu program for doing basic compiler tests.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT "testdir/Alias.zu"        # ALIAS
+IMPORT "testdir/Arguments.zu"    # function arguments
+IMPORT "testdir/Array.zu"        # array<>
+IMPORT "testdir/Bits.zu"         # BITS
+IMPORT "testdir/BoolTest.zu"     # bool tests
+IMPORT "testdir/BoxTest.zu"      # BOX
+IMPORT "testdir/Callback.zu"     # Date class
+IMPORT "testdir/CheckTest.zu"    # CHECK
+IMPORT "testdir/CompareTest.zu"  # Equal(), Compare()
+IMPORT "testdir/Date.zu"         # Date class
+IMPORT "testdir/DeferTest.zu"    # DEFER
+IMPORT "testdir/DictTest.zu"     # dict tests
+IMPORT "testdir/DotNilTest.zu"   # ?. tests
+IMPORT "testdir/DynTest.zu"      # dyn
+IMPORT "testdir/EnumTest.zu"     # ENUM
+IMPORT "testdir/Errors.zu"       # check compiler errors
+IMPORT "testdir/FloatTest.zu"    # float
+IMPORT "testdir/Garbage.zu"      # check garbage collector
+IMPORT "testdir/IOtests.zu"      # IO module
+IMPORT "testdir/Inherit.zu"      # classes, inheritance, interfaces
+IMPORT "testdir/InitTest.zu"     # $Init()
+IMPORT "testdir/IntTest.zu"      # int tests
+IMPORT "testdir/IteratorTest.zu" # iterator tests
+IMPORT "testdir/Lambda.zu"       # { => expr }
+IMPORT "testdir/ListTest.zu"     # list<>
+IMPORT "testdir/Loop.zu"         # Loops
+IMPORT "testdir/MatchFunction.zu" # match function by arguments
+IMPORT "testdir/MultiDictTest.zu" # set multiDicts
+IMPORT "testdir/NatTest.zu"      # nat tests
+IMPORT "testdir/NotManaged.zu"   # not managed memory
+IMPORT "testdir/Operators.zu"    # operator tests
+IMPORT "testdir/PieceTest.zu"    # PIECE and INCUDE
+IMPORT "testdir/ProtoTest.zu"    # protocol buffer tests
+IMPORT "testdir/ReturnTest.zu"   # RETURN one, two
+IMPORT "testdir/SetTest.zu"      # set tests
+IMPORT "testdir/SharedTest.zu"   # SHARED section
+IMPORT "testdir/Something_2.zu"  # defines class Something
+IMPORT "testdir/SortedListTest.zu"  # sortedList tests
+IMPORT "testdir/StatusTest.zu"   # status tests
+IMPORT "testdir/StringTest.zu"   # string tests
+IMPORT "testdir/SwitchTest.zu"   # SWITCH tests
+IMPORT "testdir/Template.zu"     # function and class templates
+IMPORT "testdir/TimeTest.zu"     # TIME
+IMPORT "testdir/TryCatch.zu"     # TRY-CATCH
+IMPORT "testdir/TupleTest.zu"    # tuple
+IMPORT "testdir/TypeTest.zu"     # type
+IMPORT "testdir/Typedef.zu"      # TYPE
+IMPORT "testdir/Visibility.zu"   # @private @public @read=public
+IMPORT "testdir/nothing.zu"      # empty file
+IMPORT "testdir/subdir/Some.zu"  # test subdirectory
+
+IMPORT.CHEADER "testdir/testheader1.h"
+IMPORT.CHEADER "testdir/testheader2.h"
+
+MODULE Great
+  string value = "Great value"
+  FUNC getThree() int
+    RETURN 3
+  }
+  MODULE Sub
+    int int = 5    # this is allowed but not nice
+    int dict = 5
+    int list = 5
+    int proc = 5
+    int xyz = 4
+    FUNC getFive() string
+      RETURN "five"
+    }
+  }
+  ENUM Nested
+    one two three
+  }
+
+}
+
+PROC tryout(Great.Nested bar)
+  Great.Nested foo = Great.Nested.one
+  foo = bar
+}
+
+FUNC addTen(int n, int /* second */ m) int /*added*/
+  getNone()
+  int nn = n
+  ++nn
+  RETURN nn + m + 9
+}
+
+PROC getNone()
+  VAR v
+  v = "called getNone\n"
+  IO.write(v.Size() .. ": ")
+  IO.write(v)
+  IF TRUE
+    RETURN
+  }
+  IO.write("error")
+}
+
+string xyz
+
+ENUM TType
+  value
+  eof
+  string
+  char
+  int
+}
+
+CLASS Koken
+  TType   $type
+  string  $value
+  Koken   $next
+
+  PROC $setType(TType type /* comment */)
+    $type = type
+    IO.print($type.ToString())
+  }
+  PROC $setValue(string value /* comment */ )
+    $value = value
+  }
+  FUNC $getType() TType
+    RETURN $type
+  }
+  FUNC $getValue() string
+    RETURN $value
+  }
+}
+
+PROC testToken()
+  Koken t = NEW()
+  t.setType(TType.eof)
+  t.setValue("token")
+  IO.print("Koken type: " .. t.type.ToString() .. ", value: " .. t.getValue())
+  Koken x = t.next
+
+  Koken nt = NEW()
+  nt.setValue("Next")
+  t.next = nt
+  IO.print("next method: " .. t.next.getValue() .. ", member: " .. t.next.value)
+
+  Koken nnt = NEW()
+  nnt.setValue("NextNext")
+  nt.next = nnt
+  IO.write("next-next member: " .. t.next.next.value)
+  IO.print(", method: " .. t.next.next.getValue())
+}
+
+CLASS Input
+  IO.File           $fd             # input stream
+  int               $lnum
+  array<int>        $prevc          # characters pushed back
+  int               $prevcIdx       # current index in prevc[]
+
+  NEW()
+    $lnum = -1
+    $prevc = NEW(100)
+  }
+  NEW(string x)
+    $lnum = -1
+    $prevc = NEW(100)
+  }
+  NEW(int lnum)
+    $lnum = lnum
+    $prevc = NEW(100)
+  }
+  NEW(string x, int lnum)
+    $lnum = lnum
+    $prevc = NEW(100)
+  }
+
+  PROC $read()
+    $lnum = -1
+  }
+  PROC $read(string x)
+    $lnum = -1
+  }
+  PROC $read(int lnum)
+    $lnum = lnum
+  }
+  PROC $read(string x, bool flag)
+    $lnum = 23
+  }
+
+  PROC $testRead()
+    $read("hoho")
+    Koken token = NEW()
+    $read(token.getValue())
+  }
+
+  FUNC $getIt() Input
+    RETURN THIS
+  }
+}
+
+PROC testInput()
+  Input one = NEW()
+  Input two = NEW("he")
+  Input three = NEW(22)
+  Input four = NEW("ho", 22)
+  one.read()
+  two.read("hi")
+  three.read(23)
+  four.read("hu", TRUE)
+}
+
+FUNC get(Input input) int
+  int c
+
+  IF input.prevcIdx > 0
+    c = input.prevc[--input.prevcIdx]
+  ELSE
+    DO
+      c = input.fd.readByte()
+      IF c == IO.eof
+        c = 0
+      }
+      IF c == '\t'
+        IO.print("WARNING: found Tab character in line " .. input.lnum)
+        c = ' '
+      }
+    UNTIL c != '\r'  # CR characters are always ignored
+    IF c == '\n'
+      ++input.lnum
+      IO.write("Hello\n")
+    }
+  }
+  RETURN c
+}
+
+FUNC getLnum(Input input) int
+  RETURN input.lnum
+}
+
+# Test that loop over empty string can be compiled.
+CLASS FooBar
+  dict<string, int> $dict
+
+  FUNC $ToString() string @public
+    string res = "["
+    string comma = ""    # "string" works OK
+    FOR k IN $dict?.keys()
+      res ..= comma .. k.ToString()
+      comma = ", "
+    }
+    RETURN res .. "]"
+  }
+}
+
+PROC print(string text)
+  IO.print("text: " .. text)
+}
+PROC print(int nr)
+  IO.print("number: " .. nr)
+}
+PROC print(bool what)
+  IO.print("Bool: " .. what)
+}
+PROC print(status what)
+  IO.print("Status: " .. what)
+}
+PROC print(list<string> names)
+  IO.print("list: " .. names.ToString())
+}
+PROC print(list<string> names, bool yes)
+  IO.print("list: " .. names.ToString() .. yes)
+}
+
+FUNC doIt(bool fail) status
+  RETURN fail ? FAIL : OK
+}
+
+FUNC invert(bool flag) bool
+  RETURN !flag
+}
+
+ARG.Bool xflag = NEW("x", NIL, FALSE, "The X flag")
+
+FUNC Main() int
+
+  # Test TRY / CATCH / ELSE / FINALLY
+  TryCatch.test()
+
+  # Free up memory.
+  GC.run()
+
+  SYS.shell("echo SYS says hello")
+
+  IO.write("testing IO")
+  IO.writeByte('\n')
+  IO.flush()
+  IO.delete("/dev/null")  # fails
+
+  Some.print()
+
+  FUNC addNSMP(int n, string s, int m, string p) string
+    RETURN n .. s .. m .. p
+  }
+
+  # Test getting arguments, also out of range.
+  int ai = -1
+  WHILE ai <= ARG.Size()
+    string s = ARG.get(ai)
+    IF s == NIL
+      s = "NIL"
+    }
+    IO.print("Arg " .. ai .. " == '" .. s .. "'")
+    IF ai >= 0 && ai < ARG.Size() && ARG.get(ai) != ARG.getList()[ai]
+      IO.write("ERROR: ARG.get(i) != ARG.cleanArgs[i]\n")
+    }
+    ++ai
+  }
+
+  # Free up memory.
+  GC.run()
+
+#  # Test getting flags
+#  ai = -1
+#  WHILE ai <= ARG.flagSize()
+#    IO.print("Flag " .. ai .. " == '" .. ARG.getFlag(ai) .. "'")
+#    IF ai >= 0 && ai < ARG.Size() && ARG.getFlag(ai) != ARG.flagArgs[ai]
+#      IO.write("ERROR: ARG.get(i) != ARG.flagArgs[i]\n")
+#    }
+#    ++ai
+#  }
+
+  # Test the functions that get the list of arguments
+  list<string> lAll = ARG.getList()
+  VAR lClean = ARG.getList()
+
+  IO.print("not true is " .. invert(TRUE)
+           .. " and not false is " .. invert(FALSE))
+
+  print(OK)
+  print(FAIL)
+  IO.print("fail is " .. doIt(TRUE) .. " and !fail is " .. doIt(FALSE))
+
+  int sum = 0
+  sum += 123
+  sum += 444
+  string concat = " one"
+  concat ..= " two"
+  concat ..= " three"
+  IO.print(sum .. concat)
+
+  sum = 9
+  sum *= 10
+  sum /= 2
+  IO.print("sum: " .. sum)
+
+  IO.print(Great.value .. "-" .. Great.getThree() .. "-"
+               .. Great.Sub.xyz .. "-" .. Great.Sub.getFive())
+
+  Something.Foobar foobar = NEW(123)
+  IO.print(foobar.get() .. Something.xxname .. Something.getFive())
+
+  # Create an object of a nameless class inside a module
+  Something not = NEW("another nothing")
+  IO.print("Something object: " .. not.text .. " and " .. Something.nope())
+  not.text = "xyz"
+  Something xno = not.get()
+  xno.text = "nnn"
+  not.get().text = "abc"
+
+  testToken()
+
+  Input inp = NEW(55)
+  IO.write("Input lnum = " .. getLnum(NEW(88)))
+  IO.print(" and " .. Input.NEW(76).lnum)
+
+  int nx
+  DO
+    ++nx
+  UNTIL nx == 3
+  IO.write("nx: " .. ++nx)
+  IO.write(" == " .. nx--)
+  IO.write(" and " .. nx++)
+  IO.print(" == " .. --nx)
+
+  IO.print(addNSMP(42, " is ", 12, " plus 30"))
+  xyz = "Global\n"
+  IO.write(xyz)
+
+  CLASS Type
+    int  $type
+    bool $flag
+  }
+
+  CLASS Node
+    string          $name
+    int             $type
+    array<Type.C>   $types
+
+    NEW()
+      $name = "not set"
+    }
+
+    FUNC $Equal(Node nn) bool
+      RETURN $name == nn.name && $type == nn.type
+    }
+  }
+
+  int xx = addTen(22, 11)
+  IO.print("got " .. addTen(8, 14))
+
+  PROC nodeInc(Node node)
+    ++node.type
+  }
+
+  # Free up memory.
+  GC.run()
+
+  int asdf
+  Node node = NEW()
+  node.type = 2
+  ++asdf
+  node.name = "class" .. " Node "
+  nodeInc(node)
+  IO.print(node.name .. node.type)
+
+  VAR nnode
+  nnode = Node.NEW(); nnode = Node.NEW()
+  IO.print("Node name is " .. nnode.name)
+
+  ENUM Color
+    blue
+    red
+    black
+  }
+
+  SwitchTest.test()
+
+  Color e = Color.red
+  int i = e == Color.blue ? 99 : "yes" == "bar" ? 55 : 48
+  IO.print("i = " .. i.asString())
+
+  bool yes = TRUE
+  IF !yes
+    IO.write("this is wrong\n")
+  ELSE
+    IO.write("this is right\n")
+  }
+  Type.C no = NEW()
+  no.flag = FALSE
+  IO.print("yes is " .. yes .. " and no is " .. no.flag)
+
+  string x = "hello" .. " world!\n"
+  IO.write(x)
+  GENERATE_IF Z.lang == "JS"
+>>> # this code is ignored
+  nothing matters here
+<<<
+  GENERATE_ELSE
+    string cs
+>>> uses(getCstring) blockgc # this is C code
+  %cs% = %{ "C code" }%;
+  puts(ZgetCstring(%cs%)); /* %i% */
+<<<
+  }
+  # IO.write("Char 5 is " .. x[5] .. "\n")
+  int n = 42
+  IF n == 42
+    IO.print("yes, it is " .. n)
+  ELSEIF n < 42
+    IO.print("no, it is smaller")
+  ELSE
+    IO.print("no, it is " .. n)
+  }
+  IO.print(5 + 7 * 8)
+  IO.print("int.Size() = " .. 88.Size() .. 64.asString())
+
+  string soo = "Hello"
+  IF soo == "Hello"
+    IO.write("== Hello ")
+  }
+  # This will evaluate to TRUE, concatenation is done at compile time and
+  # equal string values become identical strings.
+  IF soo IS "Hello" .. ""
+    IO.write("IS Hello ")
+  }
+
+  Node noden = NEW()
+  Node othern = noden
+  Node nodem = NEW()
+  IF noden == othern
+    IO.write("== othern ")
+  }
+  IF noden IS othern
+    IO.write("IS othern ")
+  }
+  IF noden == nodem
+    IO.write("== nodem ")
+  }
+  IF noden IS nodem
+    IO.write("IS nodem ")
+  }
+  IO.write("\n")
+
+  # Free up memory.
+  GC.run()
+
+  ListTest.test()
+
+  # Test DEER
+  DeferTest.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test dict<>
+  DictTest.test()
+
+  # Test ?.
+  DotNilTest.test()
+
+  # Test protocol buffers.
+  ProtoTest.test()
+
+  # Test RETURN with more than one value
+  ReturnTest.test()
+
+  # Test $Init() in CLASS
+  InitTest.test()
+
+  # Test TIME
+  TimeTest.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test BITS
+  Bits.test()
+
+  # Free up memory.
+  GC.run()
+
+  IO.print("5 >> 1 = " .. (5 >> 1))
+  IO.print("8 >> 2 = " .. (8 >> 2))
+  IO.print("8 << 1 = " .. (8 << 1))
+  IO.print("1 << 4 = " .. (1 << 4))
+
+  PROC echoInt(int nn, string xtra)
+    IO.write("echoInt(" .. nn .. ", " .. xtra .. ")\n")
+  }
+
+  PROC doNothing()
+    IO.print("doNothing()")
+  }
+
+  FUNC getInt(int nn, string xtra) string
+    RETURN "getInt(" .. nn .. ", " .. xtra .. ")\n"
+  }
+
+  FUNC genInt() int
+    RETURN 8
+  }
+
+  # Free up memory.
+  GC.run()
+
+  # Test reference to function
+  proc<int, string> echoIntRef
+  echoIntRef = echoInt
+  echoIntRef(5, "-")
+
+  proc<> dono = doNothing
+  dono()
+
+  func< => int> noGetInt
+  noGetInt = genInt
+  IO.print("func ref: " .. noGetInt())
+
+  func<int, string => string> newGetInt
+  newGetInt = getInt
+  IO.write(newGetInt(9, "blah"))
+
+  noden = NIL
+  IO.print("here found: " .. (noden == NIL))
+
+  # Pass int by reference
+  PROC incrAndMult(int &nr)
+    IF &nr == NIL
+      IO.print("&nr is NIL")
+    ELSE
+      nr++
+      nr = nr * 2
+    }
+  }
+  int testNr = 2
+  incrAndMult(&testNr)
+  IO.print("incremented 2 to " .. testNr)
+  incrAndMult(NIL)
+
+  # Pass object by reference
+  PROC changeObject(Node &nod, bool recurse)
+    nod = NEW()
+    nod.name = "by reference"
+    string some = nod.name
+    IF recurse
+      changeObject(nod, FALSE)
+    }
+  }
+  Node nodeX = NEW()
+  Node bef = nodeX
+  changeObject(&nodeX, TRUE)
+
+  IO.print("node name is " .. nodeX.name .. ", "
+               .. (bef IS nodeX ? "same" : "different") .. " object")
+  Node nop
+  changeObject(&nop, TRUE)
+
+  # Test int methods
+  IntTest.test()
+
+  # Test nat methods
+  NatTest.test()
+
+  # Test bool methods
+  BoolTest.test()
+
+  # Test status methods
+  StatusTest.test()
+
+  # Test matching methods by argument
+  MatchFunction.test()
+
+  # Test iterators
+  IteratorTest.test()
+
+  # Test inheritance.
+  Inherit.test()
+
+  # Test GC
+  Garbage.test()
+
+  # Test IO module
+  IOtests.test()
+
+  # Test Loops
+  Loop.test()
+
+  # Test ALIAS
+  Alias.test()
+
+  # Test TYPE
+  Typedef.test()
+
+  # Test type
+  TypeTest.test()
+
+  # Test dyn
+  DynTest.test()
+
+  # Test ENUM
+  EnumTest.test()
+
+  # Test float
+  FloatTest.test()
+
+  # Test array<>
+  Array.test()
+
+  # Test Visibility stuff
+  Visibility.test()
+
+  # Visibility.ClassOne classOne = NEW()  # should fail
+
+  WHILE TRUE
+    Date date = Date.fromString("Jun 1 1001")
+    Date.asdf = 234
+    BREAK
+  }
+
+  # Free up memory.
+  GC.run()
+
+  # Test ISA and ISNOTA
+  INTERFACE I_OneTwo
+    string $name
+  }
+  CLASS Tone IMPLEMENTS I_OneTwo, IO.I_Writer
+    string $name
+    int    $one
+    FUNC $write(string text) status
+      $name ..= text
+      RETURN OK
+    }
+    FUNC $writeByte(int b) status
+      $name ..= b.asString()
+      RETURN OK
+    }
+    FUNC $writeChar(int c) status
+      $name ..= c.asString()
+      RETURN OK
+    }
+    FUNC $writeLine(string text) status
+      $name ..= text .. "\n"
+      RETURN OK
+    }
+    FUNC $print(string text) status
+      $name ..= text .. "\n"
+      RETURN OK
+    }
+  }
+  CLASS Ttwo IMPLEMENTS I_OneTwo, IO.I_Writer
+    string $name
+    int    $two
+    FUNC $write(string text) status
+      $name ..= text
+      RETURN OK
+    }
+    FUNC $writeByte(int b) status
+      $name ..= b.asString()
+      RETURN OK
+    }
+    FUNC $writeChar(int c) status
+      $name ..= c.asString()
+      RETURN OK
+    }
+    FUNC $writeLine(string text) status
+      $name ..= text .. "\n"
+      RETURN OK
+    }
+    FUNC $print(string text) status
+      $name ..= text .. "\n"
+      RETURN OK
+    }
+  }
+
+  I_OneTwo to = Tone.NEW()
+  to.name = "one"
+  Tone tone = to
+  tone.one = 1
+  IF to ISA Tone
+    IO.print("to ISA Tone")
+  }
+  IF to ISA Ttwo
+    IO.print("to ISA Ttwo")
+  }
+  IF to ISNOTA Tone
+    IO.print("to ISNOTA Tone")
+  }
+  IF to ISNOTA Ttwo
+    IO.print("to ISNOTA Ttwo")
+  }
+  to = Ttwo.NEW()
+  to.name = "two"
+  Ttwo ttwo = to
+  ttwo.two = 2
+  IF to ISA Tone
+    IO.print("to ISA Tone")
+  }
+  IF to ISA Ttwo
+    IO.print("to ISA Ttwo")
+  }
+  IF to ISNOTA Tone
+    IO.print("to ISNOTA Tone")
+  }
+  IF to ISNOTA Ttwo
+    IO.print("to ISNOTA Ttwo")
+  }
+
+  PROC writeSomeX(I_OneTwo writer)
+    writer.name = "foo"
+  }
+  PROC writeSome(IO.I_Writer writer)
+    writer.write("blah")
+  }
+
+  # Free up memory.
+  GC.run()
+
+  IO.File f = IO.fileReader("hello")
+
+  # Verify that a child class can call a method from the parent class.
+  CLASS Style
+    string $name
+  }
+  CLASS Class1
+    PROC $doit(int xv)
+    }
+    PROC $setStyle(Style style) @default
+    }
+  }
+  CLASS Class2 EXTENDS Class1
+    PROC $doit2()
+      $doit(2)
+    }
+    CLASS Class3 EXTENDS Class1
+      PROC $doit3()
+        $doit(2)
+      }
+    }
+  }
+  CLASS Class4 EXTENDS Class1
+    PROC $neverCalled()
+      IO.print("nothing")
+    }
+  }
+  Class4 c4 = NEW()
+  c4.setStyle(NEW())
+
+  # Test list.extend() appending a list to itself.
+  list<string> l = ["one", "two", "three"]
+  l.extend(l)
+  IO.print("double list: " .. l.ToString())
+
+  # Test callback<>
+  Callback.test()
+
+  # Test CHECK
+  CheckTest.test()
+
+  # Test Equal() and Compare()
+  CompareTest.test()
+
+  # Test class and function templates
+  Template.test()
+
+  # Test lamda functions
+  Lambda.test()
+
+  # Test function arguments
+  Arguments.test()
+
+  CLASS NewCall
+    string $name
+    NEW() @default
+      NEW("blaaah")
+    }
+    NEW(string name) @default
+      $name = name
+    }
+    FUNC $echo(string s) string @default
+      RETURN "NewCall"
+    }
+    FUNC $nope() string
+      RETURN "nope"
+    }
+  }
+  CLASS AnotherCall EXTENDS NewCall
+    NEW() @replace
+      PARENT.NEW("another")
+    }
+    NEW(int nr)
+      NEW("new " .. nr)
+    }
+    FUNC $echoParent(string s) string
+      RETURN PARENT.echo(s)
+    }
+    FUNC $echo(string s) string @replace
+      RETURN "AnotherCall"
+    }
+  }
+  CLASS DeeperCall EXTENDS AnotherCall
+    NEW(string s) @replace
+      PARENT.PARENT.NEW(s .. "pp")
+    }
+    FUNC $echoTop(string s) string
+      string sx = PARENT.nope()   # should find NewCall.nope()
+      RETURN PARENT.PARENT.echo(s)
+    }
+  }
+
+  # should not trigger loading thread library
+  bool thread
+  thread = TRUE
+
+  NewCall.C newOne = NEW()
+  NewCall.C newTwo = NEW("two")
+  AnotherCall.C newAnother = NEW()
+  AnotherCall.C newNumber = NEW(5)
+  IO.print("one: " .. newOne.name
+          .. ", two: " .. newTwo.name
+          .. ", another: " .. newAnother.name
+          .. ", number: " .. newNumber.name)
+
+  # Free up memory.
+  GC.run()
+
+  # Test PIECE and INCLUDE
+  PieceTest.test()
+
+  # Test BOX
+  BoxTest.test()
+
+  # Test operators
+  Operators.test()
+
+  # Test not managed memory
+  NotManaged.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test "set"
+  SetTest.test()
+
+  # Test "set"
+  SharedTest.test()
+
+  # Test "sortedList"
+  SortedListTest.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test "multiDict"
+  MultiDictTest.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test "varString", "string", "byteString" and "varByteString" types.
+  StringTest.test()
+
+  # Free up memory.
+  GC.run()
+
+  # Test tuple<>
+  TupleTest.test()
+
+  # Test closures and nameless functions
+  func< => string> cf = { => "hello" }
+  IO.print("closure cf: " .. cf())
+
+  func<string => string> ff = { s => "hello " .. s }
+  IO.print("closure ff: " .. ff("world"))
+
+  cf = FUNC () string; IO.print("in the nameless func"); RETURN "hello"; }
+  IO.print("nameless func f: " .. cf())
+
+  proc<> pp = PROC (); IO.print("nameless proc"); }
+  pp()
+
+  # Test map() on list and dict and array
+  list<string> ls = ["one", "two", "three"]
+  ls.map({ s => "another " .. s })
+  IO.print(ls.ToString())
+
+  list<int> ln = [1, 2, 3]
+  ln.map(FUNC (int nn) int; RETURN nn + 100; })
+  IO.print(ln.ToString())
+
+  dict<string, string> d = ["one": "one", "two": "two", "three": "three"]
+  d.map({ val => val.toUpper() })
+  IO.print(d.ToString())
+
+  array<string> ar = NEW(3)
+  ar[0] = "one"
+  ar[1] = "two"
+  ar[2] = "three"
+  ar.map({ vv => vv.toUpper() })
+  FOR xi IN 0 UNTIL 3
+    IO.print("Array[" .. xi .. "] = " .. ar[xi])
+   }
+
+  array<int> iar = NEW(3)
+  iar[0] = 1
+  iar[1] = 2
+  iar[2] = 3
+  iar.map({ vv => vv + 10 })
+  FOR xi IN 0 TO 2
+    IO.print("Array[" .. xi .. "] = " .. iar[xi])
+  }
+
+  CLASS Name
+    string $val
+    NEW(string val)
+      $val = val
+    }
+    FUNC $get() string
+      RETURN $val
+    }
+  }
+  array<Name> foar = NEW(3)
+  foar[0] = NEW("one")
+  foar[1] = NEW("two")
+  foar[2] = NEW("three")
+  foar.map({ vv => NEW("item " .. vv.get()) })
+  FOR xi IN 0 TO 2
+    IO.print("Array[" .. xi .. "] = " .. foar[xi].get())
+  }
+
+  dict<int, string> dis = [1: "one", 2: "two", 3: "three"]
+  IO.print(dis.ToString())
+  dis.keyMap({ key, val => key .. " => " .. val })
+  IO.print(dis.ToString())
+
+  ls = ["one", "two", "three"]
+  ls.keyMap({ ii, vv => vv .. "[" .. ii .. "]" })
+  IO.print(ls.ToString())
+
+  array<string> als = NEW(3)
+  als[0] = "one"
+  als[1] = "two"
+  als[2] = "three"
+  als.keyMap({ ii, vv => ii .. ":" .. vv })
+  FOR xi IN 0 TO 2
+    IO.print("als[" .. xi .. "] = " .. als[xi])
+  }
+
+  IO.print("func: " .. { => "direct call" }())
+  IO.print("func: " .. { s => "direct call " .. s }("with argument"))
+
+  FOR s IN getAList() ?: [0]
+    IO.print(s .. " ?:")  # prints: 3 ?:
+  }
+
+#  FOR s IN getAnArray() ?: [0]
+#    IO.print(s .. " ?:")  # prints: 5 ?:
+#  }
+
+  list<string> noList
+  FOR s IN noList ?: []
+    IO.print(s .. " ?:")  # prints nothing
+  }
+
+  testGlobalNotManaged()
+
+  FOR s IN noList ?: ["8"]
+    IO.print(s .. " ?:")  # prints: 8 ?:
+  }
+
+  # Free up memory.
+  GC.run()
+
+  GC.writeRunInfo(IO.stderr)
+
+  # This must be last, it tests EXIT.
+  TRY
+    doExit()
+    IO.print("not encountered 3")
+  FINALLY
+    IO.print("near the end")
+    # Free up memory.
+    GC.run()
+  }
+  IO.print("not encountered 4")
+
+  # Needed to avoid Errors is omitted because nothing is used.
+  Errors.test()
+
+  RETURN 0
+}
+
+int nextListNr = 3
+FUNC getNextListNr() int
+  GC.run()  # nasty, will free new list if not referenced
+  RETURN nextListNr++
+}
+FUNC getAList() list<int>
+  RETURN [getNextListNr()]
+}
+
+FUNC getAnArray() array<int>
+  RETURN [getNextListNr()]
+}
+
+PROC doExit()
+  TRY
+    IO.print("going to exit now")
+    IF TRUE
+      EXIT 0
+    }
+    IO.print("not encountered 1")
+  FINALLY
+    IO.print("cleaning up for exit")
+  }
+  IO.print("not encountered 2")
+}
+
+FooBar %nmFooBar
+FooBar %nmFooBarInit = NEW()
+array<int> %nmArray
+list<int> %nmList
+dict<string, int> %nmDict
+tuple<string, int x, int y> %nmTuple
+callback<func<string, string => int>, int &> %nmCallback
+varString %nmVarString
+varByteString %nmVarByteString
+
+PROC testGlobalNotManaged()
+  IO.print("Globals not managed")
+  %nmFooBar = NEW()
+  %nmFooBar.dict = NEW()
+  %nmFooBar.dict.add("asdf", 987)
+  IO.print(%nmFooBar.ToString())
+  IO.print(%nmFooBarInit.ToString())
+
+  %nmArray = NEW(3)
+  %nmArray[1] = 99
+  IO.print(%nmArray.ToString())
+  %nmArray = [1, 2, 3]
+  IO.print(%nmArray.ToString())
+
+  %nmList = NEW()
+  %nmList.add(11)
+  IO.print(%nmList.ToString())
+  %nmList = [4, 5, 6]
+  IO.print(%nmList.ToString())
+  %nmList[1] = 55
+  IO.print(%nmList.ToString())
+
+  %nmDict = NEW()
+  IO.print(%nmDict.ToString())
+  %nmDict.add("one", 1)
+  IO.print(%nmDict.ToString())
+  %nmDict = ["a": 1, "b": 2, "c": 3]
+  IO.print(%nmDict.ToString())
+  %nmDict["d"] = 4
+  IO.print(%nmDict.ToString())
+
+  %nmTuple = NEW("yes", 1, 2)
+  IO.print(%nmTuple.ToString())
+  %nmTuple = ["no", 3, 4]
+  IO.print(%nmTuple.ToString())
+  %nmTuple[1] = 33
+  %nmTuple.y = 44
+  IO.print(%nmTuple.ToString())
+
+  FUNC compare(string left, string right, int &count) int
+    count++
+    RETURN left.Compare(right)
+  }
+  int count
+  %nmCallback = NEW(compare, &count)
+
+  %nmVarString = NEW()
+  %nmVarString = "blah"
+  IO.print(%nmVarString)
+  %nmVarByteString = NEW()
+  %nmVarByteString = "byteString"
+  IO.print(%nmVarByteString.ToString())
+}

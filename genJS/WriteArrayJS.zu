@@ -1,0 +1,121 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# JS implementation for Array.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../ArrayStuff.zu"
+IMPORT "../ContainerType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "WriteJS.zu"
+
+MODULE WriteArrayJS @items=public                   # TODO: restrict visibility
+
+  Declaration arrayMap = NEW("arrayMap")
+  Declaration arrayKeyMap = NEW("arrayKeyMap")
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF ctx.doError()
+      IO.print("WARNING: Method " .. methodName
+                                          .. "() not yet supported for array")
+    }
+
+    IF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        # nothing
+#      ELSEIF type.arraySize.Size() == 0
+#        IF ctx.gen.writing
+#          ctx.error("Cannot use map() on array of unknown size", call.getPos())
+#        }
+      ELSE
+        string typeChar
+        string fname
+        IF type.itemType != NIL && !type.itemType.isValueType()
+          typeChar = "P"
+        ELSE
+          typeChar = "I"
+        }
+        IF methodName == "map"
+          ctx.setDeclUsed(arrayMap)
+          fname = "arrayMap"
+        ELSE
+          ctx.setDeclUsed(arrayKeyMap)
+          fname = "arrayKeyMap"
+        }
+        ctx.error("Sorry, " .. fname .. " not implemented yet", object)
+
+        ctx.out.write("Z" .. fname .. typeChar .. "(")
+        Generate.generateVarname(object, ctx, type)
+
+        ctx.out.write(", ")
+#        ctx.out.write(", " .. type.arraySize[0] .. ", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = type
+      }
+    ELSEIF methodName == "resize"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        # nothing
+      ELSE
+        IF ctx.doError()
+          IO.print("WARNING: array resize() not implemented yet")
+        }
+      }
+      retType = type
+    ELSEIF methodName == "size" || methodName == "Size"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        # nothing
+      ELSE
+        IF ctx.doError()
+          IO.print("WARNING: array Size() not implemented yet")
+        }
+      }
+      retType = Type.anInt
+    ELSE
+      IF ctx.doError()
+        ctx.error("Method " .. methodName .. "() not supported for array",
+                                                              call.getPos())
+      }
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  PROC writeBody(WriteJS gen, IO.File fd)
+    IF gen.isDeclUsed(arrayMap)
+      # TODO
+    }
+
+    IF gen.isDeclUsed(arrayKeyMap)
+      # TODO
+    }
+  }
+
+}

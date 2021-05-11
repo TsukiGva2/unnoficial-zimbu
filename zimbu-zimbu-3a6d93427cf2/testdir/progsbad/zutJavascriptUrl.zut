@@ -1,0 +1,6 @@
+MODULE Testing
+  # Javascript / Url
+  TEMPLATE inJavascriptUrl(ZUT.Url text) ZUT.Javascript @public
+    var a = [=text];
+  }
+}

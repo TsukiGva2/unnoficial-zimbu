@@ -1,0 +1,28 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.Type message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Type.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiTypeExt @items=public
+  # For USE: the type figured out from the context.
+  Type    $typeObj
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.Type, ZuiTypeExt> $ext
+  }
+
+  SHARED
+    int undefinedInit = 87
+  }
+}

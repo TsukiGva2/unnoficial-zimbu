@@ -1,0 +1,59 @@
+# Test file for lambda functions
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Lambda @public
+
+  PROC test() @public
+    IO.print("testdir/Lambda.zu")
+    testExpr()
+    testMethod()
+    testArgument()
+  }
+
+  PROC testExpr()
+    func< => string> fx = { => "hello nothing" }
+    IO.print(fx())
+
+    func<string => string> fss = { s => "hello " .. s }
+    IO.print(fss("cat"))
+    IO.print(fss("dog"))
+
+    func<int => string> fsi = { n => "number " .. n }
+    IO.print(fsi(123))
+    IO.print(fsi(999))
+
+    func<int, string, int => string> fisi =
+                           { n, s, i => "number " .. (n + i) .. "/" .. s }
+    IO.print(fisi(123, "foo", 999))
+  }
+
+  PROC testMethod()
+    func<int => string> f = LAMBDA (x)
+                              RETURN x.ToString()
+                            }
+    IO.print(f(4321))
+
+    proc<string> p = LAMBDA (s); IO.print(s); }
+    p("lambda")
+  }
+
+  PROC testArgument()
+    PROC doPrint(int x)
+      IO.print(x)
+    }
+
+    # Infer types from type spec
+    func<int => int> f = { x => x + 2 }
+    doPrint(f(3))
+
+    # Infer types from method argument
+    doPrint({ x => x + 2 }(3))
+
+    # Infer types from guessed method argument
+    IO.print({ x => x + 2 }(3))
+  }
+}

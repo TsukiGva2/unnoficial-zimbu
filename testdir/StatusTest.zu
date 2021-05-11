@@ -1,0 +1,49 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for status
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE StatusTest @public
+
+  PROC test() @public
+    IO.print("testdir/StatusTest.zu")
+    testPredefMethods()
+  }
+
+  PROC testPredefMethods()
+    status fail
+    string formatt = "t"
+    string format1t = "1t"
+    IO.print(fail.Size())
+    IO.print(fail.ToString())
+    IO.print(fail.ToString("t"))
+    IO.print(fail.ToString(formatt))
+    IO.print(fail.ToString("1t"))
+    IO.print(fail.ToString(format1t))
+    IO.print(fail.Type().ToString())
+
+    status ok = OK
+    IO.print(ok.Size())
+    IO.print(ok.ToString())
+    IO.print(ok.ToString("t"))
+    IO.print(ok.ToString(formatt))
+    IO.print(ok.ToString("1t"))
+    IO.print(ok.ToString(format1t))
+    IO.print(ok.Type().ToString())
+
+    IO.print("OK.Compare(FAIL): " .. (OK.Compare(FAIL)))
+    IO.print("FAIL.Compare(FAIL): " .. (FAIL.Compare(FAIL)))
+    IO.print("FAIL.Compare(OK): " .. (FAIL.Compare(OK)))
+    IO.print("OK.Compare(OK): " .. (OK.Compare(OK)))
+
+    IO.print("OK.Equal(FAIL): " .. (OK.Equal(FAIL)))
+    IO.print("FAIL.Equal(FAIL): " .. (FAIL.Equal(FAIL)))
+    IO.print("FAIL.Equal(OK): " .. (FAIL.Equal(OK)))
+    IO.print("OK.Equal(OK): " .. (OK.Equal(OK)))
+  }
+}

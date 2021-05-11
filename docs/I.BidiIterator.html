@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>I.BidiIterator interface - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='I.html'>up:&nbsp;I</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>INTERFACE</span> I.BidiIterator&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Interface for an iterator that can go in both directions.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='I.BidiIterator.html#$hasPrevious'><b>$hasPrevious</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when there is an item to fetch with previous().
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.BidiIterator.html#$previous'><b>$previous</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the previous item and advances backwards.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.BidiIterator.html#$peekPreviousSupported'><b>$peekPreviousSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when peekPrevious() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.BidiIterator.html#$peekPrevious'><b>$peekPrevious</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the previous item without advancing.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='I.Iterator.html'>I.Iterator</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$hasNext'><b>$hasNext</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when there is another item to fetch.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$next'><b>$next</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the next item and advances.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$peekSupported'><b>$peekSupported</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns TRUE when peek() is supported.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='I.Iterator.html#$peek'><b>$peek</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the next item without advancing.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hasPrevious'><b>$hasPrevious</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when there is an item to fetch with previous().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$peekPrevious'><b>$peekPrevious</b></A>() <span class='type'>Titem</span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the previous item without advancing.
+</p>
+<p class='ptext'> When there is no previous item it throws an E.OutOfRange exception.
+<p class='ptext'> This is an optional method, when peeking is not possible it throws an
+ E.Unsupported exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$peekPreviousSupported'><b>$peekPreviousSupported</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE when peekPrevious() is supported.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$previous'><b>$previous</b></A>() <span class='type'>Titem</span><span class='attribute'> @abstract</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the previous item and advances backwards.
+</p>
+<p class='ptext'> When there is no previous item it throws an E.OutOfRange exception.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2013 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

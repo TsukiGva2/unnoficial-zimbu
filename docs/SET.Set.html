@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>SET.Set class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='SET.html'>up:&nbsp;SET</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.set&lt;Tkey&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type set.
+</p>
+<p class='ptext'> Sets keep a flag for each item that is present.  It's like a dict without
+ a value.
+<p class='ptext'> Example:
+<pre class='example'> set&lt;string&gt; s = ["one", "two", "three"]    # initialized from a list
+ s.add("yes")
+ s.remove("yes")
+ IO.print("set has yes: " .. s.has("yes"))
+</pre>
+<p class='ptext'>
+ The item type can be int, string, bool, status and any class that has a
+ public ToString() method.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new empty set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#NEW'><b>NEW</b></a>(<small>keys</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new set from a list of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a shallow copy of the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$Iterator'><b>$Iterator</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='I.Iterator&lt;Tkey&gt;.html'>I.Iterator&lt;Tkey&gt;</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Return an iterator to iterate over all the keys.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$has'><b>$has</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if an item is present in the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$keys'><b>$keys</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with all the keys.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$add'><b>$add</b></a>(<small>key</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$addSet'><b>$addSet</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add all items in <b>other</b> to the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$addList'><b>$addList</b></a>(<small>keys</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a list of items to the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$set'><b>$set</b></a>(<small>key</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the set if not yet present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$setSet'><b>$setSet</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add all items in <b>other</b> to the set if not yet present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$setList'><b>$setList</b></a>(<small>keys</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add all items in the list <b>keys</b> to the set if not yet present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$remove'><b>$remove</b></a>(<small>key</small>) <small><span class='type'>Tkey</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove an item from the set.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$removeSet'><b>$removeSet</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove all items from the set that are in <b>other</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$removeNotInSet'><b>$removeNotInSet</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove all items from the set that are not in <b>other</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$clear'><b>$clear</b></a>(<small></small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Make the set empty.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$clear'><b>$clear</b></a>(<small>key</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove an item from the set if present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$union'><b>$union</b></a>(<small>set</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Make a copy of the set and all items in <b>set</b> if not yet present.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$intersection'><b>$intersection</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Find all items present both in this set and <b>other</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SET.Set.html#$difference'><b>$difference</b></a>(<small>other</small>) <small><span class='type'>Set&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Find items that are not present in <b>other</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new empty set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span> keys)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new set from a list of items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Iterator'><b>$Iterator</b></A>() <span class='type'><A class='typehref' href='I.Iterator&lt;Tkey&gt;.html'>I.Iterator&lt;Tkey&gt;</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return an iterator to iterate over all the keys.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the set.
+</p>
+<p class='ptext'> Looks just like a list of the keys: [key1, key2, key3]
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the set.
+</p>
+<p class='ptext'> Throws an E.KeyExists exception when the item is already present.  Use
+ set() to avoid an exception.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addList'><b>$addList</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span> keys) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a list of items to the set.
+</p>
+<p class='ptext'> Throws an exception when an item is already present.  Use setList() to
+ avoid an exception.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$addSet'><b>$addSet</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add all items in <b>other</b> to the set.
+</p>
+<p class='ptext'> Throws an exception when an item is already present.  Use setSet() to
+ avoid an exception.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>() <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Make the set empty.
+</p>
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove an item from the set if present.
+</p>
+<p class='ptext'> When the item is not present nothing happens.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a shallow copy of the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$difference'><b>$difference</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Find items that are not present in <b>other</b>.
+</p>
+<p class='ptext'> This is equal to $copy.removeSet(other)
+<p class='ptext'> Returns a new set with the result.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Check if an item is present in the set.
+</p>
+<p class='ptext'> Returns TRUE or FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$intersection'><b>$intersection</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Find all items present both in this set and <b>other</b>.
+</p>
+<p class='ptext'> This is equal to $copy.removeNotInSet(other)
+<p class='ptext'> Returns a new set with the result.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keys'><b>$keys</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with all the keys.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Tkey</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove an item from the set.
+</p>
+<p class='ptext'> Throws an E.KeyNotFound exception if the item is not present.
+<p class='ptext'> Returns the item.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$removeNotInSet'><b>$removeNotInSet</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove all items from the set that are not in <b>other</b>.
+</p>
+<p class='ptext'> What remains is the intersection of the two sets.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$removeSet'><b>$removeSet</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove all items from the set that are in <b>other</b>.
+</p>
+<p class='ptext'> If <b>other</b> has items that do not exist in this set then nothing happens.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the set if not yet present.
+</p>
+<p class='ptext'> When the item is already present nothing happens.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setList'><b>$setList</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span> keys) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add all items in the list <b>keys</b> to the set if not yet present.
+</p>
+<p class='ptext'> When the item is already present nothing happens.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setSet'><b>$setSet</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> other) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add all items in <b>other</b> to the set if not yet present.
+</p>
+<p class='ptext'> When an item is already present nothing happens.
+<p class='ptext'> Returns the set.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$union'><b>$union</b></A>(<span class='type'>Set&lt;Tkey&gt;</span> set) <span class='type'>Set&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Make a copy of the set and all items in <b>set</b> if not yet present.
+</p>
+<p class='ptext'> This is equal to $copy().setSet(set).
+<p class='ptext'> Returns the new set.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

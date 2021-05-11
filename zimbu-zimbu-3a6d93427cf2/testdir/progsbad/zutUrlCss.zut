@@ -1,0 +1,7 @@
+MODULE Testing
+  # URL / Css
+  TEMPLATE inUrlCss(ZUT.Css css) ZUT.Url @public
+    [=css]
+  }
+}
+

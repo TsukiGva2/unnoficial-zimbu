@@ -1,0 +1,107 @@
+# Testing various operators.
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Operators @public
+
+  PROC test()  @public
+    IO.print("testdir/Operators.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+  }
+
+  CLASS FooBar
+    bool    $b
+    string  $s
+    int     $i
+    FooBar  $fb
+
+    FUNC $ToString() string
+      RETURN "string"
+    }
+  }
+
+  PROC test1()
+    FooBar foo
+
+    FOR i IN 1 TO 2
+      IO.print("foo?.b: " .. foo?.b)
+      string s = foo?.s
+      IO.print("foo?.s: " .. (s ?: "NIL"))
+      IO.print("foo?.i: " .. foo?.i)
+      FooBar fb = foo?.fb
+      IO.print("foo?.fb: " .. (fb == NIL ? "NIL" : fb.ToString()))
+
+      foo = NEW()
+      foo.b = TRUE
+      foo.s = "yes"
+      foo.i = 42
+      foo.fb = foo  # circular reference
+    }
+
+    string isNil
+    string alsoNil
+    string asdf = "asdf"
+    string bar = "bar"
+
+    IO.print("is asdf: " .. (isNil ?: alsoNil ?: asdf))
+    IO.print("is asdf: " .. (asdf ?: alsoNil ?: bar))
+    IO.print("is bar: " .. (isNil ?: bar ?: asdf))
+  }
+
+  PROC test2()
+    int sum = 0
+    sum += 123
+    sum += 444
+    string concat = " one"
+    concat ..= " two"
+    concat ..= " three"
+    IO.print(sum .. concat)
+
+    sum = 9
+    sum *= 10
+    sum /= 2
+    IO.print("sum: " .. sum)
+  }
+
+  PROC test3()
+    int nx
+    DO
+      ++nx
+    UNTIL nx == 3
+    IO.write("nx: " .. ++nx)
+    IO.write(" == " .. nx--)
+    IO.write(" and " .. nx++)
+    IO.print(" == " .. --nx)
+  }
+
+  PROC test4()
+    # IO.write("Char 5 is " .. x[5] .. "\n")
+    int n = 42
+    IF n == 42
+      IO.print("yes, it is " .. n)
+    ELSEIF n < 42
+      IO.print("no, it is smaller")
+    ELSE
+      IO.print("no, it is " .. n)
+    }
+    IO.print(5 + 7 * 8)
+    IO.print("int.Size() = " .. 88.Size() .. 64.asString())
+
+    string soo = "Hello"
+    IF soo == "Hello"
+      IO.write("== Hello ")
+    }
+    # This will evaluate to TRUE, concatenation is done at compile time and
+    # equal string values become identical strings.
+    IF soo IS "Hello" .. ""
+      IO.write("IS Hello\n")
+    }
+  }
+
+}

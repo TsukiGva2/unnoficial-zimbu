@@ -1,0 +1,133 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# The T module: types and type information.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+
+IMPORT "MULTIDICTLoader.zu"
+IMPORT "PIPELoader.zu"
+IMPORT "SETLoader.zu"
+IMPORT "SORTEDLISTLoader.zu"
+IMPORT "THREADLoader.zu"
+
+#= The T module contains the builtin types and type information.
+MODULE TModule @public
+
+  #! Use a cache to speed up getDecl().
+  dict<string, Declaration> cache = NEW()
+  Declaration none = NEW("none") #!
+
+  #! Return a Declaration for built-in type |name|.
+  # This will trigger loading a module required for it.
+  # When |node| is not NIL give an error if not found.
+  # NOTE: When adding an item here, consider adding the keyword to
+  # usedIdKeywords[] in Parse, so that the module is parsed early on.
+  # Returns NIL when not found.
+  FUNC getDecl(string name, SContext ctx) Declaration @public
+    Declaration decl = cache.get(name, none)
+    IF decl ISNOT none
+      RETURN decl
+    }
+    decl = NIL
+
+    bool storeIfNil
+    IF name == "thread"
+      Builtin.useModule("THREAD", ctx)
+      decl = THREADLoader.getThreadDecl()
+    ELSEIF name == "evalThread"
+      Builtin.useModule("THREAD", ctx)
+      decl = THREADLoader.getEvalThreadDecl()
+    ELSEIF name == "lock"
+      Builtin.useModule("THREAD", ctx)
+      decl = THREADLoader.getLockDecl()
+    ELSEIF name == "autoLock"
+      Builtin.useModule("THREAD", ctx)
+      decl = THREADLoader.getAutoLockDecl()
+    ELSEIF name == "cond"
+      Builtin.useModule("THREAD", ctx)
+      decl = THREADLoader.getCondDecl()
+    ELSEIF name == "pipe"
+      Builtin.useModule("PIPE", ctx)
+      decl = PIPELoader.getPipeDecl()
+    ELSEIF name == "set"
+      Builtin.useModule("SET", ctx)
+      decl = SETLoader.getSetDecl()
+    ELSEIF name == "sortedList"
+      Builtin.useModule("SORTEDLIST", ctx)
+      decl = SORTEDLISTLoader.getSortedListDecl()
+    ELSEIF name == "multiDict"
+      Builtin.useModule("MULTIDICT", ctx)
+      decl = MULTIDICTLoader.getMultiDictDecl()
+    ELSEIF name == "int"
+        || name == "int8"
+        || name == "int16"
+        || name == "int32"
+        || name == "nat"
+        || name == "byte"
+        || name == "nat16"
+        || name == "nat32"
+        || name == "string"
+        # || name == "bool"    No useful contents
+        # || name == "status"  No useful contents
+        || name == "float"
+        # || name == "float32" No useful contents
+        # || name == "float80" No useful contents
+        # || name == "float128" No useful contents
+        || name == "array"
+        || name == "list"
+        || name == "dict"
+      string nameUpper = name.toUpper()
+      Builtin.useModule(nameUpper, ctx)
+      Declaration moduleDecl = Builtin.findPredefinedDecl(nameUpper)
+      IF moduleDecl != NIL
+        decl = moduleDecl.type
+      }
+    ELSE
+      # When the name is not recognized decl will always be NIL, thus we can
+      # cache it.
+      storeIfNil = TRUE
+    }
+
+    IF decl != NIL || storeIfNil
+      cache.set(name, decl)
+    }
+    RETURN decl
+  }
+
+  #= Returns whether |x| is any kind of integer.
+  #- The result is TRUE for int, int8, int16 and int32
+  FUNC isInt(dyn x) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Returns whether |x| is any kind of natural number.
+  #- The result is TRUE for nat, nat8, nat16 and nat32
+  FUNC isNat(dyn x) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Returns whether |x| is any kind of floating point number.
+  #- The result is TRUE for float, float32, float90 and float128
+  FUNC isFloat(dyn x) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Returns whether |x| is any kind of number.
+  #- The result is TRUE for any kind of int, nat, fixed and float.
+  FUNC isNumber(dyn x) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+}

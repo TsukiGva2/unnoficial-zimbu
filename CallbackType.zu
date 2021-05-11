@@ -1,0 +1,124 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# CallbackType class.
+#
+# A Type used for callback<>
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ReferenceType.zu"
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "SContext.zu"
+IMPORT "TargetLang.zu"
+IMPORT "Type.zu"
+
+CLASS CallbackType EXTENDS ReferenceType @items=public
+  # The method at the start of the type spec.
+  MethodType          $methodType
+
+  # The extra arguments (MethodType useArguments and autoArguments together)
+  list<Declaration.C> $arguments
+
+  # The method actually called. Arguments are those of $methodType plus
+  # $arguments.
+  MethodType          $calledMethodType
+
+  TargetLang          $written     # Languages for which this item was written.
+
+  NEW(Type.Enum type, string name) @replace
+    PARENT.NEW(type, name)
+    $arguments = NEW()
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    CallbackType ret = NEW($ttype, $name)
+    $copyMethodValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyMethodValues(CallbackType ret) @default
+    $copyReferenceValues(ret)
+    ret.methodType = $methodType
+    ret.arguments = $arguments
+    ret.written = $written
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace @default
+    string s = "callback<"
+    IF $methodType == NIL
+      s ..= "unknown"
+    ELSE
+      s ..= $methodType.typeName(long)
+    }
+    FOR arg IN $arguments
+      s ..= ", " .. arg.type.typeName(long)
+    }
+    s ..= ">"
+    RETURN s
+  }
+
+  # Add an argument |type|
+  PROC $addArgument(Declaration type)
+    IF $arguments == NIL
+      $arguments = NEW()
+    }
+    $arguments.add(type)
+  }
+
+  FUNC $typeDefined() bool @replace
+    IF $methodType == NIL || !$methodType.typeDefined()
+      RETURN FALSE
+    }
+    IF $arguments == NIL
+      RETURN FALSE
+    }
+    FOR arg IN $arguments
+      IF !arg.type.typeDefined()
+        RETURN FALSE
+      }
+    }
+    RETURN TRUE
+  }
+
+  # Return the name for the type.
+  FUNC $getTypeName(SContext ctx) string @replace
+    RETURN "cb"
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN TRUE
+  }
+
+  # Return the method type as the caller sees it, without the USE arguments.
+  FUNC $getMethod() MethodType @replace @default
+    RETURN $methodType
+  }
+
+  SHARED
+
+    PROC generateCallbacks(SContext ctx)
+      FOR cb IN ctx.topScope.allCallbacks
+        IF ctx.gen.isDeclUsed(cb)
+          # Declare the structure to store the info and produce an alloc
+          # function.
+          ctx.gen.writeCallbackDecl(cb, cb.methodType.zuiPos, ctx)
+        }
+      }
+    }
+
+  }
+
+}

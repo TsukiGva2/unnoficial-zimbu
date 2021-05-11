@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">body {
+font-family: arial,sans-serif;
+}
+.keyword {
+color: #774400;
+}
+.type {
+color: #227722;
+}
+.attribute {
+color: #990077;
+}
+.typehref {
+color: #227722;
+text-decoration: underline;
+}
+.example {
+background-color: #EEFFCC;
+border-color: #88AA66;
+border-style: solid none;
+border-width: 1px medium;
+padding: 5px;
+}
+.commentcode {
+font-family: monospace;
+background-color: #EEFFCC;
+}
+.ptext {
+margin-top: 3px;
+margin-bottom: 3px;
+}
+.pheader {
+margin-bottom: 3px;
+}
+small {
+font-size: 60%;
+}
+.topright {
+text-align: right;
+vertical-align: top;
+}
+.nowrap {
+white-space: nowrap;
+vertical-align: top;
+}</style>
+<title>IO.Url class - Zimbu documentation</title>
+    </head><body>
+    <table width='500'><tr><td><A href='IO.html'>up:&nbsp;IO</A></td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td><A href='index.html'>index</A></td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr>
+</table><h1><span class='keyword'>CLASS</span> IO.Url<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Uniform Resource Locator
+</p><table><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$protocol'><b>$protocol</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$domain'><b>$domain</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$port'><b>$port</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$path'><b>$path</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$params'><b>$params</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td class='topright'>
+<small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'>
+<A href='IO.Url.html#$fragment'><b>$fragment</b></A>
+<span class='attribute'><small> @file</small></span>&nbsp;
+</td></tr><tr><td>&nbsp;</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#NEW'><b>NEW</b></A>(<small>url</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Create a new Url from a string.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#NEW'><b>NEW</b></A>(<small>domain, path</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Create a new Url for <b>domain</b> and <b>path</b>.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getProtocol'><b>$getProtocol</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Return the protocol.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setProtocol'><b>$setProtocol</b></A>(<small>protocol</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set the protocol to <b>protocol</b>.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getDomain'><b>$getDomain</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns the domain.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setDomain'><b>$setDomain</b></A>(<small>domain</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set the domain.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getPort'><b>$getPort</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns the port.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setPort'><b>$setPort</b></A>(<small>port</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set the port.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getPath'><b>$getPath</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns the path.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setPath'><b>$setPath</b></A>(<small>path</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set the path.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$hasParameter'><b>$hasParameter</b></A>(<small>name</small>) <small>
+<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns TRUE if parameter <b>name</b> is present.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getParameter'><b>$getParameter</b></A>(<small>name</small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns the value parameter of <b>name</b>.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getAllParameters'><b>$getAllParameters</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns a dictionary with all parameters.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setParameter'><b>$setParameter</b></A>(<small>name, value</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set parameter <b>name</b> to <b>value</b>.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$removeParameter'><b>$removeParameter</b></A>(<small>name</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Remove parameter <b>name</b>.
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$getFragment'><b>$getFragment</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Returns the value of the fragment, what comes after "#".
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$setFragment'><b>$setFragment</b></A>(<small>value</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td><td> Set the value of the fragment, what comes after "#".
+</td></tr><tr><td class='topright'>
+</td><td class='nowrap'>
+<A href='IO.Url.html#$ToString'><b>$ToString</b></A>(<small></small>) <small>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Return all values put together as a string.
+</td></tr><tr><td>&nbsp;</td></tr></table>
+</td></tr></table><h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$domain'><b>$domain</b></A><span class='attribute'> @file</span></p><p>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$fragment'><b>$fragment</b></A><span class='attribute'> @file</span></p><p>
+<span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='$params'><b>$params</b></A><span class='attribute'> @file</span></p><p>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$path'><b>$path</b></A><span class='attribute'> @file</span></p><p>
+<span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$port'><b>$port</b></A><span class='attribute'> @file</span></p><p>
+<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$protocol'><b>$protocol</b></A><span class='attribute'> @file</span></p><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> url)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new Url from a string.
+</p><p class='ptext'> This splits the <b>url</b> into parts, so that it can be changed.
+<p class='ptext'> Example:
+<pre class='example'> ZUT.Url url = NEW("http://zimbu.org/docs?fmt=nice")
+ url.setParameter("hl", "de")
+ IO.print(url.ToString())  # prints http://zimbu.org/docs?fmt=nice&amp;hl=de
+</pre>
+<p class='ptext'>
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> domain, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> path)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new Url for <b>domain</b> and <b>path</b>.
+</p><p class='ptext'> $ToString() would return "http://domain/path"
+<p class='ptext'> When <b>path</b> is NIL then $ToString() would return "http://domain",
+ without the trailing slash.  When <b>path</b> is an empty string the
+ trailing slash gets added.
+<p class='ptext'> <b>path</b> should not start with a slash to avoid double slashes.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all values put together as a string.
+</p><p class='ptext'> With all values set: "protocol://domain:port/path?param=value#fragment".
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getAllParameters'><b>$getAllParameters</b></A>() <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns a dictionary with all parameters.
+</p><p class='ptext'> Returns NIL if there are no parameters.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getDomain'><b>$getDomain</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the domain.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getFragment'><b>$getFragment</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the value of the fragment, what comes after "#".
+</p><p class='ptext'> Return NIL if there is no frament, an empty string means only a
+ "#" is added.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getParameter'><b>$getParameter</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the value parameter of <b>name</b>.
+</p><p class='ptext'> Returns NIL if the parameter is not present or has no value.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getPath'><b>$getPath</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the path.
+</p><p class='ptext'> NIL means no path, an empty string results in just a slash.
+<p class='ptext'> <b>path</b> normally does not start with a slash.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getPort'><b>$getPort</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the port.
+</p><p class='ptext'> When zero this means no port is specified.
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$getProtocol'><b>$getProtocol</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the protocol.
+</p><p class='ptext'> The value includes the colon, e.g. "http:" or "file:".
+<p class='ptext'> When not set NIL is returned, which implies using "http:".
+</p></td></tr></table><p class='pheader'><span class='keyword'>FUNC</span>&nbsp;<A name='$hasParameter'><b>$hasParameter</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns TRUE if parameter <b>name</b> is present.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$removeParameter'><b>$removeParameter</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove parameter <b>name</b>.
+</p><p class='ptext'> When the parameter did not exist nothing happens.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setDomain'><b>$setDomain</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> domain)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the domain.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setFragment'><b>$setFragment</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> value)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the value of the fragment, what comes after "#".
+</p><p class='ptext'> Use NIL for <b>value</b> to reset the fragment, an empty string results in
+ just "#" to be added.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setParameter'><b>$setParameter</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> value)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set parameter <b>name</b> to <b>value</b>.
+</p><p class='ptext'> $ToString() will add "?name=value".
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setPath'><b>$setPath</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> path)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the path.
+</p><p class='ptext'> Use NIL to leave the path out. An empty string results in just a slash.
+<p class='ptext'> <b>path</b> should not start with a slash.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setPort'><b>$setPort</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> port)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the port.
+</p></td></tr></table><p class='pheader'><span class='keyword'>PROC</span>&nbsp;<A name='$setProtocol'><b>$setProtocol</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> protocol)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the protocol to <b>protocol</b>.
+</p><p class='ptext'> The value must include the colon, e.g. "http:" or "file:".
+<p class='ptext'> When not set or NIL "http:" is used.
+</p></td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

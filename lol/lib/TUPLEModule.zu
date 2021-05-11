@@ -1,0 +1,44 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module TUPLE - tuple support
+
+#= Methods for the builtin tuple type.
+#= A tuple contains one or more items of possibly different types.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE TUPLEModule @public
+
+  #= The builtin type tuple.
+  #= A tuple contains one or more items of possibly different types.
+  #% tuple<int, string> mytuple   # tuple with an int and a string
+  #
+  #- Besides the object methods, Zimbu has these syntax items for tuple:
+  #% tuple<int, string> tup = [1, "foo"]  # initialize from a list
+  #% int i = tup[0]                       # get tuple item by index
+  #% string s = tup[1]                    # get tuple item by index
+  #% [i, s] = tup                         # unpack
+  #
+  CLASS STARTtuple<Titem> @public
+    # For Zudocu: start of the tuple class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return a string representation of the tuple: [val1, val2]
+  #- This invokes ToString() on every item.
+  FUNC ToString(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+
+  #! For Zudocu: End of the tuple class.
+  CLASS ENDtuple
+  }
+
+}

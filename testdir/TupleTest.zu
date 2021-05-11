@@ -1,0 +1,93 @@
+# Test tuple<>
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE TupleTest @public
+
+  PROC test() @public
+    testCreation()
+    testToString()
+    testNamed()
+    testUnpack()
+  }
+
+  PROC testCreation()
+    tuple<string, int> tup = ["foo", 2]
+    GC.run()
+    IO.print(tup.ToString())
+    string s = tup[0]
+    int v = tup[1]
+    IO.print("[" .. s .. ", " .. v .. "]")
+
+    tup[0] = "foo" .. "bar" 
+    tup[1] = 5
+    IO.print("[" .. tup[1 - 1] .. ", " .. tup[0 + 1] .. "]")
+
+    tuple<string, int> tup2 = tup
+    GC.run()
+    IO.print(tup2.ToString())
+
+    tup = NEW("X", 8)
+    IO.print(tup.ToString())
+  }
+
+  PROC testToString()
+    CLASS Foo
+      string $text
+      NEW(string text)
+        $text = text
+      }
+      FUNC $ToString() string
+        RETURN $text
+      }
+    }
+
+    list<tuple<int, string, Foo, Foo>> tups = NEW()
+    tups.add([1, "one", NEW("foo!"), NEW("bar!")])
+    tups.add([2, "two", NEW("third"), NEW("fourth")])
+    IO.print(tups.ToString())
+  }
+
+  PROC testNamed()
+    tuple<int x, string name> t = NEW()
+    t.x = 5
+    t.name = "foo"
+    int x = t.x
+    string name = t.name
+
+    IO.print(t.ToString())
+    IO.print(t.x)
+    IO.print(x .. " - " .. name)
+
+    tuple<int y, string text> v = NEW()
+    v.y = 3
+    v.text = "bar"
+    int y = v.y
+    string text = v.text
+    IO.print(v.ToString())
+    IO.print(y .. " - " .. text)
+  }
+
+  FUNC getTuple() tuple<int x, int y, string name>
+    RETURN [1, 2, "now"]
+  }
+
+  PROC testUnpack()
+    tuple<int x, int y, string name> t = [1, 2, "now"]
+    int x
+    int y
+    string name
+    x, y, name = t
+    IO.print(x .. "+" .. y .. "+" .. name)
+
+    x, y, name = getTuple()
+    IO.print(x .. "/" .. y .. "/" .. name)
+
+    int x2, int y2, string name2 = t
+    IO.print(x2 .. "@" .. y2 .. "@" .. name2)
+  }
+
+}

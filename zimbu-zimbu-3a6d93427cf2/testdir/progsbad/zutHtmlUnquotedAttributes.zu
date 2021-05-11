@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutHtmlUnquotedAttributes.zut
+
+FUNC Main() int
+  # HTML attribute value / Attributes
+  ZUT.Attributes attr = NEW().add("xxx")
+  string fail = Testing.inUnquotedAttributes(attr).ToString()
+  RETURN 0
+}

@@ -1,0 +1,652 @@
+# Test file for the dyn type
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Util.zu"
+
+MODULE DynTest @public
+
+  PROC test() @public
+    IO.print("testdir/DynTest.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    testSize()
+    testEqual()
+    testCompare()
+    testDynDict()
+    testToStringWithFormat()
+  }
+
+  BITS MyBits
+    bool $nop
+  }
+
+  CLASS SomeClass
+    int $value
+    FUNC $ToString() string
+      RETURN "SomeClass == " .. $value
+    }
+  }
+
+  CLASS NoToStringClass
+    int $one
+    string $two
+    list<int> $three
+  }
+
+  # Used to check that ToString() keeps the order as declared.
+  CLASS NoToStringClassReverse
+    list<int> $three
+    string $two
+    NoToStringClass $four
+    int $one
+  }
+
+  ENUM SomeEnum
+    blue
+    red
+    green
+  }
+
+  PROC test1()
+    dyn x = 1
+    IO.print(x)
+    x = "dyn string"
+    IO.print(x)
+    x = TRUE
+    IO.print(x)
+    x = FAIL
+    IO.print(x)
+    MyBits b
+    x = b
+    IO.print(x)  # prints "0"
+
+    SomeClass o = NEW()
+    x = o
+    o.value = 765
+    IO.print(x)
+
+    NoToStringClass no = NEW()
+    no.one = 8765
+    no.two = "two"
+    no.three = [3, 3, 3]
+    x = no
+    IO.print(x)
+
+    NoToStringClassReverse rev = NEW()
+    rev.one = 4321
+    rev.two = "twotoo"
+    rev.three = [3, 2, 1]
+    rev.four = no
+    x = rev
+    IO.print(x)
+
+    float f = 12.345
+    x = f
+    IO.print(x)
+  }
+
+  PROC doOne(dyn x)
+    IO.write(x.Type().ToString() .. " = " .. x)
+    SWITCH x.Type()
+      CASE T.int; IO.print(" - int")
+      CASE T.int8; IO.print(" - int8")
+      CASE T.int16; IO.print(" - int16")
+      CASE T.int32; IO.print(" - int32")
+      CASE T.nat; IO.print(" - nat")
+      CASE T.byte; IO.print(" - byte")
+      CASE T.nat16; IO.print(" - nat16")
+      CASE T.nat32; IO.print(" - nat32")
+      CASE T.status; IO.print(" - status")
+      CASE T.bool; IO.print(" - bool")
+      CASE T.float; IO.print(" - float")
+      CASE T.string; IO.print(" - string")
+      CASE MyBits.Type(); IO.print(" - MyBits")
+      CASE SomeClass.Type(); IO.print(" - SomeClass")
+      CASE SomeEnum.Type(); IO.print(" - SomeEnum")
+      CASE tuple<int, float, string>.Type()
+           IO.print(" - tuple-int-float-string")
+      DEFAULT; IO.print(" - other")
+    }
+  }
+
+  PROC test2()
+    dyn x = 1
+    doOne(x)
+
+    x = "dyn string"
+    doOne(x)
+
+    x = TRUE
+    doOne(x)
+
+    x = FAIL
+    doOne(x)
+
+    MyBits bs
+    x = bs
+    doOne(x)
+
+    SomeClass o = NEW()
+    x = o
+    doOne(x)
+
+    SomeEnum e
+    x = e
+    doOne(x)
+
+    tuple<int nr, float ft, string name> tt = [33, 4.321, "hello"]
+    x = tt
+    doOne(x)
+
+    float f = 10.0e10
+    x = f
+    doOne(x)
+
+    int8 di8
+    int16 di16
+    int32 di32
+    int  dint
+
+    int8 i8 = 127
+    x = i8
+    doOne(x)
+    di8 = x
+    di16 = x
+    di32 = x
+    dint = x
+
+    int16 i16 = 12734
+    x = i16
+    doOne(x)
+    di16 = x
+    di32 = x
+    dint = x
+
+    int32 i32 = 1234567
+    x = i32
+    doOne(x)
+    di32 = x
+    dint = x
+
+    int int = 646464
+    x = int
+    doOne(x)
+    dint = x
+
+    byte dbyte
+    nat16 dn16
+    nat32 dn32
+    nat  dnat
+
+    nat n = 12345
+    x = n
+    doOne(x)
+    dnat = x
+
+    byte b = 234
+    x = b
+    doOne(x)
+    dbyte = x
+    dn16 = x
+    dn32 = x
+    dnat = x
+    di16 = x
+    di32 = x
+    dint = x
+
+    nat16 n16 = 2345
+    x = n16
+    doOne(x)
+    dn16 = x
+    dn32 = x
+    dnat = x
+    di32 = x
+    dint = x
+
+    nat32 n32 = 234567
+    x = n32
+    doOne(x)
+    dn32 = x
+    dnat = x
+    dint = x
+  }
+
+  PROC test3()
+    dyn x = 1
+    int i = x
+    x = "one"
+    string s = x
+    TRY
+      i = x
+    CATCH E.WrongType e
+      IO.print("Caugnt string/int: " .. Util.stripLine(e.ToString()))
+    }
+
+    ENUM Color
+      white
+      black
+      blue
+    }
+    Color c = Color.blue
+    x = c
+    c = x
+
+    ENUM Time
+      now
+      later
+    }
+    Time t = Time.now
+    x = t
+    t = x
+    TRY
+      c = x
+    CATCH E.WrongType e
+      IO.print("Caugnt enum/enum: " .. Util.stripLine(e.ToString()))
+    }
+
+    CLASS MyClass
+      int   $n
+
+      FUNC $ToString() string
+        RETURN $n.ToString()
+      }
+    }
+
+    CLASS Son EXTENDS MyClass
+      string $s
+    }
+
+    CLASS Other
+      int $n
+    }
+
+    MyClass mc = NEW()
+    mc.n = 234
+    IO.print(mc.ToString())
+    IO.print("mc: " .. mc.Type().ToString())
+    list<MyClass> tl = NEW()
+    IO.print(tl.ToString())
+    tl.add(mc)
+    IO.print(tl.ToString())
+
+    x = mc
+    mc.n = 777
+    IO.print(x)
+    IO.print("Class: " .. x.Type().ToString())
+
+    mc = x
+    mc.n = 888
+    IO.print(mc.ToString())
+
+    Son son = NEW()
+    son.n = 333
+    IO.print("son: " .. son.Type().ToString())
+    x = son
+    IO.print(x)
+    IO.print("Child Class: " .. x.Type().ToString())
+
+    Other o = NEW()
+    x = o
+    TRY
+      mc = x
+    CATCH E.WrongType e
+      IO.print("Caugnt class/class: " .. Util.stripLine(e.ToString()))
+    }
+
+    tuple<int nr, string name> tt = [33, "hello"]
+    IO.print(tt.ToString())
+    x = tt
+    IO.print(x)
+    IO.print(x.Type().ToString())
+  }
+
+  PROC test4()
+    list<dyn> l
+    l = [1, FAIL, "ok", 1.234]
+    IO.print(l)
+    dyn x = l
+    IO.print("list of dyn: " .. x.Type().ToString())
+
+    array<dyn> a = [TRUE, 9, "there"]
+    IO.print(a)
+
+    dict<string, dyn> sd = ["one": 1, "yes": FALSE, "key": "end"]
+    IO.print(sd)
+
+    # Recursive containers are printed once.
+    l.add(a)
+    a[1] = sd
+    sd.add("list", l)
+    IO.print(l)
+    IO.print(a)
+    IO.print(sd)
+    IO.print(l)
+    IO.print(a)
+    IO.print(sd)
+
+    # Repeated containers are printed every time.
+    l = [2, TRUE, "two"]
+    a = [9, "nine"]
+    l.add(a)
+    l.insert(a)
+    IO.print(l)
+
+    sd = ["two": 2]
+    a = [1, sd, 3, sd]
+    IO.print(a)
+
+    l = [4, "four"]
+    sd = ["9": l, "8": 8, "7": l]
+    IO.print(sd)
+
+    # nested list with mixed types.
+    list<dyn> lm = ["one", 2, FAIL, [1, "one", 1.1, OK]]
+    IO.print("nested: \(lm)")
+  }
+
+  PROC test5()
+    dyn x = 5
+    x += 20
+    x -= 3 + 4
+    IO.print("18 == " .. x.ToString())
+    x = "one"
+    x ..= " two"
+    IO.print("concat dyn: " .. x)
+  }
+
+  CLASS HasSize
+    string $s
+    NEW(string s)
+      $s = s
+    }
+    FUNC $Size() int
+      RETURN $s.Size()
+    }
+  }
+
+  CLASS HasEqual
+    string $s
+    NEW(string s)
+      $s = s
+    }
+    FUNC $Equal(HasEqual other) bool
+      RETURN $s == other.s
+    }
+  }
+
+  CLASS HasCompare
+    string $s
+    NEW(string s)
+      $s = s
+    }
+    FUNC $Compare(HasCompare other) int
+      RETURN $s.Compare(other.s)
+    }
+  }
+
+  PROC testSize()
+    dyn x1
+    dyn x2
+    int i = 11
+    x1 = i
+    IO.print("int size: " .. x1.Size())
+    x2 = x1
+    IO.print("dyn bytes size: " .. x1.Size())
+
+    int8 i8 = 127
+    x1 = i8
+    IO.print("int8 size: " .. x1.Size())
+
+    int16 i16 = 12
+    x1 = i16
+    IO.print("int16 size: " .. x1.Size())
+
+    int32 i32 = 12
+    x1 = i32
+    IO.print("int32 size: " .. x1.Size())
+
+    nat n = T.nat.max
+    x1 = n
+    IO.print("nat size: " .. x1.Size())
+
+    nat8 n8 = 127
+    x1 = n8
+    IO.print("nat8 size: " .. x1.Size())
+
+    nat16 n16 = 127
+    x1 = n16
+    IO.print("nat16 size: " .. x1.Size())
+    x2 = x1
+    IO.print("dyn nat16 size: " .. x1.Size())
+
+    nat32 n32 = 127
+    x1 = n32
+    IO.print("nat32 size: " .. x1.Size())
+
+    float32 f32 = 1.23456789
+    float f = f32
+    x1 = f
+    IO.print("float size: " .. x1.Size())
+    x1 = f32
+    IO.print("float32 size: " .. x1.Size())
+
+    string s = "yés"
+    x1 = s
+    IO.print("string size: " .. x1.Size())
+    byteString b = "yes"
+    x1 = b
+    IO.print("byteString size: " .. x1.Size())
+    x2 = x1
+    IO.print("dyn byteString size: " .. x1.Size())
+
+    type t = s.Type()
+    x1 = t
+    int x1size = x1.Size()
+    IO.print("type size: " .. (x1size >= 12 && x1size <= 24))
+
+    x1 = HasSize.NEW("yesyes")
+    IO.print("object size: " .. x1.Size())
+
+    array<int> ai = [1, 2, 3, 4]
+    x1 = ai
+    IO.print("array size: " .. x1.Size())
+
+    list<int> li = [1, 2, 3]
+    x1 = li
+    IO.print("list size: " .. x1.Size())
+    x2 = x1
+    IO.print("dyn list size: " .. x1.Size())
+
+    dict<string, int> d = ["a": 1, "b": 2]
+    x1 = d
+    IO.print("dict size: " .. x1.Size())
+
+    # varString vs = "blah"
+    # x1 = vs
+    # IO.print("varString size: " .. x1.Size())
+
+    # varByteString vb = "blahtoo"
+    # x1 = vb
+    # IO.print("varByteString size: " .. x1.Size())
+
+  }
+
+  PROC testEqual()
+    dyn x1
+    dyn x2
+    # int == int
+    int i = 11
+    int j = 11
+    x1 = i
+    x2 = j
+    IO.print("11 == 11: " .. (x1 == x2))
+    IO.print("11 != 11: " .. (x1 != x2))
+
+    # different int and nat types
+    i = 12
+    x1 = i
+    int16 i16 = 12
+    x2 = i16
+    IO.print("12 == 12: " .. (x1 == x2))
+    IO.print("12 != 12: " .. (x1 != x2))
+
+    int8 i8 = 127
+    nat8 n8 = 127
+    x1 = i8
+    x2 = n8
+    IO.print("127 == 127: " .. (x1 == x2))
+    IO.print("127 != 127: " .. (x1 != x2))
+
+    i = -1
+    nat n = T.nat.max
+    x1 = i
+    x2 = n
+    IO.print("-1 == nat.max: " .. (x1 == x2))
+    IO.print("-1 != nat.max: " .. (x1 != x2))
+
+    x1 = 44
+    IO.print("dyn == int: " .. (x1 == 44))
+    IO.print("dyn != int: " .. (x1 != 44))
+    IO.print("int == dyn: " .. (44 == x1))
+    IO.print("int != dyn: " .. (44 != x1))
+
+    # different float types
+    float32 f32 = 1.23456789
+    float f = f32
+    x1 = f
+    x2 = f32
+    IO.print("float == float32: " .. (x1 == x2))
+    IO.print("float != float32: " .. (x1 != x2))
+
+    f = 1.23456789
+    x1 = f
+    IO.print("float == float32: " .. (x1 == x2))
+    IO.print("float != float32: " .. (x1 != x2))
+
+    IO.print("dyn == float: " .. (x1 == 1.23456789))
+    IO.print("dyn != float: " .. (x1 != 1.23456789))
+    IO.print("float == dyn: " .. (1.23456789 == x1))
+    IO.print("float != dyn: " .. (1.23456789 != x1))
+
+    # int and float types
+    i = 11
+    f = 11.0
+    x1 = i
+    x2 = f
+    IO.print("int == float: " .. (x1 == x2))
+    IO.print("int == float: " .. (x1.Equal(x2)))
+    IO.print("float == int: " .. (x2.Equal(x1)))
+    IO.print("float != int: " .. (x2 != x1))
+
+    # different string types
+    x1 = "yes"
+    x2 = "yes"
+    IO.print("yes == yes: " .. (x1 == x2))
+    IO.print("yes != yes: " .. (x1 != x2))
+    IO.print("string == dyn: " .. ("yes" == x2))
+    IO.print("string != dyn: " .. ("yes" != x2))
+    IO.print("dyn == string: " .. (x2 == "yes"))
+    IO.print("dyn != string: " .. (x2 != "yes"))
+    IO.print("yes == no: " .. (x1 == "no"))
+    IO.print("yes != no: " .. (x1 != "no"))
+    IO.print("no == yes: " .. ("no" == x1))
+    IO.print("no != yes: " .. ("no" != x1))
+
+    x1 = HasEqual.NEW("yes")
+    x2 = HasEqual.NEW("no")
+    IO.print("o.yes == o.no: " .. (x1 == x2))
+    IO.print("o.yes 1= o.no: " .. (x1 != x2))
+    x2 = HasEqual.NEW("yes")
+    IO.print("o.yes == o.yes: " .. (x1 == x2))
+    IO.print("o.yes != o.yes: " .. (x1 != x2))
+
+    x1 = HasCompare.NEW("yes")
+    x2 = HasCompare.NEW("no")
+    IO.print("o.yes == o.no: " .. (x1 == x2))
+    IO.print("o.yes != o.no: " .. (x1 != x2))
+    x2 = HasCompare.NEW("yes")
+    IO.print("o.yes == o.yes: " .. (x1 == x2))
+    IO.print("o.yes != o.yes: " .. (x1 != x2))
+  }
+
+  PROC testCompare()
+    dyn x1
+    dyn x2
+    # int == int
+    int i = 11
+    int j = 11
+    x1 = i
+    x2 = j
+    IO.print("11 > 11: " .. (x1 > x2))
+    IO.print("11 >= 11: " .. (x1 >= x2))
+    IO.print("11 < 11: " .. (x1 < x2))
+    IO.print("11 <= 11: " .. (x1 <= x2))
+
+    j = 12
+    x2 = j
+    IO.print("11 > 12: " .. (x1 > x2))
+    IO.print("11 >= 12: " .. (x1 >= x2))
+    IO.print("11 < 12: " .. (x1 < x2))
+    IO.print("11 <= 12: " .. (x1 <= x2))
+  }
+
+
+  PROC testDynDict()
+    dict<dyn, string> d = [11: "one", "22": "two", TRUE: "three"]
+    IO.print(d.ToString())
+    IO.print("has 11: " .. d.has(11))
+    IO.print("has 12: " .. d.has(12))
+    IO.print("has 22: " .. d.has("22"))
+    IO.print("has 23: " .. d.has("23"))
+    IO.print("has TRUE: " .. d.has(TRUE))
+    IO.print("has FALSE: " .. d.has(FALSE))
+  }
+
+  PROC testToStringWithFormat()
+    dyn x
+    int nr = 12
+    x = nr
+    IO.print("dyn int hex: " .. x.ToString("04x"))
+    int8 nr8 = 13
+    x = nr8
+    IO.print("dyn int8 hex: " .. x.ToString("04x"))
+    int16 nr16 = 14
+    x = nr16
+    IO.print("dyn int16 hex: " .. x.ToString("04x"))
+    int32 nr32 = 15
+    x = nr32
+    IO.print("dyn int32 hex: " .. x.ToString("04x"))
+    nat nar = 16
+    x = nar
+    IO.print("dyn nat hex: " .. x.ToString("04x"))
+    nat8 nar8 = 17
+    x = nar8
+    IO.print("dyn nat8 hex: " .. x.ToString("04x"))
+    nat16 nar16 = 18
+    x = nar16
+    IO.print("dyn nat16 hex: " .. x.ToString("04x"))
+    nat32 nar32 = 19
+    x = nar32
+    IO.print("dyn nat32 hex: " .. x.ToString("04x"))
+    status st = OK
+    x = st
+    IO.print("dyn status hex: " .. x.ToString("1t"))
+    bool b = TRUE
+    x = b
+    IO.print("dyn bool hex: " .. x.ToString("1b"))
+    float f = 1.234
+    x = f
+    IO.print("dyn float hex: " .. x.ToString("10.3e"))
+    string s = "1234567890"
+    x = s
+    IO.print("dyn string hex: " .. x.ToString("8.6s"))
+  }
+
+}

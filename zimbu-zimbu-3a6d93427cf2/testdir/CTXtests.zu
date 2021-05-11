@@ -1,0 +1,95 @@
+# Test file for the CTX module
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE CTXtests @public
+
+  PROC test() @public
+    IO.print("testdir/CTXtests.zu")
+    testBasic()
+    testAddProvider()
+  }
+
+  ###############################################################
+
+  CLASS Foo
+    string $name
+  }
+
+  CLASS Bar
+    string $name
+  }
+
+  PROC testBasic()
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+
+    Foo f = {name: "top Foo"}
+    CTX.add(f)
+    Bar b = {name: "top Bar"}
+    CTX.add(b)
+
+    deeper()
+
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+  }
+
+  PROC deeper()
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+
+    Foo f = {name: "middle Foo"}
+    CTX.add(f)
+    Bar b = {name: "middle Bar"}
+    CTX.add(b)
+    f = NIL
+    b = NIL
+
+    further()
+
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+  }
+
+  PROC further()
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+
+    # Check that the objects are not garbage collected.
+    # This requires running valgrind for accessing freed memory.
+    GC.run()
+
+    IO.print(CTX.get(Foo.Type()))
+    IO.print(CTX.get(Bar.Type()))
+  }
+
+  CLASS MyProvider IMPLEMENTS CTX.I_Provider
+    string $value
+    FUNC $provide() dyn
+      RETURN $value
+    }
+  }
+
+  PROC testAddProvider()
+    MyProvider pr = NEW()
+    pr.value = "one"
+    CTX.addProvider(Foo.Type(), pr)
+
+    IO.print("1: \(CTX.get(Foo.Type()))")
+    pr.value = "two"
+    IO.print("2: \(CTX.get(Foo.Type()))")
+    doit(pr)
+    IO.print("3b: \(CTX.get(Foo.Type()))")
+  }
+
+  PROC doit(MyProvider pr)
+    IO.print("2b: \(CTX.get(Foo.Type()))")
+    pr.value = "three"
+    IO.print("3: \(CTX.get(Foo.Type()))")
+  }
+
+}

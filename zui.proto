@@ -1,0 +1,848 @@
+// Protocol buffer definition for .zui files.
+//
+// A .zui file contains all the information passed on from the "resolve" pass
+// of the compiler to the "generate" pass of the compiler.
+//
+// The information can also be used for "zudocu", thus it contains essential
+// parts of comments.
+//
+// There are three toplevel items written to the file, reading can stop after
+// each one:
+// 1. Header   - used to check if the .zui file is still valid
+// 2. Contents - exported items: symbols, types, etc.
+// 3. Body     - code to be generated
+//
+// Copyright 2010 Bram Moolenaar
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// The License can be found it in the LICENSE file, or you may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+package Zui;
+
+message Header {
+  // Name of the .zu file this .zui file was generated from.
+  // Excludes path (the path is known from the location of the .zui file,
+  // path/ZUDIR/Foo.zui is for the file path/Foo.zu).
+  required string fileName = 1;
+
+  // Size of the .zu file in bytes when this .zui file was generated.
+  // When the .zu file changed size it needs to be compiled.
+  required int64 byteSize = 2;
+
+  // Timestamp of the .zu file when this .zui file was generated.
+  // This is Unix time in microseconds since Epoch.
+  // When the .zu file time stamp changed it needs to be compiled.
+  required int64 timeStamp = 3;
+
+  // The signature identifies the compiler version and options that influence
+  // the produced .zui file.  When the signature doesn't match it cannot be
+  // used with a specific version of Zimbu or configuration options.
+  optional string signature = 4;
+}
+
+
+// The Symbols exported by this file.
+message Contents {
+  // Imported files.
+  repeated Import import = 1;
+
+  // Builtin libraries used.
+  repeated string builtin = 2;
+
+  // What is defined in the file.  For an imported file it is one item.
+  // In the main file and test files it can be many.
+  // This normally is a list of Declarations.
+  // Each item has a unique reference number that is used in places where the
+  // item is used.
+  // Does not contain CodeBlocks, see Body for that.
+  // Arguments, members and return types may refer to an imported file.
+  repeated Statement statement = 3;
+
+  // Symbols defined in the file and imported files.  This maps the reference
+  // number used in this .zui file to the item that declares it.
+  repeated SymbolRef symbol = 4;
+}
+
+
+// The Code to be produced by this file.
+// Only needed when generating code.
+message Body {
+  // Same as Contents, but now the CodeBlocks.
+  repeated Statement statement = 1;
+}
+
+
+// A symbol that is used in the file, with the number that is used to refer to
+// it in this .zui file.
+// When reading the .zui file each number can be turned into a reference to the
+// item.
+message SymbolRef {
+  // The number used to refer to this type in this .zui file.
+  required int64 ref = 1;
+
+  // When the item is from an imported file: which import it comes from.
+  optional int64 importNumber = 2;
+
+  // When the item is from an imported file: SymbolRef.ref in that file
+  optional int64 importRef = 3;
+
+  // Name used for error messages.
+  // The name can contain dots, e.g. for a class defined inside a class.
+  // This must be defined for exported types.
+  optional string name = 4;
+}
+
+
+message Import {
+  // Name as specified in the .zu file.
+  required string fileName = 1;
+
+  // True when <filename> was used instead of "fileName".
+  optional bool angleQuotes = 2;
+
+  // plugin name: PROTO, ZWT, etc.
+  optional string plugin = 3;
+
+  // Name of the toplevel item in the import.
+  optional string toplevelName = 4;
+
+  // Name used in AS argument.
+  optional string asName = 5;
+
+  // String used in OPTIONS argument.
+  optional string options = 6;
+
+  // Where the import was defined.
+  optional Position pos = 7;
+
+  // Reference number used for this import in this .zui file.
+  required int64 importNumber = 8;
+
+  // The header of the .zui file of the import used when generating this .zui
+  // file.  When it changes "importRef" becomes invalid and therefore this .zui
+  // file becomes invalid.
+  optional Header header = 9;
+
+  // Whether @javascript is present
+  optional bool javascript = 10;
+
+  // used for ZuiImportExt
+  option extensible;
+}
+
+
+// A declared item, something defined in the Zimbu file, specified by name
+// and optionally a type.
+message Declaration {
+  // Symbol name as used in the Zimbu file.  This is without dots.
+  // It is not set for anonymous items.
+  optional string name = 1;
+
+  // For an argument after USE, name may contain dots: "USE Mod.var".
+  optional Expression dotName = 2;
+
+  // Has a dollar before the name: $name.
+  optional bool dollar = 3;
+
+  // Has a percent before the name: %name.
+  optional bool percent = 4;
+
+  // SHARED declaration.
+  optional bool shared = 5;
+
+  // Where the symbol was defined.
+  optional Position pos = 6;
+
+  // What number is used to refer to this item in a SymbolRef.
+  // Also connects the item in the Header (without CodeBlock) to the item in
+  // the Body (only has CodeBlock).
+  optional int64 ref = 7;
+
+  // Item does not have a type but USE before it.
+  optional bool isUse = 8;
+
+  // The type of the declared item.
+  optional Type type = 9;
+
+  // Variable initialization.
+  optional Expression init = 10;
+
+  // When TRUE: argument of a method; only used in the CodeBlock of a
+  // MethodType.
+  optional bool isArg = 11;
+
+  // For an argument: type ... name
+  optional bool threeDots = 12;
+
+  // Comment before the declaration.
+  optional string commentBefore = 13;
+
+  // Comment after the declaration.
+  optional string commentAfter = 14;
+
+  // Prefer using commentAfter if commentBefore is also present.
+  optional bool preferCommentAfter = 15;
+
+  // TODO: visibility.
+  // TODO: usage dependency.
+
+  // used for ZuiDeclarationExt
+  option extensible;
+}
+
+enum TypeEnum {
+  // Most often used types.
+  INT = 0;  // same as INT64
+  BOOL = 1;
+  STATUS = 2;
+  NIL = 3;
+  ANY = 4;
+
+  // String types.
+  CSTRING = 5;
+  STRING = 6;
+  VARSTRING = 7;
+  BYTES = 8;
+  VARBYTES = 9;
+
+  // Container types
+  ARRAY = 10;
+  TUPLE = 11;
+  LIST = 12;
+  DICT = 13;
+  MULTIDICT = 14;
+  SET = 15;
+  MULTISET = 16;
+
+  // Method definitions.
+  NEW = 17;
+  PROC = 18;
+  FUNC = 19;
+  LAMBDA = 49;
+
+  // Method references.
+  PROCREF = 20;
+  FUNCREF = 21;
+
+  // Module
+  MODULE = 22;
+
+  // Types with declaration and instances.
+  ENUM = 23;
+  ENUMVAL = 24;
+
+  BITS = 25;
+  BITSVAL = 26;
+
+  CLASS = 27;
+  OBJECT = 28;   // object of known class
+
+  INTERFACE = 29;
+  IOBJECT = 30;  // object of class with known interface
+
+  PIECE = 48;
+
+  NAT = 34;  // used for numbers so long as there is no sign
+  BIGINT = 35;
+  BIGNAT = 36;
+
+  // Floating point numbers.
+  FLOAT = 40;  // same as FLOAT64
+  FLOAT32 = 41;
+  FLOAT80 = 42;
+  FLOAT128 = 43;
+
+  // Fixed point numbers in 64 bit, number of decimals set in "decimals".
+  FIXED = 44;
+
+  ALIAS = 45;  // also used for TYPE
+
+  // "USE var": get type of var from context.
+  USE = 46;
+
+  // Method argument with &var
+  REF = 47;
+
+  NAME = 100;  // Unparsed name, possibly with dots.
+  UNKNOWN = 101;   // Only used internally.
+}
+
+message Type {
+  // Symbol type.
+  required TypeEnum type = 1;
+
+  // The text used to declare the type, for error messages.
+  optional string text = 2;
+
+  // Where the text starts.
+  optional Position pos = 3;
+
+  optional Attributes attr = 4;
+
+  ////// Information about simple types.
+
+  // Class for OBJECT and IOBJECT.
+  optional SymbolRef classRef = 5;
+
+  // Number of decimals for FIXED.  Range 1 to 15.
+  optional int64 decimals = 6; 
+
+  // Mask for the significant bits: 1 for bool, 1/3/7/etc. for enum and intN.
+  optional int64 mask = 7;
+
+  ////// Information about not so simple types.
+
+  // A class, interface or piece type declaration.
+  optional ClassType classDecl = 8;
+
+  // A BITS type declaration.
+  optional BitsType bitsDecl = 9;
+
+  // An ENUM type declaration.
+  optional EnumType enumDecl = 10;
+
+  // A module type declaration.
+  optional ModuleType moduleDecl = 11;
+
+  // A FUNC or PROC type declaration.
+  optional MethodType methodDecl = 12;
+
+  // A container type: dict, list, etc.
+  optional ContainerType container = 13;
+
+  // An alias
+  optional AliasType alias = 14;
+
+  // REF
+  optional Type ref = 15;
+
+  // Type name, possibly with dots.
+  optional Expression name = 16;
+
+  // Name and position of a tuple item.
+  optional string itemName = 18;
+  optional Position itemNamePos = 19;
+
+  // For return type  in func<arg => return>
+  optional bool isReturn = 17;
+
+  // uses ZuiTypeExt
+  option extensible;
+}
+
+enum Visibility {
+  UNSET = 0;
+  PRIVATE = 1;
+  PROTECTED = 2;
+  PUBLIC = 3;
+  LOCAL = 4;
+  FILE = 5;
+  DIRECTORY = 6;
+}
+
+message Attributes {
+  optional bool abstract = 1;                 // @abstract
+  optional bool isdefault = 2;                // @default
+  optional bool final = 3;                    // @final
+  optional bool define = 4;                   // @define
+  optional bool replace = 5;                  // @replace
+  optional bool earlyInit = 6;                // @earlyInit
+  optional bool primitive = 7;                // @primitive
+
+  optional bool noBacktrace = 8;              // @backtrace=no
+  optional bool wantBacktrace = 9;            // @backtrace=yes
+
+  optional Visibility visibility = 10;        // @public
+  optional Visibility readVisibility = 11;    // @read=public
+  optional Visibility itemsVisibility = 12;   // @items=public
+
+  optional bool notOnExit = 13;               // @notonexit
+  optional bool javascript = 14;              // @javascript
+}
+
+
+// A class, interface or piece.
+message ClassType {
+  // Class/interface/piece name as used in the Zimbu file.
+  required string name = 1;
+
+  optional bool isInterface = 2;
+  optional bool isPiece = 9;
+
+  // Template type names: <Tone, Ttwo>.
+  repeated Id templateTypeName = 3;
+
+  // EXTENDS item
+  optional Expression extends = 4;
+
+  // IMPLEMENTS items
+  repeated Expression implements = 5;
+
+  // Methods and members of the class/interface/piece.
+  repeated Statement member = 6;
+
+  // Methods and members in the SHARED section of the class.
+  optional CodeBlock shared = 7;
+  optional Attributes sharedAttr = 8;
+}
+
+// A BITS
+message BitsType {
+  // Methods and members of the bits.
+  repeated Statement member = 1;
+}
+
+
+// An ENUM
+message EnumType {
+  repeated Declaration item = 1;
+
+  // Methods and members of the enum.
+  repeated Statement member = 2;
+}
+
+
+message ModuleType {
+  // The items defined in the Module.
+  repeated Statement statement = 2;
+}
+
+
+// Method declaration.
+message MethodType {
+  // For FUNC and closure.
+  repeated Type returnType = 1;
+
+  // Method template type names: <Tone, Ttwo>.
+  repeated Id templateTypeName = 2;
+
+  // Arguments.
+  repeated Declaration argument = 3;
+
+  // USE Arguments.
+  repeated Declaration use = 4;
+
+  // Method body.
+  optional CodeBlock body = 5;
+
+  // For a closure: the expression.
+  optional Expression expr = 6;
+
+  option extensible;
+}
+
+
+message ContainerType {
+  // For DICT, MULTIDICT, SET, MULTISET
+  optional Type keyType = 1;
+
+  // For any container type.  Only TUPLE may have more than one itemType.
+  repeated Type itemType = 2;
+}
+
+
+// ALIAS from name
+// TYPE from name
+message AliasType {
+  optional Expression from = 1;
+
+  optional string name = 2;
+
+  // For Zudocu
+  optional Statement for = 3;
+}
+
+
+// A block of code, can be nested.
+message CodeBlock {
+  // Where the block starts.
+  optional Position pos = 1;
+
+  // Where the block ends, the "}".
+  optional Position endPos = 2;
+
+  // The actual code.  Declarations too.
+  repeated Statement statement = 3;
+
+  option extensible;
+}
+
+
+enum StatementType {
+  VAR_DECL = 1;     // Type variable [= init]
+  MODULE_DECL = 2;  // MODULE
+  CLASS_DECL = 3;   // CLASS, INTERFACE, PIECE
+  BITS_DECL = 4;    // BITS
+  ENUM_DECL = 5;    // ENUM
+  METHOD_DECL = 6;  // PROC, FUNC, NEW
+  ALIAS_DECL = 7;   // ALIAS
+  TYPE_DECL = 8;    // TYPE
+  ASSIGN = 9;       // v = expr
+  CALL = 10;        // method call
+  NEWCALL = 11;     // NEW() as a statement
+  IF = 12;          // IF - ELSEIF - ELSE
+  GENERATEIF = 13;  // GENERATE_IF - GENERATE_ELSEIF - GENERATE_ELSE
+  FOR = 14;         // FOR loop
+  WHILE = 15;       // WHILE loop
+  DO = 16;          // DO - UNTIL loop
+  UNTIL = 17;       // UNTIL of DO - UNTIL loop
+  TRY = 18;         // TRY - CATCH - FINALLY
+  TRYELSE = 19;     // ELSE of TRY
+  RETURN = 20;      // RETURN [expr]
+  EXIT = 21;        // EXIT expr
+  THROW = 22;       // THROW expr
+  SWITCH = 23;      // SWITCH expr
+  CASE = 24;        // CASE
+  DEFAULT = 25;     // DEFAULT
+  BREAK = 26;       // BREAK
+  CONTINUE = 27;    // CONTINUE
+  INC = 28;         // ++expr
+  DEC = 29;         // --expr
+  BLOCK = 30;       // { code }
+  CBLOCK = 31;      // >>> C code <<<
+  INCLUDE = 32;     // INCLUDE block
+  GENERATEERROR = 33; // GENERATE_ERROR
+  IFNIL = 34;       // IFNIL
+  DEFER = 35;       // DEFER method(arg)
+  SPLIT = 36;       // one statement split into several while parsing
+}
+
+// Any kind of statement.
+message Statement {
+  optional Position pos = 1;
+
+  required StatementType type = 2;
+
+  // Only one of the following optional fields can be used at a time.
+  optional Declaration declaration = 3; // for *_DECL
+  optional Include include = 4;         // for INCLUDE
+  optional Assignment assign = 5;       // for ASSIGN
+  optional MethodCall methodCall = 6;   // for CALL, NEWCALL
+  optional Condition condition = 7;     // for IF, GENERATEIF, WHILE, DO, SWITCH
+  optional ForStatement for = 8;        // for FOR
+  optional TryStatement try = 9;        // for TRY - CATCH - ELSE - FINALLY
+  optional CodeBlock block = 10;        // for TRYELSE, BLOCK
+  optional Expression expr = 11;        // for RETURN, EXIT, THROW, CASE, INC,
+                                        // DEC
+  repeated Expression arguments = 12;   // for RETURN
+  repeated CBlock cblock = 13;          // for CBLOCK
+  optional Position proceedPos = 14;    // for CASE: PROCEED after block
+  optional bool blockgc = 15;           // for >>>: blocking GC
+
+  repeated Statement statement = 16;    // for SPLIT
+
+  option extensible;
+}
+
+
+message Include {
+  repeated Statement statement = 1;
+}
+
+
+message Assignment {
+  // For +=, -=, ..=, etc.  Not set for normal assign.
+  optional ExprType type = 1;
+
+  required Expression lhs = 2;  // left hand side
+  required Expression rhs = 3;  // right hand side
+}
+
+
+message Condition {
+  optional Expression cond = 1;  // empty for DO - UNTIL
+
+  optional CodeBlock block = 2;
+
+  // IF can have any number of ELSEIF.  Each of these only has the "cond" and
+  // "block" fields filled in.
+  repeated Condition elseif = 3;
+
+  // IF can have one final ELSE
+  optional CodeBlock else = 4;
+}
+
+
+message ForStatement {
+  repeated Declaration loopVar = 1;      // FOR loopVarName IN expr
+
+  repeated Expression iter = 2;   // what comes after IN
+
+  optional Expression to = 3;     // FOR x IN expr TO expr
+  optional Expression until = 4;  // FOR x IN expr UNTIL expr
+
+  optional Expression step = 5;   // FOR x IN expr TO expr STEP expr
+
+  optional CodeBlock body = 6;
+
+  option extensible;
+}
+
+
+message TryStatement {
+  optional CodeBlock body = 1;
+  repeated Catch catch = 2;
+  optional CodeBlock else = 3;
+  optional CodeBlock finally = 4;
+
+  option extensible;
+}
+
+
+message Catch {
+  optional Position pos = 1;
+  repeated Type type = 2;
+  required Declaration decl = 3;  // the variable that gets the exception 
+  optional CodeBlock body = 4;
+}
+
+
+// Part of a liberal C block from >>> to <<<.
+message CBlock {
+  optional Position pos = 1;
+  repeated string uses = 2;      // uses(foo, bar)
+  optional string text = 3;      // Literally copied text
+  optional Expression expr = 4;  // expression %var% or %{ expr }%
+  optional bool literal = 5;     // %[ expr ]%
+}
+
+
+message WhileStatement {
+  required Expression cond = 1;
+  optional CodeBlock body = 2;
+}
+
+
+message DoStatement {
+  required Expression cond = 1;
+  optional CodeBlock body = 2;
+}
+
+
+enum ExprType {
+  ID = 1;           // id
+
+  INT = 2;          // number
+  NAT = 64;         // unsigned number
+  FLOAT = 3;        // number.dotNumber e expNumber
+  STRING = 4;       // stringValue
+  NIL = 5;
+  TRUE = 6;
+  FALSE = 7;
+  OK = 8;
+  FAIL = 9;
+  THIS = 10;
+  PARENT = 11;      // used for PARENT, not for abc.PARENT
+  LIST = 12;        // [listItem, ...]
+  DICT = 13;        // [dictItem, ...]
+  INIT = 65;        // {name: expr, ...}
+
+  CALL = 14;        // methodCall
+  NEWCALL = 15;     // methodCall  name.NEW()
+  METHOD = 16;      // decl   FUNC () s }
+  LAMBDA = 17;      // lambda function   { x => y }
+  MEMBER = 18;      // left.right
+  TYPECAST = 19;    // left.<typecast>
+  TYPESPEC = 20;    // left<typespec ...>
+  CTYPE = 21;       // %< C-type >%
+
+  MINUS = 22;       // -right
+  NOT = 23;         // !right
+  TILDE = 24;       // ~right
+  REF = 25;         // &right
+
+  PRE_INC = 26;     // ++right
+  PRE_DEC = 27;     // --right
+  POST_INC = 28;    // right++
+  POST_DEC = 29;    // right--
+
+  PARENS = 30;      // (right)
+  SUBSCRIPT = 31;   // left[right]
+  BITSASSIGN = 32;  // left=right  left=-right
+  EXPRMETHOD = 33;  // left.(right)
+  ADD = 34;         // left + right
+  SUBTRACT = 35;    // left - right
+  MULTIPLY = 36;    // left * right
+  DIVIDE = 37;      // left / right
+  REMAINDER = 38;   // left % right
+  CONCAT = 39;      // left .. right
+  SHIFT_LEFT = 40;  // left << right
+  SHIFT_RIGHT = 41; // left >> right
+  BIT_AND = 42;     // left & right
+  BIT_OR = 43;      // left | right
+  BIT_XOR = 44;     // left ^ right
+
+  IFNIL = 45;       // left ?: right
+  TERNARY = 46;     // cond ? left : right
+
+  EQUAL = 47;         // left == right
+  NOTEQUAL = 48;      // left != right
+  MATCH = 49;         // left =~ right
+  NOMATCH = 50;       // left !~ right
+  GREATER = 51;       // left > right
+  GREATER_EQUAL = 52; // left >= right
+  LESS = 53;          // left < right
+  LESS_EQUAL = 54;    // left <= right
+  IS = 55;            // left IS right
+  ISNOT = 56;         // left ISNOT right
+  ISA = 57;           // left ISA right
+  ISNOTA = 58;        // left ISNOTA right
+  AND = 59;           // left && right
+  OR = 60;            // left || right
+
+  INF = 61;
+  NINF = 62;
+  NAN = 63;
+
+  ASSIGN = 66;        // name = expr (name uses stringValue)
+  CCODE = 77;         // C(code)
+
+  UNKNOWN = 99;       // used for empty expression
+}
+
+// An expression.
+message Expression {
+  required ExprType type = 1;
+
+  // Where the operator was defined.  Always set, also when the position is in
+  // value, etc.
+  optional Position pos = 2;
+
+  // ID.  Also used for PARENT, THIS, etc.
+  optional Id id = 3;
+
+  // INT value.  Also used for NAT value, in which case it goes negative for
+  // very large values.
+  optional int64 number = 4;
+
+  // Float value.
+  optional double fnumber = 5;
+
+  // Number after the dot, unused.
+  optional int64 dotNumber = 6;
+
+  // "text"
+  optional string stringValue = 7;
+
+  // One item in [expr, ...]
+  repeated Expression listItem = 8;
+
+  // One item in [expr: expr, expr: expr]
+  repeated ExprPair dictItem = 9;
+
+  // One item in [name: expr, name: expr]
+  repeated NameExpr initItem = 21;
+
+  // TRUE for O[key: value]
+  optional bool orderedDict = 20;
+
+  // CALL: module.method(arguments)
+  optional MethodCall methodCall = 10;
+
+  // CLOSURE: { arg, .. => expr }
+  optional MethodType method = 11;
+
+  // METHOD: PROC block } or FUNC block }
+  optional Declaration decl = 12;
+
+  // TYPECAST: left.<Type>
+  optional Type typecast = 13;
+
+  // TYPESPEC: left<Type, Type>
+  repeated Type typespec = 14;
+
+  // For TERNARY operation.
+  optional Expression cond = 15;
+
+  // For SEQUENCE and binary operators.
+  // If this Expression type is MEMBER then left can again be a member while
+  // right isn't.
+  optional Expression left = 16;
+
+  optional Expression right = 17;
+
+  // Using ?. instead of .
+  optional bool dotnil = 18;
+
+  // Method call used to implement the expression.
+  // Set when generating code.
+  optional MethodCall call = 19;
+
+  option extensible;
+}
+
+
+// ID: Identifier for a variable, member, function, etc.
+message Id {
+  // Only set for specific usage.
+  optional Position pos = 1;
+
+  // The name can include dots, e.g. for Module.member.
+  required string name = 2;
+
+  // Has a dollar before the name: $name.
+  optional bool dollar = 3;
+
+  // Has a percent before the name: %name.
+  optional bool percent = 4;
+
+  // For a variable: reference to where it is defined.
+  optional int64 ref = 5;
+}
+
+
+// Pair used in a dict.
+message ExprPair {
+  required Expression key = 1;
+  required Expression value = 2;
+}
+
+
+// name-expr used in an object initializer.
+message NameExpr {
+  required string name = 1;
+  required Expression value = 2;
+}
+
+
+// Method call:  method(args), Module.method(args), object.method(args)
+message MethodCall {
+  optional SymbolRef method = 1;  // the method to call.
+
+  optional Position pos = 2;
+
+  // What goes before the ().  Can result in an object.
+  // For NEW statement and NEWCALL expression it is unset.
+  optional Expression name = 3;
+
+  repeated Expression argument = 4;
+
+  // Dummy expression to store info about a vararg argument.
+  optional Expression vararg = 5;
+
+  // uses ZuiMethodCallExt
+  option extensible;
+}
+
+
+// Defines a position in a file.
+message Position {
+  // The first line in a file is 1.
+  optional int64  line = 1;
+
+  // UTF-8 character number; the first position in a line is 1.
+  optional int64  column = 2;
+
+  // For a parsed file the file name is filled in.
+  optional string filename = 3;
+}
+
+// vim: set et sw=2 tw=79 :

@@ -1,0 +1,140 @@
+# Test function arguments.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Arguments @public
+
+  PROC test() @public
+    testNamed()
+    testOptional()
+    testOptionalNamed()
+    testVarargs()
+    testDeclarative()
+  }
+
+  PROC named(string name, int number)
+    IO.print("name: \(name) number: \(number)")
+  }
+
+  PROC testNamed()
+    named("this", 123)
+    named(name = "other", number = 333)
+    named(number = 111, name = "that")
+  }
+
+  PROC optional(string name = "nothing", int number = 999)
+    IO.print("name: \(name) number: \(number)")
+  }
+
+  PROC testOptional()
+    optional("name", 111)
+    optional("name")
+    optional()
+  }
+
+  PROC testOptionalNamed()
+    optional(name = "some")
+    optional(number = 111)
+  }
+
+  PROC varargs(int number, string ... args)
+    IO.print("number: \(number) names: \(args.names) values: \(args.values)")
+  }
+
+  PROC testVarargs()
+    varargs(0)
+    varargs(1, "one")
+    varargs(2, "one", "two", "three")
+    varargs(3, one = "one", two = "two", three = "three")
+    varargs(4, "one", two = "two", three = "three")
+
+    varargs<string> a = [["four", "five"], ["4", "5"]]
+    varargs(5, args = a)
+  }
+
+  CLASS Row
+    bool              $border_bottom
+    func<int => bool> $onclick
+    list<string>      $items
+
+    NEW(bool border_bottom = FALSE,
+        func<int => bool> onclick = NIL,
+        list<string> items = [])
+      $border_bottom = border_bottom
+      $onclick = onclick
+      $items = items
+    }
+  }
+
+  CLASS Border
+    string $color
+    int    $size
+
+    NEW(string color = "none",
+        int size = 1)
+      $color = color
+      $size = size
+    }
+  }
+
+  CLASS Table
+    list<Row>    $rows
+    string       $title
+    int          $columns
+    Border       $border
+    list<string> $headers
+
+    NEW(list<Row> rows,      # mandatory
+        string title = NIL,
+        int columns = -1,
+        Border border = NIL,
+        list<string> headers = ["empty"])
+      $rows = rows
+      $title = title
+      $columns = columns
+      $border = border
+      $headers = headers
+    }
+  }
+
+  FUNC clicked(int evt, string where) bool
+    IO.print("clicked \(evt) \(where)")
+    RETURN TRUE
+  }
+
+  Table table = NEW(
+    rows = [
+      NEW(
+        border_bottom = TRUE,
+        onclick = { evt => clicked(evt, "row 1") },
+        items = [
+          "one",
+          "two",
+          "three"
+        ]
+      ),
+      NEW(
+        items = [
+          "four",
+          "five",
+          "six"
+        ]
+      )
+    ],
+    title = "Hello",
+    border = NEW(
+      color = "white",
+      size = 2
+    )
+  )
+
+  # Useful application of optional arguments: declarative syntax (like
+  # Ceylon):
+  PROC testDeclarative()
+    IO.print("Declarative table: \(table)")
+  }
+
+}

@@ -1,0 +1,776 @@
+# Test dict<>
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE DictTest @public
+
+  PROC test() @public
+    test1()
+    test1dictlist()
+    test2()
+    test2dictList()
+    test3()
+    test3dictList()
+    test4()
+    test4dictList()
+    test5()
+    test5dictList()
+    testIobjectKey()
+    testIobjectItem()
+    test6()
+    test6dictList()
+    test7()
+    test7dictList()
+    testEnum()
+    testEnumDictList()
+    testFillDict()
+    testFillDictList()
+    testKeyTypes()
+    testValueTypes()
+    testMap()
+    testMapDictList()
+    testFor()
+    testForEach()
+    testEqual()
+  }
+
+  dict<string, string> somedict = NEW()
+  dict<string, int> stringdict = ["one": 1, "two": 2]
+  dict<int, string> intdict = [1: "one", 2: "two"]
+
+  PROC test1()
+    IO.print("dict type: " .. somedict.Type().ToString())
+    IO.print("dict has list: " .. somedict.isOrdered())
+
+    IO.print(somedict.ToString())
+    somedict["one"] = "xxx"
+    somedict["one"] = "www"
+    IO.print(somedict.ToString())
+    somedict.set("one", "111")
+    IO.print(somedict.ToString())
+    TRY
+      somedict.remove("xxx")  # should throw exception
+    CATCH E.KeyNotFound e
+      IO.print("key xxx intentionally not found")
+    }
+    somedict.remove("one")
+    IO.print(somedict.ToString())
+
+    IO.print(stringdict.ToString())
+    IO.print(intdict.ToString())
+    IO.print("one is " .. stringdict["one"])
+    IO.print("two is " .. stringdict["two"])
+    IO.print("1 is " .. intdict[1])
+    IO.print("2 is " .. intdict[2])
+    VAR copydict = stringdict.copy()
+    IO.print("copy: " .. copydict.ToString())
+    IO.print("copy isOrdered: " .. copydict.isOrdered())
+    stringdict.clear()
+    IO.print("empty: " .. stringdict.ToString())
+    stringdict.add("five", 5)
+    IO.print("not empty: " .. stringdict.ToString())
+    TRY
+      stringdict.add("five", 55)
+    CATCH E.KeyExists e
+      IO.print("dict add correctly fails for existing key")
+    }
+    stringdict = [:]
+    IO.print("empty again: " .. stringdict.ToString())
+
+    stringdict = NIL
+    IO.print("NIL dict: " .. stringdict.ToString())
+  }
+
+  dict<string, string> somedictlist = NEW(TRUE)
+  dict<string, int> stringdictlist = O["one": 1, "two": 2]
+  dict<int, string> intdictlist = O[1: "one", 2: "two"]
+
+  PROC test1dictlist()
+    IO.print("dictList type: " .. somedictlist.Type().ToString())
+    IO.print("dictList has list: " .. somedictlist.isOrdered())
+
+    IO.print(somedictlist.ToString())
+    somedictlist["one"] = "xxx"
+    somedictlist["one"] = "www"
+    IO.print(somedictlist.ToString())
+    somedictlist.set("one", "111")
+    IO.print(somedictlist.ToString())
+    TRY
+      somedictlist.remove("xxx")  # should throw exception
+    CATCH E.KeyNotFound e
+      IO.print("key xxx intentionally not found")
+    }
+    somedictlist.remove("one")
+    IO.print(somedictlist.ToString())
+
+    IO.print(stringdictlist.ToString())
+    IO.print(intdictlist.ToString())
+    IO.print("one is " .. stringdictlist["one"])
+    IO.print("two is " .. stringdictlist["two"])
+    IO.print("1 is " .. intdictlist[1])
+    IO.print("2 is " .. intdictlist[2])
+    VAR copydict = stringdictlist.copy()
+    IO.print("copy: " .. copydict.ToString())
+    IO.print("copy isOrdered: " .. copydict.isOrdered())
+    stringdictlist.clear()
+    IO.print("empty: " .. stringdictlist.ToString())
+    stringdictlist.add("five", 5)
+    IO.print("not empty: " .. stringdictlist.ToString())
+    TRY
+      stringdictlist.add("five", 55)
+    CATCH E.KeyExists e
+      IO.print("dict add correctly fails for existing key")
+    }
+    stringdictlist = [:]
+    IO.print("empty again: " .. stringdictlist.ToString())
+  }
+
+  PROC test2()
+    # check that resizing a dictionary works properly
+    dict<string, int> tokenLookup = [
+        "ANY": 33,
+        "ARG": 33,
+        "BITS": 33,
+        "BREAK": 33,
+        "CASE": 33,
+        "CLASS": 33,
+        "CONTINUE": 33,
+        "DEFAULT": 33,
+        "DEFINE": 33,
+        "DO": 33,
+        "ELSE": 33,
+        "ELSEIF": 33,
+        "ENUM": 33,
+        "EQUAL": 33,
+        "EXIT": 33,
+        "EXTENDS": 33,
+        "FAIL": 33,
+        "FALSE": 33,
+        "FINAL": 33,
+        "FOR": 33,
+        "FUNC": 33,
+        "IF": 33,
+        "IMPLEMENTS": 33,
+        "IMPORT": 33,
+        "IN": 33,
+        "INTERFACE": 33,
+        "IO": 33,
+        "IS": 33,
+        "ISA": 33,
+        "ISNOT": 33,
+        "ISNOTA": 33,
+    ]
+    list<string> tokenNames = [
+        "ANY", "ARG", "BITS", "BREAK", "CASE", "CLASS", "CONTINUE",
+        "DEFAULT", "DEFINE", "DO", "ELSE", "ELSEIF", "ENUM", "EQUAL", "EXIT",
+        "EXTENDS", "FAIL", "FALSE", "FINAL", "FOR", "FUNC", "IF", "IMPLEMENTS",
+        "IMPORT", "IN", "INTERFACE", "IO", "IS", "ISA", "ISNOT", "ISNOTA",
+    ]
+    FOR t IN tokenNames
+      IF tokenLookup[t] != 33
+        IO.print("Value of " .. t .. " is " .. tokenLookup[t] .. " instead of 33")
+      }
+    }
+    IO.print("keys(): " .. tokenLookup.keys().ToString())
+    IO.print("values(): " .. tokenLookup.values().ToString())
+  }
+
+  PROC test2dictList()
+    # check that resizing a dictionary works properly
+    dict<string, int> tokenLookup = O[
+        "ANY": 33,
+        "ARG": 33,
+        "BITS": 33,
+        "BREAK": 33,
+        "CASE": 33,
+        "CLASS": 33,
+        "CONTINUE": 33,
+        "DEFAULT": 33,
+        "DEFINE": 33,
+        "DO": 33,
+        "ELSE": 33,
+        "ELSEIF": 33,
+        "ENUM": 33,
+        "EQUAL": 33,
+        "EXIT": 33,
+        "EXTENDS": 33,
+        "FAIL": 33,
+        "FALSE": 33,
+        "FINAL": 33,
+        "FOR": 33,
+        "FUNC": 33,
+        "IF": 33,
+        "IMPLEMENTS": 33,
+        "IMPORT": 33,
+        "IN": 33,
+        "INTERFACE": 33,
+        "IO": 33,
+        "IS": 33,
+        "ISA": 33,
+        "ISNOT": 33,
+        "ISNOTA": 33,
+    ]
+    list<string> tokenNames = [
+        "ANY", "ARG", "BITS", "BREAK", "CASE", "CLASS", "CONTINUE",
+        "DEFAULT", "DEFINE", "DO", "ELSE", "ELSEIF", "ENUM", "EQUAL", "EXIT",
+        "EXTENDS", "FAIL", "FALSE", "FINAL", "FOR", "FUNC", "IF", "IMPLEMENTS",
+        "IMPORT", "IN", "INTERFACE", "IO", "IS", "ISA", "ISNOT", "ISNOTA",
+    ]
+    FOR t IN tokenNames
+      IF tokenLookup[t] != 33
+        IO.print("Value of " .. t .. " is " .. tokenLookup[t] .. " instead of 33")
+      }
+    }
+    IO.print("dictList keys(): " .. tokenLookup.keys().ToString())
+    IO.print("dictList values(): " .. tokenLookup.values().ToString())
+  }
+
+  PROC test3()
+    # test string key
+    dict<string, int> d = NEW()
+    d.add("hello", 1)
+    d.add("in", 2)
+    d.add("world", 3)
+    d.add("verylongname to check with double byte length field verylongname to check with double byte length field verylongname to check with double byte length field", 4)
+    FOR k IN d.keys().sort()
+      IO.print("sorted dict[" .. k .. "] = " .. d[k])
+    }
+    FOR k, v IN d
+      IO.print("dict[" .. k .. "] = " .. v)
+    }
+    FOR v IN d.values().sort()
+      IO.print("sorted value: " .. v)
+    }
+    FOR v IN d
+      IO.print("value: " .. v)
+    }
+  }
+
+  PROC test3dictList()
+    # test string key
+    dict<string, int> d = NEW(TRUE)
+    d.add("hello", 1)
+    d.add("in", 2)
+    d.add("world", 3)
+    d.add("verylongname to check with double byte length field verylongname to check with double byte length field verylongname to check with double byte length field", 4)
+    FOR k IN d.keys().sort()
+      IO.print("dictList[" .. k .. "] = " .. d[k])
+    }
+    FOR v IN d.values().sort()
+      IO.print("value: " .. v)
+    }
+  }
+
+  PROC test4()
+    # test string key with a NUL byte
+    dict<string, int> d = NEW()
+    d.add("a\000a", 1)
+    d.add("a\000b", 2)
+    d.add("a\000c", 3)
+    FOR k IN d.keys().sort()
+      IO.print("dict[" .. k .. "] = " .. d[k])
+    }
+    FOR v IN d.values().sort()
+      IO.print("value: " .. v)
+    }
+  }
+
+  PROC test4dictList()
+    # test string key with a NUL byte
+    dict<string, int> d = NEW(TRUE)
+    d.add("a\000a", 1)
+    d.add("a\000b", 2)
+    d.add("a\000c", 3)
+    FOR k IN d.keys().sort()
+      IO.print("dictList[" .. k .. "] = " .. d[k])
+    }
+    FOR v IN d.values().sort()
+      IO.print("value: " .. v)
+    }
+  }
+
+  CLASS Foo
+    int $nr
+
+    NEW(int n)
+      $nr = n
+    }
+  }
+
+
+  PROC test5()
+    # test adding lots of objects and check that they can all be found.
+    dict<Foo, int> d = NEW()
+    list<Foo> l = NEW()
+
+    FOR n IN 1 TO 50000
+      Foo foo = NEW(n)
+      d.add(foo, n)
+      l.add(foo)
+    }
+    IO.print("dict size: " .. d.Size())
+
+    FOR foo IN l
+      int nr = d.get(foo, 0)
+      IF nr == 0
+        IO.print("not found: Foo " .. foo.nr)
+      ELSEIF nr != foo.nr
+        IO.print("found Foo " .. nr .. " instead of " .. foo.nr)
+      }
+    }
+  }
+
+  PROC test5dictList()
+    # test adding lots of objects and check that they can all be found.
+    dict<Foo, int> d = NEW(TRUE)
+    list<Foo> l = NEW()
+
+    FOR n IN 1 TO 50000
+      Foo foo = NEW(n)
+      d.add(foo, n)
+      l.add(foo)
+    }
+    IO.print("dictList size: " .. d.Size())
+
+    FOR foo IN l
+      int nr = d.get(foo, 0)
+      IF nr == 0
+        IO.print("not found: Foo " .. foo.nr)
+      ELSEIF nr != foo.nr
+        IO.print("found Foo " .. nr .. " instead of " .. foo.nr)
+      }
+    }
+  }
+
+  CLASS Parent
+    int $nr
+  }
+
+  CLASS Child EXTENDS Parent
+    string $name
+  }
+
+  PROC testIobjectKey()
+    dict<Parent, int> d = NEW()
+    Parent p = NEW()
+    p.nr = 7
+    d.add(p, 77)
+    Child c = NEW()
+    c.nr = 5
+    d[c] = 55
+
+    # The order can change, check for both possible values.
+    string s = d.ToString()
+    IO.print("iobject dict: " .. (s == "[{nr: 5}: 55, {nr: 7}: 77]" || s == "[{nr: 7}: 77, {nr: 5}: 55]"))
+    s = d.keys().ToString()
+    IO.print("iobject keys: " .. (s == "[{nr: 5}, {nr: 7}]" || s == "[{nr: 7}, {nr: 5}]"))
+    s = d.values().ToString()
+    IO.print("iobject values: " .. (s == "[55, 77]" || s == "[77, 55]"))
+    list<string> sl = NEW()
+    FOR i IN d.keys()
+      sl.add("key: " .. i.ToString())
+    }
+    FOR i IN d.values()
+      sl.add("value: " .. i.ToString())
+    }
+    IO.print("keys and values: " .. sl.sort().ToString())
+
+    IO.print("by index: " .. d[p])
+  }
+
+  PROC testIobjectItem()
+    dict<int, Parent> d = NEW()
+    Parent p = NEW()
+    p.nr = 7
+    d.add(77, p)
+    Child c = NEW()
+    c.nr = 5
+    d[55] = c
+
+    IO.print("iobject item dict: " .. d.ToString())
+    IO.print("iobject keys: " .. d.keys().ToString())
+    IO.print("iobject values: " .. d.values().ToString())
+    list<string> sl = NEW()
+    FOR i IN d.keys()
+      sl.add("key: " .. i.ToString())
+    }
+    FOR i IN d.values()
+      sl.add("value: " .. i.ToString())
+    }
+    IO.print("keys and values: " .. sl.sort().ToString())
+
+    IO.print("by index: " .. d[77].ToString())
+
+    Parent p8 = NEW()
+    p8.nr = 8
+    Parent p3 = NEW()
+    p3.nr = 3
+    Parent p5 = NEW()
+    p5.nr = 5
+    d = [8: p8, 3: p3, 5: p5,
+         18: p8, 13: p3, 15: p5,
+         28: p8, 23: p3, 25: p5,
+         38: p8, 33: p3, 35: p5,
+         48: p8, 43: p3, 45: p5,
+         58: p8, 53: p3, 55: p5]
+    IO.print("iobject inited dict: " .. d.ToString())
+  }
+
+  BITS TheBits
+    bool $one
+    int5 $nr
+  }
+
+  PROC test6()
+    # BITS as dictionary item
+    dict<string, TheBits> bitsItems = NEW()
+    bitsItems["a"] = one
+    bitsItems["b"] = nr=3
+    FOR i IN bitsItems.keys()
+      IO.print(i .. ": " .. bitsItems[i].ToString())
+    }
+    IO.print(bitsItems.ToString())
+
+    # BITS as dictionary Key
+    dict<TheBits, string> bitsKeys = NEW()
+    bitsKeys[one] = "one"
+    bitsKeys[nr=2] = "two"
+    FOR i IN bitsKeys.keys()
+      IO.print(i.ToString() .. ": " .. bitsKeys[i])
+    }
+    IO.print(bitsKeys.ToString())
+  }
+
+  PROC test6dictList()
+    # BITS as dictionary item
+    dict<string, TheBits> bitsItems = NEW(TRUE)
+    bitsItems["a"] = one
+    bitsItems["b"] = nr=3
+    FOR i IN bitsItems.keys()
+      IO.print(i .. ": " .. bitsItems[i].ToString())
+    }
+    IO.print(bitsItems.ToString())
+
+    # BITS as dictionary Key
+    dict<TheBits, string> bitsKeys = NEW(TRUE)
+    bitsKeys[one] = "one"
+    bitsKeys[nr=2] = "two"
+    FOR i IN bitsKeys.keys()
+      IO.print(i.ToString() .. ": " .. bitsKeys[i])
+    }
+    IO.print(bitsKeys.ToString())
+  }
+
+  PROC test7()
+    dict<int, int> iid = [1: 1, 2: 2, 3: 3]
+    # clear allows for chaining.
+    iid.clear(2).clear(3)
+    # remove returns the item.
+    IO.print("Removed one: " .. iid.remove(1))
+    IO.print("nothing left: " .. iid.ToString())
+
+    dict<string, int> id = ["one": 1, "two": 2, "three": 3]
+    # clear allows for chaining.
+    id.clear("two").clear("three")
+    # remove returns the item.
+    IO.print("Removed one: " .. id.remove("one"))
+    IO.print("nothing left: " .. id.ToString())
+
+    dict<string, string> sd = ["one": "ONE", "two": "TWO", "three": "THREE"]
+    # clear allows for chaining.
+    sd.clear("two").clear("three")
+    # remove returns the item.
+    IO.print("Removed one: " .. sd.remove("one"))
+    IO.print("nothing left: " .. sd.ToString())
+  }
+
+  PROC test7dictList()
+    dict<int, int> iid = O[1: 1, 2: 2, 3: 3]
+    # clear allows for chaining.
+    iid.clear(2).clear(3)
+    # remove returns the item.
+    IO.print("Removed one: " .. iid.remove(1))
+    IO.print("nothing left: " .. iid.ToString())
+
+    dict<string, int> id = O["one": 1, "two": 2, "three": 3]
+    # clear allows for chaining.
+    id.clear("two").clear("three")
+    # remove returns the item.
+    IO.print("Removed one: " .. id.remove("one"))
+    IO.print("nothing left: " .. id.ToString())
+
+    dict<string, string> sd = O["one": "ONE", "two": "TWO", "three": "THREE"]
+    # clear allows for chaining.
+    sd.clear("two").clear("three")
+    # remove returns the item.
+    IO.print("Removed one: " .. sd.remove("one"))
+    IO.print("nothing left: " .. sd.ToString())
+  }
+
+  PROC testEnum()
+    ENUM Color
+      black
+      blue
+      red
+      orange
+    }
+    dict<int, Color> cs = NEW()
+    cs.add(1, Color.orange)
+    cs.add(33, Color.black)
+    cs.add(9, Color.blue)
+    IO.print("Colors dict: " .. cs.ToString())
+
+    dict<Color, string> dc = NEW()
+    dc.add(Color.red, "red")
+    dc.add(Color.black, "black")
+    IO.print("Colors dict: " .. dc.ToString())
+
+    list<string> ls = dc.keys().mapTo({ key => key.ToString() })
+    FOR key IN ls.sort()
+      IO.print(key .. ": " .. dc[Color.FromString(key)])
+    }
+  }
+
+  PROC testEnumDictList()
+    ENUM Color
+      black
+      blue
+      red
+      orange
+    }
+    dict<int, Color> cs = NEW(TRUE)
+    cs.add(33, Color.black)
+    cs.add(1, Color.orange)
+    cs.add(9, Color.blue)
+    IO.print("Colors dict: " .. cs.ToString())
+
+    dict<Color, string> dc = NEW(TRUE)
+    dc.add(Color.red, "red")
+    dc.add(Color.black, "black")
+    IO.print("Colors dict: " .. dc.ToString())
+    IO.print("Colors keys: " .. dc.keys().ToString())
+
+    list<string> ls = dc.keys().mapTo({ key => key.ToString() })
+    FOR key IN ls
+      IO.print(key .. ": " .. dc[Color.FromString(key)])
+    }
+  }
+
+  PROC testFillDict()
+    IO.print("Filling the dict")
+    dict<int, string> d = NEW()
+    FOR i IN 0 TO 1000
+      d.add(i, "v" .. i)
+    }
+
+    FOR i IN 0 TO 1000
+      IF d[i] != "v" .. i
+        IO.print("Mismatch: " .. d[i] .. " != v" .. i)
+      }
+    }
+  }
+
+  PROC testFillDictList()
+    IO.print("Filling the dict")
+    dict<int, string> d = NEW(TRUE)
+    FOR i IN 0 TO 1000
+      d.add(i, "v" .. i)
+    }
+
+    FOR i IN 0 TO 1000
+      IF d[i] != "v" .. i
+        IO.print("Mismatch: " .. d[i] .. " != v" .. i)
+      }
+    }
+  }
+
+  PROC testKeyTypes()
+    dict<int, int> id = [1: 11, 2: 22, -134: 33, 256 * 256 - 1: 44, 268435455: 55]
+    IO.write(id[1] .. "-")
+    IO.write(id[2] .. "-")
+    IO.write(id[-134] .. "-")
+    IO.write(id[256 * 256 - 1] .. "-")
+    IO.print(id[268435455])
+    IO.print(id.ToString())
+
+    dict<int8, int> i8d = [1: 11, 2: 22, -112: 33, 127: 44]
+    IO.write(i8d[1] .. "-")
+    IO.write(i8d[2] .. "-")
+    IO.write(i8d[-112] .. "-")
+    IO.print(i8d[127])
+    IO.print(i8d.ToString())
+
+    dict<int16, int> i16d = [1: 11, 2: 22, -134: 33, 256 * 127: 44, 26843: 55]
+    IO.write(i16d[1] .. "-")
+    IO.write(i16d[2] .. "-")
+    IO.write(i16d[-134] .. "-")
+    IO.write(i16d[256 * 127] .. "-")
+    IO.print(i16d[26843])
+    IO.print(i16d.ToString())
+
+    dict<int32, int> i32d = [1: 11, 2: 22, -134: 33, 256 * 256 * 256 * 127: 44, 268435455: 55]
+    IO.write(i32d[1] .. "-")
+    IO.write(i32d[2] .. "-")
+    IO.write(i32d[-134] .. "-")
+    IO.write(i32d[256 * 256 * 256 * 127] .. "-")
+    IO.print(i32d[268435455])
+    IO.print(i32d.ToString())
+
+    dict<nat, nat> nd = [1: 11, 2: 22, 134: 33, 256 * 256 - 1: 44, 268435455: 55]
+    IO.write(nd[1] .. "-")
+    IO.write(nd[2] .. "-")
+    IO.write(nd[134] .. "-")
+    IO.write(nd[256 * 256 - 1] .. "-")
+    IO.print(nd[268435455])
+    IO.print(nd.ToString())
+
+    dict<nat8, nat> n8d = [1: 11, 2: 22, 112: 33, 127: 44]
+    IO.write(n8d[1] .. "-")
+    IO.write(n8d[2] .. "-")
+    IO.write(n8d[112] .. "-")
+    IO.print(n8d[127])
+    IO.print(n8d.ToString())
+
+    dict<nat16, nat> n16d = [1: 11, 2: 22, 134: 33, 256 * 127: 44, 26843: 55]
+    IO.write(n16d[1] .. "-")
+    IO.write(n16d[2] .. "-")
+    IO.write(n16d[134] .. "-")
+    IO.write(n16d[256 * 127] .. "-")
+    IO.print(n16d[26843])
+    IO.print(n16d.ToString())
+
+    dict<nat32, nat> n32d = [1: 11, 2: 22, 134: 33, 256 * 256 * 256 * 127: 44, 268435455: 55]
+    IO.write(n32d[1] .. "-")
+    IO.write(n32d[2] .. "-")
+    IO.write(n32d[134] .. "-")
+    IO.write(n32d[256 * 256 * 256 * 127] .. "-")
+    IO.print(n32d[268435455])
+    IO.print(n32d.ToString())
+
+    dict<float, float> fd = [1.23: 11, 0.0002: 22, -134e77: 33, 256 * 256 - 1: 44, 26843.5455: 55]
+    IO.write(fd[1.23] .. "-")
+    IO.write(fd[0.0002] .. "-")
+    IO.write(fd[-134e77] .. "-")
+    IO.write(fd[256 * 256 - 1] .. "-")
+    IO.print(fd[26843.5455])
+    IO.print(fd.ToString())
+
+    dict<float32, float32> f8d = [1.34: 11, 0.0002: 22, -11.2: 33, 127e32: 44]
+    IO.write(f8d[1.34] .. "-")
+    IO.write(f8d[0.0002] .. "-")
+    IO.write(f8d[-11.2] .. "-")
+    IO.print(f8d[127e32])
+    IO.print(f8d.ToString())
+
+  }
+
+  PROC testValueTypes()
+    dict<int, int> id = [11: 1, 22: -2, 33: -134, 44: 256 * 256 - 1, 55: 268435455]
+    IO.print(id.ToString())
+    dict<int, int8> i8d = [11: 1, 22: -2, 33: -127, 44: 126]
+    IO.print(i8d.ToString())
+    dict<int, int16> i16d = [11: 1, 22: -2, 33: -127 * 256, 44: 256 * 127, 55: 26843]
+    IO.print(i16d.ToString())
+    dict<int, int32> i32d = [11: 1, 22: -2, 33: -127 * 256, 44: 256 * 256 * 256 * 127, 55: 268435455]
+    IO.print(i32d.ToString())
+
+    dict<int, nat> nd = [11: 1, 22: 22, 33: 134, 44: 256 * 256 - 1, 55: 268435455]
+    IO.print(nd.ToString())
+    dict<int, nat8> n8d = [11: 1, 22: 22, 33: 127, 44: 256 - 1, 55: 251]
+    IO.print(n8d.ToString())
+    dict<int, nat16> n16d = [11: 1, 22: 22, 33: 127 * 256, 44: 256 * 256 - 1, 55: 26843]
+    IO.print(n16d.ToString())
+    dict<int, nat32> n32d = [11: 1, 22: 22, 33: 127 * 256, 44: 256 * 256 * 256 * 256 - 1, 55: 268435455]
+    IO.print(n32d.ToString())
+
+    # float and float32 already tested in testKeyTypes()
+  }
+
+  PROC testMap()
+    dict<int, int> id = [2: 22, 3: 33, 1: 11]
+    id.map({ n => n + 3 })
+    IO.print("mapped: " .. id.ToString())
+
+    id.keyMap({ k, n => k + n })
+    IO.print("keyMapped: " .. id.ToString())
+
+    dict<int, string> sd = id.mapTo({ n => n .. ":" })
+    IO.print("mapTo: " .. sd.ToString())
+
+    sd = id.keyMapTo({ k, n => k .. ": " .. n })
+    IO.print("keyMapTo: " .. sd.ToString())
+  }
+
+  PROC testMapDictList()
+    dict<int, int> id = O[2: 22, 3: 33, 1: 11]
+    id.map({ n => n + 3 })
+    IO.print("mapped: " .. id.ToString())
+
+    id.keyMap({ k, n => k + n })
+    IO.print("keyMapped: " .. id.ToString())
+
+    dict<int, string> sd = id.mapTo({ n => n .. ":" })
+    IO.print("mapTo: " .. sd.ToString())
+
+    sd = id.keyMapTo({ k, n => k .. ": " .. n })
+    IO.print("keyMapTo: " .. sd.ToString())
+  }
+
+  PROC testFor()
+    dict<int, string> dis = [1: "one", 2: "two"]
+    FOR k, v IN dis
+      IO.print(k .. ": " .. v)
+    }
+
+    dict<string, int> dsi = ["three": 3, "four": 4]
+    FOR k, v IN dsi
+      IO.print(k .. ": " .. v)
+    }
+
+    dict<dyn, int> ddi = [FAIL: 5, 1.234: 6]
+    FOR k, v IN ddi
+      IO.print(k .. ": " .. v)
+    }
+
+    Parent p = NEW()
+    p.nr = 7
+    Child c = NEW()
+    c.nr = 8
+    dict<int, Parent> dsp = [44: p, 55: c]
+    FOR k, v IN dsp
+      IO.print(k .. ": " .. v.ToString())
+    }
+  }
+
+  PROC testForEach()
+    dict<int, string> isd = [1: "one", 2: "two", 3: "three"]
+    VAR d1 = isd.forEach({ s => IO.print(s) })
+    d1.forKeyEach({ k, s => IO.print(k .. ": " .. s) })
+
+    dict<string, string> ssd = ["11": "one", "22": "two", "33": "three"]
+    VAR d2 = ssd.forEach({ s => IO.print(s) })
+    d2.forKeyEach({ k, s => IO.print(k .. ": " .. s) })
+  }
+
+  PROC testEqual()
+    dict<string, int> a = ["one": 1, "two": 2, "three": 3]
+    dict<string, int> b = ["one": 1, "two": 2, "three": 3]
+    dict<string, int8> b8 = ["one": 1, "two": 2, "three": 3]
+    dict<string, int> c = ["one": 1, "two": 4, "three": 3]
+    IO.print("equal dict: " .. (a == b))
+    IO.print("equal dict: " .. (a == b8))
+    IO.print("not equal dict: " .. (a == c))
+
+    dict<int, string> sa = [1: "1", 2: "2", 3: "3"]
+    dict<int, string> sb = [1: "1", 2: "2", 3: "3"]
+    dict<int, string> sc = [1: "1", 2: "4", 3: "3"]
+    dict<int, string> sd = [1: "1", 4: "2", 3: "3"]
+    IO.print("equal dict: " .. (sa == sb))
+    IO.print("not equal dict: " .. (sa == sc))
+    IO.print("not equal dict: " .. (sa == sd))
+  }
+
+}

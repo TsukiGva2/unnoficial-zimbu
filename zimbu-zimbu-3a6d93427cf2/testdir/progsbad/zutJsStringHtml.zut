@@ -1,0 +1,6 @@
+MODULE Testing
+  # Javascript string / Html
+  TEMPLATE inJsStringHtml(ZUT.Html text) ZUT.Javascript @public
+    var a = '[=text]';
+  }
+}

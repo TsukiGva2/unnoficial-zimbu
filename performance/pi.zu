@@ -1,0 +1,30 @@
+# Performance test: Compute Pi up to 1200 digits.
+# Author: Gjerrit Meinsma  reproduced with permission
+
+FUNC Main() int
+  IO.StringWriter w = NEW()
+  int k = 3999
+  int p = 0
+  int q = 0
+  int mult = 1000
+  int j = 0
+  list<int> a = [2]
+  WHILE a[j] != 0 && k != 0
+    p = 1 + 2 * k
+    WHILE j < 337
+      IF !(k != (j > 2 ? 1 : 0))
+        w.write((a[j - 2] % mult + q / p / mult).ToString("03d"))
+      }
+      q = a[j] * k + q % p * mult
+      a[j] = q / p
+      a.add(0)
+      j += 1
+    }
+    j = 0
+    q = 0
+    a[j] += 2
+    k -= 1
+  }
+  IO.print(w.ToString())
+  RETURN 0
+}

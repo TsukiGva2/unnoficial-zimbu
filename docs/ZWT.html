@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> ZWT
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Zimbu Web Toolkit.  A GUI in a web browser.
+</p>
+<table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Element.html'><b>Element</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Lowest level object, an HTML element.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.JsEvent.html'><b>JsEvent</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Lowest level object, a Javascript event.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.UIObject.html'><b>UIObject</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Lowest level ZWT object.  Wraps an HTML Element.  Cannot handle events.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Widget.html'><b>Widget</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A UIObject that handles events and can be added to panels.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Event.html'><b>Event</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> An event that can be triggered and acted upon.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.EventType.html'><b>EventType</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Used in the <b>Event</b> class.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Panel.html'><b>Panel</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Widget that contains one or more other widgets.
+ How they are ordered is defined by subclasses.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.HorizontalPanel.html'><b>HorizontalPanel</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A panel that stacks its children horizontally: a row of Widgets.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.ScrollPanel.html'><b>ScrollPanel</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A panel that provides control over scrollbars.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.PopupPanel.html'><b>PopupPanel</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A panel that goes on top of other panels.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.VerticalPanel.html'><b>VerticalPanel</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A panel that stacks its children vertically: a column of Widgets.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.NoButtonDialog.html'><b>NoButtonDialog</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A dialog with one Widget only.  It has a background that covers the whole
+ page, only interaction with the dialog is possible.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.SimpleDialog.html'><b>SimpleDialog</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Dialog with one Widget and an OK button.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.OkCancelDialog.html'><b>OkCancelDialog</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Dialog with one Widget and two buttons: OK and Cancel.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.TableCell.html'><b>TableCell</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A cell in a Table.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.TableRow.html'><b>TableRow</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A row in the table.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Table.html'><b>Table</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A table can hold a Widget in each cell.  The number of columns and rows is
+ adjusted dynamically.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Label.html'><b>Label</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Label is a simple widget that contains text, a HTML SPAN.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.TextBlock.html'><b>TextBlock</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A TextBlock is a simple widget that contains text, a HTML DIV.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Button.html'><b>Button</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A simple button that can call a procedure when clicked.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Code.html'><b>Code</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Code is a widget that contains preformatted text.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Input.html'><b>Input</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Input is a widget that contains one line of editable text.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Checkbox.html'><b>Checkbox</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Checkbox is a widget that has two states: Checked or not.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Dropdown.html'><b>Dropdown</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Dropdown is a widget that allows selecting one item in a list.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Textarea.html'><b>Textarea</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Textarea is a widget that contains editable text.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Color.html'><b>Color</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Specifies a color to be used for a Style.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.ColorName.html'><b>ColorName</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Values to be used when creating a Color object.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Unit.html'><b>Unit</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Values to be used when setting a size.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.BorderStyle.html'><b>BorderStyle</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Values to be used in setBorder() and setBorderStyle().
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.HorAlign.html'><b>HorAlign</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Horizontal alignment.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.VerAlign.html'><b>VerAlign</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Vertical alignment.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Style.html'><b>Style</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A style to be attached to a Widget or Table cell.
+ Specifies various properties for the item.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='ZWT.I_Controller.html'><b>I_Controller</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZWT.ListController.html'><b>ListController</b></A><small>&lt;Titem&gt;</small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Display a list of items in a Panel.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>INTERFACE</span>&nbsp;</td><td class='nowrap'><A href='ZWT.I_WidgetBuilder.html'><b>I_WidgetBuilder</b></A><small>&lt;Titem&gt;</small><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Interface for a builder that can create a Widget from a <b>Titem</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#root'><b>root</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.AbsolutePanel.html'>ZWT.AbsolutePanel</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the toplevel Panel.  Widgets added to this will appear in the page.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#alert'><b>alert</b></a>(<small>message</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Open a popup window to display <b>message</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#error'><b>error</b></a>(<small>message</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Abort execution with an error, displayed in the JS console.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#setCloseHandler'><b>setCloseHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Install <b>handler</b> to be called when the page is about to be abandoned.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#close'><b>close</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Abort execution of the UI.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.html#createPage'><b>createPage</b></a>(<small>server, path, title, moduleType</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create the HTML page that selects the Javascript file to load.
+ Makes all necessary items available through <b>server</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='alert'><b>alert</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> message)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Open a popup window to display <b>message</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='close'><b>close</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Abort execution of the UI.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='createPage'><b>createPage</b></A>(<span class='type'><A class='typehref' href='HTTP.Server.html'>HTTP.Server</A></span> server, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> path, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> title, <span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span> moduleType)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create the HTML page that selects the Javascript file to load.
+ Makes all necessary items available through <b>server</b>.
+</p>
+<p class='ptext'> <b>path</b> is the path under which the page will be available, e.g.
+ "index.html".
+<p class='ptext'> <b>title</b> is the page title.
+<p class='ptext'> <b>moduleType</b> is the type of the module of the page to be displayed.
+ This is only used by the server, not by the Javascript files.
+<p class='ptext'> Example for http://localhost/index.html displaying the page created by
+ MyZwtModule:
+<pre class='example'> HTTP.Server server = NEW(80)
+ ZWT.createPage(server, "index.html", "My ZWT page", MyZwtModule.Type()
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='error'><b>error</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> message)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Abort execution with an error, displayed in the JS console.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='root'><b>root</b></A>() <span class='type'><A class='typehref' href='ZWT.AbsolutePanel.html'>ZWT.AbsolutePanel</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the toplevel Panel.  Widgets added to this will appear in the page.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='setCloseHandler'><b>setCloseHandler</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; <A class='typehref' href='STRING.string.html'>string</A>&gt;</span> handler)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Install <b>handler</b> to be called when the page is about to be abandoned.
+</p>
+<p class='ptext'> When the user closes the window, tab or leaves the page in another way,
+ the <b>handler</b> will be called.  If it returns NIL or an empty string the
+ close will continue.  If it returns a non-empty string a dialog will
+ popup to ask the user if he really wants to close the window.
+<p class='ptext'> Example:
+<pre class='example'> ZWT.setCloseHandler({ =&gt; isChanged()
+                       ? "There are unsaved changes."
+                       : NIL })
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

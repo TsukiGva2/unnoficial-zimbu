@@ -1,0 +1,69 @@
+# The Zimbu compiler written in Zimbu
+#
+# Part of the protocol buffer plugin
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "FieldItem.zu"
+IMPORT "I_ItemFinder.zu"
+IMPORT "I_ProtoItem.zu"
+IMPORT "OptionItem.zu"
+IMPORT "ParseProto.zu"
+IMPORT "PToken.zu"
+
+CLASS MessageItem IMPLEMENTS I_ProtoItem, I_ItemFinder @items=directory
+  I_ItemFinder      $parent       # outer item that contains this Message
+
+  string            $name
+
+  list<FieldItem>   $fields
+  list<I_ProtoItem> $items   # nested items
+  list<OptionItem>  $optionList
+
+  NEW()
+    $fields = NEW()
+    $items = NEW()
+    $optionList = NEW()
+  }
+
+  PROC $addOption(OptionItem option)
+    IF option.name == "extensible"
+      $optionList.add(option)
+    }
+  }
+
+  FUNC $findItem(string name) I_ProtoItem
+    FOR item IN $items
+      IF item.name == name
+        RETURN item
+      }
+    }
+    IF $parent != NIL
+      RETURN $parent.findItem(name)
+    }
+    RETURN NIL
+  }
+
+  # Check for errors after parsing.
+  FUNC $checkErrors() status
+    set<int> usedNr = NEW()
+    set<string> usedName = NEW()
+    status ret = OK
+    FOR f IN $fields
+      IF usedNr.has(f.nr)
+        LOG.error("Field number used again: \(f.nr)", f.pos)
+        ret = FAIL
+      ELSEIF usedName.has(f.name)
+        LOG.error("Field name used again: \(f.name)", f.pos)
+        ret = FAIL
+      ELSE
+        usedNr.add(f.nr)
+        usedName.add(f.name)
+      }
+    }
+    RETURN ret
+  }
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>RPC.State enum - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='RPC.html'>up:&nbsp;RPC</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>ENUM</span> RPC.State
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The state used in the client to track the progress of an RPC call.
+</p>
+<table></table></td></tr></table>
+<h2>values</h2><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><table><tr><td><b>init</b>&nbsp;</td><td><p class='ptext'> able to set options
+</p>
+</td></tr><tr><td><b>sending</b>&nbsp;</td><td><p class='ptext'> RPC is being send out (queued, writing on channel)
+</p>
+</td></tr><tr><td><b>sent</b>&nbsp;</td><td><p class='ptext'> RPC sent, waiting for response
+</p>
+</td></tr><tr><td><b>receiving</b>&nbsp;</td><td><p class='ptext'> response received, reading it
+</p>
+</td></tr><tr><td><b>callback</b>&nbsp;</td><td><p class='ptext'> invoking "done" callback
+</p>
+</td></tr><tr><td><b>done</b>&nbsp;</td><td><p class='ptext'> "done" callback finished
+</p>
+</td></tr><tr><td><b>aborted</b>&nbsp;</td><td><p class='ptext'> skipped from any state above except |init| and |done|
+</p>
+</td></tr></table></td></tr></table><h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>TIME module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> TIME
+<span class='attribute'><small> @directory</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Various time related stuff
+</p>
+<p class='ptext'> Still very much under development.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html'><b>Values</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Broken-down values of a moment in time.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='TIME.Dst.html'><b>Dst</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Information about daylight saving time.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'><small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='TIME.html#daysShort'><b>daysShort</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> List to lookup the short English day of the week: "Sun", "Mon", etc.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='TIME.html#daysFull'><b>daysFull</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> List to lookup the English day of the week: "Sunday", "Monday", etc.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='TIME.html#monthsShort'><b>monthsShort</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> List to lookup the short English month name: "Jan", "Feb", etc.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='TIME.html#monthsFull'><b>monthsFull</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> List to lookup the English month name: "January", "February", etc.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='TIME.html#current'><b>current</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the curent Coordinated Universal Time (UTC) since epoch in usec.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.html#sleep'><b>sleep</b></a>(<small>usec</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Do nothing for <b>usec</b> microseconds.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.html#sleepSec'><b>sleepSec</b></a>(<small>sec</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Do nothing for <b>sec</b> seconds.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='daysFull'><b>daysFull</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> List to lookup the English day of the week: "Sunday", "Monday", etc.
+</p>
+<p class='ptext'> Sunday is used as the first day of the week, index zero.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='daysShort'><b>daysShort</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> List to lookup the short English day of the week: "Sun", "Mon", etc.
+</p>
+<p class='ptext'> Sunday is used as the first day of the week, index zero.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='monthsFull'><b>monthsFull</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> List to lookup the English month name: "January", "February", etc.
+</p>
+<p class='ptext'> January has index zero.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='monthsShort'><b>monthsShort</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> List to lookup the short English month name: "Jan", "Feb", etc.
+</p>
+<p class='ptext'> January has index zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='current'><b>current</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the curent Coordinated Universal Time (UTC) since epoch in usec.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='sleep'><b>sleep</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> usec)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Do nothing for <b>usec</b> microseconds.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='sleepSec'><b>sleepSec</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> sec)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Do nothing for <b>sec</b> seconds.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2010 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

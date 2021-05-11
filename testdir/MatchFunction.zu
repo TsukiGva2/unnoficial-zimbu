@@ -1,0 +1,96 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for finding the right function by matching arguments.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE MatchFunction @public
+
+  PROC test() @public
+    IO.print("testdir/MatchFunction.zu")
+    test1()
+    test2()
+  }
+
+  PROC test1()
+    PROC get(int v)
+      IO.print("int")
+    }
+    PROC get(int8 v)
+      IO.print("int8")
+    }
+    PROC get(int16 v)
+      IO.print("int16")
+    }
+    PROC get(int32 v)
+      IO.print("int32")
+    }
+    PROC get(nat v)
+      IO.print("nat")
+    }
+    PROC get(byte v)
+      IO.print("byte")
+    }
+    PROC get(nat16 v)
+      IO.print("nat16")
+    }
+    PROC get(nat32 v)
+      IO.print("nat32")
+    }
+    PROC get(float v)
+      IO.print("float")
+    }
+
+    int i
+    get(i)
+    int8 i8
+    get(i8)
+    int16 i16
+    get(i16)
+    int32 i32
+    get(i32)
+    nat n
+    get(n)
+    byte b
+    get(b)
+    nat16 n16
+    get(n16)
+    nat32 n32
+    get(n32)
+
+    get(123)
+    get(-123)
+    get(1.23)
+  }
+
+  PROC test2()
+    PROC get(int v, int x)
+      IO.print("int-int")
+    }
+    PROC get(nat v, nat x)
+      IO.print("nat-nat")
+    }
+    PROC get(int v, nat x)
+      IO.print("int-nat")
+    }
+    PROC get(nat v, int x)
+      IO.print("nat-int")
+    }
+
+    int i
+    get(i, i)
+    nat n
+    get(n, n)
+    get(i, n)
+    get(n, i)
+    nat32 n32
+    get(n32, n32)
+    get(n32, i)
+    get(i, n32)
+  }
+
+}

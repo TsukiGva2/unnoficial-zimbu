@@ -1,0 +1,29 @@
+#
+# Tokenizer of the Zimbu Templates plugin
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT ZutTokenType.zu
+
+IMPORT ../../parser/Tokenizer.zu
+IMPORT ../../parser/TokenType.zu
+
+CLASS ZutTokenizer EXTENDS Tokenizer
+
+  # We use ZutTokenType a lot, define an alias.
+  ALIAS ZutTokenType ZTType
+
+  NEW() @replace @public
+    $tokenTrie = NEW([%nonKeywords], [%keywords, %zutKeywords])
+  }
+
+  SHARED
+    dict<string, TokenType> %zutKeywords = [
+        "CSS": ZTType.css,
+        "TEMPLATE": ZTType.template,
+        ]
+  }
+}

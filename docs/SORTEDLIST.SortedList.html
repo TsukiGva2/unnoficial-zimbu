@@ -1,0 +1,525 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>SORTEDLIST.SortedList class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='SORTEDLIST.html'>up:&nbsp;SORTEDLIST</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.sortedList&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type sortedList.
+</p>
+<p class='ptext'> SortedLists keep a list in sorted order.  Either using the Compare method
+ of the item or an explicitly specified sort method.
+<p class='ptext'> This is similar to a priority queue.  However, the order is determined by
+ the items themselves, not by a separately provided priority.
+<p class='ptext'> Example:
+<pre class='example'> sortedList&lt;string&gt; sl = NEW()
+ sl.add('yes').add('no').add('maybe')
+ IO.print("sortedList: " .. sl.ToString())
+</pre>
+ Results in: sortedList: ["maybe", "no", "yes"]
+<p class='ptext'> The sorting only happens when an item is added.  When an item is modified
+ it needs to be removed and added back to update the sort order.
+</p>
+&nbsp;<br><div>Implements <A href='I.Iterable&lt;Titem&gt;.html'>I.Iterable&lt;Titem&gt;</A></div>&nbsp;<br><table><tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new empty sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#NEW'><b>NEW</b></a>(<small>items</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new sortedList from a list of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$Iterator'><b>$Iterator</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='I.Iterator&lt;Titem&gt;.html'>I.Iterator&lt;Titem&gt;</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get an iterator to go over the items in sorted order.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$KeyIterator'><b>$KeyIterator</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;.html'>I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get a key iterator to go over the items in sorted order.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$getList'><b>$getList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the ordinary list with the items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$setSortMethod'><b>$setSortMethod</b></a>(<small>method</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the method to use for comparing two items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$get'><b>$get</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the item at position <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$set'><b>$set</b></a>(<small>index, value</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$slice'><b>$slice</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items starting at <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items starting at <b>start</b> to <b>end</b>
+ (inclusive).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$add'><b>$add</b></a>(<small>item</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$add'><b>$add</b></a>(<small>item, index</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the sortedList.  Identical to add(item).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$insert'><b>$insert</b></a>(<small>item</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the sortedList.  Identical to add(item).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$insert'><b>$insert</b></a>(<small>item, index</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item to the sortedList.  Identical to add(item).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$clear'><b>$clear</b></a>(<small></small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Make the sortedList empty.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$clear'><b>$clear</b></a>(<small>index</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove an item at <b>index</b> from the sortedList. and return the
+ sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$remove'><b>$remove</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the last item from the list and returns it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$remove'><b>$remove</b></a>(<small>index</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the item at <b>index</b> from the sortedList and returns it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$remove'><b>$remove</b></a>(<small>from, to</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes items <b>from</b> to <b>to</b> (inclusive) from the list and returns them
+ in a new list.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$extend'><b>$extend</b></a>(<small>items</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a all items of list <b>items</b> to this sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$extend'><b>$extend</b></a>(<small>items</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a all items of sortedList <b>items</b> to this sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$concat'><b>$concat</b></a>(<small>other</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items of this list and list <b>other</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$concat'><b>$concat</b></a>(<small>other</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new list with all items of this list and sortedList <b>other</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$has'><b>$has</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if an item is present in the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$find'><b>$find</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the index of <b>item</b> in the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$join'><b>$join</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Return all items converted to a string and concatenated, separated by a
+ single space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$join'><b>$join</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$sort'><b>$sort</b></a>(<small></small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Ensures that the items are sorted.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$map'><b>$map</b></a>(<small>f</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$keyMap'><b>$keyMap</b></a>(<small>f</small>) <small><span class='type'>SortedList&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$mapTo'><b>$mapTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'>SortedList&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new sortedList where each item is the result of executing
+ function <b>f</b> on each item of this sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$keyMapTo'><b>$keyMapTo</b></a><small>&lt;Tresult&gt;</small>(<small>f</small>) <small><span class='type'>SortedList&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new sortedList where each item is the result of executing
+ function <b>f</b> on each item of this sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$forEach'><b>$forEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$forKeyEach'><b>$forKeyEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the sortedList.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$reduce'><b>$reduce</b></a>(<small>f</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$reduce'><b>$reduce</b></a>(<small>init, f</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SORTEDLIST.SortedList.html#$reduceTo'><b>$reduceTo</b></a><small>&lt;Tresult&gt;</small>(<small>init, f</small>) <small><span class='type'>Tresult</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item to collect a result value.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Included from <A href='BOX.ByItem.html'>BOX.ByItem</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='BOX.ByItem.html#$removeItem'><b>$removeItem</b></a>(<small>item</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>item</b>  and return it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BOX.ByItem.html#$clearItem'><b>$clearItem</b></a>(<small>item</small>) <small><span class='type'>THIS</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>item</b>  and return THIS.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Included from <A href='BOX.MaxMin.html'>BOX.MaxMin</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='BOX.MaxMin.html#$max'><b>$max</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the maximum value in the Box.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='BOX.MaxMin.html#$min'><b>$min</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the minimum value in the Box.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new empty sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> items)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new sortedList from a list of items.
+</p>
+<p class='ptext'> The <b>items</b> does not need to be sorted.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Iterator'><b>$Iterator</b></A>() <span class='type'><A class='typehref' href='I.Iterator&lt;Titem&gt;.html'>I.Iterator&lt;Titem&gt;</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get an iterator to go over the items in sorted order.
+</p>
+<p class='ptext'> Returns a SortedListIterator, which implements I.Iterator,
+ I.MutateIterator and I.BidiIterator.  Note that set() and add() are not
+ supported, because it confuses the iterator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$KeyIterator'><b>$KeyIterator</b></A>() <span class='type'><A class='typehref' href='I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;.html'>I.KeyIterator&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get a key iterator to go over the items in sorted order.
+</p>
+<p class='ptext'> Returns a BOX.ListKeyIterator, which implements I.KeyIterator.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the sortedList.
+</p>
+<p class='ptext'> Looks like a list of the items: [item1, item2, item3]
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the sortedList.
+</p>
+<p class='ptext'> <b>item</b> will be placed in the correct place to keep the sortedList
+ sorted.
+<p class='ptext'> <b>item</b> must not be NIL.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Titem</span> item, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the sortedList.  Identical to add(item).
+</p>
+<p class='ptext'> <b>index</b> is ignored, this method exists only to be compatible with list.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>() <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Make the sortedList empty.
+</p>
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove an item at <b>index</b> from the sortedList. and return the
+ sortedList.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end
+ of the list.
+<p class='ptext'> When <b>index</b> is out of range the list is unchanged.
+<p class='ptext'> $remove(index) does the same but returns the removed item.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$concat'><b>$concat</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> other) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items of this list and list <b>other</b>
+</p>
+<p class='ptext'> Returns the new sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$concat'><b>$concat</b></A>(<span class='type'>SortedList&lt;Titem&gt;</span> other) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items of this list and sortedList <b>other</b>
+</p>
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$extend'><b>$extend</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> items) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a all items of list <b>items</b> to this sortedList.
+</p>
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$extend'><b>$extend</b></A>(<span class='type'><A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>&lt;Titem&gt;</span> items) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a all items of sortedList <b>items</b> to this sortedList.
+</p>
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the index of <b>item</b> in the sortedList.
+</p>
+<p class='ptext'> Returns -1 when <b>item</b> is not found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEach'><b>$forEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Titem&gt;</span> f) <span class='type'><A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the sortedList.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the value.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEach'><b>$forKeyEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</span> f) <span class='type'><A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the sortedList.
+</p>
+<p class='ptext'> The first argument for f is the index in the sortedList, the second
+ argument is the value.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the item at position <b>index</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getList'><b>$getList</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the ordinary list with the items.
+</p>
+<p class='ptext'> Does not make a copy, changing the returned list will change the
+ sortedList without keeping it sorted.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Check if an item is present in the sortedList.
+</p>
+<p class='ptext'> Returns TRUE or FALSE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the sortedList.  Identical to add(item).
+</p>
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$insert'><b>$insert</b></A>(<span class='type'>Titem</span> item, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item to the sortedList.  Identical to add(item).
+</p>
+<p class='ptext'> <b>index</b> is ignored, this method exists only to be compatible with list.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$join'><b>$join</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all items converted to a string and concatenated, separated by a
+ single space.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$join'><b>$join</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> sep) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return all items converted to a string and concatenated, separated by
+ <b>sep</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMap'><b>$keyMap</b></A>(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem =&gt; Titem&gt;</span> f) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The index in the list and the current value of the
+ item.  <b>f</b> must return the new value of the item.
+<pre class='example'> list&lt;string&gt; l = ["a", "b", "c"]
+ l.keyMap({ i, s =&gt; i .. ":" .. s })
+ # l == ["0:a", "1:b", "2:c"]
+</pre>
+<p class='ptext'>
+ Returns the list.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapTo'><b>$keyMapTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem =&gt; Tresult&gt;</span> f) <span class='type'>SortedList&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new sortedList where each item is the result of executing
+ function <b>f</b> on each item of this sortedList.
+</p>
+<p class='ptext'> This is like keyMap() but with a different result type.
+<p class='ptext'> <b>f</b> has two arguments: The index in the list and the value of the item.
+ <b>f</b> must return the value for the new list.
+<pre class='example'> sortedList&lt;int&gt; il = [11, 22, 33]
+ sortedList&lt;string&gt; sl = il.keyMapTo({ i, n =&gt; i .. ": " .. n })
+ # sl == ["0: 11", "1: 22", "2: 33"]
+</pre>
+<p class='ptext'>
+ Returns the new sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$map'><b>$map</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value of the item, and must
+ return the new value of the item.
+<pre class='example'> sortedList&lt;string&gt; l = ["a", "b", "c"]
+ l.map({ s =&gt; s .. ":" })
+ # l == ["a:", "b:", "c:"]
+</pre>
+<p class='ptext'>
+ Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapTo'><b>$mapTo</b></A>&lt;Tresult&gt;(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Tresult&gt;</span> f) <span class='type'>SortedList&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new sortedList where each item is the result of executing
+ function <b>f</b> on each item of this sortedList.
+</p>
+<p class='ptext'> This is like map() but with a different result type.
+<p class='ptext'> <b>f</b> has one argument, which is the current value of the item, and must
+ return the new value of the item.
+<pre class='example'> sortedList&lt;int&gt; il = [1, 2, 3]
+ sortedList&lt;string&gt; sl = il.mapTo({ i =&gt; i.ToString() })
+ # sl == ["1", "2", "3"]
+</pre>
+<p class='ptext'>
+ Returns the new sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduce'><b>$reduce</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; Titem&gt;</span> f) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the first item of
+ the sortedList.
+<p class='ptext'> If the sortedList is empty the default item value (zero, FALSE, NIL) is
+ returned.
+<p class='ptext'> If the sortedList contains only one item that item is returned.
+<pre class='example'> sortedList&lt;int&gt; numberList = [1, 2, 3, 4]
+ int total = numberList.reduce({ a, b =&gt; a + b })
+ # total is 10.
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduce'><b>$reduce</b></A>(<span class='type'>Titem</span> init, <span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; Titem&gt;</span> f) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the <b>init</b>value.
+<p class='ptext'> If the list is empty the <b>init</b> value is returned.
+<pre class='example'> list&lt;int&gt; numberList = [1, -8, 3, 4]
+ int positiveMax = numberList.reduce(1, { a, b =&gt; b &gt; a ? b : a })
+ # positiveMax is 4.
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$reduceTo'><b>$reduceTo</b></A>&lt;Tresult&gt;(<span class='type'>Tresult</span> init, <span class='type'><span class='type'>func</span>&lt;Tresult, Titem =&gt; Tresult&gt;</span> f) <span class='type'>Tresult</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item to collect a result value.
+</p>
+<p class='ptext'> This first time <b>f</b> is called the first argument has the <b>init</b> value.
+<p class='ptext'> If the list is empty the <b>init</b> value is returned.
+<pre class='example'> list&lt;int&gt; numberList = [1, -8, 3, 4]
+ string values = numberList.reduceTo("values:", { r, v =&gt; r .. " " .. v })
+ # values is "values: 1 -8 3 4"
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>() <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the last item from the list and returns it.
+</p>
+<p class='ptext'> This does the same as remove(-1).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the item at <b>index</b> from the sortedList and returns it.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end
+ of the list.
+<p class='ptext'> Returns the item.  When <b>index</b> is out of range the list is unchanged
+ and the default item value returned (NIL, zero, FALSE).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> from, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> to) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes items <b>from</b> to <b>to</b> (inclusive) from the list and returns them
+ in a new list.
+</p>
+<p class='ptext'> <b>from</b> and <b>to</b> are used as with $add(): a negative index is relative to
+ the end of the list.
+<p class='ptext'> See list.remove(from to) for details.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index, <span class='type'>Titem</span> value) <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the item at <b>index</b>.
+</p>
+<p class='ptext'> A negative index is relative to the end, -1 refers to the last item.
+<p class='ptext'> Throws an E.OutOfRange exception when <b>index</b> does not refer to an
+ existing list item.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setSortMethod'><b>$setSortMethod</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem, Titem =&gt; <A class='typehref' href='INT.int.html'>int</A>&gt;</span> method)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the method to use for comparing two items.
+</p>
+<p class='ptext'> The method must return zero when the two items are equal, &lt; 0 when
+ the first one sorts before the second one and &gt; 0 when the first one
+ sorts after the second one.
+<p class='ptext'> When <b>method</b> is NIL the item Compare() method is used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items starting at <b>index</b>.
+</p>
+<p class='ptext'> <b>index</b> is used as with $add(): a negative index is relative to the end
+ of the list.
+<p class='ptext'> When <b>index</b> is before the first item zero is used.  When <b>index</b> is
+ beyond the last item an empty list is returned.
+<p class='ptext'> When Titem is a reference type both the original list and the slice
+ point to the same objects, as with a shallow copy.
+<p class='ptext'> When <b>index</b> is zero this is equivalent to $copy().
+<p class='ptext'> Returns the new list.  Note: Not a sortedList!.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new list with all items starting at <b>start</b> to <b>end</b>
+ (inclusive).
+</p>
+<p class='ptext'> <b>start</b> and <b>end</b> are used as with $add(): a negative index is relative
+ to the end of the list.
+<p class='ptext'> When <b>start</b> is before the first item zero is used.  When <b>end</b> is
+ beyond the last item the last item is used. When end is before start
+ then an empty list is returned.
+<p class='ptext'> When Titem is a reference type both the original list and the slice
+ point to the same objects, as with a shallow copy.
+<p class='ptext'> Returns the new list.  Note: Not a sortedList!.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$sort'><b>$sort</b></A>() <span class='type'>SortedList&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Ensures that the items are sorted.
+</p>
+<p class='ptext'> Can be used after the list returned by $getList() was modified, or when
+ individual items have been modified.
+<p class='ptext'> Returns the sortedList.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2013 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

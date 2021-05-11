@@ -1,0 +1,6 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.chdir("testdir")
+  IO.print(IO.getdir().slice(-7))
+  RETURN 0
+}

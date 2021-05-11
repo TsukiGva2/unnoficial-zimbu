@@ -1,0 +1,275 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module VARBYTESTRING - varByteString support
+#
+
+#= Methods for the varByteString type.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE VARBYTESTRINGModule @public
+
+  #= The builtin type varByteString.
+  #- The varByteString is a sequence of bytes (octets), including NUL.
+  #
+  #- This uses the same storage as varString.  Making mutations is done in an
+  #- efficient way, avoiding too many reallocations and copying.
+  CLASS STARTvarByteString @public
+    # For Zudocu: start of the varByteString class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the size of the varByteString, the number of bytes.
+  #- The size is stored thus this method is efficient.  It does not go over
+  #- the characters to find the end.
+  #
+  #- The empty varByteString returns zero.
+  #- When used on NIL Size() returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size(varByteString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+#! not implemented yet
+#  #= Return -1, 0 or 1 when |other| is larger, equal to or smaller than the
+#  #= varByteString.
+#  #
+#  #- When using ?.Compare() on a NIL varByteString and |other| is NIL it returns
+#  #- zero.  When |other| is not NIL it returns -1.
+#  FUNC Compare(varByteString this, varByteString other) bool @public
+#    ###### Only for generating documentation.
+#    RETURN FALSE
+#  }
+
+#! not implemented yet
+#  #= Return TRUE when |other| is equal to this varByteString, FALSE otherwise.
+#  #
+#  #- When using ?.Compare() on a NIL varByteString and |other| is NIL it returns
+#  #- TRUE.  Otherwise when |other| is NIL returns FALSE.
+#  FUNC Equal(varByteString this, varByteString other) bool @public
+#    ###### Only for generating documentation.
+#    RETURN FALSE
+#  }
+
+  #= Return the varByteString as a string.
+  #- When the varByteString is NIL this returns NIL
+  FUNC ToString(varByteString this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varByteString as a varString.
+  #- This does not do any conversion, it only changes the type of the object.
+  #- Also works on a NIL.
+  FUNC toVarString(varByteString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varByteString as a varString.
+  #- This does not do any conversion, it only changes the type of the object.
+  #- Also works on a NIL.
+  FUNC asVarString(varByteString this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varByteString as a byteString.
+  #- When the varByteString is NIL this returns NIL.
+  FUNC toByteString(varByteString this) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the varByteString as-is, this is a no-op.
+  #- Also works on NIL.
+  FUNC toVarByteString(varByteString this) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the lowest index where varByteString |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #- When not found returns -1.
+  #- When |s| is longer than this varByteString it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?.find() and the varByteString is NIL returns -1.
+  FUNC find(varByteString this, varByteString s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC find(varByteString this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where the varByteString |s| appears at or after
+  #= |start|.
+  #- When |start| is zero this works the same as find(s).
+  #- When not found returns -1.
+  #- When found returns |start| or more.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC find(varByteString this, varByteString s, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c| at or after |start|.
+  #- When |start| is zero this works the same as find(c).
+  #
+  #- When |c| is found returns |start| or more.
+  #
+  #- When |c| is not found returns -1.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC find(varByteString this, int c, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index where varByteString |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #
+  #- When not found returns -1.
+  #- When |s| is longer than this varByteString it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC findLast(varByteString this, varByteString s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC findLast(varByteString this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when the varByteString starts with |s|.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC startsWith(varByteString this, varByteString s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE when the varByteString ends with |s|.
+  #
+  #- When using ?. and the varByteString is NIL returns -1.
+  FUNC endsWith(varByteString this, varByteString s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a number that is a hash value of the varByteString.
+  #- A varByteString value always results in the same hash value.
+  #- Two different varByteString can result in the same hash value, but the
+  #- chance of this happening is small.
+  #
+  #- The hash method is fast and has a reasonable distribution.
+  #
+  #- TODO: this should return a nat
+  FUNC hash(varByteString this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Append a byteString to the varByteString.
+  #- Returns the modified varByteString.
+  #
+  #- When the varByteString is NIL throws a NilAccess exception, also when using
+  #- ?.
+  FUNC add(varByteString this, byteString s) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varByteString, starting at index |start|.
+  #- A negative index is relative to the end of the varByteString, `slice(-1)`
+  #- returns a varByteString with only the last character.
+  #
+  #- This counts characters, not bytes.  To count bytes first use
+  #- $asByteString().
+  #
+  #- If |start| is equal to or larger than the size of the varByteString an empty
+  #- varByteString is returned.
+  #- If |start| is negative and the absolute value is larger than the
+  #- varByteString size the whole varByteString is returned.
+  #
+  #- When using ?.slice() on a NIL varByteString the result is NIL.
+  FUNC slice(varByteString this, int start) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the varByteString, starting at index |start| and ending at
+  #= |end|, inclusive.
+  #- A negative index is relative to the end of the varByteString. `slice(0, -1)`
+  #- returns the whole varByteString. `slice(-1, -1)` only the last character.
+  #
+  #- If |start| is equal to or larger than the size of the varByteString an empty
+  #- varByteString is returned.
+  #- If |start| is negative and the absolute value is larger than the returned
+  #- varByteString starts at index zero.
+  #- If the |start| character is after the |end| character an empty
+  #- varByteString is
+  #- returned.
+  #
+  #- When using ?.slice() on a NIL varByteString the result is NIL.
+  FUNC slice(varByteString this, int start, int end) varByteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the varByteString split into pieces, split at white space.
+  #- Empty parts are omitted.
+  #
+  #- Example:  "foo  bar ".split() returns ["foo", "bar"].
+  FUNC split(varByteString this) list<byteString> @public
+    IFNIL
+      RETURN NIL
+    }
+    # TODO: make this more efficient, avoid the conversions.
+    RETURN this.toByteString().split()
+  }
+
+  #= Return a list with the varByteString split into pieces, split at |sep|.
+  #- The matches with the |sep| byteString are omitted.
+  #
+  #- |sep| must match exactly.
+  #
+  #- When there are no characters between two |sep| matches, or at the end or
+  #- start of the varByteString, the list will contain an empty byteString item.
+  #% "one, two,three".split(", ")
+  #% # result: ["one", "two,three"]
+  #
+  #- When using ?.split() on a NIL varByteString the result is NIL.
+  FUNC split(varByteString this, byteString sep) list<byteString> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #! For Zudocu: end of varByteString class.
+  CLASS ENDvarByteString
+  }
+
+}

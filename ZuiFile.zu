@@ -1,0 +1,172 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ZuiFile module: everything related to writing and reading .zui files.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "$PLUGIN/proto/Proto.zu"
+
+
+CLASS ZuiFile @items=public
+  string       $zuName    # name of the .zu file (path from build dir)
+  string       $zuiName   # name of the .zui file (path from build dir)
+  string       $dirName   # name of the directory for the .zui file
+
+  IO.FileInfo  $zuInfo    # info about the .zu file
+
+  Zui.Header   $header    # header from/for the .zui file
+  Zui.Contents $contents  # Contents from/for the .zui file
+  Zui.Body     $body      # Body from/for the .zui file
+
+  #= Create object with associated .zu file name |zuName| and .zui file name
+  #= |zuiName|.
+  NEW(string zuName, string dirName, string zuiName)
+    $zuName = zuName
+    $dirName = dirName
+    $zuiName = zuiName
+
+    # Get the Stat for the .zu file.
+    $zuInfo = IO.fileInfo($zuName)
+  }
+
+  #= Read the .zui file and fill $header, $contents and $body.
+  #- Return OK only if all of these are met:
+  #
+  #- - The file exists and can be read.
+  #
+  #- - The timestamp and size of the .zu file match and are valid.
+  FUNC $read(string indent) status
+    IO.File reader = IO.fileReader($zuiName)
+    IF reader == NIL
+      LOG.info("Cannot open for reading: \($zuiName)")
+      RETURN FAIL
+    }
+
+    TRY
+      $header = Zui.Header.createFromBinary(reader)
+      IF $header.getFileName() != IO.tail($zuName)
+        LOG.info("File name in \($zuiName) is "
+                 .. "\($header.getFileName()) instead of \(IO.tail($zuName))")
+        RETURN FAIL
+      }
+      IF $header.getByteSize() != $zuInfo.size
+        LOG.info("File size in \($zuiName)  is "
+                     .. "\($header.getByteSize()) instead of \($zuInfo.size)")
+        RETURN FAIL
+      }
+      IF $header.getTimeStamp() != $zuInfo.time
+        LOG.info("Timestamp in \($zuiName) differs")
+        RETURN FAIL
+      }
+
+      LOG.info("\(indent)Reading \($zuiName)...")
+      $contents = Zui.Contents.createFromBinary(reader)
+      $body = Zui.Body.createFromBinary(reader)
+      LOG.info("\(indent)Done.")
+    FINALLY
+      reader.close()
+    }
+    RETURN OK
+  }
+
+  #= Write the .zui file.
+  FUNC $write() status
+    LOG.info("Writing .zui file \($zuiName)...")
+
+    IF $contents == NIL
+      LOG.internal("ZuiFile.write(): contents is NIL")
+    }
+
+    # Fill the header.
+    $header = NEW()
+    $header.setFileName(IO.tail($zuName))
+    $header.setByteSize($zuInfo.size)
+    $header.setTimeStamp($zuInfo.time)
+  
+    IO.mkdir($dirName)
+    IO.File writer = IO.fileWriter($zuiName)
+    IF writer == NIL
+      IO.print("Cannot open file for writing")
+    ELSE
+      $header.writeBinary(writer)
+      Proto.writeEndMarker(writer)
+
+      $contents.writeBinary(writer)
+      Proto.writeEndMarker(writer)
+
+      IF $body == NIL
+        LOG.info("ZuiFile.write(): body is NIL")
+      ELSE
+        $body.writeBinary(writer)
+      }
+      writer.close()
+    }
+    LOG.info("Done.")
+
+    RETURN OK
+  }
+
+  SHARED
+
+    # Create a Zui position from a Z.Pos.
+    FUNC createPosition(Z.Pos pos) Zui.Position
+      IF pos == NIL
+        RETURN NIL
+      }
+      Zui.Position zpos = NEW()
+      zpos.setLine(pos.lnum)
+      zpos.setColumn(pos.col)
+      zpos.setFilename(pos.filename)
+      RETURN zpos
+    }
+
+    # Copy the values of a Z.Pos to a Zui position.
+    PROC copyPosition(Z.Pos pos, Zui.Position zpos)
+      zpos.setLine(pos.lnum)
+      zpos.setColumn(pos.col)
+      zpos.setFilename(pos.filename)
+    }
+
+    FUNC isParentExpr(Zui.Expression expr) bool
+      RETURN expr.getType() == Zui.ExprType.ePARENT
+          || (expr.getType() == Zui.ExprType.eMEMBER
+              && expr.getRight().getType() == Zui.ExprType.eID
+              && expr.getRight().getId().getName() == "PARENT")
+    }
+
+    # For an expression that is an ID or a member with IDs, return the string
+    # to display for it in messages.
+    FUNC expr2String(Zui.Expression expr) string
+      SWITCH expr.getType()
+        CASE Zui.ExprType.eID
+          RETURN expr.getId().getName()
+        CASE Zui.ExprType.eMEMBER
+          RETURN expr2String(expr.getLeft())
+                                        .. "." .. expr2String(expr.getRight())
+        CASE Zui.ExprType.eTYPESPEC
+          string s = expr2String(expr.getLeft()) .. "<"
+          IF expr.hasTypespec()
+            # check the typespec arguments: list<Titem>
+            string comma = ""
+            FOR type IN expr.getTypespecList()
+              s ..= comma
+              s ..= expr2String(type.getName())
+              comma = ", "
+            }
+          }
+          RETURN s .. ">"
+        DEFAULT
+          # TODO: this is ugly
+          RETURN expr.ToString()
+      }
+      RETURN ""
+    }
+
+  }
+
+}

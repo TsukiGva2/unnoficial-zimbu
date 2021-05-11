@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>SYS.Process class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='SYS.html'>up:&nbsp;SYS</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> SYS.Process
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Class for handling processes.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#NEW'><b>NEW</b></a>(<small>cmd</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a Process to run <b>cmd</b> without arguments
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#NEW'><b>NEW</b></a>(<small>cmd, arglist</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a Process to run <b>cmd</b> with arguments <b>arglist</b>.
+ Otherwise just like NEW(cmd).
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$setIO'><b>$setIO</b></a>(<small>flags</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Specify what IO of the process will be used.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$start'><b>$start</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Start the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$didStart'><b>$didStart</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if start() has been called.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$isRunning'><b>$isRunning</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if the process is running.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$didExitNormally'><b>$didExitNormally</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE only if the process was executed and exited normally.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$getExitValue'><b>$getExitValue</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the exit value of the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$wait'><b>$wait</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait until the process has exited.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$wait'><b>$wait</b></a>(<small>timeout</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait until the process has exited up to <b>timeout</b> usec.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$abort'><b>$abort</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Abort the process.  Tries to make the process exit cleanly by sending
+ it Signal.int.  If that doesn't work then it is killed with Signal.kill
+ signal.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$setAbortTimeout'><b>$setAbortTimeout</b></a>(<small>timeout</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the time for abort() to wait for a clean exit to <b>timeout</b> usec.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$interrupt'><b>$interrupt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Interrupt the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$kill'><b>$kill</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Abort the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$signal'><b>$signal</b></a>(<small>sig</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Send signal <b>sig</b> to the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$readFrom'><b>$readFrom</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the file to be used for stdin of the process to <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$writeTo'><b>$writeTo</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the file to be used for stdout of the process to <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$writeErrorsTo'><b>$writeErrorsTo</b></a>(<small>fname</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the file to be used for stderr of the process to <b>fname</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$writeErrorsToOut'><b>$writeErrorsToOut</b></a>(<small>yes</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set wether stderr of the process is written to the same file as
+ specified with writeTo().
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$read'><b>$read</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read all of stdout from the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$read'><b>$read</b></a>(<small>timeout</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read all of stdout from the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$write'><b>$write</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Write to stdin of the process.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.Process.html#$write'><b>$write</b></a>(<small>timeout</small>) <small><span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Write to stdin of the process.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> cmd)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a Process to run <b>cmd</b> without arguments
+</p>
+<p class='ptext'> When <b>cmd</b> contains a "/" it is used as-is. Otherwise $PATH is used to
+ locate the command.  See the execvp() man page for details.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> cmd, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span> arglist)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a Process to run <b>cmd</b> with arguments <b>arglist</b>.
+ Otherwise just like NEW(cmd).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$abort'><b>$abort</b></A>() <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Abort the process.  Tries to make the process exit cleanly by sending
+ it Signal.int.  If that doesn't work then it is killed with Signal.kill
+ signal.
+</p>
+<p class='ptext'> Use setAbortTimeout() to set the time to wait for a clean exit. Default
+ is one second.
+<p class='ptext'> Can only be used when process has been started and didn't exit yet.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$didExitNormally'><b>$didExitNormally</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE only if the process was executed and exited normally.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$didStart'><b>$didStart</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if start() has been called.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getExitValue'><b>$getExitValue</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the exit value of the process.
+</p>
+<p class='ptext'> Only to be invoked when didExitNormally() returns TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$interrupt'><b>$interrupt</b></A>() <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Interrupt the process.
+</p>
+<p class='ptext'> Sends Signal.int (signal 2, SIGINT), to the process to make it exit
+ cleanly.  The process may intercept the signal and not exit.
+<p class='ptext'> Can only be used when process has been started and didn't exit yet.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isRunning'><b>$isRunning</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Check if the process is running.
+</p>
+<p class='ptext'> Returns FALSE if the process didn't start yet and when it exited.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$kill'><b>$kill</b></A>() <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Abort the process.
+</p>
+<p class='ptext'> Sends Signal.kill (signal 9, SIGKILL), to the process to kill it.
+ The process can't intercept this, use with care.
+<p class='ptext'> Can only be used when process has been started and didn't exit yet.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$read'><b>$read</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read all of stdout from the process.
+</p>
+<p class='ptext'> Will block until the process exits.
+ Must not be called before the process is started.  Returns an empty
+ string when the process already exited.
+<p class='ptext'> NOT IMPLEMENTED YET
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$read'><b>$read</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> timeout) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read all of stdout from the process.
+</p>
+<p class='ptext'> Will block until the process exits or <b>timeout</b> usec has passed.
+ Must not be called before the process is started.  Returns an empty
+ string when the process already exited.
+<p class='ptext'> NOT IMPLEMENTED YET
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readFrom'><b>$readFrom</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the file to be used for stdin of the process to <b>fname</b>.
+</p>
+<p class='ptext'> This works like "cmd &lt; fname" in the shell.  Must be invoked before the
+ process is started.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setAbortTimeout'><b>$setAbortTimeout</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> timeout) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the time for abort() to wait for a clean exit to <b>timeout</b> usec.
+</p>
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setIO'><b>$setIO</b></A>(<span class='type'><A class='typehref' href='SYS.IOFlags.html'>SYS.IOFlags</A></span> flags) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Specify what IO of the process will be used.
+</p>
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$signal'><b>$signal</b></A>(<span class='type'><A class='typehref' href='SYS.Signal.html'>SYS.Signal</A></span> sig) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Send signal <b>sig</b> to the process.
+</p>
+<p class='ptext'> Returns the object.
+<p class='ptext'> Can only be used when process has been started and didn't exit yet.
+<p class='ptext'> NOT IMPLEMENTED YET
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$start'><b>$start</b></A>() <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Start the process.
+</p>
+<p class='ptext'> Can be used only once, a process can't be restarted.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$wait'><b>$wait</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Wait until the process has exited.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$wait'><b>$wait</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> timeout) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Wait until the process has exited up to <b>timeout</b> usec.
+</p>
+<p class='ptext'> Returns OK if the process has exited, FAIL if timed out.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>() <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Write to stdin of the process.
+</p>
+<p class='ptext'> May block until the process has read the input.
+ Must not be called before the process is started or after the process
+ exited.
+<p class='ptext'> Returns the object.
+<p class='ptext'> NOT IMPLEMENTED YET
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> timeout) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Write to stdin of the process.
+</p>
+<p class='ptext'> May block until the process has read the input up to <b>timeout</b> usec.
+ Must not be called before the process is started or after the process
+ exited.
+<p class='ptext'> Returns the object.
+<p class='ptext'> NOT IMPLEMENTED YET
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeErrorsTo'><b>$writeErrorsTo</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the file to be used for stderr of the process to <b>fname</b>.
+</p>
+<p class='ptext'> This works like "cmd &gt;&amp; fname" in the shell.  If <b>fname</b> exists it is
+ overwritten.  Must be invoked before the process is started.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeErrorsToOut'><b>$writeErrorsToOut</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> yes) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set wether stderr of the process is written to the same file as
+ specified with writeTo().
+</p>
+<p class='ptext'> Must be invoked before the process is started.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeTo'><b>$writeTo</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname) <span class='type'><A class='typehref' href='SYS.Process.html'>SYS.Process</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the file to be used for stdout of the process to <b>fname</b>.
+</p>
+<p class='ptext'> This works like "cmd &gt; fname" in the shell.  If <b>fname</b> exists it is
+ overwritten.  Must be invoked before the process is started.
+<p class='ptext'> Returns the object.
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2010 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

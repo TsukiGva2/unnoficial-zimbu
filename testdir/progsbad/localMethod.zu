@@ -1,0 +1,16 @@
+# Small test program: Verify that this does not compile.
+
+CLASS Foo
+  PROC $doIt() @local
+  }
+}
+
+CLASS Bar EXTENDS Foo
+  # doIt() will not be available here.
+}
+
+FUNC Main() int
+  Bar b = NEW()
+  b.doIt()
+  RETURN 0
+}

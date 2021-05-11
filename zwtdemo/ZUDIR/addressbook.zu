@@ -1,0 +1,939 @@
+# Generated from addressbook.proto
+
+IMPORT "$PLUGIN/proto/Proto.zu"
+IMPORT "$PLUGIN/proto/Message.zu"
+
+MODULE Tutorial @public @items=public
+  CLASS Person EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "Person"
+    }
+    CLASS PhoneNumber EXTENDS Message @public @items=public
+      NEW()
+      }
+      FUNC $name() string @replace @primitive
+        RETURN "PhoneNumber"
+      }
+      string $f_number
+      FUNC $setNumber(string v) PhoneNumber @primitive
+        $f_number = v
+        RETURN THIS
+      }
+      FUNC $getNumber() string @primitive
+        IF $f_number == NIL
+          RETURN ""
+        }
+        RETURN $f_number
+      }
+      FUNC $hasNumber() bool @primitive
+        RETURN $f_number != NIL
+      }
+      FUNC $clearNumber() PhoneNumber @primitive
+        $f_number = NIL
+        RETURN THIS
+      }
+      PhoneType $f_type
+      FUNC $setType(PhoneType v) PhoneNumber @primitive
+        $f_type = v
+        RETURN THIS
+      }
+      FUNC $getType() PhoneType @primitive
+        IF $f_type == PhoneType.unknown
+          RETURN PhoneType.eHOME
+        }
+        RETURN $f_type
+      }
+      FUNC $hasType() bool @primitive
+        RETURN $f_type != PhoneType.unknown
+      }
+      FUNC $clearType() PhoneNumber @primitive
+        $f_type = PhoneType.unknown
+        RETURN THIS
+      }
+      PROC $clear() @primitive
+        $f_number = NIL
+        $f_type = PhoneType.unknown
+      }
+      FUNC $valid() bool @primitive
+        RETURN $hasNumber()
+      }
+      FUNC $enumGet(int fieldNr) int @replace @primitive
+        SWITCH fieldNr
+          CASE 2; RETURN fromPhoneType2int[$f_type]
+        }
+        RETURN 0
+      }
+      FUNC $enumNameGet(int fieldNr) string @replace @primitive
+        string s
+        SWITCH fieldNr
+          CASE 2; s = $f_type.ToString(); RETURN s == "unknown" ? s : s.slice(1)
+        }
+        RETURN ""
+      }
+      PROC $enumSet(int fieldNr, int value) @replace @primitive
+        SWITCH fieldNr
+          CASE 2; $f_type = int2PhoneType.has(value) ? int2PhoneType[value] : PhoneType.unknown
+        }
+      }
+      PROC $enumNameSet(int fieldNr, string name) @replace @primitive
+        SWITCH fieldNr
+          CASE 2; $f_type = PhoneType.FromString("e" .. name)
+
+        }
+      }
+      FUNC $stringGet(int fieldNr) string @replace @primitive
+        SWITCH fieldNr
+          CASE 1; RETURN $f_number
+        }
+        RETURN ""
+      }
+      PROC $stringSet(int fieldNr, string value) @replace @primitive
+        SWITCH fieldNr
+          CASE 1; $f_number = value
+        }
+      }
+      FUNC $hasField(int fieldNr) bool @replace @primitive
+        SWITCH fieldNr
+          CASE 1; RETURN $hasNumber()
+          CASE 2; RETURN $hasType()
+        }
+        RETURN FALSE
+      }
+      FUNC $copy(bool deep) PhoneNumber
+        PhoneNumber ret = NEW()
+        ret.f_number = $f_number
+        ret.f_type = $f_type
+        RETURN ret
+      }
+      FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+        RETURN fieldSpecs
+      }
+      FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) PhoneNumber
+        Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+        RETURN THIS
+      }
+      FUNC $mergeFromBinary(Proto.I_Reader reader) PhoneNumber
+        Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+        RETURN THIS
+      }
+      FUNC $mergeFromBinary(IO.I_ByteReader reader) PhoneNumber
+        $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+        RETURN THIS
+      }
+      FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) PhoneNumber
+        $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+        RETURN THIS
+      }
+      FUNC $mergeFromText(Proto.I_Reader reader) PhoneNumber
+        Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+        RETURN THIS
+      }
+      FUNC $mergeFromJson(Proto.I_Reader reader) PhoneNumber
+        Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+        RETURN THIS
+      }
+      FUNC $mergeFromJson(IO.I_CharReader reader) PhoneNumber
+        Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+        RETURN THIS
+      }
+      SHARED
+        list<Proto.FieldSpec> fieldSpecs = [
+          NEW("number", 1, Proto.Type.string, FALSE),
+          NEW("type", 2, Proto.Type.enum, FALSE),
+        ]
+        FUNC newMessage() Message
+          RETURN PhoneNumber.NEW()
+        }
+        FUNC createFromBinary(IO.I_ByteReader reader) PhoneNumber
+          RETURN PhoneNumber.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+        }
+        FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+          RETURN createFromBinary(reader)
+        }
+        FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+          RETURN createFromBinaryDeref(reader)
+        }
+        FUNC createFromText(IO.I_CharReader reader) PhoneNumber
+          RETURN PhoneNumber.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+        }
+        FUNC createMessageFromText(IO.I_CharReader reader) Message
+          RETURN createFromText(reader)
+        }
+        FUNC createFromJson(IO.I_CharReader reader) PhoneNumber
+          RETURN PhoneNumber.NEW().mergeFromJson(reader)
+        }
+        FUNC createMessageFromJson(IO.I_CharReader reader) Message
+          RETURN createFromJson(reader)
+        }
+        FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+          RETURN createFromJsonDeref(reader)
+        }
+        FUNC createFromBinaryDeref(IO.I_ByteReader reader) PhoneNumber
+          RETURN PhoneNumber.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+        }
+        FUNC createFromJsonDeref(IO.I_CharReader reader) PhoneNumber
+          RETURN PhoneNumber.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+        }
+      }
+    }
+    string $f_name
+    FUNC $setName(string v) Person @primitive
+      $f_name = v
+      RETURN THIS
+    }
+    FUNC $getName() string @primitive
+      IF $f_name == NIL
+        RETURN ""
+      }
+      RETURN $f_name
+    }
+    FUNC $hasName() bool @primitive
+      RETURN $f_name != NIL
+    }
+    FUNC $clearName() Person @primitive
+      $f_name = NIL
+      RETURN THIS
+    }
+    int32 $f_id
+    bool $has_id
+    FUNC $setId(int32 v) Person @primitive
+      $f_id = v
+      $has_id = TRUE
+      RETURN THIS
+    }
+    FUNC $getId() int32 @primitive
+      IF !$has_id
+        RETURN 0
+      }
+      RETURN $f_id
+    }
+    FUNC $hasId() bool @primitive
+      RETURN $has_id
+    }
+    FUNC $clearId() Person @primitive
+      $f_id = 0
+      $has_id = FALSE
+      RETURN THIS
+    }
+    string $f_email
+    FUNC $setEmail(string v) Person @primitive
+      $f_email = v
+      RETURN THIS
+    }
+    FUNC $getEmail() string @primitive
+      IF $f_email == NIL
+        RETURN ""
+      }
+      RETURN $f_email
+    }
+    FUNC $hasEmail() bool @primitive
+      RETURN $f_email != NIL
+    }
+    FUNC $clearEmail() Person @primitive
+      $f_email = NIL
+      RETURN THIS
+    }
+    list<PhoneNumber> $f_phone
+    FUNC $addPhone(PhoneNumber v) Person
+      IF $f_phone == NIL
+        $f_phone = NEW()
+      }
+      $f_phone.add(v)
+      RETURN THIS
+    }
+    FUNC $addNewPhone() PhoneNumber
+      PhoneNumber v = NEW()
+      $addPhone(v)
+      RETURN v
+    }
+    FUNC $getPhone(int i) PhoneNumber @primitive
+      IF i < 0 || $f_phone == NIL || i >= $f_phone.Size()
+        THROW "list index out of range for phone: " .. i
+      }
+      RETURN $f_phone[i]
+    }
+    FUNC $getPhoneList() list<PhoneNumber> @primitive
+      RETURN $f_phone
+    }
+    FUNC $setPhoneList(list<PhoneNumber> l) Person @primitive
+      $f_phone = l
+      RETURN THIS
+    }
+    FUNC $sizePhone() int @primitive
+      RETURN $f_phone == NIL ? 0 : $f_phone.Size()
+    }
+    FUNC $hasPhone() bool @primitive
+      RETURN $f_phone != NIL && $f_phone.Size() > 0
+    }
+    FUNC $hasPhone(int i) bool @primitive
+      RETURN i >= 0 && $f_phone != NIL && i < $f_phone.Size()
+    }
+    FUNC $clearPhone() Person @primitive
+      $f_phone = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_name = NIL
+      $f_id = 0
+      $f_email = NIL
+      $f_phone = NIL
+      $has_id = FALSE
+    }
+    FUNC $valid() bool @primitive
+      RETURN $hasName() && $hasId()
+    }
+    FUNC $int32Get(int fieldNr) int32 @replace @primitive
+      SWITCH fieldNr
+        CASE 2; RETURN $f_id
+      }
+      RETURN 0
+    }
+    PROC $int32Set(int fieldNr, int32 value) @replace @primitive
+      SWITCH fieldNr
+        CASE 2; $f_id = value; $has_id = TRUE
+      }
+    }
+    FUNC $stringGet(int fieldNr) string @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_name
+        CASE 3; RETURN $f_email
+      }
+      RETURN ""
+    }
+    PROC $stringSet(int fieldNr, string value) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; $f_name = value
+        CASE 3; $f_email = value
+      }
+    }
+    FUNC $messageGet(int fieldNr, int idx) Message @replace @primitive
+      SWITCH fieldNr
+        CASE 4; RETURN $f_phone[idx]
+      }
+      RETURN NIL
+    }
+    PROC $messageAdd(int fieldNr, Message m) @replace @primitive
+      SWITCH fieldNr
+        CASE 4; IF $f_phone == NIL; $f_phone = NEW(); }
+                $f_phone.add(m)
+      }
+    }
+    FUNC $mergeMessageFromReader(int fieldNr, Proto.FileFormat format, Proto.I_Reader reader) bool @replace
+      SWITCH fieldNr
+        CASE 4
+          IF $f_phone == NIL
+            $f_phone = NEW()
+          }
+          PhoneNumber m = NEW()
+          $f_phone.add(m)
+          reader.addRef(m)
+          m.mergeFromReader(format, reader)
+          RETURN TRUE
+      }
+      RETURN FALSE
+    }
+    FUNC $hasField(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $hasName()
+        CASE 2; RETURN $hasId()
+        CASE 3; RETURN $hasEmail()
+      }
+      RETURN FALSE
+    }
+    FUNC $size(int fieldNr) int @replace @primitive
+      SWITCH fieldNr
+        CASE 4; RETURN $f_phone == NIL ? 0 : $f_phone.Size()
+      }
+      RETURN 0
+    }
+    FUNC $copy(bool deep) Person
+      Person ret = NEW()
+      ret.f_name = $f_name
+      IF $has_id
+        ret.has_id = TRUE
+        ret.f_id = $f_id
+      }
+      ret.f_email = $f_email
+      IF deep
+        IF $f_phone != NIL
+          ret.f_phone = NEW()
+          FOR i IN $f_phone
+            ret.f_phone.add(i.copy(deep))
+          }
+        }
+      ELSE
+        ret.f_phone = $f_phone
+      }
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) Person
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) Person
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) Person
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) Person
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) Person
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) Person
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) Person
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("name", 1, Proto.Type.string, FALSE),
+        NEW("id", 2, Proto.Type.int32, FALSE),
+        NEW("email", 3, Proto.Type.string, FALSE),
+        NEW("phone", 4, Proto.Type.message, TRUE),
+      ]
+      FUNC newMessage() Message
+        RETURN Person.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) Person
+        RETURN Person.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) Person
+        RETURN Person.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) Person
+        RETURN Person.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) Person
+        RETURN Person.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) Person
+        RETURN Person.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+      ENUM PhoneType @public
+        unknown
+        eMOBILE
+        eHOME
+        eWORK
+      }
+      dict<PhoneType, int> fromPhoneType2int = [
+        PhoneType.unknown: -1,
+        PhoneType.eMOBILE: 0,
+        PhoneType.eHOME: 1,
+        PhoneType.eWORK: 2,
+      ]
+      dict<int, PhoneType> int2PhoneType = [
+        0: PhoneType.eMOBILE,
+        1: PhoneType.eHOME,
+        2: PhoneType.eWORK,
+      ]
+    }
+  }
+  CLASS AddressBook EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "AddressBook"
+    }
+    list<Person> $f_person
+    FUNC $addPerson(Person v) AddressBook
+      IF $f_person == NIL
+        $f_person = NEW()
+      }
+      $f_person.add(v)
+      RETURN THIS
+    }
+    FUNC $addNewPerson() Person
+      Person v = NEW()
+      $addPerson(v)
+      RETURN v
+    }
+    FUNC $getPerson(int i) Person @primitive
+      IF i < 0 || $f_person == NIL || i >= $f_person.Size()
+        THROW "list index out of range for person: " .. i
+      }
+      RETURN $f_person[i]
+    }
+    FUNC $getPersonList() list<Person> @primitive
+      RETURN $f_person
+    }
+    FUNC $setPersonList(list<Person> l) AddressBook @primitive
+      $f_person = l
+      RETURN THIS
+    }
+    FUNC $sizePerson() int @primitive
+      RETURN $f_person == NIL ? 0 : $f_person.Size()
+    }
+    FUNC $hasPerson() bool @primitive
+      RETURN $f_person != NIL && $f_person.Size() > 0
+    }
+    FUNC $hasPerson(int i) bool @primitive
+      RETURN i >= 0 && $f_person != NIL && i < $f_person.Size()
+    }
+    FUNC $clearPerson() AddressBook @primitive
+      $f_person = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_person = NIL
+    }
+    FUNC $valid() bool @primitive
+      RETURN TRUE
+    }
+    FUNC $messageGet(int fieldNr, int idx) Message @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_person[idx]
+      }
+      RETURN NIL
+    }
+    PROC $messageAdd(int fieldNr, Message m) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; IF $f_person == NIL; $f_person = NEW(); }
+                $f_person.add(m)
+      }
+    }
+    FUNC $mergeMessageFromReader(int fieldNr, Proto.FileFormat format, Proto.I_Reader reader) bool @replace
+      SWITCH fieldNr
+        CASE 1
+          IF $f_person == NIL
+            $f_person = NEW()
+          }
+          Person m = NEW()
+          $f_person.add(m)
+          reader.addRef(m)
+          m.mergeFromReader(format, reader)
+          RETURN TRUE
+      }
+      RETURN FALSE
+    }
+    FUNC $size(int fieldNr) int @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_person == NIL ? 0 : $f_person.Size()
+      }
+      RETURN 0
+    }
+    FUNC $copy(bool deep) AddressBook
+      AddressBook ret = NEW()
+      IF deep
+        IF $f_person != NIL
+          ret.f_person = NEW()
+          FOR i IN $f_person
+            ret.f_person.add(i.copy(deep))
+          }
+        }
+      ELSE
+        ret.f_person = $f_person
+      }
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) AddressBook
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) AddressBook
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) AddressBook
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) AddressBook
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) AddressBook
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) AddressBook
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) AddressBook
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("person", 1, Proto.Type.message, TRUE),
+      ]
+      FUNC newMessage() Message
+        RETURN AddressBook.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) AddressBook
+        RETURN AddressBook.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) AddressBook
+        RETURN AddressBook.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) AddressBook
+        RETURN AddressBook.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) AddressBook
+        RETURN AddressBook.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) AddressBook
+        RETURN AddressBook.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+    }
+  }
+  CLASS GetOptions EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "GetOptions"
+    }
+    string $f_name
+    FUNC $setName(string v) GetOptions @primitive
+      $f_name = v
+      RETURN THIS
+    }
+    FUNC $getName() string @primitive
+      IF $f_name == NIL
+        RETURN ""
+      }
+      RETURN $f_name
+    }
+    FUNC $hasName() bool @primitive
+      RETURN $f_name != NIL
+    }
+    FUNC $clearName() GetOptions @primitive
+      $f_name = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_name = NIL
+    }
+    FUNC $valid() bool @primitive
+      RETURN TRUE
+    }
+    FUNC $stringGet(int fieldNr) string @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_name
+      }
+      RETURN ""
+    }
+    PROC $stringSet(int fieldNr, string value) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; $f_name = value
+      }
+    }
+    FUNC $hasField(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $hasName()
+      }
+      RETURN FALSE
+    }
+    FUNC $copy(bool deep) GetOptions
+      GetOptions ret = NEW()
+      ret.f_name = $f_name
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) GetOptions
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) GetOptions
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) GetOptions
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) GetOptions
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) GetOptions
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) GetOptions
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) GetOptions
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("name", 1, Proto.Type.string, FALSE),
+      ]
+      FUNC newMessage() Message
+        RETURN GetOptions.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) GetOptions
+        RETURN GetOptions.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) GetOptions
+        RETURN GetOptions.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) GetOptions
+        RETURN GetOptions.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) GetOptions
+        RETURN GetOptions.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) GetOptions
+        RETURN GetOptions.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+    }
+  }
+  CLASS Status EXTENDS Message @public @items=public
+    NEW()
+    }
+    FUNC $name() string @replace @primitive
+      RETURN "Status"
+    }
+    int $f_ok
+    FUNC $setOk(bool v) Status @primitive
+      $f_ok = v ? 2 : 1
+      RETURN THIS
+    }
+    FUNC $getOk() bool @primitive
+      IF $f_ok == 0
+        RETURN FALSE
+      }
+      RETURN $f_ok == 2
+    }
+    FUNC $hasOk() bool @primitive
+      RETURN $f_ok != 0
+    }
+    FUNC $clearOk() Status @primitive
+      $f_ok = 0
+      RETURN THIS
+    }
+    string $f_error
+    FUNC $setError(string v) Status @primitive
+      $f_error = v
+      RETURN THIS
+    }
+    FUNC $getError() string @primitive
+      IF $f_error == NIL
+        RETURN ""
+      }
+      RETURN $f_error
+    }
+    FUNC $hasError() bool @primitive
+      RETURN $f_error != NIL
+    }
+    FUNC $clearError() Status @primitive
+      $f_error = NIL
+      RETURN THIS
+    }
+    PROC $clear() @primitive
+      $f_ok = 0
+      $f_error = NIL
+    }
+    FUNC $valid() bool @primitive
+      RETURN $hasOk()
+    }
+    FUNC $boolGet(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $f_ok == 2
+      }
+      RETURN FALSE
+    }
+    PROC $boolSet(int fieldNr, bool value) @replace @primitive
+      SWITCH fieldNr
+        CASE 1; $f_ok = (value ? 2 : 1)
+      }
+    }
+    FUNC $stringGet(int fieldNr) string @replace @primitive
+      SWITCH fieldNr
+        CASE 2; RETURN $f_error
+      }
+      RETURN ""
+    }
+    PROC $stringSet(int fieldNr, string value) @replace @primitive
+      SWITCH fieldNr
+        CASE 2; $f_error = value
+      }
+    }
+    FUNC $hasField(int fieldNr) bool @replace @primitive
+      SWITCH fieldNr
+        CASE 1; RETURN $hasOk()
+        CASE 2; RETURN $hasError()
+      }
+      RETURN FALSE
+    }
+    FUNC $copy(bool deep) Status
+      Status ret = NEW()
+      ret.f_ok = $f_ok
+      ret.f_error = $f_error
+      RETURN ret
+    }
+    FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive
+      RETURN fieldSpecs
+    }
+    FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) Status
+      Proto.mergeFromFields(THIS, format, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(Proto.I_Reader reader) Status
+      Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromBinary(IO.I_ByteReader reader) Status
+      $mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) Status
+      $mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      RETURN THIS
+    }
+    FUNC $mergeFromText(Proto.I_Reader reader) Status
+      Proto.mergeFromTextFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(Proto.I_Reader reader) Status
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)
+      RETURN THIS
+    }
+    FUNC $mergeFromJson(IO.I_CharReader reader) Status
+      Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))
+      RETURN THIS
+    }
+    SHARED
+      list<Proto.FieldSpec> fieldSpecs = [
+        NEW("ok", 1, Proto.Type.bool, FALSE),
+        NEW("error", 2, Proto.Type.string, FALSE),
+      ]
+      FUNC newMessage() Message
+        RETURN Status.NEW()
+      }
+      FUNC createFromBinary(IO.I_ByteReader reader) Status
+        RETURN Status.NEW().mergeFromBinary(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromBinary(IO.I_ByteReader reader) Message
+        RETURN createFromBinary(reader)
+      }
+      FUNC createMessageFromBinaryDeref(IO.I_ByteReader reader) Message
+        RETURN createFromBinaryDeref(reader)
+      }
+      FUNC createFromText(IO.I_CharReader reader) Status
+        RETURN Status.NEW().mergeFromText(Proto.Reader.NEW(reader, FALSE))
+      }
+      FUNC createMessageFromText(IO.I_CharReader reader) Message
+        RETURN createFromText(reader)
+      }
+      FUNC createFromJson(IO.I_CharReader reader) Status
+        RETURN Status.NEW().mergeFromJson(reader)
+      }
+      FUNC createMessageFromJson(IO.I_CharReader reader) Message
+        RETURN createFromJson(reader)
+      }
+      FUNC createMessageFromJsonDeref(IO.I_CharReader reader) Message
+        RETURN createFromJsonDeref(reader)
+      }
+      FUNC createFromBinaryDeref(IO.I_ByteReader reader) Status
+        RETURN Status.NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))
+      }
+      FUNC createFromJsonDeref(IO.I_CharReader reader) Status
+        RETURN Status.NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))
+      }
+    }
+  }
+  MODULE AddressService @public @items=public
+    # rpc GetAddressBook(GetOptions) returns AddressBook
+    FUNC callGetAddressBook(GetOptions request, proc<RPC.Control, Message> done) RPC.Control
+      IF !request.valid()
+        RETURN NIL
+      }
+      GENERATE_IF Z.lang == "JS"
+        RETURN Proto.rpc("AddressService.GetAddressBook", request, AddressBook.createMessageFromJsonDeref, NIL, done)
+      GENERATE_ELSEIF Z.lang == "C"
+        RETURN Proto.rpc("AddressService.GetAddressBook", request, NIL, AddressBook.createMessageFromBinaryDeref, done)
+      GENERATE_ELSE
+        RETURN NIL
+      }
+    }
+    GENERATE_IF Z.lang == "C"
+      Proto.RpcInfo handleGetAddressBook = NEW("AddressService.GetAddressBook", GetOptions.createMessageFromJsonDeref, AddressBook.newMessage)
+    }
+    # rpc StorePerson(Person) returns Status
+    FUNC callStorePerson(Person request, proc<RPC.Control, Message> done) RPC.Control
+      IF !request.valid()
+        RETURN NIL
+      }
+      GENERATE_IF Z.lang == "JS"
+        RETURN Proto.rpc("AddressService.StorePerson", request, Status.createMessageFromJsonDeref, NIL, done)
+      GENERATE_ELSEIF Z.lang == "C"
+        RETURN Proto.rpc("AddressService.StorePerson", request, NIL, Status.createMessageFromBinaryDeref, done)
+      GENERATE_ELSE
+        RETURN NIL
+      }
+    }
+    GENERATE_IF Z.lang == "C"
+      Proto.RpcInfo handleStorePerson = NEW("AddressService.StorePerson", Person.createMessageFromJsonDeref, Status.newMessage)
+    }
+  }
+}

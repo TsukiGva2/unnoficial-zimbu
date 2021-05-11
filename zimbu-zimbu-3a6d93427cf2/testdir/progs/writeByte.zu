@@ -1,0 +1,6 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  VAR w = IO.fileWriter("testdir/progs/writeByte.written")
+  w.writeByte(123)
+  RETURN 0
+}

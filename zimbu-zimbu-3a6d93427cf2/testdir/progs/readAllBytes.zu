@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.write(IO.fileReader("testdir/progs/test.in").readAllBytes().asString())
+  RETURN 0
+}

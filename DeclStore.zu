@@ -1,0 +1,48 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Store for Declarations.
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Declaration.zu"
+
+MODULE DeclStore @items=public
+  # Map a module or other member name to the Declaration with the pName, used
+  # in generated code.
+  dict<string, Declaration> %pNames = NEW()
+
+  FUNC getEntryKey(string scopeName, string itemName) string
+    RETURN scopeName .. "/" .. itemName
+  }
+
+  # Record an entry indicating that the pName will be looked up later.
+  PROC wantPName(string scopeName, string itemName)
+    %pNames[getEntryKey(scopeName, itemName)] = Declaration.NEW("")
+  }
+
+  # Store a declaration if it was marked as wanted.
+  PROC storePName(string scopeName, string itemName, Declaration decl)
+    storePName(scopeName, itemName, decl, FALSE)
+  }
+
+  # Store a declaration if it was marked as wanted or |force| is TRUE.
+  PROC storePName(string scopeName, string itemName,
+                                               Declaration decl, bool force)
+    string key = getEntryKey(scopeName, itemName)
+    IF force || %pNames.has(key)
+      %pNames[key] = decl
+    }
+  }
+
+  FUNC getPName(string scopeName, string itemName) string
+    RETURN %pNames[getEntryKey(scopeName, itemName)].pName
+  }
+
+  FUNC getDecl(string scopeName, string itemName) Declaration
+    RETURN %pNames[getEntryKey(scopeName, itemName)]
+  }
+}

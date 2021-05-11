@@ -1,0 +1,32 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.Statement message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "CodeProperties.zu"
+IMPORT "Declaration.zu"
+IMPORT "Parse.zu"
+IMPORT "Type.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiStatementExt @items=public
+  Type               $typeObj
+  list<Declaration>  $tempDecl
+  CodeProperties     $props
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.Statement, ZuiStatementExt> $ext
+  }
+
+  SHARED
+    int undefinedInit = 83
+  }
+}

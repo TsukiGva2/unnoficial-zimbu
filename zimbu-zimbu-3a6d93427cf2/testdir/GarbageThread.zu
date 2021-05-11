@@ -1,0 +1,64 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for threads and locks
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE GarbageThread @public
+
+  PROC test() @public
+    IO.print("testdir/GarbageThread.zu")
+    testDictLoop()
+  }
+
+  PROC testDictLoop()
+    # Create one thread that for-loops over a dict while in another thread we
+    # run the GC.
+    thread td = T.thread.NEW(loopOverDict)
+    td.start()
+
+    thread tgc = T.thread.NEW(runGc)
+    tgc.start()
+
+    td.wait()
+    tgc.wait()
+  }
+
+  bool startedFilling
+
+  PROC loopOverDict()
+    IO.print("Filling the dict")
+    startedFilling = TRUE
+    dict<int, string> d = NEW()
+    FOR i IN 0 TO 1000
+      d.add(i, "v" .. i)
+    }
+
+    int r
+    FOR l IN 1 TO 100
+      FOR key IN d.keys()
+        ++r
+      }
+    }
+    IO.print("Looped " .. r .. " times")
+  }
+
+  PROC runGc()
+    # Avoid race condition: wait until loopOverDict() has started.
+    WHILE !startedFilling
+      TIME.sleep(100)
+    }
+
+    IO.print("Starting to collect the garbage")
+    FOR i IN 0 TO 40
+      GC.run()
+      TIME.sleep(2000)
+    }
+    IO.print("Ran the GC 40 times")
+  }
+
+}

@@ -1,0 +1,1150 @@
+#
+# Zudocu: Generate documentation from a Zimbu file.
+#
+# Usage:
+#      zudocu input.zu ... outputDirectory
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+IMPORT.PROTO ../parser/zui.proto
+IMPORT.ZUT DocPage.zut
+
+IMPORT ../parser/Parser.zu
+IMPORT ../parser/Tokenizer.zu
+
+IMPORT DocItems.zu
+IMPORT Page.zu
+IMPORT Parent.zu
+IMPORT Summary.zu
+IMPORT Util.zu
+
+FUNC Main() int
+  IF ARG.Size() < 1
+    IO.print("Usage: " .. ARG.rawName .. " filename.zu ... outputDir")
+    EXIT 1
+  }
+
+  string outDirName = ARG.get(ARG.Size() - 1)
+  IO.FileInfo info = IO.fileInfo(outDirName)
+  IF !info.isDir
+    IF info.status == OK
+      IO.print("Last argument is not a directory: " .. outDirName)
+    ELSE
+      IO.print("Last argument not accessible: " .. outDirName)
+    }
+  }
+
+  # Go over all the files and add an entry in Page.pages.
+  FOR i IN 0 TO ARG.Size() - 2
+    processFile(ARG.get(i))
+  }
+
+  # Write the page files.
+  FOR page IN Page.pages
+    IF !page.hide
+      writePage(page, outDirName)
+    }
+  }
+
+  # Write the index page.
+  writeIndex(outDirName)
+
+  RETURN 0
+}
+
+# Use one parser for all files.
+Tokenizer tokenizer = NEW()
+Parser parser = NEW(tokenizer)
+
+PROC processFile(string inFileName)
+  # Catch common mistakes in arguments.
+  IF inFileName.sliceWrap(-3) != ".zu"
+    IO.print("ERROR: file name must end in '.zu': " .. inFileName)
+    EXIT 1
+  }
+
+  #
+  # Parse |inFileName|.
+  #
+  Zui.Contents contents, Parser.ParseResult parsed =
+       parser.parseFile(inFileName, "",
+                                   :toplevel + :mainfile + :import + :keepEnd)
+
+  #
+  # Produce HTML from the parse tree and write it to stdout.
+  #
+  IF LOG.errorCount == 0
+    # Go through the parsed file.
+    FOR stmt IN contents.getStatementList()
+      SWITCH stmt.getType()
+        CASE Zui.StatementType.eCLASS_DECL
+        CASE Zui.StatementType.eENUM_DECL
+        CASE Zui.StatementType.eBITS_DECL
+          handleClass(stmt, NIL, NIL)
+
+        CASE Zui.StatementType.eALIAS_DECL
+          handleAlias(stmt, NIL)
+
+        CASE Zui.StatementType.eMODULE_DECL
+          handleModule(stmt)
+      }
+    }
+  }
+}
+
+# Write a page into a HTML file.
+PROC writePage(Page page, string outDirName)
+  IO.File out = openOutputFile(outDirName, page.fullName, page.parent)
+  DEFER out.close()
+  string title = page.fullName .. " " .. page.type
+  out.print(DocPage.docPage(title, page).ToString())
+}
+
+PROC writeIndex(string outDirName)
+  #
+  # Go through the pages to identify builtin types and modules.
+  # Some builtin modules only define one type, these are not listed.
+  #
+  sortedList<Page> classList = NEW()
+  sortedList<Page> moduleList = NEW()
+  FOR key IN Page.pages.keys().sort()
+    Page page = Page.pages[key]
+    IF page.parent == NIL && !page.noIndex && !page.hide
+      bool isClass
+      IF page.children.Size() == 1
+        string childName = page.children[0].name
+        IF Util.knownTypes.has(childName)
+             || childName == "MultiDict"
+             || childName == "MultiSet"
+             || childName == "Pipe"
+             || childName == "Regex"
+             || childName == "Set"
+             || childName == "SortedList"
+          # For a module with one class item, list the class and omit the
+          # module E.g. for "STRING" show the "string" class.
+          isClass = TRUE
+          page = page.children[0]
+        }
+      ELSEIF page.name == "THREAD"
+        # The THREAD module has "thread", "cond" and "lock" classes.
+        FOR child IN page.children
+          IF child.name == "Thread"
+              || child.name == "Cond"
+              || child.name == "Lock"
+              || child.name == "AutoLock"
+            classList.add(child)
+          }
+        }
+      ELSEIF page.name == "RE"
+        # The RE module has "regex" and Options
+        FOR child IN page.children
+          IF child.name == "Regex"
+            classList.add(child)
+          }
+        }
+      }
+      IF isClass
+        classList.add(page)
+      ELSE
+        moduleList.add(page)
+      }
+    }
+  }
+
+  IO.File out = openOutputFile(outDirName, "index", NIL)
+  DEFER out.close()
+  out.print(DocPage.indexPage(classList, moduleList).ToString())
+}
+
+# Create a page for a class, interface, bits or enum_decl.
+PROC handleClass(Zui.Statement stmt, list<Zui.Statement> libStatements,
+                                                                Parent parent)
+  Zui.Declaration decl = stmt.getDeclaration()
+  string name = decl.getName()
+  IF parent != NIL && parent.isLibModule
+                       && (name.startsWith("START") || name.startsWith("END"))
+    # A dummy class added for builtin types.
+    IF libStatements == NIL
+      RETURN
+    }
+    name = name.slice(5)
+  }
+
+  DocItems items = NEW(parent, stmt, FALSE)
+
+  string what
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      IF decl.getType().getType() == Zui.TypeEnum.eINTERFACE
+        what = "interface"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.eCLASS
+        what = "class"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.ePIECE
+        what = "piece"
+      ELSE
+        what = "?????"
+      }
+    CASE Zui.StatementType.eENUM_DECL
+      what = "enum"
+    CASE Zui.StatementType.eBITS_DECL
+      what = "bits"
+    CASE Zui.StatementType.eALIAS_DECL
+      what = "alias"
+  }
+
+  Zui.Type type = decl.getType()
+  Zui.Attributes attr = type.hasAttr() ? type.getAttr() : NEW()
+  Page page = NEW(parent, name, stmt, attr, what, items)
+  Parent thisClass = NEW(attr, parent, page, name, items)
+  IF libStatements != NIL
+    thisClass.isLibClass = TRUE
+  }
+
+  # Add the class to the parent page, so that we can figure out if it's the
+  # only one when generating the index.
+  # Skip SortedListIterator, so that SortedList is used.
+  IF parent != NIL && parent.page != NIL
+          && page.name != "SortedListIterator"
+    parent.page.children.add(page)
+  }
+
+  IF items != NIL
+    page.addHeader(DocPage.paragraph(items.summary))
+    page.addHeader(DocPage.paragraph(items.details))
+  }
+
+  Zui.ClassType class
+
+  list<Zui.Statement> statements
+  list<Zui.Statement> sharedStatements
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      class = decl.getType().getClassDecl()
+      IF libStatements != NIL
+        statements = libStatements
+      ELSEIF class.hasMember()
+        statements = class.getMemberList()
+      }
+      IF class.hasShared()
+        sharedStatements = class.getShared().getStatementList()
+      }
+      IF class.hasTemplateTypeName()
+        page.typeSpec = Util.getTypeSpecText(class.getTemplateTypeNameList())
+      }
+
+    CASE Zui.StatementType.eENUM_DECL
+      Zui.EnumType enum = decl.getType().getEnumDecl()
+      IF enum.hasMember()
+        statements = enum.getMemberList()
+      }
+    CASE Zui.StatementType.eBITS_DECL
+      Zui.BitsType bits = decl.getType().getBitsDecl()
+      IF bits.hasMember()
+        statements = bits.getMemberList()
+      }
+  }
+
+  IF class != NIL && class.hasImplements()
+    page.addImplements(parent, class.getImplementsList())
+  }
+
+  IF class != NIL
+    Zui.Expression parentExpr
+    IF class.hasExtends()
+      parentExpr = class.getExtends()
+      page.extendsKeyword = "EXTENDS"
+    ELSEIF class.hasAugments()
+      parentExpr = class.getAugments()
+      page.extendsKeyword = "AUGMENTS"
+    ELSEIF  class.hasGrows()
+      parentExpr = class.getGrows()
+      page.extendsKeyword = "GROWS"
+    }
+    IF parentExpr != NIL
+      page.extends = Util.getDotName(parentExpr, parent)
+      int typeIdx = page.extends.find("<")
+      IF typeIdx > 0
+        page.extendsNoType = page.extends.slice(0, typeIdx - 1)
+      ELSE
+        page.extendsNoType = page.extends
+      }
+    }
+  }
+
+  # Find Pieces used in INCLUDE.
+  page.includes = findIncludes(statements, parent, thisClass)
+
+  page.summary = summarize(page, statements, sharedStatements,
+                                             parent, thisClass, page.fullName)
+
+  IF stmt.getType() == Zui.StatementType.eENUM_DECL
+    page.addTail(DocPage.listEnumValues(decl.getType().getEnumDecl()))
+  }
+
+  IF stmt.getType() == Zui.StatementType.eALIAS_DECL
+    page.addTail(DocPage.aliasDetails(stmt, parent, thisClass))
+  ELSE
+    page.addTail(listMembers(statements, sharedStatements, parent, thisClass))
+  }
+
+  # Do the "footer" section.
+  page.addTail(getFooter(items, parent))
+}
+
+PROC handleModule(Zui.Statement stmt)
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.ModuleType module = decl.getType().getModuleDecl()
+
+  DocItems items = NEW(NIL, stmt, FALSE)
+
+  string name = decl.getName()
+  string className
+  bool isLibModule
+  # TODO: only when processing Zimbu modules.
+  IF name.endsWith("Module")
+    isLibModule = TRUE
+    name = name.sliceWrap(0, -7)  # Remove "Module".
+  }
+  Zui.Attributes attr = decl.getType().getAttr()
+  Page page = NEW(NIL, name, stmt, attr, "module", items)
+  Parent parent = NEW(attr, NIL, page, name, items)
+  parent.isLibModule = isLibModule
+
+  IF items != NIL
+    page.addHeader(DocPage.paragraph(items.summary))
+    page.addHeader(DocPage.paragraph(items.details))
+  }
+
+  list<Zui.Statement> statements
+  IF module.hasStatement()
+    statements = module.getStatementList()
+  }
+
+  IF statements != NIL
+    # Find all the CLASSes and BITS in the module and generate a page for
+    # them.  Figure out ALIAS source.
+    handleClasses(statements, parent)
+
+    IF isLibModule
+      # Find all fake classes in the library module and generate a page for
+      # them.
+      handleLibClasses(statements, parent)
+    }
+  }
+
+  page.summary = summarize(page, statements, NIL, parent, NIL, name)
+
+  # Do the "members" section.
+  page.addTail(listMembers(statements, NIL, parent, NIL))
+
+  # Do the "footer" section.
+  page.addTail(getFooter(items, NIL))
+}
+
+# Remember all the methods that were encountered.  Used to lookup aliases.
+dict<string, Zui.Statement> methods = NEW()
+
+
+# Figure out what type the alias is for and include the item here, instead of
+# where it's defined.
+PROC handleAlias(Zui.Statement stmt, Parent parent)
+  Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+
+  string leftName = Util.getDotName(alias.getFrom(), parent)
+  IF !Page.pages.has(leftName)
+    IF methods.has(leftName)
+      # It's a method, link its method.
+      alias.setFor(methods[leftName])
+      RETURN
+    }
+
+    # Remove Module, works for ZWT.PanelModule.Panel -> ZWT.Panel
+    int i = leftName.find("Module")
+    IF i > 0
+      leftName = leftName.slice(0, i - 1) .. leftName.slice(i + 6)
+    }
+    IF !Page.pages.has(leftName)
+      IF methods.has(leftName)
+        # It's a method, link its method.
+        alias.setFor(methods[leftName])
+        RETURN
+      }
+
+      # Must be something else, e.g. func<string>.  Use the alias itself.
+      alias.setFor(stmt)
+
+      # Create a dummy page for the type, so that we can jump there where the
+      # alias is used.
+      handleClass(stmt, NIL, parent)
+      RETURN
+    }
+  }
+
+  # Now generate the page with the alias name.  Remove the "from" one.
+  Page page = Page.pages[leftName]
+  Page.pages.remove(leftName)
+  handleClass(page.stmt, NIL, parent)
+
+  # Trick: add aliased statement in for field, so that we know the type.
+  stmt.getDeclaration().getType().getAlias().setFor(page.stmt)
+}
+
+# Return a string with a summary for |statements|.
+# These are <tr> entries for a table.
+# When not empty ends in a separator.
+FUNC summarize(Page page,
+               list<Zui.Statement> statements,
+               list<Zui.Statement> sharedStatements,
+               Parent parent,
+               Parent thisClass,
+               string itemName
+     ) Summary
+  Summary summary = NEW()
+
+  # Find all the member classes for the summary.
+  int l = summary.Size()
+  summarizeClasses(statements, parent, thisClass, summary)
+  IF sharedStatements != NIL
+    summarizeClasses(sharedStatements, parent, thisClass, summary)
+  }
+  IF summary.Size() > l
+    summary.addSep()
+  }
+
+  # Find all the member variables for the summary.
+  l = summary.Size()
+  summarizeVars(statements, thisClass != NIL, itemName,
+                                                   parent, thisClass, summary)
+  IF summary.Size() > l
+    summary.addSep()
+  }
+  IF sharedStatements != NIL
+    l = summary.Size()
+    summarizeVars(sharedStatements, FALSE, itemName, parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+  # Find all the methods for the summary.
+  l = summary.Size()
+  summarizeMethods(statements, thisClass != NIL, FALSE, itemName,
+                                                   parent, thisClass, summary)
+  IF summary.Size() > l
+    summary.addSep()
+  }
+
+  # Find all the object methods for a library module.
+  IF thisClass != NIL && thisClass.isLibClass
+    l = summary.Size()
+    summarizeMethods(statements, TRUE, TRUE, itemName,
+                                                   parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+
+  IF sharedStatements != NIL
+    l = summary.Size()
+    summarizeMethods(sharedStatements, FALSE, FALSE, itemName,
+                                                   parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+  RETURN summary
+}
+
+# Add a summary of classes in |statements| to |summary|.
+PROC summarizeClasses(list<Zui.Statement> statements, Parent parent,
+                                            Parent thisClass, Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eALIAS_DECL
+        # The "for" item was set here, not by Parse.
+        Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+        IF alias.hasFor()
+          Zui.Statement classStmt = alias.getFor()
+          IF classStmt.getType() == Zui.StatementType.eCLASS_DECL
+              || classStmt.getType() == Zui.StatementType.eBITS_DECL
+              || classStmt.getType() == Zui.StatementType.eENUM_DECL
+              || classStmt.getType() == Zui.StatementType.eALIAS_DECL
+            summarizeClass(classStmt, parent, summary)
+          }
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeClasses(cond.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeClasses(elseif.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeClasses(cond.getElse().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeClasses(stmt.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eCLASS_DECL
+      CASE Zui.StatementType.eBITS_DECL
+      CASE Zui.StatementType.eENUM_DECL
+        summarizeClass(stmt, parent, summary)
+
+    }
+  }
+}
+
+PROC summarizeClass(Zui.Statement stmt, Parent parent, Summary summary)
+  Zui.Declaration decl = stmt.getDeclaration()
+  string name = decl.getName()
+  IF parent.isLibModule
+    IF name.startsWith("START")
+      name = name.slice(5)
+    ELSEIF name.startsWith("END")
+      RETURN
+    }
+  }
+
+  string what
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      IF decl.getType().getType() == Zui.TypeEnum.eINTERFACE
+        what = "INTERFACE"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.eCLASS
+        what = "CLASS"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.ePIECE
+        what = "PIECE"
+      ELSE
+        what = "?????"
+      }
+    CASE Zui.StatementType.eENUM_DECL
+      what = "ENUM"
+    CASE Zui.StatementType.eBITS_DECL
+      what = "BITS"
+    CASE Zui.StatementType.eALIAS_DECL
+      what = "ALIAS"
+  }
+  DocItems di = NEW(parent, decl)
+  IF di.header != NIL
+    summary.addSep()
+    summary.addHeader(di.header)
+  }
+
+  IF di.hide || di.noIndex
+    summary.add(name, NIL)
+  ELSE
+    summary.add(name, DocPage.classSummary(what, parent, name, stmt, di))
+  }
+}
+
+PROC summarizeVars(list<Zui.Statement> statements,
+                   bool member,
+                   string itemName,
+                   Parent parent,
+                   Parent thisClass,
+                   Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eVAR_DECL
+        DocItems di = NEW(parent, stmt.getDeclaration())
+        IF di.header != NIL
+          summary.addSep()
+          summary.addHeader(di.header)
+        }
+        Zui.Declaration decl = stmt.getDeclaration()
+        string name = decl.getName()
+        IF di.hide
+          summary.add(name, NIL)
+        ELSE
+          summary.add(name, DocPage.varSummary(
+                               parent, thisClass, member, itemName, stmt, di))
+        }
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # TODO
+        BREAK
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeVars(cond.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeVars(elseif.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeVars(cond.getElse().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeVars(stmt.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+    }
+  }
+}
+
+PROC summarizeMethods(list<Zui.Statement> statements,
+                      bool member, bool doLibMethod,
+                      string itemName, Parent parent, Parent thisClass,
+                      Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eMETHOD_DECL
+        summarizeMethod(stmt, member, doLibMethod,
+                                   itemName, parent, thisClass, summary, TRUE)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # The "for" item was set in handleAlias().
+        Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+        IF alias.hasFor()
+          Zui.Statement methodStmt = alias.getFor()
+          IF methodStmt.getType() == Zui.StatementType.eMETHOD_DECL
+            summarizeMethod(methodStmt, member, doLibMethod,
+                                  itemName, parent, thisClass, summary, FALSE)
+          }
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeMethods(cond.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeMethods(elseif.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeMethods(cond.getElse().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeMethods(stmt.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+    }
+  }
+}
+
+FUNC makeDollarName(string name, bool member) string
+  RETURN member && name != "NEW" ? "$" .. name : name
+}
+
+PROC summarizeMethod(Zui.Statement stmt,
+                     bool member,
+                     bool doLibMethod,
+                     string itemName,
+                     Parent parent,
+                     Parent thisClass,
+                     Summary summary,
+                     bool register)
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  DocItems di = NEW(parent, decl)
+  string name = decl.getName()
+
+  VAR argList = method.getArgumentList()
+  bool typeMethod = isTypeMethod(parent, stmt)
+  IF typeMethod
+    IF member
+      # Object method defined in a builtin type module: remove the first
+      # argument.
+      argList = argList.slice(1)
+    ELSE
+      # Only list the method as an object method.
+      RETURN
+    }
+    IF name == "cOMPARE"
+      # Can't use Compare outside of a class, thus cOMPARE is used and it's
+      # fixed here.
+      name = "Compare"
+    }
+  }
+
+  IF register
+    string fullName
+    IF thisClass != NIL
+      fullName = thisClass.fullName .. "." .. name
+    ELSEIF parent != NIL
+      fullName = parent.fullName .. "." .. name
+    ELSE
+      fullName = name
+    }
+    methods[fullName] = stmt
+  }
+  string dollarName = makeDollarName(name, member)
+
+  # handle template
+  Parent thisMethod = NEW(decl.getType().getAttr(), thisClass, NIL, name, di)
+
+  string typeSpec = ""
+  IF method.hasTemplateTypeName() && !typeMethod
+    typeSpec = Util.getTypeSpecText(method.getTemplateTypeNameList())
+  }
+
+  string nameWithArgs = dollarName .. typeSpec .. "("
+                       .. getArgumentTypes(argList, parent, thisMethod) .. ")"
+  IF di.header != NIL
+    summary.addSep()
+    summary.addHeader(di.header)
+  }
+  IF di.hide
+    summary.add(nameWithArgs, NIL)
+  ELSE
+    summary.add(nameWithArgs, DocPage.methodSummary(
+         itemName, dollarName, typeSpec, decl,
+         parent, thisClass, thisMethod, argList, method, di))
+  }
+}
+
+FUNC findIncludes(list<Zui.Statement> statements,
+                  Parent parent, Parent thisClass
+                 ) list<string>
+  list<string> includes = NEW()
+
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eINCLUDE
+        Zui.Include include = stmt.getInclude()
+        FOR incStmt IN include.getStatementList()
+          IF incStmt.getType() == Zui.StatementType.eVAR_DECL
+            string type = Util.getTypeNameText(
+                        incStmt.getDeclaration().getType(), parent, thisClass)
+            int i = type.find("<")
+            IF i > 0
+              # Remove the template type.
+              type = type.slice(0, i - 1)
+            }
+            # We don't know what the page name is, guess it's either the name
+            # as specified or the name with the parent name prepended, add
+            # both. TODO: figure out which one it really is.
+            includes.add(type)
+            IF parent != NIL && !type.startsWith("I.")
+              type = parent.fullName .. "." .. type
+              includes.add(type)
+            }
+          }
+        }
+
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          includes.extend(findIncludes(
+                       cond.getBlock().getStatementList(), parent, thisClass))
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            includes.extend(findIncludes(
+                     elseif.getBlock().getStatementList(), parent, thisClass))
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          includes.extend(findIncludes(
+                        cond.getElse().getStatementList(), parent, thisClass))
+        }
+    }
+  }
+  RETURN includes
+}
+
+
+# Verbose listing of members of |statements|.
+FUNC listMembers(list<Zui.Statement> statements,
+                 list<Zui.Statement> sharedStatements,
+                 Parent parent,
+                 Parent thisClass
+     ) ZUT.Html
+  dict<string, ZUT.Html> vars = NEW()
+  dict<string, ZUT.Html> members = NEW()
+  dict<string, ZUT.Html> sharedVars = NEW()
+  dict<string, ZUT.Html> sharedMembers = NEW()
+  IF statements != NIL
+    # Find all the members for the details.
+    listVars(statements, thisClass != NIL, parent, thisClass, vars)
+    listMethods(statements, thisClass != NIL, parent, thisClass, members)
+  }
+  IF sharedStatements != NIL
+    # Find all the shared members for the details.
+    listVars(sharedStatements, FALSE, parent, thisClass, sharedVars)
+    listMethods(sharedStatements, FALSE, parent, thisClass, sharedMembers)
+  }
+
+  RETURN DocPage.memberList(vars, members, sharedVars, sharedMembers)
+}
+
+# Recursive function of listMembers.
+PROC listVars(list<Zui.Statement> statements,
+              bool member,
+              Parent parent,
+              Parent thisClass,
+              dict<string, ZUT.Html> vars)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eVAR_DECL
+        DocItems di = NEW(parent, stmt.getDeclaration())
+        IF !di.hide
+          Zui.Declaration decl = stmt.getDeclaration()
+          string name = (member ? "$" : "") .. decl.getName()
+          vars[name] = DocPage.varEntry(decl, parent, thisClass, name, di)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          listVars(stmt.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          listVars(cond.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            listVars(elseif.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          listVars(cond.getElse().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+    }
+  }
+}
+
+# Recursive function of listMembers.
+PROC listMethods(list<Zui.Statement> statements,
+                 bool member,
+                 Parent parent,
+                 Parent thisClass,
+                 dict<string, ZUT.Html> members)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eMETHOD_DECL
+        listMethod(stmt, member, parent, thisClass, members)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # TODO: if the alias is for a method then call listMethod()
+#          listMethod(stmt.getSome(), member, parent, thisClass)
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          listMethods(stmt.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          listMethods(cond.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            listMethods(elseif.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          listMethods(cond.getElse().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+    }
+  }
+}
+
+FUNC isTypeMethod(Parent parent, Zui.Statement stmt) bool
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  VAR argList = method.getArgumentList()
+  RETURN parent != NIL
+      && parent.isLibModule
+      && argList != NIL
+      && argList.Size() > 0
+      && argList[0].getName() == "this"
+}
+
+# Create the HTML for a method.
+# Add it to |members| under the method name, so that they can be sorted.
+PROC listMethod(Zui.Statement stmt,
+                bool member,
+                Parent parent,
+                Parent thisClass,
+                dict<string, ZUT.Html> members)
+  Zui.Declaration decl = stmt.getDeclaration()
+  DocItems di = NEW(parent, decl)
+  IF di.hide
+    RETURN
+  }
+
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  VAR argList = method.getArgumentList()
+  bool typeMethod = isTypeMethod(parent, stmt)
+  string name = decl.getName()
+  IF typeMethod
+    IF member
+      # Object method defined in a builtin type module: remove the first
+      # argument.
+      argList = argList.slice(1)
+    ELSE
+      # Only list the method as an object method.
+      RETURN
+    }
+    IF name == "cOMPARE"
+      # Can't use Compare outside of a class, thus cOMPARE is used and it's
+      # fixed here.
+      name = "Compare"
+    }
+  }
+
+  string methodName = makeDollarName(name, member)
+
+  # Handle template.  But not for a type method.
+  Parent thisMethod = NEW(decl.getType().getAttr(), thisClass, NIL,
+                                                               methodName, di)
+  string typeSpec = ""
+  IF method.hasTemplateTypeName() && !typeMethod
+    typeSpec = Util.getTypeSpecText(method.getTemplateTypeNameList())
+  }
+
+  # A method name can be overloaded, find the next available key.
+  # This keeps methods with the same name in the original order.
+  # Put NEW and predefined methods at the top.
+  string key = methodName
+  IF key == "NEW"
+    key = "!0NEW"
+  ELSEIF key == "Init"
+    key = "!1Init"
+  ELSEIF key == "Finish"
+    key = "!2Finish"
+  ELSEIF key == "Compare"
+    key = "!3Compare"
+  ELSEIF key == "Equal"
+    key = "!4Equal"
+  ELSEIF key == "FromString"
+    key = "!5FromString"
+  ELSEIF key == "Iterator"
+    key = "!6Iterator"
+  ELSEIF key == "ToString"
+    key = "!7ToString"
+  }
+  int nr
+  WHILE members.has(key .. nr)
+    ++nr
+  }
+
+  members[key .. nr] = DocPage.methodEntry(decl, method, methodName, typeSpec,
+                                   argList, parent, thisClass, thisMethod, di)
+}
+
+FUNC getFooter(DocItems itemsArg, Parent parentArg) ZUT.Html
+  # Find "extra" in this item or a parent.
+  DocItems items = itemsArg
+  Parent parent = parentArg
+  WHILE items.extra == NIL && parent != NIL
+    items = parent.items
+    parent = parent.parent
+  }
+
+  IF items.extra == NIL
+    RETURN ZUT.Html.NEW()
+  }
+  RETURN DocPage.extraItems(items.extra)
+}
+
+PROC handleClasses(list<Zui.Statement> statements, Parent parent)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eCLASS_DECL
+      CASE Zui.StatementType.eENUM_DECL
+      CASE Zui.StatementType.eBITS_DECL
+        handleClass(stmt, NIL, parent)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        handleAlias(stmt, parent)
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          handleClasses(stmt.getBlock().getStatementList(), parent)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          handleClasses(cond.getBlock().getStatementList(), parent)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            handleClasses(elseif.getBlock().getStatementList(), parent)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          handleClasses(cond.getElse().getStatementList(), parent)
+        }
+    }
+  }
+}
+
+# Handle classes marked with STARTname.
+PROC handleLibClasses(list<Zui.Statement> statements, Parent parent)
+  int i
+  WHILE i < statements.Size()
+    Zui.Statement stmt = statements[i]
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eCLASS_DECL
+        Zui.Declaration decl = stmt.getDeclaration()
+        IF decl.getName().startsWith("START")
+          list<Zui.Statement> stmts = NEW()
+          # The NEW() methods are inside the class.
+          Zui.ClassType class = decl.getType().getClassDecl()
+          IF class.hasMember()
+            stmts = class.getMemberList()
+          }
+
+          ++i
+          WHILE i < statements.Size()
+            Zui.Statement classStmt = statements[i]
+            IF classStmt.getType() == Zui.StatementType.eCLASS_DECL
+                     && classStmt.getDeclaration().getName().startsWith("END")
+              BREAK
+            }
+            stmts.add(classStmt)
+            ++i
+          }
+          IF stmts.Size() > 0
+            handleClass(stmt, stmts, parent)
+          }
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          handleLibClasses(stmt.getBlock().getStatementList(), parent)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          handleLibClasses(cond.getBlock().getStatementList(), parent)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            handleLibClasses(elseif.getBlock().getStatementList(), parent)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          handleLibClasses(cond.getElse().getStatementList(), parent)
+        }
+    }
+
+    ++i
+  }
+}
+
+
+# Return html code for a reference to page |name|.
+# Put the name in bold if |bold| is TRUE.
+FUNC pageRef(string name, bool bold) string
+  IF bold
+    RETURN DocPage.pageRefBold(name, name).ToString()
+  }
+  RETURN DocPage.pageRef(name, name).ToString()
+}
+
+# Return html code for a reference to page |name|.
+# Put the name in bold if |bold| is TRUE.
+FUNC pageRef(string fullName, string name, bool bold) string
+  IF bold
+    RETURN DocPage.pageRefBold(fullName, name).ToString()
+  }
+  RETURN DocPage.pageRef(fullName, name).ToString()
+}
+
+# Return the list of argument types.  No HTML wrapping.
+FUNC getArgumentTypes(list<Zui.Declaration> arguments,
+                                              Parent parent, Parent thisClass
+     ) string
+  string ret = ""
+  string comma = ""
+  FOR arg IN arguments ?: []
+    ret ..= comma
+    ret ..= Util.getTypeNameText(arg.getType(), parent, thisClass)
+    comma = ","
+  }
+  RETURN ret
+}
+
+# Open the output file |fullName|.html in directory |outDirName|.
+# Return the output file.
+FUNC openOutputFile(string outDirName, string fullName, Parent parent) IO.File
+  string outFileName = outDirName .. "/" .. fullName .. ".html"
+  IO.File out = IO.fileWriter(outFileName)
+  IF out == NIL
+    IO.print("ERROR: Cannot open file for writing: " .. outFileName)
+    EXIT 1
+  }
+  IO.print("Writing " .. outFileName)
+  RETURN out
+}

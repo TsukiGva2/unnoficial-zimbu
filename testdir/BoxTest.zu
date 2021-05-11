@@ -1,0 +1,229 @@
+# Test BOX
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Util.zu"
+
+MODULE BoxTest @public
+
+  PROC test() @public
+    test1()
+    testListIterator()
+    testExample()
+  }
+
+  CLASS Foo<Titem>
+    list<Titem> $list = NEW()
+
+    INCLUDE
+      BOX.MaxMin<Titem>  $maxMin
+      BOX.Average<Titem> $avg
+      BOX.ByItem<Titem>  $byItem
+    }
+
+    FUNC $add(Titem item) Foo<Titem>
+      $list.add(item)
+      RETURN THIS
+    }
+
+    FUNC $remove(int idx) Titem
+      RETURN $list.remove(idx)
+    }
+
+    FUNC $clear(int idx) THIS
+      $list.remove(idx)
+      RETURN THIS
+    }
+
+    FUNC $find(Titem item) int
+      RETURN $list.find(item)
+    }
+
+    FUNC $Iterator() I.Iterator<Titem>
+      RETURN FooIterator<Titem>.NEW($list)
+    }
+
+    FUNC $ToString() string
+      RETURN $list.ToString()
+    }
+  }
+
+  CLASS FooIterator<Titem> IMPLEMENTS I.Iterator<Titem>
+    list<Titem> $items
+    int         $pos
+    bool        $canRemove
+
+    NEW(list<Titem> items)
+      $items = items
+    }
+
+    FUNC $hasNext() bool
+      RETURN $pos < $items.Size()
+    }
+
+    FUNC $next() Titem
+      Titem item = $peek()
+      ++$pos
+      $canRemove = TRUE
+      RETURN item
+    }
+
+    FUNC $peekSupported() bool
+      RETURN TRUE
+    }
+
+    FUNC $peek() Titem
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW("Calling next() while there is no next item")
+      }
+      RETURN $items.get($pos)
+    }
+
+    FUNC $removeSupported() bool
+      RETURN FALSE
+    }
+
+    FUNC $remove() status
+      RETURN FAIL
+    }
+  }
+
+  PROC test1()
+    Foo<int> foo = NEW()
+    foo.add(1).add(22).add(3)
+    IO.print("max is " .. foo.max())
+    IO.print("min is " .. foo.min())
+    IO.print("average is " .. foo.average())
+    IO.print("total is " .. foo.total())
+
+    IO.print("original: " .. foo.ToString())
+    IO.print("Remove " .. foo.removeItem(22))
+    IO.print("after remove: " .. foo.ToString())
+    foo.clearItem(3)
+    IO.print("after clear: " .. foo.ToString())
+  }
+
+
+  PROC testListIterator()
+    list<string> sl = ["one", "two", "three"]
+    I.Iterator<string> it = sl.Iterator()
+    # TODO: gcc has a tendency of reordering the operations
+    bool b = it.hasNext()
+    string n = it.next()
+    IO.print("at start: " .. b .. " = " .. n)
+
+    b = it.hasNext()
+    string p1 = it.peek()
+    string p2 = it.peek()
+    n = it.next()
+    IO.print("middle: " .. b .. " = " .. p1 .. " = " .. p2 .. " / " .. n)
+    b = it.hasNext()
+    n = it.next()
+    IO.print("end: " .. b .. " / " .. n)
+    IO.print("no more: " .. it.hasNext())
+    TRY
+      string s = it.peek()
+    CATCH E.OutOfRange e
+      IO.print("Caught peek: " .. Util.stripLine(e.ToString()))
+    }
+
+    # Try remove() after next().
+    sl = ["foo", "bar", "hup"]
+    I.MutateIterator<string> mit = sl.Iterator()
+    mit.next()
+    # remove() after next() works.
+    mit.remove()
+    IO.print("after remove: " .. sl.ToString())
+    TRY
+      # remove() after remove() fails.
+      mit.remove()
+    CATCH E.OutOfRange e
+      IO.print("Caught remove: " .. Util.stripLine(e.ToString()))
+    }
+    # next() works twice
+    n = mit.next()
+    IO.print("after remove: " .. n .. " and " .. mit.next())
+    mit.remove()
+    IO.print("removed last: " .. sl.ToString())
+
+    # Try remove() after previous().
+    sl = ["foo", "bar", "hup"]
+    I.BidiMutateIterator<string> bmit = sl.Iterator()
+    bmit.next()
+    bmit.previous()
+    bmit.remove()
+    IO.print("after remove: " .. sl.ToString())
+    TRY
+      # remove() after remove() fails.
+      bmit.remove()
+    CATCH E.OutOfRange e
+      IO.print("Caught remove 2: " .. Util.stripLine(e.ToString()))
+    }
+    bmit.next()
+    bmit.next()
+    bmit.previous()
+    bmit.remove()
+    IO.print("after last remove: " .. sl.ToString())
+
+    # Try add().
+    sl = ["foo", "bar", "hup"]
+    mit = sl.Iterator()
+    mit.next()
+    mit.add("first")
+    IO.print("after add first: " .. sl.ToString())
+    mit.add("second")
+    IO.print("after add second: " .. sl.ToString())
+    WHILE mit.hasNext()
+      mit.next()
+    }
+    mit.add("last")
+    IO.print("after add last: " .. sl.ToString())
+    mit.add("another")
+    IO.print("after add another: " .. sl.ToString())
+
+    # Try insert()
+    sl = ["foo", "bar", "hup"]
+    mit = sl.Iterator()
+    mit.insert("before")
+    IO.print("after insert before: " .. sl.ToString())
+    mit.insert("two")
+    IO.print("after insert two: " .. sl.ToString())
+    mit.next()
+    mit.insert("three")
+    IO.print("after insert three: " .. sl.ToString())
+    WHILE mit.hasNext()
+      mit.next()
+    }
+    mit.insert("almost")
+    IO.print("after insert almost: " .. sl.ToString())
+
+    # Try insert() again
+    sl = ["foo", "bar", "hup"]
+    bmit = sl.Iterator()
+    bmit.insert("before")
+    bmit.previous()
+    bmit.insert("zero")
+    IO.print("after insert zero: " .. sl.ToString())
+  }
+
+  # Test example in I.MutateIterator
+  PROC testExample()
+    list<string> foo = ["aa", "bb", "cc", "dd", "ee"]
+    IO.print("before: " .. foo.ToString())
+    I.MutateIterator<string> it = foo.Iterator()
+    FOR item IN it
+      IF item[0] == 'b' || item[0] == 'e'
+        IF it.removeSupported()
+          it.remove()
+        ELSE
+          IO.print("Bad item: " .. item.ToString())
+        }
+      }
+    }
+    IO.print("after: " .. foo.ToString())
+  }
+
+}

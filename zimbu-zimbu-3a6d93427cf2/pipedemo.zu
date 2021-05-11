@@ -1,0 +1,112 @@
+# Demo for using "pipe" in Zimbu.
+# Inspired by the Go program http://golang.org/doc/progs/sieve.go
+
+# TODO: specifying a type for |pipe| doesn't work yet.
+# - all "pipe" should be "pipe<int>"
+
+# TODO: THREAD.run() doesn't work yet, we need to define a class around every
+# function to be run.
+
+CLASS GenerateThread EXTENDS thread
+  pipe<int> $p
+
+  NEW(pipe<int> p)
+    $p = p
+  }
+
+  PROC $body() @replace
+    generate($p)
+  }
+}
+
+CLASS FilterThread EXTENDS thread
+  pipe<int> $in
+  pipe<int> $out
+  int  $prime
+
+  NEW(pipe<int> in, pipe<int> out, int prime)
+    $in = in
+    $out = out
+    $prime = prime
+  }
+
+  PROC $body() @replace
+    filter($in, $out, $prime)
+  }
+}
+
+
+# Write the sequence 2, 3, 4, ... into pipe |p|.
+PROC generate(pipe<int> p)
+  FOR i IN 2 TO 1000
+    p.write(i)  # write |i| into pipe |p|
+  }
+  p.close()
+}
+
+# Copy the values from pipe |in| into pipe |out|, removing those divisible by
+# |prime|.
+PROC filter(pipe<int> in, pipe<int> out, int prime)
+  WHILE TRUE
+    status st
+    int i = in.read(&st)  # Read value of variable |i| from pipe |in|.
+    IF st == FAIL
+      BREAK
+    }
+    IF i % prime != 0
+      out.write(i)  # Write |i' into pipe |out|.
+    }
+  }
+  out.close()
+}
+
+# Version of filter() when everything has been implemented.
+#PROC filter(pipe<int> in, pipe<int> out, int prime)
+#  FOR i IN in  # Read variable |i| from pipe |in| and repeat for all.
+#    IF i % prime != 0
+#      out.write(i)  # Write |i' into pipe |out|.
+#    }
+#  }
+#  out.close()
+#}
+
+# The prime sieve: Daisy-chain filter processes together.
+FUNC Main() int
+  pipe<int> p = NEW()
+
+  # Create a thread that writes numbers into the pipe |p|
+  GenerateThread gt = NEW(p)
+  gt.start()
+
+  WHILE TRUE
+    status st
+    int prime = p.read(&st)
+    IF st == FAIL
+      BREAK
+    }
+    IO.print(prime)
+
+    pipe<int> p1 = NEW()
+    FilterThread ft = NEW(p, p1, prime)
+    ft.start()
+    p = p1
+  }
+
+  RETURN 0
+}
+
+# Version of Main() when everything has been implemented.
+#FUNC Main() int
+#  # Create a thread that writes numbers into the pipe |p|
+#  pipe<int> p = NEW()
+#  THREAD.run({ USE p => generate(p) })
+#
+#  FOR prime IN p
+#    IO.print(prime)
+#    pipe<int> p1 = NEW()
+#    THREAD.run({ USE p, USE p1, USE prime => filter(p, p1, prime) })
+#    p = p1
+#  }
+#
+#  RETURN 0
+#}

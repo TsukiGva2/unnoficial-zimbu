@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutHtmlTagNameCss.zut
+
+FUNC Main() int
+  # HTML tag name / Css
+  ZUT.Css css = NEW().add("xxx")
+  string fail = Testing.inTagNameCss(css).ToString()
+  RETURN 0
+}

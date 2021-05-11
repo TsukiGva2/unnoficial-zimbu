@@ -1,0 +1,294 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ARG module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> ARG
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Methods for command line flags.
+</p>
+<p class='ptext'> The list of all arguments is processed and flags (arguments starting with a
+ dash) are separated from the others.
+<p class='ptext'> The flag objects can be created at the module level or in the SHARED
+ section of a class.  The command line is processed during startup, after
+ which the flag values are available for use.
+ See the
+ @http://www.zimbu.org/documentation/startup-sequence@startup sequence@
+ for details.
+<p class='ptext'> For example, with these flags:
+<pre class='example'> ARG.Usage usage = NEW("Usage: %0% [flags] filename ...")
+ ARG.Bool verbose = NEW("v", "verbose", FALSE, "verbose messages")
+ ARG.Int number = NEW("n", "number", -1, "some number")
+ ARG.String text = NEW("t", "text", "not set", "some text").enableRepeat()
+</pre>
+<p class='ptext'>
+ These command lines could be used:
+<pre class='example'> prog -v -n123 -t foo -t bar someFile
+ prog -n=999 someFile otherFile
+</pre>
+<p class='ptext'>
+ To see all the flags and usage the --help flag is supported by default:
+<pre class='example'> prog --help
+ Usage: prog [flags] filename ...
+ Command line flags:
+ --morehelp           show more verbose help
+ -n {number} 
+ --number {number}    some number
+ -t {string} ...
+ --text {string} ...  some text
+ -v --verbose ...     verbose messages
+</pre>
+<p class='ptext'>
+ Arguments after "--" are not
+ recognized as a flag, even when they start with a dash.  The "--" itself is
+ not included.  For example, using "--help" as a file name:
+<pre class='example'> prog -- --help
+</pre>
+<p class='ptext'>
+ The dash by itself is handled like a non-flag argument.  It is sometimes
+ used for a file name to indicate stdin or stdout.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.Status.html'><b>Status</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Dummy class, returned by methods that need to be invoked before command
+ line flags are parsed.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.Usage.html'><b>Usage</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The Usage message to be displayed when there is a flag error and for
+ --help.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.Flag.html'><b>Flag</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The abstract base class of all flags.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.Bool.html'><b>Bool</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A <A href='ARG.Flag.html'><b>Flag</b></A> that has no argument, it's presence is noted.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.Int.html'><b>Int</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A <A href='ARG.Flag.html'><b>Flag</b></A> that has one number argument.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.String.html'><b>String</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A <A href='ARG.Flag.html'><b>Flag</b></A> that has one string argument.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ARG.StringList.html'><b>StringList</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> A Flag that includes all following arguments.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='ARG.html#rawName'><b>rawName</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The executable name as given
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='ARG.html#exeName'><b>exeName</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The executable name with path and symbolic links
+ resolved.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ARG.html#Size'><b>Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of arguments that are not flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#getList'><b>getList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with arguments that are not flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#get'><b>get</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return non-flag argument <b>index</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#rawSize'><b>rawSize</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the total number of arguments, including flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#getRawList'><b>getRawList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with all arguments, including flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#replaceRawList'><b>replaceRawList</b></a>(<small>argList</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Replace the list with all arguments, including flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#getRaw'><b>getRaw</b></a>(<small>index</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return argument <b>index</b>.  Includes flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#stopAtNonFlag'><b>stopAtNonFlag</b></a>(<small>stop</small>) <small><span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set whether to stop looking for flags at the first non-flag argument.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#disable'><b>disable</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Disable procesing command line flags.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#disableHelp'><b>disableHelp</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> When <b>on</b> is TRUE display help and exit when the "--help" flag is found.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#disableCompact'><b>disableCompact</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Disable the compact form of flag values.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#setExitValue'><b>setExitValue</b></a>(<small>value</small>) <small><span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the EXIT value used after displaying the flags for --help.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.html#getExeDir'><b>getExeDir</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the directory of the executed program.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='exeName'><b>exeName</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> The executable name with path and symbolic links
+ resolved.
+</p>
+<p class='ptext'> Equivalent to IO.findExe(ARG.rawName).
+ On MS-Windows backslashes are replaced with
+ forward slashes.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='rawName'><b>rawName</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> The executable name as given
+</p>
+<p class='ptext'> Not necessarily valid utf-8.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='Size'><b>Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of arguments that are not flags.
+</p>
+<p class='ptext'> Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='disable'><b>disable</b></A>() <span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Disable procesing command line flags.
+</p>
+<p class='ptext'> No Flag definitions are allowed.
+<p class='ptext'> This must be invoked in EarlyInit() or earlier.
+<p class='ptext'> The get(), getFlag() and getRaw() methods can still be used.
+<p class='ptext'> Returns a Status object, so that it can be used at the module level like
+ this:
+<pre class='example'> ARG.Status argStatus = ARG.disable()
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='disableCompact'><b>disableCompact</b></A>() <span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Disable the compact form of flag values.
+</p>
+<p class='ptext'> The compact form is giving a value to a flag without an "=".  For
+ example, when "-n" is a Int flag, "-n123" uses value "123".
+<p class='ptext'> The compact form is allowed by default.  It can also be disabled for each
+ individual flag.
+<p class='ptext'> Returns a Status object, so that it can be used at the module level like
+ this:
+<pre class='example'> ARG.Status help = ARG.disableCompact()
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='disableHelp'><b>disableHelp</b></A>() <span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> When <b>on</b> is TRUE display help and exit when the "--help" flag is found.
+</p>
+<p class='ptext'> When FALSE the --help flag is not recognized.
+<p class='ptext'> Returns a Status object, so that it can be used at the module level like
+ this:
+<pre class='example'> ARG.Status help = ARG.giveHelp(FALSE)
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='get'><b>get</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return non-flag argument <b>index</b>.
+</p>
+<p class='ptext'> The first argument is at index zero.
+ When <b>index</b> is out of range return NIL.
+<p class='ptext'> Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getExeDir'><b>getExeDir</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the directory of the executed program.
+</p>
+<p class='ptext'> Equal to exeName with the program name and trailing slash removed.
+ Can be used like this:
+<pre class='example'> configFile = ARG.getExeDir() .. "/prog.conf"
+</pre>
+<p class='ptext'>
+ Returns "." when exeName does not have a directory.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getList'><b>getList</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with arguments that are not flags.
+</p>
+<p class='ptext'> Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getRaw'><b>getRaw</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return argument <b>index</b>.  Includes flags.
+</p>
+<p class='ptext'> The first argument is at index zero.
+ When <b>index</b> is out of range return NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getRawList'><b>getRawList</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with all arguments, including flags.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='rawSize'><b>rawSize</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the total number of arguments, including flags.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='replaceRawList'><b>replaceRawList</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span> argList)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Replace the list with all arguments, including flags.
+</p>
+<p class='ptext'> Can be used to remove arguments that should not be parsed.
+<p class='ptext'> This must be invoked in EarlyInit() or earlier.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='setExitValue'><b>setExitValue</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> value) <span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the EXIT value used after displaying the flags for --help.
+</p>
+<p class='ptext'> The default EXIT value is 1.
+<p class='ptext'> Returns a Status object, so that it can be used at the module level like
+ this:
+<pre class='example'> ARG.Status exitv = ARG.setExitValue(256)
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='stopAtNonFlag'><b>stopAtNonFlag</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> stop) <span class='type'><A class='typehref' href='ARG.Status.html'>ARG.Status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set whether to stop looking for flags at the first non-flag argument.
+</p>
+<p class='ptext'> The default is FALSE: also find flags after a non-flag argument.
+<p class='ptext'> This must be invoked in EarlyInit() or earlier.
+<p class='ptext'> Returns a Status object, so that it can be used at the module level like
+ this:
+<pre class='example'> ARG.Status stop = ARG.stopAtNonFlag(TRUE)
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,23 @@
+# Config-1 size: 186 bytes
+threadArg: "-lpthreadGC2"
+socketArg: "-lws2_32"
+mathArg: "-lm"
+haveResolve: FALSE
+haveFork: FALSE
+exeSuffix: ".exe"
+exePrefix: ""
+haveSigaction: FALSE
+gcWithThreads: FALSE
+int16Name: "short"
+int32Name: "int"
+int64Name: "long long"
+nat16Name: "unsigned short"
+nat32Name: "unsigned int"
+nat64Name: "unsigned long long"
+floatName: "double"
+float32Name: "float"
+intPtrName: "__INTPTR_TYPE__"
+printIntFormat: "%I64d"
+printNatFormat: "%I64u"
+scanfHexFormat: "%I64x"
+isMingw: TRUE

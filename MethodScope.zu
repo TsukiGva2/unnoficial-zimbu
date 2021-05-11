@@ -1,0 +1,98 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# MethodScope class.
+#
+# A Scope used for the toplevel of a method.  Declares the arguments and
+# return type.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "Scope.zu"
+
+CLASS MethodScope EXTENDS Scope @items=public
+
+  Declaration            $reference   # For a closure: reference to the method.
+
+  # Variables with reference type, possibly tracked for garbage collection.
+  # This is an ordered dict, items are kept in the order they are added.
+  dict<string, Declaration> $refVars
+
+  # Variables used temporarily. The $temp field says whether it is currently
+  # being used.
+  list<Declaration.C>    $tempVars
+
+  # For USE arguments with $: "USE $var".
+  multiDict<string, Declaration> $objectMembers
+
+  bool                   $hasDefer  # TRUE when DEFER encountered
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @define
+    RETURN FALSE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @define
+    RETURN FALSE
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @define
+    RETURN TRUE
+  }
+
+  # Can there be statements in this Scope?
+  FUNC $hasStatements() bool @define
+    RETURN TRUE
+  }
+
+  PROC $initPass(Scope outer)
+    $fillFromOuter(outer)
+
+    # The declarations are newly created each pass.
+    $declDict = NIL
+  }
+
+  # Get the list of object declarations.
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @replace
+    RETURN $objectMembers
+  }
+
+  # Add an object member. Only for "USE $var"
+  PROC $addObjectMember(Declaration decl) @replace
+    $addObjectDecl(decl.name, decl.zuiDecl, decl)
+  }
+
+  # Inner part of Scope.addObjectDecl() for object members.
+  PROC $addObjectDecl(string name, Zui.Declaration zuiDecl,
+                                                  Declaration decl) @replace
+    IF $objectMembers == NIL
+      $objectMembers = NEW()
+    }
+    IF $objectMembers.has(name)
+      # If a symbol was already added for this zuiDecl, remove it.
+      list<Declaration> l = $objectMembers.get(name)
+      FOR i IN 0 UNTIL l.Size()
+        IF l[i].zuiDecl IS zuiDecl
+          l.remove(i)
+          BREAK
+        }
+      }
+    }
+
+    # The last added symbol must be first in the list for generateMethod()
+    # to work for overloaded methods
+    $objectMembers.insert(name, decl)
+  }
+
+
+}

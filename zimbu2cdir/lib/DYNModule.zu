@@ -1,0 +1,112 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module DYN - dyn support
+#
+
+#= Methods for the builtin dyn type.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE DYNModule @public
+
+  #= The builtin type dyn.
+  #- This is dynamically typed, it can hold a value of any type.
+  CLASS STARTdyn @public
+    # For Zudocu: start of dyn class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return a string representation for the value.
+  #- This uses the ToString() method of the actual type.
+  #- If there is no ToString() method the type of the value is returned
+  #- surrounded by dashes.  E.g. "-object-".
+  #% dyn x = getAnX()
+  #% IO.print("The value of x is " .. x.ToString())
+  FUNC ToString(dyn this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a formatted string representation for the value.
+  #- This uses the ToString(format) method of the actual type.
+  #- If there is no ToString(format) method the type of the value is returned
+  #- surrounded by dashes.  E.g. "-object-".
+  #% dyn x = getAnX()
+  #% IO.print("The value of x is " .. x.ToString())
+  FUNC ToString(dyn this, string format) string @public
+    SWITCH this.Type()
+      CASE T.int; RETURN this.<int>.ToString(format)
+      CASE T.int8; RETURN this.<int8>.ToString(format)
+      CASE T.int16; RETURN this.<int16>.ToString(format)
+      CASE T.int32; RETURN this.<int32>.ToString(format)
+      CASE T.nat; RETURN this.<nat>.ToString(format)
+      CASE T.byte; RETURN this.<byte>.ToString(format)
+      CASE T.nat16; RETURN this.<nat16>.ToString(format)
+      CASE T.nat32; RETURN this.<nat32>.ToString(format)
+      CASE T.status; RETURN this.<status>.ToString(format)
+      CASE T.bool; RETURN this.<bool>.ToString(format)
+      CASE T.float; RETURN this.<float>.ToString(format)
+      CASE T.string; RETURN this.<string>.ToString(format)
+      DEFAULT; RETURN this.ToString()
+    }
+  }
+
+  #= Return the type of the value.
+  #% dyn x = getAnX()
+  #% IO.print("The type of x is " .. x.Type().ToString())
+  FUNC Type(dyn this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the size of the dyn.
+  #- This calls Size() on the item contained in the dyn.
+  #
+  #- A NIL dyn also returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size(dyn this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return -1 when |other| sorts after this dyn, zero when |other| is
+  #= equal to this dyn, and 1 when |other| sorts before this dyn.
+  #
+  #- This works like with < and > operators, for similar types the value is
+  #- used. This especially matters for numbers.
+  #
+  #- When using ?.Compare() on a NIL dyn and |other| is NIL it returns
+  #- zero.  When |other| is not NIL it returns -1.
+  FUNC Compare(dyn this, dyn other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this dyn, FALSE otherwise.
+  #
+  #- This works like with == and != operators, for similar types the value is
+  #- used. This especially matters for numbers.
+  #% int i = 8
+  #% dyn xi = i
+  #% float f = 8.0
+  #% dyn xf = f
+  #% IO.print(xi.Equal(xf))  # prints TRUE
+  #% IO.print(xi == xf)      # prints TRUE
+  #
+  #- When using ?.Compare() on a NIL dyn and |other| is NIL it returns
+  #- TRUE.  Otherwise when |other| is NIL returns FALSE.
+  FUNC Equal(dyn this, dyn other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #! For Zudocu: end of the dyn class.
+  CLASS ENDdyn
+  }
+
+}

@@ -1,0 +1,6 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.FileInfo s = IO.fileInfo("does not exist")
+  IO.print(s.status)
+  RETURN 0
+}

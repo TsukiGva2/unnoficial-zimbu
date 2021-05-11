@@ -1,0 +1,416 @@
+# Test callback<> and closures
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Callback @public
+
+  PROC test() @public
+    testCallback()
+    testCallbackWithUse()
+    testClosure()
+    testClosureWithAs()
+    testClosureWithArg()
+    testClosureWithRef()
+    testClosureInClass()
+    testLambdaWithUse()
+    testClosureWithAlloc()
+    testEvenCount()
+    testCallbackInObject()
+    testCallbackRefInObject()
+    testClosureRefInObject()
+    testClosureMixedRefInObject()
+    testClosureMixedRefInherited()
+    testListOfCallbacks()
+  }
+
+  FUNC compare(string left, string right, int &count) int
+    count++
+    RETURN left.Compare(right)
+  }
+
+  FUNC compare2(string left, string right, int &count) int
+    count++
+    RETURN left.Compare(right)
+  }
+
+  PROC sort(list<string> names, func<string, string => int> cmp)
+    int r
+    r = cmp(names[0], names[1])
+    r = cmp(names[1], names[2])
+    r = cmp(names[2], names[3])
+  }
+
+  PROC testCallback()
+    list<string> names = ["one", "two", "foo", "bar"]
+    int count
+    callback<func<string, string => int>, int &> cb = NEW(compare, &count)
+    GC.run()
+    sort(names, cb)
+    IO.print("compare() called " .. count .. " times")
+
+    FUNC compare2(string left, string right) int
+      RETURN left.Compare(right)
+    }
+    FUNC compare3(string left, string right, int &dummy) int
+      RETURN left.Compare(right)
+    }
+    GC.run()
+    sort(names, compare2)
+
+    # check this re-uses the same callback struct
+    callback<func<string, string => int>, int &> cb2 = NEW(compare3, &count)
+  }
+
+  PROC testCallbackWithUse()
+    string middle = " or "
+    PROC concat(string left, string right USE middle)
+      IO.print(left .. middle .. right)
+    }
+    callback<proc<string>, string> cb = NEW(concat, "right")
+    GC.run()
+    cb("left")
+  }
+
+  PROC testClosure()
+    string m = "one"
+    PROC display(USE m)
+      IO.print(m)
+    }
+    m = "two"
+    proc<> p = display
+    m = "three"
+    p()  # displays "one"
+
+    p = display
+    m = "four"
+    GC.run()
+    p()  # displays "one"
+
+    display()  # displays "one"
+  }
+
+  PROC testClosureWithAs()
+    CLASS Foox
+      SHARED
+        string foo = "foo"
+        string bar = " bar"
+      }
+    }
+    Foox.foo = "one"
+    PROC display(USE Foox.foo AS f, Foox.bar AS b)
+      IO.print(f .. b)
+    }
+    Foox.foo = "two"
+    proc<> p = display
+    GC.run()
+    Foox.foo = "three"
+    p()  # displays "one bar"
+
+    p = display
+    Foox.foo = "four"
+    Foox.bar = "xxx"
+    p()  # displays "one bar"
+
+    display()  # displays "one bar"
+  }
+
+  PROC testClosureWithArg()
+    string l = "one"
+    string r = "right"
+
+    PROC display(string middle USE l, r)
+      IO.print(l .. middle .. r)
+    }
+
+    l = "two"
+    proc<string> p = display
+    l = "three"
+    GC.run()
+    p(" and ")  # displays "one and right"
+
+    r = "RIGHT"
+    p = display
+    l = "four"
+    p(" or ")  # displays "one or right"
+
+    display(" xor ")  # displays "one xor right"
+  }
+
+  PROC testClosureWithRef()
+    int counter = 1
+
+    func<int => int> nextNr = FUNC (int increment USE &counter) int
+      counter += increment
+      RETURN counter
+    }
+
+    IO.print("counter: " .. counter)
+    IO.print("result: " .. nextNr(2))
+    GC.run()
+    IO.print("counter: " .. counter)
+    IO.print("result: " .. nextNr(3))
+    IO.print("counter: " .. counter)
+  }
+
+  CLASS Foo
+    SHARED
+      int inc = 1
+      string foo = "foo"
+      string bar = " bar"
+      FUNC add(int n USE inc) int
+        RETURN n + inc
+      }
+    }
+  }
+
+  PROC testClosureInClass()
+    Foo.inc = 2
+    func<int => int> p = Foo.add
+    Foo.inc = 8
+    GC.run()
+    IO.print("added: " .. p(3))  # 1 + 3 = 4
+    p = Foo.add
+    IO.print("added: " .. p(10)) # 1 + 10 = 11
+  }
+
+  PROC testLambdaWithUse()
+    int count = 8
+    FUNC show(int what USE &count) int
+      IO.print(what)
+      count += what
+      GC.run()
+      RETURN what
+    }
+    list<int> l = [1, 2, 4]
+    l.map({ v USE show => show(v) })
+    IO.print("Total of 8 + " .. l.ToString() .. ": " .. count)
+
+    # Again, without explicit USE show
+    count = 8
+    l.map({ v => show(v) })
+    IO.print("Total of 8 + " .. l.ToString() .. ": " .. count)
+
+    PROC try(int nr USE count)
+      IO.print("Adding " .. nr .. " to " .. count)
+    }
+    PROC callTry(int nr USE try)
+      try(nr)
+    }
+    callTry(5)
+  }
+
+  PROC testClosureWithAlloc()
+    FUNC getCounter() proc<int>
+      int x = 2  # needs to be in allocated memory instead of on the stack
+      PROC increment(int y USE &x)
+        x += y
+        IO.print("Closure: " .. x)
+      }
+      x = 1
+      RETURN increment
+    }
+    VAR increment1 = getCounter()
+    VAR increment2 = getCounter()
+    increment1(1)  # prints 2
+    GC.run()
+    increment1(3)  # prints 5
+    increment2(1)  # prints 2
+    increment1(1)  # prints 6
+    increment2(1)  # prints 3
+
+    # And now using VAR.
+    FUNC getCounter2() proc<int>
+      VAR x = 2
+      PROC increment(int y USE &x)
+        x += y
+        IO.print("Closure: " .. x)
+      }
+      x = 1
+      RETURN increment
+    }
+    VAR upcrement1 = getCounter2()
+    VAR upcrement2 = getCounter2()
+    upcrement1(1)  # prints 2
+    upcrement1(3)  # prints 5
+    GC.run()
+    upcrement2(1)  # prints 2
+    upcrement1(1)  # prints 6
+    upcrement2(1)  # prints 3
+  }
+
+  PROC testEvenCount()
+    # Create a lambda function that uses "evenCount".
+    int evenCount
+    proc<int> f = PROC (int i USE &evenCount)
+      IO.write(i .. " is ")
+      IF i % 2 == 0
+        IO.print("even")
+        ++evenCount
+      ELSE
+        IO.print("odd")
+      }
+    }
+    GC.run()
+
+    # Loop over the list.
+    FOR i IN 0 TO 9
+      f(i)
+    }
+    IO.print("There are " .. evenCount .. " even numbers")
+  }
+
+  string mInit = "object callback: hello"
+
+  CLASS Foo2
+    string $m = mInit
+    string $l
+
+    PROC $display(USE $m)
+      IO.print($m .. $l)
+    }
+  }
+
+  PROC testCallbackInObject()
+    Foo2 f = NEW()
+    f.l = " world"
+    f.display()
+
+    mInit = "goodbye"
+    Foo2 f2 = NEW()
+    f2.l = " world"
+    f2.display()
+
+    f.display()
+  }
+
+  CLASS Foo3
+    string $m
+    string $l
+
+    NEW(string m)
+      $m = m
+    }
+
+    PROC $display(USE &$m)
+      IO.print($m .. $l)
+    }
+  }
+
+  PROC testCallbackRefInObject()
+    Foo3 f = NEW("hello")
+    f.l = " world"
+    f.display()
+    f.m = "goodbye"
+    f.display()
+  }
+
+  CLASS Foo4
+    string $m = "bar"
+    FUNC $method(string s USE &$m) string
+      RETURN s .. $m
+    }
+  }
+  FUNC getFunc() func<string => string>
+    Foo4 obj = NEW()
+    RETURN obj.method
+  }
+
+  PROC testClosureRefInObject()
+    func<string => string> f = getFunc()
+    GC.run()
+    IO.print(f("foo"))
+  }
+
+  CLASS Foo5
+    string $s = "foo"
+    string $m = "bar"
+    FUNC $method(USE $s, &$m) string
+      RETURN $s .. $m
+    }
+  }
+  FUNC getFunc5() func< => string>
+    Foo5 obj = NEW()
+    obj.m = "bar2"  # will be used
+    obj.s = "foo2"  # no effect
+    RETURN obj.method
+  }
+
+  PROC testClosureMixedRefInObject()
+    VAR f = getFunc5()
+    GC.run()
+    IO.print(f())  # prints "foobar2"
+  }
+
+  CLASS Foo6 EXTENDS Foo5
+  }
+  FUNC getFunc6() func< => string>
+    Foo6 obj = NEW() # defines obj.method() with first arg "foo".
+    obj.m = "bar3"  # will be used
+    obj.s = "foo3"  # no effect
+    RETURN obj.method
+  }
+
+  PROC testClosureMixedRefInherited()
+    VAR f = getFunc6()
+    GC.run()
+    IO.print(f())  # prints "foobar3"
+  }
+
+  PROC doit(string name)
+    IO.print("cb: " .. name)
+  }
+
+  PROC doitnr(string name, int nr)
+    IO.print("cb: " .. name .. nr)
+  }
+
+  CLASS FooBack
+    PROC $doit(string name)
+      IO.print("FooBack: " .. name)
+    }
+  }
+
+  CLASS FooParent
+    string $lead
+    PROC $doit(string name) @default
+      IO.print("FooParent: " .. $lead .. name)
+    }
+  }
+
+  CLASS FooChild EXTENDS FooParent
+    PROC $doit(string name) @replace
+      IO.print("FooChild: " .. $lead .. name)
+    }
+  }
+
+  PROC testListOfCallbacks()
+    list<callback<proc<>>> l = NEW()
+
+    callback<proc<>, string> cb1 = NEW(doit, "hello")
+    l.add(cb1)
+
+    callback<proc<>, string, int> cb2 = NEW(doitnr, "hello ", 123)
+    l.add(cb2)
+
+    FooBack fb = NEW()
+    callback<proc<>, string> cb3 = NEW(fb.doit, "world")
+    l.add(cb3)
+
+    FooParent f = NEW()
+    f.lead = "and "
+    callback<proc<>, string> cb4 = NEW(f.doit, "world")
+    l.add(cb4)
+
+    f = FooChild.NEW()
+    f.lead = "or "
+    callback<proc<>, string> cb5 = NEW(f.doit, "world")
+    l.add(cb5)
+
+    FOR item IN l
+      item()
+    }
+  }
+}

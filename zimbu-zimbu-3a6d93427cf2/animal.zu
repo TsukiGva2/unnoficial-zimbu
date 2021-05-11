@@ -1,0 +1,45 @@
+#
+# Example for virtual method from Wikipedia
+#
+
+CLASS Animal
+  PROC $eat() @default
+    IO.print("I eat like a generic Animal.")
+  }
+}
+ 
+CLASS Wolf EXTENDS Animal
+  PROC $eat() @replace
+    IO.print("I eat like a wolf!")
+  }
+}
+ 
+CLASS Fish EXTENDS Animal
+  PROC $eat() @replace @default
+    IO.print("I eat like a fish!")
+  }
+}
+ 
+CLASS GoldFish EXTENDS Fish @final
+  PROC $eat() @replace
+    IO.print("I eat like a goldfish!")
+  }
+}
+ 
+CLASS OtherAnimal EXTENDS Animal
+}
+
+FUNC Main() int
+  list<Animal> animals = NEW()
+  animals.add(Animal.NEW())
+  animals.add(Wolf.NEW())
+  animals.add(Fish.NEW())
+  animals.add(GoldFish.NEW())
+  animals.add(OtherAnimal.NEW())
+ 
+  FOR animal IN animals
+    animal.eat()
+  }
+
+  RETURN 0
+}

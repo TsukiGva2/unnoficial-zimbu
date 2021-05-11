@@ -1,0 +1,49 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for bool
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE BoolTest @public
+
+  PROC test() @public
+    IO.print("testdir/BoolTest.zu")
+    testPredefMethods()
+  }
+
+  PROC testPredefMethods()
+    bool false
+    string formatb = "b"
+    string format1b = "1b"
+    IO.print(false.Size())
+    IO.print(false.ToString())
+    IO.print(false.ToString("b"))
+    IO.print(false.ToString(formatb))
+    IO.print(false.ToString("1b"))
+    IO.print(false.ToString(format1b))
+    IO.print(false.Type().ToString())
+
+    bool true = TRUE
+    IO.print(true.Size())
+    IO.print(true.ToString())
+    IO.print(true.ToString("b"))
+    IO.print(true.ToString(formatb))
+    IO.print(true.ToString("1b"))
+    IO.print(true.ToString(format1b))
+    IO.print(true.Type().ToString())
+
+    IO.print("TRUE.Compare(FALSE): " .. (TRUE.Compare(FALSE)))
+    IO.print("FALSE.Compare(FALSE): " .. (FALSE.Compare(FALSE)))
+    IO.print("FALSE.Compare(TRUE): " .. (FALSE.Compare(TRUE)))
+    IO.print("TRUE.Compare(TRUE): " .. (TRUE.Compare(TRUE)))
+
+    IO.print("TRUE.Equal(FALSE): " .. (TRUE.Equal(FALSE)))
+    IO.print("FALSE.Equal(FALSE): " .. (FALSE.Equal(FALSE)))
+    IO.print("FALSE.Equal(TRUE): " .. (FALSE.Equal(TRUE)))
+    IO.print("TRUE.Equal(TRUE): " .. (TRUE.Equal(TRUE)))
+  }
+}

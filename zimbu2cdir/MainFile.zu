@@ -1,0 +1,332 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# MainFile class: values for the main file.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Annotator.zu"
+IMPORT "Builtin.zu"
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "DeclStore.zu"
+IMPORT "Generate.zu"
+IMPORT "Output.zu"
+IMPORT "Resolve.zu"
+IMPORT "SContext.zu"
+IMPORT "TopScope.zu"
+IMPORT "Type.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "genC/ZuiWriteC.zu"
+IMPORT "genC/WriteC.zu"
+IMPORT "genJS/WriteJS.zu"
+
+CLASS MainFile @items=public   # TODO: restrict visibility
+  UsedFile   $usedFile   # The file contents, and imports recursively.
+  TopScope   $topScope   # What is used globally.
+
+  NEW(string fileName)
+    $topScope = NEW()
+    $usedFile = NEW(fileName, isMainFile + isTopFile)
+  }
+
+  # Parse the main file.
+  FUNC $parse() status
+    RETURN $usedFile.parse($topScope, "")
+  }
+
+  # Return TRUE if there is a Main() method in this file.
+  FUNC $hasMain() bool
+    RETURN $usedFile.hasMain()
+  }
+
+  # Recursively parse imported files.
+  # Doing all the parsing first quickly finds syntax errors and locates used
+  # builtin modules.
+  PROC $parseImports()
+    $usedFile.parseImports("", $getSContext())
+  }
+
+  # Recursively resolve symbols.
+  # Return TRUE if another pass is needed.
+  FUNC $resolve() bool
+    ++$topScope.pass
+
+    bool r = Generate.resolve($usedFile, $getSContext())
+
+    # Run the garbage collector after finishing every other pass.
+    IF ($topScope.pass & 1) == 0
+      GENERATE_IF Z.have("portable")
+        GC.run()
+      GENERATE_ELSE
+        # Run the garbage collector in another thread, so that this one can
+        # continue after the mark phase.
+        IF %gcThread == NIL
+          %gcPipe = NEW()
+          %gcThread = NEW()
+          %gcThread.start()
+        }
+        %gcPipe.write(TRUE)
+      }
+    }
+
+    RETURN r
+  }
+
+  FUNC $getSContext() SContext
+    Resolve gen = NEW()
+    Output.Group dummy = NEW()
+    RETURN NEW($topScope, $usedFile.scope(), gen, dummy)
+  }
+
+  # Recursively write all the files imported by this UsedFile.
+  # Only to be used for the main file.
+  PROC $writeZuiFiles()
+    FOR builtin IN $topScope.usedBuiltins
+      IF builtin != NIL && builtin.usedFile != NIL
+        builtin.usedFile.zimbuFile.writeZui()
+      }
+    }
+
+    FOR zimbuFile IN $topScope.usedImports
+      zimbuFile.writeZui()
+    }
+  }
+
+  # Write C code to |outFile| from .zui files.
+  PROC $writeZuiC(IO.File outFile)
+    ZuiWriteC.write($usedFile, $topScope, outFile)
+  }
+
+  # Generate C code and write it to |outFile|.
+  PROC $generateC(string inFileName, IO.File outFile)
+    WriteC gen = NEW()
+
+    # Mark all symbols used directly or indirectly from Main() as used.
+    $usedFile.markMainUsed(gen, $topScope)
+
+    # Mark dependencies in Builtin modules as used.
+    Builtin.markUsed(gen, $topScope)
+
+    # Let the language add dependencies for used symbols.
+    # Must come last before write().
+    gen.markUsed()
+
+    # Now it's no longer permitted to mark items as used that are defined
+    # in the program or libraries.
+    gen.didMarkUsed = TRUE
+
+    # Add annotations to the code.  Used to decide if temp vars are needed and
+    # protect unsafe calls.
+    Annotator.annotate($usedFile, $topScope, gen)
+
+    # First do it with undefinedNonZero FALSE so that errors in generated code
+    # will be given.
+    bool undefinedNonZero = Generate.undefinedNonZero
+    Generate.undefinedNonZero = FALSE
+    $generateCinner(inFileName, gen, outFile)
+
+    IF undefinedNonZero && LOG.errorCount == 0
+      # We have undefined symbols but no errors were reported.  Do it again
+      # while producing unused code as well, so that errors in not generated
+      # code are given.
+      IO.print("Making another pass to find errors")
+      $topScope.clearStartedWrite()
+      Generate.undefinedNonZero = TRUE
+      Generate.continueAfterError = TRUE
+      $generateCinner(inFileName, gen, outFile)
+    }
+
+    IF undefinedNonZero && LOG.errorCount == 0
+      LOG.error("Last pass had undefined symbols, "
+                        .. "yet no errors were reported when generating code")
+
+      Generate.reportUndef = TRUE
+      Generate.skip_zero_undefined = FALSE
+      $resolve()
+    }
+  }
+
+  PROC $generateCinner(string inFileName, WriteC gen, IO.File outFile)
+    # Write the C code into |outputs|.
+    Output.Group outputs = NEW()
+    outputs.startWriting()
+
+    SContext ctx = NEW($topScope, $usedFile.scope(), gen, outputs)
+
+    # Write global declarations to |outputs|.
+    gen.writeGlobals(ctx)
+
+    # Write code to |outputs|.
+    Generate.write($usedFile, ctx, outputs)
+
+    IF LOG.errorCount == 0
+      # Write the collected C code from |outputs| into the output file.
+      outFile.write("/*\n")
+      outFile.write(" * Generated from Zimbu file " .. inFileName .. "\n")
+      outFile.write(" */\n")
+      gen.writeFile($usedFile, ctx, outputs, outFile)
+
+    }
+  }
+
+  # If there are any ZUT modules, write the Javascript.
+  PROC $generateJS()
+    IF $topScope.javascriptImports == NIL
+      RETURN
+    }
+    LOG.info("Generating Javascript code...")
+
+    WriteJS jsGen = createJsGen()
+    Output.Group jsOutputs = NEW()
+    jsOutputs.startWriting()
+
+    FOR zimbuFile IN $topScope.javascriptImports.values()
+      Zui.Statement stmt = zimbuFile.getDeclarationStatement(FALSE)
+      IF stmt != NIL
+        Declaration topDecl =
+                             ZuiDeclarationExt.get(stmt.getDeclaration()).decl
+        # Mark used items.
+        jsGen.setDeclUsed(topDecl)
+
+        Type type = topDecl.type.getEffType()
+        IF type ISA ClassType
+          # Register the controller constructor.
+          jsOutputs.bodyOut.write("zut.controllers['\(type.name)'] = \(type.pName);\n")
+        }
+      }
+    }
+    
+    # Mark the action methods that were registered from C as used.
+    IF $topScope.registeredActions != NIL
+      FOR method IN $topScope.registeredActions
+        jsGen.setDeclUsed(method)
+      }
+    }
+
+    # Used in writeZutFooter()
+    Declaration newContextDecl = DeclStore.getDecl("MZUTModule__CContext",
+                                                                    "MNEW__1")
+    jsGen.setDeclUsed(newContextDecl)
+    Declaration newConfigDecl = DeclStore.getDecl("MZUTModule__CEventConfig",
+                                                                       "MNEW")
+    jsGen.setDeclUsed(newConfigDecl)
+    Declaration clickMethodDecl = DeclStore.getDecl("MZUTModule__CEvent__X",
+                                                             "FnewClickEvent")
+    jsGen.setDeclUsed(clickMethodDecl)
+    Declaration overMethodDecl = DeclStore.getDecl("MZUTModule__CEvent__X",
+                                                         "FnewMouseOverEvent")
+    jsGen.setDeclUsed(overMethodDecl)
+    Declaration outMethodDecl = DeclStore.getDecl("MZUTModule__CEvent__X",
+                                                          "FnewMouseOutEvent")
+    jsGen.setDeclUsed(outMethodDecl)
+
+
+    string outDir
+    bool first = TRUE
+
+    # Produce the imports marked with @javascript.
+    FOR zimbuFile IN $topScope.javascriptImports.values()
+      UsedFile usedFile = NEW(zimbuFile, FALSE)
+      SContext newCtx = NEW($topScope, usedFile.scope(), jsGen, jsOutputs)
+      IF first
+        first = FALSE
+        # Generate used parts of builtin modules.
+        Builtin.generateBuiltins(FALSE, TRUE, newCtx)
+      }
+
+      jsOutputs.structOut.write("// \(zimbuFile.filename) structs\n")
+      jsOutputs.declOut.write("// \(zimbuFile.filename) declarations\n")
+      jsOutputs.bodyOut.write("// \(zimbuFile.filename) bodies\n")
+      Generate.write(usedFile, newCtx, jsOutputs, "  ")
+      # TODO: use the output directory of the binary.
+      outDir = zimbuFile.outDir
+    }
+
+    # Write JSoutputs to ZUDIR/main.js
+    jsGen.writeJavascript(outDir, "main.js", jsOutputs)
+  }
+
+  SHARED
+
+    PROC generateJSFile(UsedFile usedFile, SContext ctx)
+      Zui.Statement stmt = usedFile.zimbuFile.getModuleStatement()
+      IF stmt == NIL
+        RETURN
+      }
+      Declaration moduleDecl = ZuiDeclarationExt.get(stmt.getDeclaration()).decl
+
+      WriteJS jsGen = createJsGen()
+
+      # Delete older versions of the produced files.
+      string fname = jsGen.zwtFilename(usedFile.zimbuFile)
+      IO.print("Deleting \(fname)")
+      IO.delete(fname)
+
+      # Mark used items.
+      jsGen.setDeclUsed(moduleDecl)
+
+      string moduleName = usedFile.zimbuFile.getModuleName()
+      Declaration initDecl = DeclStore.getDecl("M" .. moduleName, "Finit")
+      IF initDecl == NIL
+        LOG.internal("no init() in \(moduleName)")
+      ELSE
+        # This recursively marks everything used from the init() method as used.
+        jsGen.setDeclUsed(initDecl)
+      }
+
+      # Produce the JS file.
+      Output.Group jsOutputs = NEW()
+      SContext newCtx = NEW(ctx.topScope, usedFile.scope(), jsGen, jsOutputs)
+      Generate.write(usedFile, newCtx, jsOutputs,
+                                               ctx.scope.importIndent .. "  ")
+
+      # Write JSoutputs to ZUDIR/ModuleName.html
+      jsGen.writeZwtImport(usedFile.zimbuFile, jsOutputs)
+    }
+
+    FUNC createJsGen() WriteJS
+      WriteJS jsGen = NEW()
+
+      # Dependencies may have been added to Declarations used in
+      # addDependsOnCond() while the declaration was not used.  We do not want
+      # to use them here.
+      Declaration.abstractClass.clearDependsOn()
+      Declaration.inheritMethod.clearDependsOn()
+
+      # We do want to write a declaration for abstract classes.
+      jsGen.setDeclUsed(Declaration.abstractClass)
+
+      # A method is written in the parent class, not the child.
+      jsGen.setDeclUsed(Declaration.inheritMethod)
+
+      RETURN jsGen
+    }
+
+    GENERATE_IF !Z.have("portable")
+      pipe<bool> %gcPipe
+      GcThread   %gcThread
+
+      CLASS GcThread EXTENDS thread
+        PROC $body() @replace
+          WHILE TRUE
+            status st
+            bool doIt = %gcPipe.read(&st)
+            IF st == FAIL
+              BREAK
+            }
+            GC.run()
+          }
+        }
+      }
+    }
+
+  }
+}

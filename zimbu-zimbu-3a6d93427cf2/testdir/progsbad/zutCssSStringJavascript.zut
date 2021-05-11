@@ -1,0 +1,8 @@
+MODULE Testing
+  # CSS single string / Javascript
+  TEMPLATE inCssSStringJavascript(ZUT.Javascript text) ZUT.Css @public
+    p {
+     color: '[=text]';
+    }
+  }
+}

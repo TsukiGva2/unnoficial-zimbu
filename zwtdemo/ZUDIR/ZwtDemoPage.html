@@ -1,0 +1,6320 @@
+<html>
+  <head>
+    <script>
+      var $wnd = parent;
+      var $doc = $wnd.document;
+      var $sheetIndex = 0;
+      function $findSheetIndex() {
+        for (i = 0; i < $doc.styleSheets.length; ++i) {
+          if ($doc.styleSheets[i].title == 'zwt') {
+            $sheetIndex = i;
+            break;
+          }
+        }
+      }
+      $findSheetIndex();
+
+    </script>
+  </head>
+  <body>
+    <script><!--
+
+// structs
+// including TIMEModule structs
+// including EModule structs
+function Ytlm(){ // Exception
+}
+_ = Ytlm.prototype = {};
+_.Vmessage = null;
+_.Vpos = null;
+_.Vbacktrace = null;
+_.ToString = YH0V;
+_.writeTo__1 = YxaJa;
+_.writeTo = YxaJ;
+_.toString = Yoww;
+function YEro(){ // Exit
+}
+_ = YEro.prototype = new Ytlm();
+_.ToString = Ydtua;
+_.Vvalue = 0;
+_.writeTo = YXHSa;
+function YwtA(){ // Error
+}
+_ = YwtA.prototype = new Ytlm();
+function Y1uN(){ // NilAccess
+}
+_ = Y1uN.prototype = new YwtA();
+function YVNj(){ // Init
+}
+_ = YVNj.prototype = new YwtA();
+function YtEE(){ // Check
+}
+_ = YtEE.prototype = new YwtA();
+function Yalz(){ // BadValue
+}
+_ = Yalz.prototype = new YwtA();
+function Yw3O(){ // OutOfRange
+}
+_ = Yw3O.prototype = new Yalz();
+function Y2EX(){ // KeyNotFound
+}
+_ = Y2EX.prototype = new Yalz();
+function YX0i(){ // KeyExists
+}
+_ = YX0i.prototype = new Yalz();
+function YP_P(){ // IllegalByte
+}
+_ = YP_P.prototype = new Yalz();
+function YXKl(){ // IOError
+}
+_ = YXKl.prototype = new YwtA();
+function YuDC(){ // WrongType
+}
+_ = YuDC.prototype = new YwtA();
+function YrHq(){ // Internal
+}
+_ = YrHq.prototype = new YwtA();
+// including PIPEModule structs
+// including IModule structs
+// including SYSModule structs
+// including BYTESTRINGModule structs
+// including LISTModule structs
+// including RPCModule structs
+function YQv7(){ // Control
+}
+_ = YQv7.prototype = {};
+_.Vstate = 0;
+_.Vstatus = 0;
+_.Verror = null;
+// including ZModule structs
+function YkxB(){ // Pos
+}
+_ = YkxB.prototype = {};
+_.Vfilename = null;
+_.Vlnum = 0;
+_.Vcol = 0;
+_.Vtext = null;
+_.ToString = YpI_;
+// including STRINGModule structs
+// including IOModule structs
+function Y8is(){ // Writer
+}
+_ = Y8is.prototype = {};
+_.write__2 = YHhZb;
+_.writeChar = Ydti;
+_.print = YRt7;
+function Yw8L(){ // File
+}
+_ = Yw8L.prototype = new Y8is();
+_.write = YwHoa;
+_.Vfd = null;
+_.Vname = null;
+_.readByte = YFeQ;
+_.readChar = YAPp;
+function YtZ0(){ // StringReader
+}
+_ = YtZ0.prototype = {};
+_.VbyteIdx = 0;
+_.VbyteSize = 0;
+_.Vdata = null;
+_.readChar = YxQq;
+_.readByte = YCfR;
+function YrC3(){ // CharReaderStack
+}
+_ = YrC3.prototype = {};
+_.Vreader = null;
+_.Vstack = null;
+_.readChar = YVZB;
+_.push = Y3er;
+function YjUM(){ // StringWriter
+}
+_ = YjUM.prototype = new Y8is();
+_.write = YJqza;
+_.writeByte = Ye7fa;
+_.VsLen = 0;
+_.Vs = null;
+_.Vx = null;
+_.Size = YKJQ;
+_.ToString = YbNW;
+// including MULTIDICTModule structs
+function Y4gH(){ // MultiDict__t1
+}
+_ = Y4gH.prototype = {};
+_.Vdict = null;
+_.VitemCount = 0;
+_.get = YPtT;
+_.ToString = YnU2;
+_.has = Yk0Q;
+_.add = YcW7;
+_.clear = YrBB;
+// including HTTPModule structs
+// including Proto structs
+// including Message structs
+function YFL0(){ // Message
+}
+_ = YFL0.prototype = {};
+_.VderefTime = 0;
+_.VderefId = 0;
+_.VderefTimeSize = 0;
+_.VderefIdSize = 0;
+_.hasField = YX43;
+_.name = YMOR;
+_.enumGet__1 = Y0zDa;
+_.enumGet = Y0zD;
+_.enumNameGet__1 = YytNa;
+_.enumNameGet = YytN;
+_.intGet__1 = YGR8a;
+_.intGet = YGR8;
+_.int32Get__1 = YAAoa;
+_.int32Get = YAAo;
+_.uint64Get__1 = YRqVa;
+_.uint64Get = YRqV;
+_.uint32Get__1 = Y0tEa;
+_.uint32Get = Y0tE;
+_.floatGet__1 = Yyt7a;
+_.floatGet = Yyt7;
+_.doubleGet__1 = Yybva;
+_.doubleGet = Yybv;
+_.boolGet__1 = YGfza;
+_.boolGet = YGfz;
+_.stringGet__1 = YsRaa;
+_.stringGet = YsRa;
+_.enumSet = Y3p7;
+_.enumNameSet = YBjh;
+_.intSet = YJHD;
+_.int32Set = YDqT;
+_.uint64Set = YOAq;
+_.uint32Set = YYD9;
+_.floatSet = YBjC;
+_.doubleSet = Yvl0;
+_.boolSet = YJ52;
+_.stringSet = Yp0G;
+_.messageGet__1 = Yo5ya;
+_.messageGet = Yo5y;
+_.messageSet = YrW2;
+_.messageAdd = Y0Dj;
+_.mergeMessageFromReader = Ymza;
+_.size = YUDN;
+_.ToString = YC5i;
+_.writeJsonDeref = YgZk;
+var MProto__EType = [
+"unknown",
+"bool",
+"bytes",
+"enum",
+"fixed32",
+"fixed64",
+"float",
+"double",
+"group",
+"int",
+"int32",
+"int64",
+"message",
+"sfixed32",
+"sfixed64",
+"sint32",
+"sint64",
+"string",
+"uint32",
+"uint64",
+];
+var MProto__EBinaryType = [
+"varint",
+"fixed64",
+"lengthDelimited",
+"startGroup",
+"endGroup",
+"fixed32",
+];
+function Yd7N(){ // E_ParseError
+}
+_ = Yd7N.prototype = new YwtA();
+function Ys_q(){ // E_ProduceError
+}
+_ = Ys_q.prototype = new YwtA();
+function YOEA(){ // E_BinaryError
+}
+_ = YOEA.prototype = new YwtA();
+function YqvM(){ // FieldSpec
+}
+_ = YqvM.prototype = {};
+_.Vname = null;
+_.Vnr = 0;
+_.Vtype = 0;
+_.Vrepeated = 0;
+function YLWE(){ // Writer
+}
+_ = YLWE.prototype = {};
+_.Vwriter = null;
+_.VbyteWriter = null;
+_.Vindent = null;
+_.VuseNr = 0;
+_.VderefId = 0;
+_.VderefIdSize = 0;
+_.VderefTime = 0;
+_.VderefTimeSize = 0;
+_.initDeref = YEV9;
+function YBRp(){ // Reader
+}
+_ = YBRp.prototype = {};
+_.VtheByteReader = null;
+_.VtheCharReader = null;
+_.Vrefs = null;
+_.VrefId = 0;
+_.Vlnum = 0;
+_.Init = YRBz;
+_.byteReader = YoPK;
+_.charReader = Ytm4;
+_.readChar = Y0_W;
+_.push = YwKy;
+_.protoReader = Y9eV;
+_.addRef = Y_ZW;
+_.getRef = YnlR;
+function YhWs(){ // Tag
+}
+_ = YhWs.prototype = {};
+_.Vnr = 0;
+_.Vtype = 0;
+function Y66n(){ // LimitedByteReader
+}
+_ = Y66n.prototype = {};
+_.Vreader = null;
+_.VtoRead = 0;
+_.readByte = YMUd;
+_.byteReader = YzZW;
+_.charReader = YRRG;
+_.protoReader = YzI3;
+_.addRef = Ywbf;
+function Yjsx(){ // Control
+}
+_ = Yjsx.prototype = new YQv7();
+_.VcharCreate = null;
+_.VbyteCreate = null;
+_.Vdone = null;
+var MHTTPModule__ERequestType = [
+"unknown",
+"options",
+"get",
+"head",
+"post",
+"put",
+"delete",
+"trace",
+"connect",
+];
+function YSM1(){ // Request
+}
+_ = YSM1.prototype = {};
+_.Vtype = 0;
+_.Vpath = null;
+_.Vparams = null;
+_.VhttpVersion = null;
+_.VheaderItems = null;
+_.Vbody = null;
+_.VparamItems = null;
+_.ToString = YuPP;
+// including ZUTModule structs
+// including MainPage structs
+// including SETModule structs
+function Yhqr(){ // Set__t1
+}
+_ = Yhqr.prototype = {};
+_.Vdict = null;
+_.Init = Ypau;
+_.ToString = Yehh;
+_.clear__1 = Y21Ea;
+_.clear = Y21E;
+function Yeqr(){ // Set__t4
+}
+_ = Yeqr.prototype = {};
+_.Vdict = null;
+_.Init = YEEZ;
+_.ToString = YphZ;
+_.has = YKzF;
+_.add = YSEn;
+_.remove = YLxA;
+// including THREADModule structs
+// including Config structs
+// including zimbuConfig structs
+// including ZWTModule structs
+// including BaseModule structs
+function Y4Y5(){ // UIObject
+}
+_ = Y4Y5.prototype = {};
+_.Velem = null;
+_.Vstyles = null;
+_.VparentStyles = null;
+_.setStyle = Y8wQ;
+_.getWidth = YcNh;
+_.getHeight = Y8Lr;
+_.getTop__1 = Y18ka;
+_.getLeft__1 = YCqpa;
+function YDde(){ // Widget
+}
+_ = YDde.prototype = new Y4Y5();
+_.Vparent = null;
+_.Vactive = 0;
+_.VinactiveStyle = null;
+_.Vhandlers = null;
+_.VhasJsHandler = null;
+_.ToString = YNea;
+_.addToParent = Yeuq;
+_.removeFromParent = YHfD;
+_.setHandler = YoEe;
+_.addHandler = YmNC;
+_.setJsHandler = YK1u;
+_.removeJsHandler = YcEP;
+_.setClickHandler = YRwQ;
+_.setMouseOverHandler = YA4S;
+_.setMouseOutHandler = YzQ6;
+// including ButtonModule structs
+function YN0O(){ // Button
+}
+_ = YN0O.prototype = new YDde();
+_.VbuttonText = null;
+_.ToString = YVY8;
+_.Init = YN0Oa;
+// including CodeModule structs
+// including DialogModule structs
+function YVvX(){ // Panel
+}
+_ = YVvX.prototype = new YDde();
+_.Vitems = null;
+_.Vcontroller = null;
+_.Vhighlighted = 0;
+_.Vhighlights = null;
+_.VhighlightStyle = null;
+_.detach = Y0Tr;
+_.attach = YJNo;
+_.add = YCbm;
+_.addItem = Y3xR;
+_.remove__1 = Yx9aa;
+_.remove = Yx9a;
+_.clear = Y15_;
+_.setController = YxGZ;
+_.Init = YVvXa;
+function Y4xQ(){ // PopupPanel
+}
+_ = Y4xQ.prototype = new YVvX();
+_.Vparent = null;
+_.VusedParent = null;
+_.Vx = 0;
+_.Vy = 0;
+_.Vwidth = 0;
+_.Vheight = 0;
+_.Init__2 = Yc8o;
+_.setHorizontalPosition = YpeS;
+_.setVerticalPosition = YX6B;
+_.setWidth = Yh06;
+_.setHeight = YP39;
+_.show = YJKA;
+_.hide = YyVS;
+function Y1gh(){ // NoButtonDialog
+}
+_ = Y1gh.prototype = new Y4xQ();
+_.Vtable = null;
+_.Vwidget = null;
+_.VbgElem = null;
+_.Vbackground = null;
+_.Init = YslR;
+_.show = YWJF;
+_.close = Y0ou;
+_.setWidget = Y9hM;
+function Yjma(){ // SimpleDialog
+}
+_ = Yjma.prototype = new Y1gh();
+_.Vbuttons = null;
+_.Vhandler = null;
+_.getButtons = YzuP;
+_.Init__1 = YWCu;
+_.handleOk = Y7ly;
+function YILp(){ // OkCancelDialog
+}
+_ = YILp.prototype = new Yjma();
+_.getButtons = Y4Mpa;
+_.handleCancel = Yir6;
+_.Init = YILpa;
+// including DropdownModule structs
+// including EventModule structs
+function YZDx(){ // Event
+}
+_ = YZDx.prototype = {};
+_.Vwidget = null;
+_.Vtype = 0;
+_.VjsEvent = null;
+var MEventModule__EEventType = [
+"all",
+"click",
+"mouseOver",
+"mouseOut",
+"key",
+"keyDown",
+"keyUp",
+];
+// including InputModule structs
+// including LabelModule structs
+function YtSx(){ // Label
+}
+_ = YtSx.prototype = new YDde();
+_.VlabelText = null;
+_.Init = YL0R;
+_.setText = YnYb;
+_.ToString = YiHk;
+function YN0m(){ // TextBlock
+}
+_ = YN0m.prototype = new YDde();
+_.Vtext = null;
+_.Init = YrSa;
+_.setText = Y690;
+_.ToString = YzKa;
+// including MenuModule structs
+// including PanelModule structs
+function Ynpw(){ // CellPanel
+}
+_ = Ynpw.prototype = new YVvX();
+_.detach = Y3bna;
+_.attach = YM5ja;
+_.Vbody = null;
+function Ym2E(){ // AbsolutePanel
+}
+_ = Ym2E.prototype = new YVvX();
+_.Init = Ym2Ea;
+function YfXd(){ // VerticalPanel
+}
+_ = YfXd.prototype = new Ynpw();
+_.add = Yzw5a;
+_.remove__1 = Yjgwa;
+_.ToString = Y4sJ;
+_.Init = YfXda;
+function YA6u(){ // HorizontalPanel
+}
+_ = YA6u.prototype = new Ynpw();
+_.Vrow = null;
+_.Init__3 = Y7kt;
+_.add = YJ9pa;
+_.remove__1 = YodZa;
+_.ToString = Y9Lp;
+function YpCw(){ // ScrollPanel
+}
+_ = YpCw.prototype = new YVvX();
+_.Init__2 = YSIg;
+_.scrollHorizontal = YpfW;
+_.scrollRight = Ypcy;
+_.scrollLeft = YJYF;
+_.getHorizontalScroll = YCg1;
+_.scrollVertical = YCSD;
+_.scrollTop = YR0k;
+_.scrollBottom = YBl3;
+_.getVerticalScroll = Y7DS;
+_.ensureVisible = Yh40;
+_.ensureVisibleVertical = YZnn;
+_.ensureVisibleHorizontal = Y3xE;
+// including StyleModule structs
+function YJIL(){ // Color
+}
+_ = YJIL.prototype = {};
+_.Vred = 0;
+_.Vgreen = 0;
+_.Vblue = 0;
+_.VcolorName = 0;
+_.setRed = YNC1;
+_.setGreen = Yz3l;
+_.setBlue = Y9im;
+_.limit = Y2mV;
+_.ToString = YgAh;
+var MStyleModule__EColorName = [
+"none",
+"aqua",
+"black",
+"blue",
+"fuchsia",
+"gray",
+"green",
+"lime",
+"maroon",
+"navy",
+"olive",
+"orange",
+"purple",
+"red",
+"silver",
+"teal",
+"white",
+"yellow",
+"inherit",
+"transparent",
+];
+var MStyleModule__EUnit = [
+"pixel",
+"percent",
+"em",
+"ex",
+"cm",
+"mm",
+"inch",
+"point",
+"pica",
+];
+var MStyleModule__EBorderStyle = [
+"none",
+"solid",
+"double",
+"dotted",
+"dashed",
+];
+var MStyleModule__EHorAlign = [
+"none",
+"left",
+"middle",
+"center",
+"right",
+];
+var MStyleModule__EVerAlign = [
+"none",
+"top",
+"middle",
+"center",
+"bottom",
+];
+function YXEv(){ // Style
+}
+_ = YXEv.prototype = {};
+_.Vname = null;
+_.VstyleNr = 0;
+_.VruleNr = 0;
+_.VfontName = null;
+_.VfontSize = null;
+_.Vproperties = null;
+_.activate = YzLd;
+_.update = YZfG;
+_.setRule = YrWD;
+_.setValue = YZRy;
+_.setPixelValue = YH25;
+_.getPixelValue = Ygmr;
+_.setUnitValue = YACJ;
+_.setColorProp = YrJ7;
+_.clearValue = Y8Sr;
+_.setMarginLeft = Y9lb;
+_.getMarginLeft = YNNp;
+_.setMarginRight = Y8DQ;
+_.getMarginRight = YcLj;
+_.setMarginTop = YTS2;
+_.getMarginTop = Yx2P;
+_.setMarginBottom = Y5cS;
+_.setMarginBot = Yo8M;
+_.getMarginBot = Y2iz;
+_.setPadding = YaPx;
+_.setPaddingLeft = YOar;
+_.setPaddingRight = Y1Wp;
+_.setPaddingTop = YU4V;
+_.setPaddingBot = YoPb;
+_.setHorAlign = YvB9;
+_.setVerAlign = YNO7;
+_.setWidth = Ykgm;
+_.setFullWidth = YpB9;
+_.setHeight = Y_xK;
+_.setFullHeight = YOjB;
+_.setBorder = Yf58;
+_.setBorderThickness = Yh2i;
+_.setBorderStyle = Yt3W;
+_.clearBorderStyle = Y_eb;
+_.setBorderColor = Yf7b;
+_.setColor = YOn8;
+_.setBGColor = Y9ZK;
+_.setBGColorName = Y4LI;
+_.clearBGColor = YvfU;
+_.setOpacity = Y44W;
+// including TableModule structs
+function Y1yz(){ // TableCell
+}
+_ = Y1yz.prototype = new Y4Y5();
+_.Vwidget = null;
+_.Vrowspan = 0;
+_.Vcolspan = 0;
+_.ToString = Ygq2;
+_.setWidget = YBrY;
+function YidE(){ // TableRow
+}
+_ = YidE.prototype = new Y4Y5();
+_.Ventries = null;
+_.ToString = YksY;
+_.resize = YhJK;
+_.addCell = YNQD;
+_.deleteCell = Ypnw;
+_.setWidget = YU2p;
+_.getWidget = YRJI;
+_.setColStyle = YTsy;
+function YrNL(){ // Table
+}
+_ = YrNL.prototype = new YVvX();
+_.Vrows = null;
+_.Vbody = null;
+_.Init = YZQ2;
+_.clear = YeKc;
+_.ToString = YC3E;
+_.add = YIk_;
+_.remove = Y36p;
+_.setWidget = YIDH;
+_.getWidget = YFj_;
+_.setRowStyle = YxaR;
+_.setCellStyle = YCAj;
+_.addRow = YPru;
+_.deleteRow = YZmd;
+_.resizeRows = YnB1;
+// including TextareaModule structs
+function Yg_8(){ // Element
+}
+_ = Yg_8.prototype = {};
+function Yttl(){ // JsEvent
+}
+_ = Yttl.prototype = {};
+function Y8bA(){ // ListController__t1
+}
+_ = Y8bA.prototype = {};
+_.Vview = null;
+_.Vmodel = null;
+_.Vbuilder = null;
+_.VselectHandler = null;
+_.Vsorted = 0;
+_.VsortMethod = null;
+_.setModel = Ytq3;
+_.update = Yqzp;
+// including CHECKModule structs
+// including BOXModule structs
+// including ARGModule structs
+// including INTModule structs
+// including DYNModule structs
+// including addressbook structs
+function YVpY(){ // PhoneNumber
+}
+_ = YVpY.prototype = new YFL0();
+_.hasField = YBy4a;
+_.name = YEDsa;
+_.enumGet = YZMda;
+_.enumNameGet = YP9ga;
+_.stringGet = YJsba;
+_.enumSet = YWWJa;
+_.enumNameSet = YMjNa;
+_.stringSet = YMiGa;
+_.Vf_number = null;
+_.getNumber = Y1zE;
+_.hasNumber = YwDN;
+_.Vf_type = 0;
+_.getType = YeLS;
+_.hasType = YWby;
+_.fieldSpecs = YkyPa;
+_.mergeFromReader = Y303;
+var MTutorial__CPerson__X__EPhoneType = [
+"unknown",
+"eMOBILE",
+"eHOME",
+"eWORK",
+];
+function YBfl(){ // Person
+}
+_ = YBfl.prototype = new YFL0();
+_.hasField = YT1aa;
+_.name = YNDja;
+_.int32Get = Ywxva;
+_.stringGet = YnRYa;
+_.int32Set = Yzn_a;
+_.stringSet = Yk0ta;
+_.messageGet__1 = YdZ6a;
+_.messageAdd = YBqma;
+_.size = YVsfa;
+_.Vf_name = null;
+_.getName = YW6g;
+_.hasName = YDyX;
+_.Vf_id = 0;
+_.Vhas_id = 0;
+_.getId = YgQT;
+_.hasId = YJsf;
+_.Vf_email = null;
+_.getEmail = YB8m;
+_.hasEmail = Y3Jk;
+_.Vf_phone = null;
+_.getPhoneList = Y8OP;
+_.mergeMessageFromReader = YecSa;
+_.fieldSpecs = Y8cba;
+_.mergeFromReader = YBwy;
+function YggY(){ // AddressBook
+}
+_ = YggY.prototype = new YFL0();
+_.name = YpkPa;
+_.messageGet__1 = Yi3Da;
+_.messageAdd = YGvTa;
+_.size = Yx9Ka;
+_.Vf_person = null;
+_.getPersonList = YiWD;
+_.mergeMessageFromReader = YN1Qa;
+_.fieldSpecs = Y37Ea;
+_.mergeFromBinary = YGIB;
+_.mergeFromJson = YoZG;
+function Yckw(){ // GetOptions
+}
+_ = Yckw.prototype = new YFL0();
+_.hasField = YPXNa;
+_.name = YJ0Ea;
+_.stringGet = Y2v2a;
+_.stringSet = Y_Fya;
+_.Vf_name = null;
+_.setName = YAUM;
+_.hasName = YHye;
+_.valid = Y8Gy;
+_.fieldSpecs = YKIca;
+function YwEo(){ // Status
+}
+_ = YwEo.prototype = new YFL0();
+_.hasField = YKyGa;
+_.name = YmNka;
+_.boolGet = YGI8a;
+_.stringGet = YJYPa;
+_.boolSet = YJyDa;
+_.stringSet = YMOja;
+_.Vf_ok = 0;
+_.hasOk = YdgU;
+_.Vf_error = null;
+_.hasError = Yc27;
+_.fieldSpecs = YubJa;
+function YEzw(){ // Top
+}
+_ = YEzw.prototype = {};
+_.Va = null;
+_.Vb = null;
+_.getA = YcTw;
+_.getB = YdTw;
+_.getBoth = YCBG;
+function YHHb(){ // Child
+}
+_ = YHHb.prototype = new YEzw();
+_.getB = YzRra;
+function YtdR(){ // MyBuilder
+}
+_ = YtdR.prototype = {};
+_.get = YTDg;
+function YKAX(){ // Foo
+}
+_ = YKAX.prototype = {};
+_.Vname = null;
+_.ToString = Yn3L;
+
+// declarations
+
+// TODO: remove
+// function $debug(str){
+//   $doc.getElementById('stdout').innerHTML += '<div>' + str + '</div>';
+// }
+function $createXMLHttpRequest() {
+  return (window.XMLHttpRequest) ? new XMLHttpRequest() :
+      new ActiveXObject('Microsoft.XMLHTTP');
+}
+function $createRequestChangeHandler(control, request, done) {
+  return function() {
+    // $debug("request change handler state: " + request.readyState);
+    if (request.readyState == 4) {
+      // $debug(request.responseText);
+      done(control, request.responseText);
+    }
+  };
+};
+// including TIMEModule declarations
+// including EModule declarations
+// including PIPEModule declarations
+// including IModule declarations
+// including SYSModule declarations
+// including BYTESTRINGModule declarations
+// including LISTModule declarations
+// including RPCModule declarations
+// including ZModule declarations
+// including STRINGModule declarations
+// including IOModule declarations
+var Y3QJ = -1; // IOModule.eof
+var Y59X = Yd89(); // IOModule.stdin
+var Yb0q = Yvyt(); // IOModule.stdout
+var YeNQ = YsM3(); // IOModule.stderr
+// including MULTIDICTModule declarations
+// including HTTPModule declarations
+// including Proto declarations
+// including Message declarations
+var YcTI = 0; // Proto__CWriter__X.derefTime
+var YXCQ = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(0, 0), ':' + 1, 0), ':' + 9, 0), ':' + 11, 0), ':' + 10, 0), ':' + 19, 0), ':' + 18, 0), ':' + 17, 2), ':' + 3, 0), ':' + 12, 2), ':' + 6, 5), ':' + 7, 1); // Proto.proto2binary
+var YLwW = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(0, 0), ':' + 0, 0), ':' + 1, 1), ':' + 2, 2), ':' + 3, 3), ':' + 4, 4), ':' + 5, 5); // Proto.binaryTypeValues
+var YSle = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(2, 0), ':' + 0, 0), ':' + 1, 1), ':' + 2, 2), ':' + 3, 3), ':' + 4, 4), ':' + 5, 5); // Proto.int2BinaryType
+var YqNA = 3; // Proto.kTypeBits
+var Yas1 = 5; // Proto.kTypeMax
+// including ZUTModule declarations
+// including MainPage declarations
+// including SETModule declarations
+// including THREADModule declarations
+// including Config declarations
+// including zimbuConfig declarations
+// including ZWTModule declarations
+// including BaseModule declarations
+// including ButtonModule declarations
+// including CodeModule declarations
+// including DialogModule declarations
+// including DropdownModule declarations
+// including EventModule declarations
+// including InputModule declarations
+// including LabelModule declarations
+// including MenuModule declarations
+// including PanelModule declarations
+// including StyleModule declarations
+var YphH = 0; // StyleModule__CStyle__X.styleCount
+var YPjV = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(1, 1), ':' + "pixel", "px"), ':' + "percent", "%"), ':' + "em", "em"), ':' + "ex", "ex"), ':' + "cm", "cm"), ':' + "mm", "mm"), ':' + "inch", "in"), ':' + "point", "pt"), ':' + "pica", "pc"); // StyleModule__CStyle__X.unitNames
+// including TableModule declarations
+// including TextareaModule declarations
+var YATn = null; // ZWTModule.rootPanel
+// including CHECKModule declarations
+// including BOXModule declarations
+// including ARGModule declarations
+// including INTModule declarations
+var YZEe = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102]; // INTModule.letters
+// including DYNModule declarations
+// including addressbook declarations
+var YUUR = [Ykww(null, "number", 1, 17, 0), Ykww(null, "type", 2, 3, 0)]; // Tutorial__CPerson__CPhoneNumber__X.fieldSpecs
+var YpbS = [Ykww(null, "name", 1, 17, 0), Ykww(null, "id", 2, 10, 0), Ykww(null, "email", 3, 17, 0), Ykww(null, "phone", 4, 12, 1)]; // Tutorial__CPerson__X.fieldSpecs
+var YyE5 = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(0, 0), ':' + 0, -1), ':' + 1, 0), ':' + 2, 1), ':' + 3, 2); // Tutorial__CPerson__X.fromPhoneType2int
+var YO_w = ZDictAdd(0, ZDictAdd(0, ZDictAdd(0, ZnewDict(2, 0), ':' + 0, 1), ':' + 1, 2), ':' + 2, 3); // Tutorial__CPerson__X.int2PhoneType
+var YDAS = [Ykww(null, "person", 1, 12, 1)]; // Tutorial__CAddressBook__X.fieldSpecs
+var YZsK = [Ykww(null, "name", 1, 17, 0)]; // Tutorial__CGetOptions__X.fieldSpecs
+var Y1gv = [Ykww(null, "ok", 1, 1, 0), Ykww(null, "error", 2, 17, 0)]; // Tutorial__CStatus__X.fieldSpecs
+var YYlJ = null; // ZwtDemoPage.vPanel
+var Y4fJ = null; // ZwtDemoPage.hPanel
+var Yivf = null; // ZwtDemoPage.buttonStyleOver
+var Yrfg = null; // ZwtDemoPage.buttonStyleOut
+var YW3O = null; // ZwtDemoPage.labelStyleBlue
+var YDgo = YfEva(null, 120, 220, 90); // ZwtDemoPage.color
+var YvdVa = null; // ZwtDemoPage.redVal
+var YVRF = null; // ZwtDemoPage.greenVal
+var YAWR = null; // ZwtDemoPage.blueVal
+var YSOca = null; // ZwtDemoPage.topPanel
+var YlDX = null; // ZwtDemoPage.someStyle
+var Yeli = null; // ZwtDemoPage.scrollP
+var YZbc = null; // ZwtDemoPage.scrollTL
+var YYbc = null; // ZwtDemoPage.scrollTM
+var YTbc = null; // ZwtDemoPage.scrollTR
+var Ycnc = null; // ZwtDemoPage.scrollML
+var Ybnc = null; // ZwtDemoPage.scrollMM
+var Y6mc = null; // ZwtDemoPage.scrollMR
+var YQEc = null; // ZwtDemoPage.scrollBL
+var YPEc = null; // ZwtDemoPage.scrollBM
+var YKEc = null; // ZwtDemoPage.scrollBR
+var Yqz6 = null; // ZwtDemoPage.addressTable
+
+// bodies
+
+function Zbind(fn, o) {
+  return function() { return fn.apply(o, arguments); };
+}
+
+function ZforListNew(p) {
+ var f = {};
+ f['list'] = p;
+ f['idx'] = 0;
+ return f;
+}
+function ZforListGet(f) {
+ if (f.list != null && f.idx < f.list.length)
+  return f.list[f.idx];
+ return null;
+}
+function ZforListCont(f) {
+  return f.list != null && f.idx < f.list.length;
+}
+function ZforListNext(f) {
+ ++f.idx;
+ if (f.list != null && f.idx < f.list.length)
+  return f.list[f.idx];
+ return null;
+}
+
+function ZforStringNew(p) {
+  var f = {};
+  f['string'] = p;
+  f['idx'] = 0;
+  return f;
+}
+function ZforStringGet(f) {
+  if (f.string != null && f.idx < f.string.length)
+    return f.string.charCodeAt(f.idx);
+  return null;
+}
+function ZforStringCont(f) {
+  return f.string != null && f.idx < f.string.length;
+}
+function ZforStringNext(f) {
+  ++f.idx;
+  if (f.string != null && f.idx < f.string.length)
+    return f.string.charCodeAt(f.idx);
+  return null;
+}
+
+function ZforRangeNew(start, last, until, step) {
+  var f = {};
+  f['idx'] = start;
+  if (until)
+    f['last'] = last - (step > 0 ? 1 : -1);
+  else
+    f['last'] = last;
+  f['step'] = step;
+  return f;
+}
+function ZforRangeGet(f) {
+  return f.idx;
+}
+function ZforRangeCont(f) {
+  return f.step > 0 ? (f.idx <= f.last) : (f.idx >= f.last);
+}
+function ZforRangeNext(f) {
+  f.idx += f.step;
+  return f.idx;
+}
+
+function ZforEnumNew(count) {
+  var f = {};
+  f['count'] = count;
+  f['idx'] = 0;
+  return f;
+}
+function ZforEnumGet(f) {
+  return f.idx;
+}
+function ZforEnumCont(f) {
+  return f.idx < f.count;
+}
+function ZforEnumNext(f) {
+  ++f.idx;
+  return f.idx;
+}
+
+function Zthrow(msg) {
+  alert("Exception: " + msg);
+}
+
+function ZSlice(str, start, end, dn) {
+ if (str == null) return null;
+ var l = str.length;
+ var is = start < 0 ? l + start : start;
+ var ie = end < 0 ? l + end : end;
+ if (is < 0) is = 0;
+ if (is > l) is = l;
+ if (ie < is - 1) ie = is - 1;
+ if (ie >= l) ie = l - 1;
+ return str.slice(is, ie + 1);
+}
+
+function ZparseInt(val, r, t, def) {
+ if (val == null) {
+  if (t >= 2) return 0;
+  Zthrow('NIL string');
+ }
+ var c = val.charAt(0);
+ if (r == 2 && c != '0' && c != '1') Zthrow('badvalue');
+ if (r == 16 && c == '-') Zthrow('badvalue');
+ var res = parseInt(val, r);
+ if (isNaN(res)) {
+  if (t) Zthrow('badvalue');
+  return def;
+ }
+ return res;
+}
+
+function Zisdigit(val) {
+ switch (val) {
+  case "0": case "1": case "2": case "3": case "4":
+  case "5": case "6": case "7": case "8": case "9":
+   return true;
+  default:
+   return false;
+ }
+}
+
+function ZitemToString(val, type, useq) {
+  switch (type) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 80:
+    case 81:
+    case 82:
+    case 83:
+      return val + '';
+    case 21: return val ? 'TRUE' : 'FALSE';
+    case 22: return val ? 'OK' : 'FAIL';
+    case 23: return 'TODO';
+    case 200:
+    case 201: return val == null ? 'NIL' : val;
+    case 200 + 1024:
+    case 201 + 1024: return val == null ? 'NIL' : '"' + val + '"';
+    case 300: return val == null ? 'NIL' : '-array-';
+    case 301: return val == null ? 'NIL' : '-list-';
+    case 302: return val == null ? 'NIL' : '-dict-';
+    case 310: return val == null ? 'NIL' : '-varString-';
+    case 311: return val == null ? 'NIL' : '-varByteString-';
+    case 320: return val == null ? 'NIL' : '-tuple-';
+    case 330: return val == null ? 'NIL' : '-proc-';
+    case 360: return val == null ? 'NIL' : '-any-';
+    case 390: return val == null ? 'NIL' : val.ToString ? val.ToString(val) : '-object-';
+    case 391: return val == null ? 'NIL' : val.ToString ? val.ToString(val) : '-iobject-';
+  }
+  return "unknown";
+}
+
+/* List add */
+function ZLa(head, after, val) {
+  if (head == null) Zthrow("Inovking add() on NIL list");
+  if (after == -1 || after >= head.length) {
+    head.push(val);
+  } else {
+    if (after < 0) {
+      var before = head.length + after + 1;
+      if (before < 0) {
+        before = 0;
+      }
+      head.splice(before, 0, val);
+    } else {
+      head.splice(after + 1, 0, val);
+    }
+  }
+  return head;
+}
+
+function ZListGet(head, idx) {
+  if (idx >= 0) {
+    if (idx >= head.length) return null;
+    return head[idx];
+  }
+  var i = head.length + idx;
+  if (i < 0) return null;
+  return head[i];
+}
+
+function ZListToString(head, type, useq) {
+  if (head == null) Zthrow("Invoking ToString() on NIL list");
+  var result = "[";
+  var comma = "";
+  for (var i = 0; i < head.length; ++i) {
+    result = result + comma + ZitemToString(head[i], type, useq);
+    comma = ", ";
+  }
+  return result + "]";
+}
+
+function ZListPopItem(head, idx, remove) {
+  if (head == null) Zthrow(remove ? "Invoking remove() on a NIL list" : "Invoking clear() on a NIL list");
+  if (head.length == 0) return null;
+  if (idx == -1) return head.pop();
+  var i = idx;
+  if (idx < 0) {
+    i = head.length + idx;
+  }
+  if (i >= 0 && i < head.length) {
+    var a = head.splice(i, 1);
+    if (remove) return a[0];
+    return head;
+  }
+  if (remove) return null;
+  return head;
+}
+
+function ZListJoin(head, sep, type, useq) {
+ if (head == null) Zthrow("Invoking join() on NIL list");
+ var result = "";
+ var s = "";
+ for (var i = 0; i < head.length; ++i) {
+  result = result + s + ZitemToString(head[i], type, useq);
+  s = sep;
+ }
+ return result;
+}
+
+function ZListMap(head, f) {
+ if (head == null) Zthrow("Invoking map() on NIL list");
+ for (var i = 0; i < head.length; ++i) {
+  head[i] = f(head[i]);
+ }
+ return head;
+}
+
+function ZListKeyMap(head, f) {
+ if (head == null) Zthrow("Invoking keyMap() on NIL list");
+ for (var i = 0; i < head.length; ++i) {
+  head[i] = f(i, head[i]);
+ }
+ return head;
+}
+
+function ZDictAdd(ow, d, key, value) {
+  if (d[key]) {
+    if (!ow) alert("dict item already exists: " + key);
+  } else {
+    d.size++;
+  }
+  d[key] = value;
+  return d;
+}
+
+function ZnewDict(keyType, valType) {
+  var d = {size: 0};
+  d['keyType'] = keyType;
+  d['valType'] = valType;
+  return d;
+}
+
+function ZDictToString(d, keyUseq, itemUseq) {
+  var res = "{";
+  var first = 1;
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      if (first == 0)
+        res = res + ", ";
+      else
+        first = 0;
+      res = res + ZitemToString(key.substring(1), d['keyType'], keyUseq);
+      res = res + ": ";
+      res = res + ZitemToString(d[key], d['itemType'], itemUseq);
+    }
+  }
+  return  res + "}";
+}
+
+function ZDictGetDef(d, key, def) {
+  var ckey = ':' + key;
+  if (ckey in d)
+    return d[ckey];
+  return def;
+}
+
+function ZDictKeys(d, dn) {
+  var l = [];
+  var i = 0;
+  if (d == null) {
+   if (dn) return null;
+    /* TODO: throw exception */
+  }
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      if (d.keyType == 2)
+        l[i++] = parseInt(key.substring(1));
+      else  /* assume string */
+        l[i++] = key.substring(1);
+    }
+  }
+  return l;
+}
+
+function ZDictRemove(d, key, remove) {
+  var r;
+  if (key in d) {
+    d.size--;
+    r = d[key];
+    delete d[key];
+  } else if (remove) {
+    /* TODO: throw exception? */
+    alert("EXCEPTION: ZDictRemove: " + key);
+  }
+  if (remove)
+    return r;
+  return d;
+}
+
+
+function ZDictClear(d) {
+  for (var key in d) {
+    if (key.charCodeAt(0) == 58) {
+      delete d[key];
+    }
+  }
+  d.size = 0;
+  return d;
+}
+// including TIMEModule bodies
+// including EModule bodies
+function YRHR(thisO, Amsg) { // MEModule__CException.NEW
+ if (!thisO) thisO = new Ytlm();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YRHRa(thisO, Apos, Amsg) { // MEModule__CException.NEW
+ if (!thisO) thisO = new Ytlm();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YH0V() { // MEModule__CException.ToString
+ var Vw = new YjUM();
+ this.writeTo(Vw);
+ return Vw.ToString();
+}
+function YxaJ(Aw) { // MEModule__CException.writeTo
+ if ((this.Vpos != null))
+ {
+  Aw.write(this.Vpos.ToString());
+  Aw.write(": ");
+ }
+ if (((this.Vmessage != null) && (this.Vmessage != "")))
+ {
+  Aw.write("Exception: ");
+  Aw.write(this.Vmessage);
+ }
+ else
+ {
+  Aw.write("Exception");
+ }
+}
+function Yoww(Averbose) { // MEModule__CException.toString
+ var Vw = new YjUM();
+ this.writeTo__1(Averbose, Vw);
+ return Vw.ToString();
+}
+function YxaJa(Averbose, Aw) { // MEModule__CException.writeTo
+ this.writeTo(Aw);
+ if ((Averbose && (this.Vbacktrace != null)))
+ {
+  Aw.write("\nStack backtrace (last called first):");
+  {
+   var Vpos;
+   var Zf2 = ZforListNew(this.Vbacktrace);
+for (Vpos = ZforListGet(Zf2); ZforListCont(Zf2); Vpos = ZforListNext(Zf2)) {
+   if ((Vpos.Vfilename == null))
+   {
+    Aw.write("\n(unknown)");
+   }
+   else
+   {
+    Aw.write("\n");
+    Aw.write(Vpos.ToString());
+    if ((Vpos.Vtext != null))
+    {
+     Aw.write(": ");
+     Aw.write(Vpos.Vtext);
+    }
+   }
+   }
+  }
+ }
+}
+function Ydtua() { // MEModule__CExit.ToString
+ var Vw = new YjUM();
+ this.writeTo(Vw);
+ return Vw.ToString();
+}
+function YXHSa(Aw) { // MEModule__CExit.writeTo
+ if ((this.Vpos != null))
+ {
+  Aw.write(this.Vpos.ToString());
+  Aw.write(": ");
+ }
+ Aw.write("EXIT ");
+ Aw.write("" + this.Vvalue);
+ if (((this.Vmessage != null) && (this.Vmessage != "")))
+ {
+  Aw.write(": ");
+  Aw.write(this.Vmessage);
+ }
+}
+function YwtA__YRHRa(thisO, Apos, Amsg) { // MEModule__CError.NEW__p1
+ if (!thisO) thisO = new YwtA();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YwtA__YRHR(thisO, Amsg) { // MEModule__CError.NEW__p1
+ if (!thisO) thisO = new YwtA();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YtEE__YwtA__YRHRa(thisO, Apos, Amsg) { // MEModule__CCheck.NEW__p2
+ if (!thisO) thisO = new YtEE();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Yalz__YwtA__YRHRa(thisO, Apos, Amsg) { // MEModule__CBadValue.NEW__p2
+ if (!thisO) thisO = new Yalz();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Yalz__YwtA__YRHR(thisO, Amsg) { // MEModule__CBadValue.NEW__p2
+ if (!thisO) thisO = new Yalz();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Yw3O__Yalz__YwtA__YRHR(thisO, Amsg) { // MEModule__COutOfRange.NEW__p3
+ if (!thisO) thisO = new Yw3O();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Y2EX__Yalz__YwtA__YRHRa(thisO, Apos, Amsg) { // MEModule__CKeyNotFound.NEW__p3
+ if (!thisO) thisO = new Y2EX();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Y2EX__Yalz__YwtA__YRHR(thisO, Amsg) { // MEModule__CKeyNotFound.NEW__p3
+ if (!thisO) thisO = new Y2EX();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Yxmk(Akey, Amsg) { // MEModule.throwIntKeyNotFound
+ alert("Exception in D:/zimbu/lib/EModule.zu line 374 col 5: " + Y2EX__Yalz__YwtA__YRHR(null, Amsg + "Key not found: " + "" + Akey).Vmessage);
+ return;
+}
+function Y5LT(Akey, Amsg) { // MEModule.throwStringKeyNotFound
+ alert("Exception in D:/zimbu/lib/EModule.zu line 380 col 5: " + Y2EX__Yalz__YwtA__YRHR(null, Amsg + "Key not found: \"" + Akey + "\"").Vmessage);
+ return;
+}
+function YX0i__Yalz__YwtA__YRHRa(thisO, Apos, Amsg) { // MEModule__CKeyExists.NEW__p3
+ if (!thisO) thisO = new YX0i();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = Apos;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YX0i__Yalz__YwtA__YRHR(thisO, Amsg) { // MEModule__CKeyExists.NEW__p3
+ if (!thisO) thisO = new YX0i();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YL9Z(Akey, Amsg) { // MEModule.throwIntKeyExists
+ alert("Exception in D:/zimbu/lib/EModule.zu line 396 col 5: " + YX0i__Yalz__YwtA__YRHR(null, Amsg + "Key already exists: " + "" + Akey).Vmessage);
+ return;
+}
+function YEeX(Akey, Amsg) { // MEModule.throwStringKeyExists
+ alert("Exception in D:/zimbu/lib/EModule.zu line 402 col 5: " + YX0i__Yalz__YwtA__YRHR(null, Amsg + "Key already exists: \"" + Akey + "\"").Vmessage);
+ return;
+}
+function YP_P__Yalz__YwtA__YRHR(thisO, Amsg) { // MEModule__CIllegalByte.NEW__p3
+ if (!thisO) thisO = new YP_P();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YXKl__YwtA__YRHR(thisO, Amsg) { // MEModule__CIOError.NEW__p2
+ if (!thisO) thisO = new YXKl();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+// including PIPEModule bodies
+// including IModule bodies
+// including SYSModule bodies
+// including BYTESTRINGModule bodies
+// including LISTModule bodies
+// including RPCModule bodies
+function YX3_(Acontrol, AserviceName, Arequest, Adone) { // MRPCModule.rpc
+ var Vaddr = "rpc?name=" + AserviceName;
+      var request = $createXMLHttpRequest();
+      request.open("POST", Vaddr, true);
+      request.setRequestHeader("Content-type", "binary/octet-stream");
+      request.onreadystatechange = $createRequestChangeHandler(Acontrol, request, Adone);
+      request.send(Arequest);
+ Acontrol.Vstate = 2;
+ return 1;
+}
+// including ZModule bodies
+function Ypp_a(thisO, Afilename, Alnum, Acol) { // MZModule__CPos.NEW
+ if (!thisO) thisO = new YkxB();
+ thisO.Vfilename = Afilename;
+ thisO.Vlnum = Alnum;
+ thisO.Vcol = Acol;
+ return thisO;
+}
+function YpI_() { // MZModule__CPos.ToString
+ var Vw = new YjUM();
+ if ((this.Vfilename == null))
+ {
+  Vw.write("[unknown file]");
+ }
+ else
+ {
+  Vw.write(this.Vfilename);
+ }
+ Vw.write(" line ");
+ Vw.write__2(this.Vlnum);
+ Vw.write(" col ");
+ Vw.write__2(this.Vcol);
+ return Vw.ToString();
+}
+// including STRINGModule bodies
+function YO0w(Athis) { // MSTRINGModule.reverse
+ if (!this)
+ {
+  return null;
+ }
+ var Vw = new YjUM();
+ {
+  var Vi;
+  var Zf1 = ZforRangeNew(((Athis).length - 1), 0, 0, -1);
+for (Vi = ZforRangeGet(Zf1); ZforRangeCont(Zf1); Vi = ZforRangeNext(Zf1)) {
+  Vw.writeChar((Athis).charCodeAt(Vi));
+  }
+ }
+ return Vw.ToString();
+}
+// including IOModule bodies
+function Yd89() { // MIOModule.newStdin
+ var Vfile = new Yw8L();
+ Vfile.Vname = "stdin";
+ return Vfile;
+}
+function Yvyt() { // MIOModule.newStdout
+ var Vfile = new Yw8L();
+ Vfile.Vname = "stdout";
+ return Vfile;
+}
+function YsM3() { // MIOModule.newStderr
+ var Vfile = new Yw8L();
+ Vfile.Vname = "stderr";
+ return Vfile;
+}
+function YHhZb(Anumber) { // MIOModule__CWriter.write
+ return this.write(((Anumber) + ""));
+}
+function Ydti(Achar) { // MIOModule__CWriter.writeChar
+ if (((Achar < 0) || (Achar > 1114111)))
+ {
+  alert("Exception in D:/zimbu/lib/IOModule.zu line 177 col 9: " + Yw3O__Yalz__YwtA__YRHR(null, "UTF-8 character must be in range 0 - 0x10ffff, got " + "" + Achar).Vmessage);
+  return;
+ }
+ return this.write(String.fromCharCode(Achar));
+}
+function YRt7(Atext) { // MIOModule__CWriter.print
+ if (((this.write(Atext) == 1) && (this.write("\n") == 1)))
+ {
+  return 1;
+ }
+ return 0;
+}
+function YFeQ() { // MIOModule__CFile.readByte
+ if ((this.Vfd == null))
+ {
+  alert("Exception in D:/zimbu/lib/IOModule.zu line 255 col 9: " + YXKl__YwtA__YRHR(null, "File is not open").Vmessage);
+  return;
+ }
+ var Vb = 0;
+  alert("Cannot read from a file in Javascript");
+ return Vb;
+}
+function YAPp() { // MIOModule__CFile.readChar
+ var Vc = this.readByte();
+ if (((Vc != Y3QJ) && (Vc >= 128)))
+ {
+  var Vlen = 0;
+  if ((((Vc & 224)) == 192))
+  {
+   Vlen = 2;
+   Vc = (Vc & 31);
+  }
+  else {
+ if ((((Vc & 240)) == 224))
+  {
+   Vlen = 3;
+   Vc = (Vc & 15);
+  }
+  else {
+ if ((((Vc & 248)) == 240))
+  {
+   Vlen = 4;
+   Vc = (Vc & 7);
+  }
+  else
+  {
+   alert("Exception in D:/zimbu/lib/IOModule.zu line 289 col 11: " + YP_P__Yalz__YwtA__YRHR(null, "first byte out of range: " + "" + Vc).Vmessage);
+   return;
+  }
+  }}
+  {
+   var Vnr;
+   var Zf2 = ZforRangeNew(2, Vlen, 0, 1);
+for (Vnr = ZforRangeGet(Zf2); ZforRangeCont(Zf2); Vnr = ZforRangeNext(Zf2)) {
+   var Vc2 = this.readByte();
+   if ((Vc2 == Y3QJ))
+   {
+    alert("Exception in D:/zimbu/lib/IOModule.zu line 294 col 13: " + YP_P__Yalz__YwtA__YRHR(null, "found EOF when getting byte " + "" + Vnr).Vmessage);
+    return;
+   }
+   else {
+ if ((((Vc2 & 192)) != 128))
+   {
+    alert("Exception in D:/zimbu/lib/IOModule.zu line 296 col 13: " + YP_P__Yalz__YwtA__YRHR(null, "byte " + "" + Vnr + " out of range").Vmessage);
+    return;
+   }
+   }
+   Vc = (((Vc << 6)) + ((Vc2 & 63)));
+   }
+  }
+  switch (Vlen)
+  {
+  case 2:
+   {
+    if ((Vc <= 127))
+    {
+     alert("Exception in D:/zimbu/lib/IOModule.zu line 303 col 17: " + YP_P__Yalz__YwtA__YRHR(null, "overlong sequence").Vmessage);
+     return;
+    }
+     break;
+   }
+  case 3:
+   {
+    if ((Vc <= 2047))
+    {
+     alert("Exception in D:/zimbu/lib/IOModule.zu line 307 col 17: " + YP_P__Yalz__YwtA__YRHR(null, "overlong sequence").Vmessage);
+     return;
+    }
+     break;
+   }
+  case 4:
+   {
+    if ((Vc <= 65535))
+    {
+     alert("Exception in D:/zimbu/lib/IOModule.zu line 311 col 17: " + YP_P__Yalz__YwtA__YRHR(null, "overlong sequence").Vmessage);
+     return;
+    }
+     break;
+   }
+  }
+ }
+ return Vc;
+}
+function YwHoa(Atext) { // MIOModule__CFile.write
+ var Vret = 0;
+ if ((this.Vname == null))
+ {
+  alert("Exception in D:/zimbu/lib/IOModule.zu line 501 col 11: " + YXKl__YwtA__YRHR(null, "File is not open").Vmessage);
+  return;
+ }
+ var e = $doc.getElementById(this.Vname);
+ if (e == null) {
+  e = $doc.createElement('div');
+  e.id = this.Vname;
+  $doc.body.appendChild(e);
+ }
+ e.innerHTML += Atext;
+ return Vret;
+}
+function YOD2(thisO, Adata) { // MIOModule__CStringReader.NEW
+ if (!thisO) thisO = new YtZ0();
+ thisO.Vdata = Adata;
+ thisO.VbyteSize = (thisO.Vdata).length;
+ return thisO;
+}
+function YxQq() { // MIOModule__CStringReader.readChar
+ if ((this.VbyteIdx >= this.VbyteSize))
+ {
+  return Y3QJ;
+ }
+ var Vc = (this.Vdata).charCodeAt(this.VbyteIdx);
+ if ((Vc < 0))
+ {
+  ++(this.VbyteIdx);
+ }
+ else
+ {
+  this.VbyteIdx += 1;
+ }
+ return Vc;
+}
+function YCfR() { // MIOModule__CStringReader.readByte
+ if ((this.VbyteIdx >= this.VbyteSize))
+ {
+  return Y3QJ;
+ }
+ return (this.Vdata).charCodeAt((this.VbyteIdx)++);
+}
+function Ynyh(thisO, Areader) { // MIOModule__CCharReaderStack.NEW
+ if (!thisO) thisO = new YrC3();
+ thisO.Vreader = Areader;
+ thisO.Vstack = [];
+ return thisO;
+}
+function YVZB() { // MIOModule__CCharReaderStack.readChar
+ if ((this.Vstack.length > 0))
+ {
+  return ZListPopItem(this.Vstack, -1, 1);
+ }
+ return this.Vreader.readChar();
+}
+function Y3er(Ac) { // MIOModule__CCharReaderStack.push
+ ZLa(this.Vstack, -1, Ac);
+}
+function Yl0k(Atext) { // MIOModule.print
+ var Vret = 0;
+ Vret = Yb0q.write(Atext);
+ $doc.getElementById("stdout").innerHTML += "<br>";
+ return Vret;
+}
+function YJqza(Atext) { // MIOModule__CStringWriter.write
+ var Vlen = (Atext).length;
+ if (this.Vx == null) {
+  this.Vx = Atext;
+ } else {
+  this.Vx = this.Vx + Atext;
+ }
+ return 1;
+}
+function Ye7fa(Abyte) { // MIOModule__CStringWriter.writeByte
+ if (this.Vx == null) {
+  this.Vx = String.fromCharCode(Abyte);
+ } else {
+  this.Vx = this.Vx + String.fromCharCode(Abyte);
+ }
+ return 1;
+}
+function YKJQ() { // MIOModule__CStringWriter.Size
+ if ((this.VsLen == 0))
+ {
+  return 0;
+ }
+ return (this.ToString()).length;
+}
+function YbNW() { // MIOModule__CStringWriter.ToString
+ var Vr = null;
+ if ((this.Vx == null))
+ {
+  Vr = "";
+ }
+ else
+ {
+  Vr = this.Vx;
+ }
+ return Vr;
+}
+// including MULTIDICTModule bodies
+function YByV(thisO) { // MMULTIDICTModule__CMultiDict__t1.NEW
+ if (!thisO) thisO = new Y4gH();
+ thisO.Vdict = ZnewDict(0, 0);
+ return thisO;
+}
+function YPtT(Akey) { // MMULTIDICTModule__CMultiDict__t1.get
+ return this.Vdict[':' + Akey];
+}
+function YnU2() { // MMULTIDICTModule__CMultiDict__t1.ToString
+ if ((this.VitemCount == 0))
+ {
+  return "[:]";
+ }
+ var Vw = new YjUM();
+ Vw.write("[");
+ var Vcomma = "";
+ {
+  var Vk;
+  var Zf1 = ZforListNew(ZDictKeys(this.Vdict, 0));
+for (Vk = ZforListGet(Zf1); ZforListCont(Zf1); Vk = ZforListNext(Zf1)) {
+  Vw.write(Vcomma);
+  Vw.write("\"");
+  Vw.write(MEventModule__EEventType[Vk]);
+  Vw.write("\": ");
+  Vw.write(ZListToString(this.Vdict[':' + Vk], 330, 1));
+  Vcomma = ", ";
+  }
+ }
+ Vw.write("]");
+ return Vw.ToString();
+}
+function Yk0Q(Akey) { // MMULTIDICTModule__CMultiDict__t1.has
+ return ':' + Akey in this.Vdict;
+}
+function YcW7(Akey, Aitem) { // MMULTIDICTModule__CMultiDict__t1.add
+ if (':' + Akey in this.Vdict)
+ {
+  ZLa(this.Vdict[':' + Akey], -1, Aitem);
+ }
+ else
+ {
+  ZDictAdd(0, this.Vdict, ':' + Akey, [Aitem]);
+ }
+ ++(this.VitemCount);
+ return this;
+}
+function YrBB(Akey) { // MMULTIDICTModule__CMultiDict__t1.clear
+ if (':' + Akey in this.Vdict)
+ {
+  this.VitemCount -= this.Vdict[':' + Akey].length;
+  ZDictRemove(this.Vdict, ':' + Akey, 1);
+ }
+ return this;
+}
+// including HTTPModule bodies
+// including Proto bodies
+// including Message bodies
+function YX43(AfieldNr) { // CMessage.hasField
+ return 0;
+}
+function YMOR() { // CMessage.name
+ return "";
+}
+function Y0zD(AfieldNr) { // CMessage.enumGet
+ return 0;
+}
+function Y0zDa(AfieldNr, Aidx) { // CMessage.enumGet
+ return 0;
+}
+function YytN(AfieldNr) { // CMessage.enumNameGet
+ return "";
+}
+function YytNa(AfieldNr, Aidx) { // CMessage.enumNameGet
+ return "";
+}
+function YGR8(AfieldNr) { // CMessage.intGet
+ return 0;
+}
+function YGR8a(AfieldNr, Aidx) { // CMessage.intGet
+ return 0;
+}
+function YAAo(AfieldNr) { // CMessage.int32Get
+ return 0;
+}
+function YAAoa(AfieldNr, Aidx) { // CMessage.int32Get
+ return 0;
+}
+function YRqV(AfieldNr) { // CMessage.uint64Get
+ return 0;
+}
+function YRqVa(AfieldNr, Aidx) { // CMessage.uint64Get
+ return 0;
+}
+function Y0tE(AfieldNr) { // CMessage.uint32Get
+ return 0;
+}
+function Y0tEa(AfieldNr, Aidx) { // CMessage.uint32Get
+ return 0;
+}
+function Yyt7(AfieldNr) { // CMessage.floatGet
+ return 0;
+}
+function Yyt7a(AfieldNr, Aidx) { // CMessage.floatGet
+ return 0;
+}
+function Yybv(AfieldNr) { // CMessage.doubleGet
+ return 0;
+}
+function Yybva(AfieldNr, Aidx) { // CMessage.doubleGet
+ return 0;
+}
+function YGfz(AfieldNr) { // CMessage.boolGet
+ return 0;
+}
+function YGfza(AfieldNr, Aidx) { // CMessage.boolGet
+ return 0;
+}
+function YsRa(AfieldNr) { // CMessage.stringGet
+ return "";
+}
+function YsRaa(AfieldNr, Aidx) { // CMessage.stringGet
+ return "";
+}
+function Y3p7(AfieldNr, Avalue) { // CMessage.enumSet
+}
+function YBjh(AfieldNr, Avalue) { // CMessage.enumNameSet
+}
+function YJHD(AfieldNr, Avalue) { // CMessage.intSet
+}
+function YDqT(AfieldNr, Avalue) { // CMessage.int32Set
+}
+function YOAq(AfieldNr, Avalue) { // CMessage.uint64Set
+}
+function YYD9(AfieldNr, Avalue) { // CMessage.uint32Set
+}
+function YBjC(AfieldNr, Avalue) { // CMessage.floatSet
+}
+function Yvl0(AfieldNr, Avalue) { // CMessage.doubleSet
+}
+function YJ52(AfieldNr, Avalue) { // CMessage.boolSet
+}
+function Yp0G(AfieldNr, Avalue) { // CMessage.stringSet
+}
+function Yo5y(AfieldNr) { // CMessage.messageGet
+ return null;
+}
+function Yo5ya(AfieldNr, Aidx) { // CMessage.messageGet
+ return null;
+}
+function YrW2(AfieldNr, Am) { // CMessage.messageSet
+}
+function Y0Dj(AfieldNr, Am) { // CMessage.messageAdd
+}
+function Ymza(AfieldNr, Aformat, Areader) { // CMessage.mergeMessageFromReader
+ return 0;
+}
+function YUDN(AfieldNr) { // CMessage.size
+ return 0;
+}
+function YC5i() { // CMessage.ToString
+ var Vwriter = new YjUM();
+ var VprotoWriter = YrCUb(null, Vwriter, "", 0);
+ YP8Z(this, VprotoWriter);
+ return Vwriter.ToString();
+}
+function YgZk(Awriter) { // CMessage.writeJsonDeref
+ var VprotoWriter = YrCUa(null, Awriter, 1);
+ YigD(this, VprotoWriter);
+}
+function Yd7N__YwtA__YRHR(thisO, Amsg) { // MProto__CE_ParseError.NEW__p2
+ if (!thisO) thisO = new Yd7N();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Ys_q__YwtA__YRHR(thisO, Amsg) { // MProto__CE_ProduceError.NEW__p2
+ if (!thisO) thisO = new Ys_q();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function YOEA__YwtA__YRHR(thisO, Amsg) { // MProto__CE_BinaryError.NEW__p2
+ if (!thisO) thisO = new YOEA();
+ thisO.Vmessage = Amsg;
+ thisO.Vpos = null;
+ thisO.Vbacktrace = null;
+ return thisO;
+}
+function Ykww(thisO, Aname, Anr, Atype, Arepeated) { // MProto__CFieldSpec.NEW
+ if (!thisO) thisO = new YqvM();
+ thisO.Vname = Aname;
+ thisO.Vnr = Anr;
+ thisO.Vtype = Atype;
+ thisO.Vrepeated = Arepeated;
+ return thisO;
+}
+function YrCUa(thisO, Awriter, AwithRefs) { // MProto__CWriter.NEW
+ if (!thisO) thisO = new YLWE();
+ thisO.Vwriter = Awriter;
+ if (AwithRefs)
+ {
+  thisO.initDeref();
+ }
+ return thisO;
+}
+function YrCUb(thisO, Awriter, Aindent, AuseNr) { // MProto__CWriter.NEW
+ if (!thisO) thisO = new YLWE();
+ thisO.Vwriter = Awriter;
+ thisO.Vindent = Aindent;
+ thisO.VuseNr = AuseNr;
+ thisO.initDeref();
+ return thisO;
+}
+function YEV9() { // MProto__CWriter.initDeref
+ this.VderefTime = ++(YcTI);
+ this.VderefTimeSize = this.VderefTime;
+}
+function YRBz(thisO) { // MProto__CReader.Init
+ if (!thisO) thisO = new YBRp();
+ thisO.Vlnum = 1;
+ return thisO;
+}
+function YtIR(thisO, Areader, AwithRefs) { // MProto__CReader.NEW
+ if (!thisO) thisO = YRBz(null);
+ thisO.VtheByteReader = Areader;
+ if (AwithRefs)
+ {
+  thisO.Vrefs = ZnewDict(2, 0);
+ }
+ return thisO;
+}
+function YtIRa(thisO, Areader, AwithRefs) { // MProto__CReader.NEW
+ if (!thisO) thisO = YRBz(null);
+ thisO.VtheCharReader = Ynyh(null, Areader);
+ if (AwithRefs)
+ {
+  thisO.Vrefs = ZnewDict(2, 0);
+ }
+ return thisO;
+}
+function YoPK() { // MProto__CReader.byteReader
+ return this.VtheByteReader;
+}
+function Ytm4() { // MProto__CReader.charReader
+ return this.VtheCharReader;
+}
+function Y0_W() { // MProto__CReader.readChar
+ var Vc = this.VtheCharReader.readChar();
+ if ((Vc == 10))
+ {
+  ++(this.Vlnum);
+ }
+ return Vc;
+}
+function YwKy(Ac) { // MProto__CReader.push
+ this.VtheCharReader.push(Ac);
+ if ((Ac == 10))
+ {
+  --(this.Vlnum);
+ }
+}
+function Y9eV() { // MProto__CReader.protoReader
+ return this;
+}
+function Y_ZW(Am) { // MProto__CReader.addRef
+ if ((this.Vrefs != null))
+ {
+  ZDictAdd(0, this.Vrefs, ':' + ++(this.VrefId), Am);
+ }
+}
+function YnlR(Aidx) { // MProto__CReader.getRef
+ return ZDictGetDef(this.Vrefs, Aidx, null);
+}
+function Ybyp(Afspec) { // MProto.getBinaryTagSize
+ var Vtag = (((Afspec.Vnr << YqNA)) + YLwW[':' + YXCQ[':' + Afspec.Vtype]]);
+ return YmeT(Vtag);
+}
+function YeVD(Areader) { // MProto.readBinaryTag
+ var Vtag = new YhWs();
+ var Vv = YZTz(Areader);
+ if (((Vv < 0) || (((Vv & 7)) > Yas1)))
+ {
+  Vtag.Vnr = -1;
+ }
+ else
+ {
+  Vtag.Vnr = (Vv >> YqNA);
+  Vtag.Vtype = YSle[':' + (Vv & 7)];
+ }
+ return Vtag;
+}
+function YaFH(Atype, Areader) { // MProto.skipField
+ var Vlen = 0;
+ switch (Atype)
+ {
+ case 0:
+  {
+   YZTz(Areader);
+    break;
+  }
+ case 1:
+  {
+   {
+    var Vi;
+    var Zf3 = ZforRangeNew(1, 8, 0, 1);
+for (Vi = ZforRangeGet(Zf3); ZforRangeCont(Zf3); Vi = ZforRangeNext(Zf3)) {
+    Areader.readByte();
+    }
+   }
+    break;
+  }
+ case 2:
+  {
+   Vlen = YZTz(Areader);
+    break;
+  }
+ case 3:
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 366 col 9: " + YOEA__YwtA__YRHR(null, "not implemented: " + MProto__EBinaryType[Atype]).Vmessage);
+   return;
+  }
+ case 4:
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 369 col 9: " + YOEA__YwtA__YRHR(null, "not implemented: " + MProto__EBinaryType[Atype]).Vmessage);
+   return;
+  }
+ case 5:
+  {
+   {
+    var Vi;
+    var Zf3 = ZforRangeNew(1, 4, 0, 1);
+for (Vi = ZforRangeGet(Zf3); ZforRangeCont(Zf3); Vi = ZforRangeNext(Zf3)) {
+    Areader.readByte();
+    }
+   }
+    break;
+  }
+ default:
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 375 col 9: " + YOEA__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EBinaryType[Atype]).Vmessage);
+   return;
+  }
+ }
+ while ((Vlen > 0))
+ {
+  Areader.readByte();
+  --(Vlen);
+ }
+}
+function Yxcu(Areader) { // MProto.readString
+ var Vlen = YZTz(Areader);
+ if ((Vlen <= 0))
+ {
+  return "";
+ }
+ var Vwriter = new YjUM();
+ while ((Vlen > 0))
+ {
+  Vwriter.writeByte(Areader.readByte());
+  --(Vlen);
+ }
+ return Vwriter.ToString();
+}
+function Yngm(Amsg, Aformat, Afspecs, AiReader) { // MProto.mergeFromFields
+ switch (Aformat)
+ {
+ case 0:
+  {
+   Y1co(Amsg, Afspecs, AiReader);
+    break;
+  }
+ case 1:
+  {
+   YFs_(Amsg, Afspecs, AiReader);
+    break;
+  }
+ case 2:
+  {
+   YsvG(Amsg, Afspecs, AiReader);
+    break;
+  }
+ }
+}
+function Y1co(Amsg, Afspecs, AiReader) { // MProto.mergeFromBinaryFields
+ var Vreader = AiReader.byteReader();
+ while (1)
+ {
+  var Vtag = YeVD(Vreader);
+  if ((Vtag.Vnr < 0))
+  {
+   break;
+  }
+  var Vdone = 0;
+  {
+   var Vfspec;
+   var Zf2 = ZforListNew(Afspecs);
+for (Vfspec = ZforListGet(Zf2); ZforListCont(Zf2); Vfspec = ZforListNext(Zf2)) {
+   if ((Vfspec.Vnr == Vtag.Vnr))
+   {
+    switch (Vfspec.Vtype)
+    {
+    case 9:
+    case 10:
+    case 18:
+    case 11:
+    case 19:
+    case 1:
+     {
+      if ((Vtag.Vtype == 0))
+      {
+       var Vn = YZTz(Vreader);
+       if ((Vfspec.Vtype == 1))
+       {
+        Amsg.boolSet(Vfspec.Vnr, (((Vn == 0)) ? (0) : (1)));
+       }
+       else {
+ if ((Vfspec.Vtype == 10))
+       {
+        var Vn32 = Vn;
+        Amsg.int32Set(Vfspec.Vnr, Vn32);
+       }
+       else {
+ if ((Vfspec.Vtype == 19))
+       {
+        var Vn64 = Vn;
+        Amsg.uint64Set(Vfspec.Vnr, Vn64);
+       }
+       else {
+ if ((Vfspec.Vtype == 18))
+       {
+        var Vn32 = Vn;
+        Amsg.uint32Set(Vfspec.Vnr, Vn32);
+       }
+       else
+       {
+        Amsg.intSet(Vfspec.Vnr, Vn);
+       }
+       }}}
+       Vdone = 1;
+      }
+       break;
+     }
+    case 6:
+     {
+      var Vf = YQ3p(Vreader);
+      Amsg.floatSet(Vfspec.Vnr, Vf);
+      Vdone = 1;
+       break;
+     }
+    case 7:
+     {
+      var Vf = Yw8K(Vreader);
+      Amsg.doubleSet(Vfspec.Vnr, Vf);
+      Vdone = 1;
+       break;
+     }
+    case 17:
+     {
+      if ((Vtag.Vtype == 2))
+      {
+       Amsg.stringSet(Vfspec.Vnr, Yxcu(Vreader));
+       Vdone = 1;
+      }
+       break;
+     }
+    case 3:
+     {
+      if ((Vtag.Vtype == 0))
+      {
+       Amsg.enumSet(Vfspec.Vnr, YZTz(Vreader));
+       Vdone = 1;
+      }
+       break;
+     }
+    case 12:
+     {
+      if ((Vtag.Vtype == 0))
+      {
+       var Vkey = YZTz(Vreader);
+       Vdone = 1;
+       var VpReader = AiReader.protoReader();
+       if ((VpReader.Vrefs == null))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 477 col 21: " + YOEA__YwtA__YRHR(null, "Unexpected message reference").Vmessage);
+        return;
+       }
+       var Vm = VpReader.getRef(Vkey);
+       if ((Vm == null))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 483 col 21: " + YOEA__YwtA__YRHR(null, "Message reference missing: " + "" + Vkey).Vmessage);
+        return;
+       }
+       if (Vfspec.Vrepeated)
+       {
+        Amsg.messageAdd(Vfspec.Vnr, Vm);
+       }
+       else
+       {
+        Amsg.messageSet(Vfspec.Vnr, Vm);
+       }
+      }
+      else {
+ if ((Vtag.Vtype == 2))
+      {
+       Vdone = Amsg.mergeMessageFromReader(Vfspec.Vnr, 0, YIi_(AiReader));
+      }
+      }
+       break;
+     }
+    default:
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 497 col 15: " + YOEA__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+      return;
+     }
+    }
+   }
+   }
+  }
+  if (!(Vdone))
+  {
+   YaFH(Vtag.Vtype, Vreader);
+  }
+ }
+}
+function YFN0(Amsg, AprotoWriter) { // MProto.binarySize
+ var Vsize = 0;
+ {
+  var Vfspec;
+  var Zf1 = ZforListNew(Amsg.fieldSpecs());
+for (Vfspec = ZforListGet(Zf1); ZforListCont(Zf1); Vfspec = ZforListNext(Zf1)) {
+  if (Vfspec.Vrepeated)
+  {
+   var Vcount = Amsg.size(Vfspec.Vnr);
+   {
+    var Vi;
+    var Zf3 = ZforRangeNew(0, Vcount, 1, 1);
+for (Vi = ZforRangeGet(Zf3); ZforRangeCont(Zf3); Vi = ZforRangeNext(Zf3)) {
+    switch (Vfspec.Vtype)
+    {
+    case 9:
+    case 11:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT(Amsg.intGet__1(Vfspec.Vnr, Vi));
+       break;
+     }
+    case 10:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT(Amsg.int32Get__1(Vfspec.Vnr, Vi));
+       break;
+     }
+    case 19:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vv = Amsg.uint64Get__1(Vfspec.Vnr, Vi);
+      Vsize += YmeT(Vv);
+       break;
+     }
+    case 18:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vv = Amsg.uint32Get__1(Vfspec.Vnr, Vi);
+      Vsize += YmeT(Vv);
+       break;
+     }
+    case 6:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 4;
+       break;
+     }
+    case 7:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 8;
+       break;
+     }
+    case 1:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 1;
+       break;
+     }
+    case 17:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vs = Amsg.stringGet__1(Vfspec.Vnr, Vi);
+      var Vlen = (Vs).length;
+      Vsize += (YmeT(Vlen) + Vlen);
+       break;
+     }
+    case 3:
+     {
+      var Vnr = Amsg.enumGet__1(Vfspec.Vnr, Vi);
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT((((Vnr < 0)) ? (0) : (Vnr)));
+       break;
+     }
+    case 12:
+     {
+      var Vother = Amsg.messageGet__1(Vfspec.Vnr, Vi);
+      Vsize += YMrV(Amsg, Vother, Vfspec, AprotoWriter);
+       break;
+     }
+    default:
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 733 col 15: " + YOEA__YwtA__YRHR(null, "INTERNAL: type not implemented: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+      return;
+     }
+    }
+    }
+   }
+  }
+  else
+  {
+   if (Amsg.hasField(Vfspec.Vnr))
+   {
+    switch (Vfspec.Vtype)
+    {
+    case 9:
+    case 11:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT(Amsg.intGet(Vfspec.Vnr));
+       break;
+     }
+    case 10:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT(Amsg.int32Get(Vfspec.Vnr));
+       break;
+     }
+    case 19:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vv = Amsg.uint64Get(Vfspec.Vnr);
+      Vsize += YmeT(Vv);
+       break;
+     }
+    case 18:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vv = Amsg.uint32Get(Vfspec.Vnr);
+      Vsize += YmeT(Vv);
+       break;
+     }
+    case 6:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 4;
+       break;
+     }
+    case 7:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 8;
+       break;
+     }
+    case 1:
+     {
+      Vsize += Ybyp(Vfspec);
+      Vsize += 1;
+       break;
+     }
+    case 17:
+     {
+      Vsize += Ybyp(Vfspec);
+      var Vs1 = Amsg.stringGet(Vfspec.Vnr);
+      var Vlen = (Vs1).length;
+      Vsize += (YmeT(Vlen) + Vlen);
+       break;
+     }
+    case 3:
+     {
+      var Vnr = Amsg.enumGet(Vfspec.Vnr);
+      Vsize += Ybyp(Vfspec);
+      Vsize += YmeT((((Vnr < 0)) ? (0) : (Vnr)));
+       break;
+     }
+    case 12:
+     {
+      var Vother1 = Amsg.messageGet(Vfspec.Vnr);
+      Vsize += YMrV(Amsg, Vother1, Vfspec, AprotoWriter);
+       break;
+     }
+    default:
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 787 col 15: " + YOEA__YwtA__YRHR(null, "INTERNAL: type not implemented: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+      return;
+     }
+    }
+   }
+  }
+  }
+ }
+ return Vsize;
+}
+function YMrV(At, Amsg, Afspec, AprotoWriter) { // MProto.binaryMessageSize
+ var Vsize = 0;
+ if ((Amsg == null))
+ {
+  Vsize = Ybyp(Afspec);
+  Vsize += YmeT(0);
+ }
+ else
+ {
+  var Vdone = 0;
+  if (((AprotoWriter != null) && (AprotoWriter.VderefTime != 0)))
+  {
+   var Vid = -1;
+   if ((Amsg.VderefTime == AprotoWriter.VderefTime))
+   {
+    Vid = Amsg.VderefId;
+   }
+   else {
+ if ((Amsg.VderefTimeSize == AprotoWriter.VderefTimeSize))
+   {
+    Vid = Amsg.VderefIdSize;
+   }
+   }
+   if ((Vid >= 0))
+   {
+    var VintFspec = Ykww(null, null, Afspec.Vnr, 9, 0);
+    Vsize += Ybyp(VintFspec);
+    Vsize += YmeT(Vid);
+    Vdone = 1;
+   }
+   else
+   {
+    Amsg.VderefTimeSize = AprotoWriter.VderefTimeSize;
+    Amsg.VderefIdSize = ++(AprotoWriter.VderefIdSize);
+   }
+  }
+  if (!(Vdone))
+  {
+   Vsize += Ybyp(Afspec);
+   var Vlen = YFN0(Amsg, AprotoWriter);
+   Vsize += YmeT(Vlen);
+   Vsize += Vlen;
+  }
+ }
+ return Vsize;
+}
+function YP8Z(Amsg, AprotoWriter) { // MProto.writeText
+ if ((AprotoWriter.Vindent != null))
+ {
+  AprotoWriter.Vwriter.write(AprotoWriter.Vindent);
+ }
+ if ((Amsg.VderefTime == AprotoWriter.VderefTime))
+ {
+  AprotoWriter.Vwriter.write("# reference: " + Amsg.name() + "-" + "" + Amsg.VderefId + "\n");
+ }
+ else
+ {
+  Amsg.VderefTime = AprotoWriter.VderefTime;
+  Amsg.VderefId = ++(AprotoWriter.VderefId);
+  AprotoWriter.Vwriter.write("# " + Amsg.name() + "-" + "" + Amsg.VderefId + " size: " + "" + YFN0(Amsg, AprotoWriter) + " bytes\n");
+  {
+   var Vfspec;
+   var Zf2 = ZforListNew(Amsg.fieldSpecs());
+for (Vfspec = ZforListGet(Zf2); ZforListCont(Zf2); Vfspec = ZforListNext(Zf2)) {
+   if (Vfspec.Vrepeated)
+   {
+    var Vn = Amsg.size(Vfspec.Vnr);
+    {
+     var Vi;
+     var Zf4 = ZforRangeNew(0, Vn, 1, 1);
+for (Vi = ZforRangeGet(Zf4); ZforRangeCont(Zf4); Vi = ZforRangeNext(Zf4)) {
+     YWEg(Amsg, Vfspec, Vi, AprotoWriter);
+     }
+    }
+   }
+   else {
+ if (Amsg.hasField(Vfspec.Vnr))
+   {
+    YWEg(Amsg, Vfspec, -1, AprotoWriter);
+   }
+   }
+   }
+  }
+ }
+}
+function YWEg(Amsg, Afspec, Aidx, AprotoWriter) { // MProto.writeOneTextField
+ var Vwriter = AprotoWriter.Vwriter;
+ if ((AprotoWriter.Vindent != null))
+ {
+  Vwriter.write(AprotoWriter.Vindent);
+ }
+ if (AprotoWriter.VuseNr)
+ {
+  Vwriter.write("" + Afspec.Vnr + "-");
+ }
+ Vwriter.write(Afspec.Vname + ": ");
+ switch (Afspec.Vtype)
+ {
+ case 9:
+ case 11:
+  {
+   var Vv = 0;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.intGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.intGet(Afspec.Vnr);
+   }
+   Vwriter.write("" + Vv + "\n");
+    break;
+  }
+ case 10:
+  {
+   var Vv = 0;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.int32Get__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.int32Get(Afspec.Vnr);
+   }
+   Vwriter.write("" + Vv + "\n");
+    break;
+  }
+ case 19:
+  {
+   var Vv = 0;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.uint64Get__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.uint64Get(Afspec.Vnr);
+   }
+   Vwriter.write("" + Vv + "\n");
+    break;
+  }
+ case 18:
+  {
+   var Vv = 0;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.uint32Get__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.uint32Get(Afspec.Vnr);
+   }
+   Vwriter.write("" + Vv + "\n");
+    break;
+  }
+ case 6:
+  {
+   var Vf = 0;
+   if ((Aidx >= 0))
+   {
+    Vf = Amsg.floatGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vf = Amsg.floatGet(Afspec.Vnr);
+   }
+   Vwriter.write(((Vf) + "") + "\n");
+    break;
+  }
+ case 7:
+  {
+   var Vf = 0;
+   if ((Aidx >= 0))
+   {
+    Vf = Amsg.doubleGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vf = Amsg.doubleGet(Afspec.Vnr);
+   }
+   Vwriter.write(((Vf) + "") + "\n");
+    break;
+  }
+ case 1:
+  {
+   var Vv = 0;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.boolGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.boolGet(Afspec.Vnr);
+   }
+   Vwriter.write((((Vv) ? ("TRUE") : ("FALSE"))) + "\n");
+    break;
+  }
+ case 17:
+  {
+   var Vv = null;
+   if ((Aidx >= 0))
+   {
+    Vv = Amsg.stringGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vv = Amsg.stringGet(Afspec.Vnr);
+   }
+   Vwriter.write("\"" + Vv + "\"\n");
+    break;
+  }
+ case 3:
+  {
+   if (AprotoWriter.VuseNr)
+   {
+    var Vv = 0;
+    if ((Aidx >= 0))
+    {
+     Vv = Amsg.enumGet__1(Afspec.Vnr, Aidx);
+    }
+    else
+    {
+     Vv = Amsg.enumGet(Afspec.Vnr);
+    }
+    Vwriter.write("" + Vv + "-");
+   }
+   var Vname = null;
+   if ((Aidx >= 0))
+   {
+    Vname = Amsg.enumNameGet__1(Afspec.Vnr, Aidx);
+   }
+   else
+   {
+    Vname = Amsg.enumNameGet(Afspec.Vnr);
+   }
+   Vwriter.write(Vname + "\n");
+    break;
+  }
+ case 12:
+  {
+   Vwriter.write("{\n");
+   var Vindent = AprotoWriter.Vindent;
+   if ((Vindent != null))
+   {
+    AprotoWriter.Vindent = Vindent + "  ";
+   }
+   if ((Aidx >= 0))
+   {
+    YeeBa(Amsg, Afspec.Vnr, Aidx, AprotoWriter);
+   }
+   else
+   {
+    YeeB(Amsg, Afspec.Vnr, AprotoWriter);
+   }
+   AprotoWriter.Vindent = Vindent;
+   if ((Vindent != null))
+   {
+    Vwriter.write(Vindent);
+   }
+   Vwriter.write("}\n");
+    break;
+  }
+ default:
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 975 col 9: " + Ys_q__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EType[Afspec.Vtype]).Vmessage);
+   return;
+  }
+ }
+}
+function YeeB(At, AfieldNr, AprotoWriter) { // MProto.writeMessageText
+ var Vmsg = At.messageGet(AfieldNr);
+ if ((Vmsg != null))
+ {
+  YP8Z(Vmsg, AprotoWriter);
+ }
+}
+function YeeBa(At, AfieldNr, Aidx, AprotoWriter) { // MProto.writeMessageText
+ var Vmsg = At.messageGet__1(AfieldNr, Aidx);
+ if ((Vmsg != null))
+ {
+  YP8Z(Vmsg, AprotoWriter);
+ }
+}
+function YFs_(Amsg, Afspecs, AiReader) { // MProto.mergeFromTextFields
+ var Vreader = AiReader.protoReader();
+ while (1)
+ {
+  var Vc = Vreader.readChar();
+  if ((Vc == Y3QJ))
+  {
+   break;
+  }
+  while ((Vc == 32))
+  {
+   Vc = Vreader.readChar();
+  }
+  if ((Vc == 10))
+  {
+   continue;
+  }
+  if ((Vc == 35))
+  {
+   while (1)
+   {
+    Vc = Vreader.readChar();
+    if (((Vc == Y3QJ) || (Vc == 10)))
+    {
+     break;
+    }
+   }
+  }
+  else {
+ if ((Vc == 125))
+  {
+   Vreader.push(Vc);
+   break;
+  }
+  else
+  {
+   var Vw = new YjUM();
+   while ((((Vc != 58) && (Vc != 32)) && (Vc != Y3QJ)))
+   {
+    Vw.writeChar(Vc);
+    Vc = Vreader.readChar();
+   }
+   var VmissingColon = 0;
+   if ((Vc != 58))
+   {
+    VmissingColon = 1;
+   }
+   else
+   {
+    Vc = Vreader.readChar();
+   }
+   if ((Vc != 32))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1043 col 11: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing space after field name").Vmessage);
+    return;
+   }
+   var Vname = Vw.ToString();
+   var Vfound = 0;
+   {
+    var Vfspec;
+    var Zf3 = ZforListNew(Amsg.fieldSpecs());
+for (Vfspec = ZforListGet(Zf3); ZforListCont(Zf3); Vfspec = ZforListNext(Zf3)) {
+    if ((Vfspec.Vname == Vname))
+    {
+     Vfound = 1;
+     if ((VmissingColon && (Vfspec.Vtype != 12)))
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1053 col 15: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing : after field name").Vmessage);
+      return;
+     }
+     switch (Vfspec.Vtype)
+     {
+     case 9:
+     case 11:
+     case 10:
+     case 18:
+     case 19:
+      {
+       var Vv = 0;
+       while (1)
+       {
+        Vc = Vreader.readChar();
+        if (!(Zisdigit(Vc)))
+        {
+         break;
+        }
+        Vv = ((Vv * 10) + ((Vc - 48)));
+       }
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1072 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Invalid number or missing line break").Vmessage);
+        return;
+       }
+       if ((Vfspec.Vtype == 10))
+       {
+        var Vv32 = Vv;
+        Amsg.int32Set(Vfspec.Vnr, Vv32);
+       }
+       else {
+ if ((Vfspec.Vtype == 19))
+       {
+        var Vn64 = Vv;
+        Amsg.uint64Set(Vfspec.Vnr, Vn64);
+       }
+       else {
+ if ((Vfspec.Vtype == 18))
+       {
+        var Vn32 = Vv;
+        Amsg.uint32Set(Vfspec.Vnr, Vn32);
+       }
+       else
+       {
+        Amsg.intSet(Vfspec.Vnr, Vv);
+       }
+       }}
+        break;
+      }
+     case 6:
+      {
+       var Vf = YRvX(Vreader);
+       Amsg.floatSet(Vfspec.Vnr, Vf);
+        break;
+      }
+     case 7:
+      {
+       var Vf = YRvX(Vreader);
+       Amsg.doubleSet(Vfspec.Vnr, Vf);
+        break;
+      }
+     case 1:
+      {
+       var Vv = 0;
+       var Vexpect = null;
+       Vc = Vreader.readChar();
+       if ((Vc == 84))
+       {
+        Vexpect = "TRUE";
+        Vv = 1;
+       }
+       else
+       {
+        Vexpect = "FALSE";
+       }
+       {
+        var Vnc;
+        var Zf7 = ZforStringNew(Vexpect);
+for (Vnc = ZforStringGet(Zf7); ZforStringCont(Zf7); Vnc = ZforStringNext(Zf7)) {
+        if ((Vc != Vnc))
+        {
+         alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1108 col 21: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Expected TRUE or FALSE").Vmessage);
+         return;
+        }
+        Vc = Vreader.readChar();
+        }
+       }
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1114 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Invalid bool value or missing line break").Vmessage);
+        return;
+       }
+       Amsg.boolSet(Vfspec.Vnr, Vv);
+        break;
+      }
+     case 17:
+      {
+       var Vsw = new YjUM();
+       Vc = Vreader.readChar();
+       if ((Vc != 34))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1123 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing start double quote for string").Vmessage);
+        return;
+       }
+       while (1)
+       {
+        Vc = Vreader.readChar();
+        if (((Vc == 34) || (Vc == Y3QJ)))
+        {
+         break;
+        }
+        Vsw.writeChar(Vc);
+       }
+       if ((Vc != 34))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1135 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing end double quote of string").Vmessage);
+        return;
+       }
+       Vc = Vreader.readChar();
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1140 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing line break after string").Vmessage);
+        return;
+       }
+       Amsg.stringSet(Vfspec.Vnr, Vsw.ToString());
+        break;
+      }
+     case 3:
+      {
+       var Vsw1 = new YjUM();
+       while (1)
+       {
+        Vc = Vreader.readChar();
+        if (((Vc == 10) || (Vc == Y3QJ)))
+        {
+         break;
+        }
+        Vsw1.writeChar(Vc);
+       }
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1155 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Truncated file").Vmessage);
+        return;
+       }
+       Amsg.enumNameSet(Vfspec.Vnr, Vsw1.ToString());
+        break;
+      }
+     case 12:
+      {
+       Vc = Vreader.readChar();
+       if ((Vc != 123))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1163 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing { for start of message").Vmessage);
+        return;
+       }
+       Vc = Vreader.readChar();
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1168 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing line break after {").Vmessage);
+        return;
+       }
+       Amsg.mergeMessageFromReader(Vfspec.Vnr, 1, AiReader);
+       Vc = Vreader.readChar();
+       if ((Vc != 125))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1177 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing } for end of message").Vmessage);
+        return;
+       }
+       Vc = Vreader.readChar();
+       if ((Vc != 10))
+       {
+        alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1182 col 19: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing line break after }").Vmessage);
+        return;
+       }
+        break;
+      }
+     default:
+      {
+       alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1187 col 17: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": INTERNAL: field type not supported: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+       return;
+      }
+     }
+     break;
+    }
+    }
+   }
+   if (!(Vfound))
+   {
+    if (VmissingColon)
+    {
+     alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1196 col 13: " + Yd7N__YwtA__YRHR(null, "line " + "" + Vreader.Vlnum + ": Missing : after field name").Vmessage);
+     return;
+    }
+    var Vdepth = 0;
+    var VinString = 0;
+    while (1)
+    {
+     Vc = Vreader.readChar();
+     if ((Vc == Y3QJ))
+     {
+      break;
+     }
+     else {
+ if ((Vc == 92))
+     {
+      Vreader.readChar();
+     }
+     else {
+ if ((Vc == 34))
+     {
+      VinString = !(VinString);
+     }
+     else {
+ if (((Vc == 123) && !(VinString)))
+     {
+      ++(Vdepth);
+     }
+     else {
+ if (((Vc == 125) && !(VinString)))
+     {
+      --(Vdepth);
+     }
+     else {
+ if (((Vdepth == 0) && (Vc == 10)))
+     {
+      break;
+     }
+     }}}}}
+    }
+   }
+  }
+  }
+ }
+}
+function YRvX(Areader) { // MProto.readFloatFromText
+ var Vw = new YjUM();
+ var Vc = 0;
+ while (1)
+ {
+  Vc = Areader.readChar();
+  if (!((((((((((Vc >= 48) && (Vc <= 57))) || (Vc == 46)) || (Vc == 101)) || (Vc == 69)) || (Vc == 43)) || (Vc == 45)))))
+  {
+   break;
+  }
+  Vw.write__2(Vc);
+ }
+ if ((Vc != 10))
+ {
+  alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1237 col 7: " + Yd7N__YwtA__YRHR(null, "line " + "" + Areader.Vlnum + ": Invalid number or missing line break").Vmessage);
+  return;
+ }
+ return ((Vw.ToString())+'');
+}
+function YsvG(Amsg, Afspecs, AiReader) { // MProto.mergeFromJsonFields
+ var Vsreader = AiReader.charReader();
+ var Vb = Vsreader.readChar();
+ if ((Vb != 91))
+ {
+  alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1250 col 7: " + Yd7N__YwtA__YRHR(null, "Missing [ at start of Json message, got " + "" + Vb).Vmessage);
+  return;
+ }
+ var VfieldIndex = 1;
+ var Vc = Vsreader.readChar();
+ if ((Vc == Y3QJ))
+ {
+  alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1256 col 7: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json: Unexpected EOF").Vmessage);
+  return;
+ }
+ while (1)
+ {
+  if ((Vc == 93))
+  {
+   break;
+  }
+  if ((VfieldIndex > 50))
+  {
+   Vsreader.push(Vc);
+   VfieldIndex = YZHh(Vsreader);
+   if ((VfieldIndex < 0))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1267 col 11: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json: can't read field number").Vmessage);
+    return;
+   }
+   if ((VfieldIndex <= 50))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1271 col 11: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json: field number wrong: " + "" + VfieldIndex).Vmessage);
+    return;
+   }
+   Vc = Vsreader.readChar();
+   if ((Vc != 44))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1276 col 11: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json: missing comma after field number " + "" + VfieldIndex).Vmessage);
+    return;
+   }
+  }
+  else
+  {
+   if ((Vc == 44))
+   {
+    ++(VfieldIndex);
+    Vc = Vsreader.readChar();
+    continue;
+   }
+   Vsreader.push(Vc);
+  }
+  var Vdone = 0;
+  var VnextChar = 0;
+  {
+   var Vfspec;
+   var Zf2 = ZforListNew(Afspecs);
+for (Vfspec = ZforListGet(Zf2); ZforListCont(Zf2); Vfspec = ZforListNext(Zf2)) {
+   if ((Vfspec.Vnr == VfieldIndex))
+   {
+    if (Vfspec.Vrepeated)
+    {
+     Vc = Vsreader.readChar();
+     if ((Vc == 91))
+     {
+      var Vcnt = 0;
+      while (1)
+      {
+       Vdone = Yq4x(Amsg, Vfspec, AiReader);
+       if (!(Vdone))
+       {
+        YzK3(Vsreader);
+       }
+       else
+       {
+        Vc = Vsreader.readChar();
+        if ((Vc == 93))
+        {
+         break;
+        }
+        if ((Vc != 44))
+        {
+         alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1308 col 21: " + Yd7N__YwtA__YRHR(null, "Missing comma in repeated field, got " + String.fromCharCode(Vc) + " after " + "" + Vcnt + " items").Vmessage);
+         return;
+        }
+       }
+       ++(Vcnt);
+      }
+      Vdone = 1;
+     }
+     else
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1317 col 15: " + Yd7N__YwtA__YRHR(null, "Expected [ at start of repeated field").Vmessage);
+      return;
+     }
+    }
+    else
+    {
+     Vdone = Yq4x(Amsg, Vfspec, AiReader);
+    }
+    break;
+   }
+   }
+  }
+  if (!(Vdone))
+  {
+   YzK3(Vsreader);
+  }
+  Vc = Vsreader.readChar();
+  if ((Vc != 93))
+  {
+   if ((Vc != 44))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1333 col 11: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json: missing comma").Vmessage);
+    return;
+   }
+   Vc = Vsreader.readChar();
+  }
+  ++(VfieldIndex);
+ }
+}
+function Yq4x(Amsg, Afspec, AiReader) { // MProto.mergeOneJsonField
+ var Vsreader = AiReader.charReader();
+ var Vdone = 0;
+ switch (Afspec.Vtype)
+ {
+ case 9:
+ case 11:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.intSet(Afspec.Vnr, Vn);
+   Vdone = 1;
+    break;
+  }
+ case 10:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.int32Set(Afspec.Vnr, Vn);
+   Vdone = 1;
+    break;
+  }
+ case 19:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.uint64Set(Afspec.Vnr, Vn);
+   Vdone = 1;
+    break;
+  }
+ case 18:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.uint32Set(Afspec.Vnr, Vn);
+   Vdone = 1;
+    break;
+  }
+ case 6:
+  {
+   var Vf = YHTg(Vsreader);
+   Amsg.floatSet(Afspec.Vnr, Vf);
+   Vdone = 1;
+    break;
+  }
+ case 7:
+  {
+   var Vf = YHTg(Vsreader);
+   Amsg.doubleSet(Afspec.Vnr, Vf);
+   Vdone = 1;
+    break;
+  }
+ case 1:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.boolSet(Afspec.Vnr, (((Vn == 0)) ? (0) : (1)));
+   Vdone = 1;
+    break;
+  }
+ case 17:
+  {
+   var Vs = YB1v(Vsreader);
+   Amsg.stringSet(Afspec.Vnr, Vs);
+   Vdone = 1;
+    break;
+  }
+ case 3:
+  {
+   var Vn = YZHh(Vsreader);
+   Amsg.enumSet(Afspec.Vnr, Vn);
+   Vdone = 1;
+    break;
+  }
+ case 12:
+  {
+   var Vc = Vsreader.readChar();
+   Vsreader.push(Vc);
+   if ((Vc != 91))
+   {
+    if (((Vc < 48) || (Vc > 57)))
+    {
+     if ((Vc == Y3QJ))
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1398 col 15: " + Yd7N__YwtA__YRHR(null, "Unexpected end of Json").Vmessage);
+      return;
+     }
+     alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1400 col 13: " + Yd7N__YwtA__YRHR(null, "Expected a number, got " + String.fromCharCode(Vc)).Vmessage);
+     return;
+    }
+    var Vkey = YZHh(Vsreader);
+    var VpReader = AiReader.protoReader();
+    if ((VpReader.Vrefs == null))
+    {
+     alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1408 col 13: " + Yd7N__YwtA__YRHR(null, "Unexpected message reference").Vmessage);
+     return;
+    }
+    var Vm = VpReader.getRef(Vkey);
+    if ((Vm == null))
+    {
+     alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1414 col 13: " + Yd7N__YwtA__YRHR(null, "Message reference missing: " + "" + Vkey).Vmessage);
+     return;
+    }
+    if (Afspec.Vrepeated)
+    {
+     Amsg.messageAdd(Afspec.Vnr, Vm);
+    }
+    else
+    {
+     Amsg.messageSet(Afspec.Vnr, Vm);
+    }
+    Vdone = 1;
+   }
+   else
+   {
+    Vdone = Amsg.mergeMessageFromReader(Afspec.Vnr, 2, AiReader);
+   }
+    break;
+  }
+ default:
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1427 col 9: " + Yd7N__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EType[Afspec.Vtype]).Vmessage);
+   return;
+  }
+ }
+ return Vdone;
+}
+function YigD(Amsg, AjsonWriter) { // MProto.writeJson
+ var VlastProducedField = 1;
+ var Vwriter = AjsonWriter.Vwriter;
+ Vwriter.write("[");
+ {
+  var Vfspec;
+  var Zf1 = ZforListNew(Amsg.fieldSpecs());
+for (Vfspec = ZforListGet(Zf1); ZforListCont(Zf1); Vfspec = ZforListNext(Zf1)) {
+  if (Vfspec.Vrepeated)
+  {
+   var Vcount = Amsg.size(Vfspec.Vnr);
+   if ((Vcount > 0))
+   {
+    Yly_(Vfspec.Vnr, VlastProducedField, Vwriter);
+    VlastProducedField = Vfspec.Vnr;
+    Vwriter.write("[");
+    var VrepComma = "";
+    {
+     var Vi;
+     var Zf4 = ZforRangeNew(0, Vcount, 1, 1);
+for (Vi = ZforRangeGet(Zf4); ZforRangeCont(Zf4); Vi = ZforRangeNext(Zf4)) {
+     Vwriter.write(VrepComma);
+     VrepComma = ",";
+     switch (Vfspec.Vtype)
+     {
+     case 9:
+     case 11:
+      {
+       Vwriter.write("" + Amsg.intGet__1(Vfspec.Vnr, Vi) + "");
+        break;
+      }
+     case 10:
+      {
+       Vwriter.write("" + Amsg.int32Get__1(Vfspec.Vnr, Vi) + "");
+        break;
+      }
+     case 19:
+      {
+       Vwriter.write("" + Amsg.uint64Get__1(Vfspec.Vnr, Vi) + "");
+        break;
+      }
+     case 18:
+      {
+       Vwriter.write("" + Amsg.uint32Get__1(Vfspec.Vnr, Vi) + "");
+        break;
+      }
+     case 6:
+      {
+       Vwriter.write(((Amsg.floatGet__1(Vfspec.Vnr, Vi)) + ""));
+        break;
+      }
+     case 7:
+      {
+       Vwriter.write(((Amsg.doubleGet__1(Vfspec.Vnr, Vi)) + ""));
+        break;
+      }
+     case 1:
+      {
+       if (Amsg.boolGet__1(Vfspec.Vnr, Vi))
+       {
+        Vwriter.write("1");
+       }
+       else
+       {
+        Vwriter.write("0");
+       }
+        break;
+      }
+     case 17:
+      {
+       YwCv(Amsg.stringGet__1(Vfspec.Vnr, Vi), Vwriter);
+        break;
+      }
+     case 3:
+      {
+       Vwriter.write("" + Amsg.enumGet__1(Vfspec.Vnr, Vi) + "");
+        break;
+      }
+     case 12:
+      {
+       var Vother = Amsg.messageGet__1(Vfspec.Vnr, Vi);
+       YL6X(Vother, Vfspec, AjsonWriter);
+        break;
+      }
+     default:
+      {
+       alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1477 col 17: " + Ys_q__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+       return;
+      }
+     }
+     }
+    }
+    Vwriter.write("]");
+   }
+  }
+  else
+  {
+   if (Amsg.hasField(Vfspec.Vnr))
+   {
+    Yly_(Vfspec.Vnr, VlastProducedField, Vwriter);
+    VlastProducedField = Vfspec.Vnr;
+    switch (Vfspec.Vtype)
+    {
+    case 9:
+    case 11:
+     {
+      Vwriter.write("" + Amsg.intGet(Vfspec.Vnr) + "");
+       break;
+     }
+    case 10:
+     {
+      Vwriter.write("" + Amsg.int32Get(Vfspec.Vnr) + "");
+       break;
+     }
+    case 19:
+     {
+      Vwriter.write("" + Amsg.uint64Get(Vfspec.Vnr) + "");
+       break;
+     }
+    case 18:
+     {
+      Vwriter.write("" + Amsg.uint32Get(Vfspec.Vnr) + "");
+       break;
+     }
+    case 6:
+     {
+      Vwriter.write(((Amsg.floatGet(Vfspec.Vnr)) + ""));
+       break;
+     }
+    case 7:
+     {
+      Vwriter.write(((Amsg.doubleGet(Vfspec.Vnr)) + ""));
+       break;
+     }
+    case 1:
+     {
+      if (Amsg.boolGet(Vfspec.Vnr))
+      {
+       Vwriter.write("1");
+      }
+      else
+      {
+       Vwriter.write("0");
+      }
+       break;
+     }
+    case 17:
+     {
+      YwCv(Amsg.stringGet(Vfspec.Vnr), Vwriter);
+       break;
+     }
+    case 3:
+     {
+      Vwriter.write("" + Amsg.enumGet(Vfspec.Vnr) + "");
+       break;
+     }
+    case 12:
+     {
+      var Vother1 = Amsg.messageGet(Vfspec.Vnr);
+      YL6X(Vother1, Vfspec, AjsonWriter);
+       break;
+     }
+    default:
+     {
+      alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1516 col 15: " + Yd7N__YwtA__YRHR(null, "INTERNAL: field type not supported: " + MProto__EType[Vfspec.Vtype]).Vmessage);
+      return;
+     }
+    }
+   }
+  }
+  }
+ }
+ Vwriter.write("]");
+}
+function Yly_(Anr, AlastProducedField, Awriter) { // MProto.writeJsonFieldLeader
+ if ((Anr > 50))
+ {
+  if ((AlastProducedField > 1))
+  {
+   Awriter.write(",");
+  }
+  Awriter.write("" + Anr);
+  Awriter.write(",");
+ }
+ else
+ {
+  {
+   var Vi;
+   var Zf2 = ZforRangeNew(AlastProducedField, Anr, 1, 1);
+for (Vi = ZforRangeGet(Zf2); ZforRangeCont(Zf2); Vi = ZforRangeNext(Zf2)) {
+   Awriter.write(",");
+   }
+  }
+ }
+}
+function YL6X(Amsg, Afspec, AprotoWriter) { // MProto.writeMessageJson
+ if ((Amsg != null))
+ {
+  var Vdone = 0;
+  if ((AprotoWriter.VderefTime != 0))
+  {
+   if ((Amsg.VderefTime == AprotoWriter.VderefTime))
+   {
+    var Vwriter = AprotoWriter.Vwriter;
+    Vwriter.write("" + Amsg.VderefId + "");
+    Vdone = 1;
+   }
+   else
+   {
+    Amsg.VderefTime = AprotoWriter.VderefTime;
+    Amsg.VderefId = ++(AprotoWriter.VderefId);
+   }
+  }
+  if (!(Vdone))
+  {
+   YigD(Amsg, AprotoWriter);
+  }
+ }
+}
+function YAAm(thisO, Areader, Alength) { // MProto__CLimitedByteReader.NEW
+ if (!thisO) thisO = new Y66n();
+ thisO.Vreader = Areader;
+ thisO.VtoRead = Alength;
+ return thisO;
+}
+function YMUd() { // MProto__CLimitedByteReader.readByte
+ if ((this.VtoRead <= 0))
+ {
+  return Y3QJ;
+ }
+ --(this.VtoRead);
+ return this.Vreader.byteReader().readByte();
+}
+function YzZW() { // MProto__CLimitedByteReader.byteReader
+ return this;
+}
+function YRRG() { // MProto__CLimitedByteReader.charReader
+ return null;
+}
+function YzI3() { // MProto__CLimitedByteReader.protoReader
+ return this.Vreader.protoReader();
+}
+function Ywbf(Am) { // MProto__CLimitedByteReader.addRef
+ this.Vreader.protoReader().addRef(Am);
+}
+function YIi_(Areader) { // MProto.lengthReader
+ return YAAm(null, Areader, YZTz(Areader.byteReader()));
+}
+function YZTz(Areader) { // MProto.readVarInt
+ var Vc = Areader.readByte();
+ if ((Vc <= 127))
+ {
+  return Vc;
+ }
+ var Vv = ((Vc & 127));
+ var Vshift = 7;
+ while (1)
+ {
+  Vc = Areader.readByte();
+  if ((Vc == Y3QJ))
+  {
+   break;
+  }
+  if ((Vc <= 127))
+  {
+   return (Vv + ((Vc << Vshift)));
+  }
+  Vv += ((((Vc & 127)) << Vshift));
+  Vshift += 7;
+ }
+ return -1;
+}
+function YmeT(Avalue) { // MProto.getVarIntSize
+ if ((Avalue < 0))
+ {
+  return 10;
+ }
+ if ((Avalue < 128))
+ {
+  return 1;
+ }
+ if ((Avalue < 16384))
+ {
+  return 2;
+ }
+ var Vbytes = 3;
+ while ((Avalue >= ((1 << ((Vbytes * 7))))))
+ {
+  if ((++(Vbytes) == 10))
+  {
+   break;
+  }
+ }
+ return Vbytes;
+}
+function YQ3p(Areader) { // MProto.readVarFloat
+ alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1848 col 7: " + YOEA__YwtA__YRHR(null, "reading float not implemented").Vmessage);
+ return;
+ return Vf;
+}
+function Yw8K(Areader) { // MProto.readVarDouble
+ alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1922 col 7: " + YOEA__YwtA__YRHR(null, "reading double not implemented").Vmessage);
+ return;
+ return Vf;
+}
+function YZHh(Areader) { // MProto.readJsonNumber
+ var Vv = 0;
+ while (1)
+ {
+  var Vc = Areader.readChar();
+  if ((((Vc == Y3QJ) || (Vc < 48)) || (Vc > 57)))
+  {
+   Areader.push(Vc);
+   break;
+  }
+  Vv = ((Vv * 10) + ((Vc - 48)));
+ }
+ return Vv;
+}
+function YHTg(Areader) { // MProto.readJsonDouble
+ var Vw = new YjUM();
+ while (1)
+ {
+  var Vc = Areader.readChar();
+  if (!((((((((((Vc >= 48) && (Vc <= 57))) || (Vc == 46)) || (Vc == 101)) || (Vc == 69)) || (Vc == 43)) || (Vc == 45)))))
+  {
+   Areader.push(Vc);
+   break;
+  }
+  Vw.write__2(Vc);
+ }
+ return ((Vw.ToString())+'');
+}
+function YB1v(Areader) { // MProto.readJsonString
+ if ((Areader.readChar() != 34))
+ {
+  return "";
+ }
+ var Vwriter = new YjUM();
+ while (1)
+ {
+  var Vc = Areader.readChar();
+  if ((Vc == Y3QJ))
+  {
+   alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 1973 col 9: " + Yd7N__YwtA__YRHR(null, "Truncated string").Vmessage);
+   return;
+  }
+  if ((Vc == 34))
+  {
+   break;
+  }
+  if ((Vc == 92))
+  {
+   Vc = Areader.readChar();
+   switch (Vc)
+   {
+   case 98:
+    {
+     Vwriter.writeChar(8);
+      break;
+    }
+   case 102:
+    {
+     Vwriter.writeChar(14);
+      break;
+    }
+   case 110:
+    {
+     Vwriter.writeChar(10);
+      break;
+    }
+   case 114:
+    {
+     Vwriter.writeChar(13);
+      break;
+    }
+   case 116:
+    {
+     Vwriter.writeChar(9);
+      break;
+    }
+   case 117:
+    {
+     var Vv = ZparseInt(String.fromCharCode(Areader.readChar()), 16, 1, 0);
+     Vv = ((Vv * 16) + ZparseInt(String.fromCharCode(Areader.readChar()), 16, 1, 0));
+     Vv = ((Vv * 16) + ZparseInt(String.fromCharCode(Areader.readChar()), 16, 1, 0));
+     Vv = ((Vv * 16) + ZparseInt(String.fromCharCode(Areader.readChar()), 16, 1, 0));
+     Vwriter.writeChar(Vv);
+      break;
+    }
+   default:
+    {
+     Vwriter.writeChar(Vc);
+      break;
+    }
+   }
+  }
+  else
+  {
+   Vwriter.writeChar(Vc);
+  }
+ }
+ return Vwriter.ToString();
+}
+function YzK3(Areader) { // MProto.skipJsonField
+ var Vc = Areader.readChar();
+ if ((Vc == 34))
+ {
+  Areader.push(Vc);
+  YB1v(Areader);
+ }
+ else {
+ if (((Vc >= 48) && (Vc <= 57)))
+ {
+  YZHh(Areader);
+ }
+ else {
+ if ((Vc == 91))
+ {
+  while (1)
+  {
+   YzK3(Areader);
+   Vc = Areader.readChar();
+   if (((Vc == 93) || (Vc == Y3QJ)))
+   {
+    break;
+   }
+   if ((Vc != 44))
+   {
+    alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 2024 col 11: " + Yd7N__YwtA__YRHR(null, "Missing comma in Json list").Vmessage);
+    return;
+   }
+  }
+ }
+ else {
+ if ((Vc == 91))
+ {
+  alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 2029 col 7: " + Yd7N__YwtA__YRHR(null, "Not implemented: skip message").Vmessage);
+  return;
+ }
+ else
+ {
+  alert("Exception in D:/zimbu/plugin/proto/Proto.zu line 2031 col 7: " + Yd7N__YwtA__YRHR(null, "Syntax error in Json").Vmessage);
+  return;
+ }
+ }}}
+}
+function YwCv(As, Awriter) { // MProto.writeJsonString
+ Awriter.write("\"");
+ {
+  var Vc;
+  var Zf1 = ZforStringNew(As);
+for (Vc = ZforStringGet(Zf1); ZforStringCont(Zf1); Vc = ZforStringNext(Zf1)) {
+  switch (Vc)
+  {
+  case 34:
+   {
+    Awriter.write("\\\"");
+     break;
+   }
+  case 92:
+   {
+    Awriter.write("\\\\");
+     break;
+   }
+  case 8:
+   {
+    Awriter.write("\\b");
+     break;
+   }
+  case 14:
+   {
+    Awriter.write("\\f");
+     break;
+   }
+  case 10:
+   {
+    Awriter.write("\\n");
+     break;
+   }
+  case 13:
+   {
+    Awriter.write("\\r");
+     break;
+   }
+  case 9:
+   {
+    Awriter.write("\\t");
+     break;
+   }
+  default:
+   {
+    if (((Vc < 32) || (Vc > 127)))
+    {
+     Awriter.write("\\u");
+     Awriter.write(YIUba(Vc, 4));
+    }
+    else
+    {
+     Awriter.write(String.fromCharCode(Vc));
+    }
+     break;
+   }
+  }
+  }
+ }
+ Awriter.write("\"");
+}
+function YVlj(thisO, AcharCreate, AbyteCreate, Adone) { // MProto__CControl.NEW
+ if (!thisO) thisO = new Yjsx();
+ thisO.VcharCreate = AcharCreate;
+ thisO.VbyteCreate = AbyteCreate;
+ thisO.Vdone = Adone;
+ return thisO;
+}
+function Y7g3(AcontrolArg, Aresponse) { // MProto__CControl__X.callback
+ var Vcontrol = AcontrolArg;
+ var Vreader = YOD2(null, Aresponse);
+ var Vmsg = (Vcontrol.VcharCreate)(Vreader);
+ (Vcontrol.Vdone)(Vcontrol, Vmsg);
+}
+function YUu6(AserviceName, Arequest, AcharCreate, AbyteCreate, Adone) { // MProto.rpc
+ var Vcontrol = YVlj(null, AcharCreate, AbyteCreate, Adone);
+ var Vwriter = new YjUM();
+ Arequest.writeJsonDeref(Vwriter);
+ YX3_(Vcontrol, AserviceName, Vwriter.ToString(), Y7g3);
+ return Vcontrol;
+}
+function YuPP() { // MHTTPModule__CRequest.ToString
+ var Vw = new YjUM();
+ Vw.print("type: " + MHTTPModule__ERequestType[this.Vtype]);
+ Vw.print("path: " + this.Vpath);
+ Vw.print("params: " + this.Vparams);
+ Vw.print("HTTP version: " + this.VhttpVersion);
+ Vw.print("HEADER ITEMS:");
+ {
+  var Vi;
+  var Zf1 = ZforListNew(ZDictKeys(this.VheaderItems, 0));
+for (Vi = ZforListGet(Zf1); ZforListCont(Zf1); Vi = ZforListNext(Zf1)) {
+  Vw.print(Vi + ": " + this.VheaderItems[':' + Vi]);
+  }
+ }
+ if ((this.Vbody != null))
+ {
+  Vw.print("Body: " + this.Vbody);
+ }
+ return Vw.ToString();
+}
+// including ZUTModule bodies
+// including MainPage bodies
+// including SETModule bodies
+function Ypau(thisO) { // MSETModule__CSet__t1.Init
+ if (!thisO) thisO = new Yhqr();
+ thisO.Vdict = ZnewDict(2, 0);
+ return thisO;
+}
+function Yh95(thisO) { // MSETModule__CSet__t1.NEW
+ if (!thisO) thisO = Ypau(null);
+ return thisO;
+}
+function Yehh() { // MSETModule__CSet__t1.ToString
+ return ZListToString(ZDictKeys(this.Vdict, 0), 0, 1);
+}
+function Y21E() { // MSETModule__CSet__t1.clear
+ ZDictClear(this.Vdict);
+ return this;
+}
+function Y21Ea(Akey) { // MSETModule__CSet__t1.clear
+ if (':' + Akey in this.Vdict)
+ {
+  ZDictRemove(this.Vdict, ':' + Akey, 1);
+ }
+ return this;
+}
+function YEEZ(thisO) { // MSETModule__CSet__t4.Init
+ if (!thisO) thisO = new Yeqr();
+ thisO.Vdict = ZnewDict(0, 0);
+ return thisO;
+}
+function Yt1A(thisO) { // MSETModule__CSet__t4.NEW
+ if (!thisO) thisO = YEEZ(null);
+ return thisO;
+}
+function YphZ() { // MSETModule__CSet__t4.ToString
+ return ZListToString(ZDictKeys(this.Vdict, 0), 23, 1);
+}
+function YKzF(Akey) { // MSETModule__CSet__t4.has
+ return ':' + Akey in this.Vdict;
+}
+function YSEn(Akey) { // MSETModule__CSet__t4.add
+ if (':' + Akey in this.Vdict)
+ {
+  alert("Exception in D:/zimbu/lib/SETModule.zu line 104 col 9: " + YX0i__Yalz__YwtA__YRHRa(null, null, "key already present: " + MEventModule__EEventType[Akey]).Vmessage);
+  return;
+ }
+ ZDictAdd(0, this.Vdict, ':' + Akey, 1);
+ return this;
+}
+function YLxA(Akey) { // MSETModule__CSet__t4.remove
+ if (!(':' + Akey in this.Vdict))
+ {
+  alert("Exception in D:/zimbu/lib/SETModule.zu line 174 col 9: " + Y2EX__Yalz__YwtA__YRHRa(null, null, "key: " + MEventModule__EEventType[Akey]).Vmessage);
+  return;
+ }
+ ZDictRemove(this.Vdict, ':' + Akey, 1);
+ return Akey;
+}
+// including THREADModule bodies
+// including Config bodies
+// including zimbuConfig bodies
+// including ZWTModule bodies
+// including BaseModule bodies
+function Y8wQ(Astyle) { // MBaseModule__CUIObject.setStyle
+ this.Vstyles = [];
+ if ((Astyle != null))
+ {
+  ZLa(this.Vstyles, -1, Astyle);
+ }
+ Ya0K(this.Velem, this.Vstyles);
+}
+function YcNh() { // MBaseModule__CUIObject.getWidth
+ var Vr = 0;
+      Vr = this.Velem.offsetWidth;
+ return Vr;
+}
+function Y8Lr() { // MBaseModule__CUIObject.getHeight
+ var Vr = 0;
+      Vr = this.Velem.offsetHeight;
+ return Vr;
+}
+function Y18ka(Acontainer) { // MBaseModule__CUIObject.getTop
+ var Vr = 0;
+      var item = this.Velem;
+      while (item && item != Acontainer.Velem) {
+        Vr += item.offsetTop;
+        item = item.offsetParent;
+      }
+      if (Acontainer && !item) {
+        return -1;
+      }
+ return Vr;
+}
+function YCqpa(Acontainer) { // MBaseModule__CUIObject.getLeft
+ var Vr = 0;
+      var item = this.Velem;
+      while (item && item != Acontainer.Velem) {
+        Vr += item.offsetLeft;
+        item = item.offsetParent;
+      }
+      if (Acontainer && !item) {
+        return -1;
+      }
+ return Vr;
+}
+function YNea() { // MBaseModule__CWidget.ToString
+ return "Widget";
+}
+function Yeuq(Aparent) { // MBaseModule__CWidget.addToParent
+ this.removeFromParent();
+ this.Vparent = Aparent;
+ if ((Aparent != null))
+ {
+        Aparent.Velem.appendChild(this.Velem);
+ }
+}
+function YHfD() { // MBaseModule__CWidget.removeFromParent
+ if ((this.Vparent != null))
+ {
+        this.Vparent.Velem.removeChild(this.Velem);
+  this.Vparent = null;
+ }
+}
+function YoEe(AeventType, Ahandler) { // MBaseModule__CWidget.setHandler
+ if ((this.Vhandlers == null))
+ {
+  this.Vhandlers = YByV(null);
+ }
+ else {
+ if (this.Vhandlers.has(AeventType))
+ {
+  this.Vhandlers.clear(AeventType);
+ }
+ }
+ if ((Ahandler == null))
+ {
+  if ((AeventType == 0))
+  {
+   {
+    var Ve;
+    var Zf3 = ZforEnumNew(7);
+for (Ve = ZforEnumGet(Zf3); ZforEnumCont(Zf3); Ve = ZforEnumNext(Zf3)) {
+    if (((Ve != 0) && !(this.Vhandlers.has(Ve))))
+    {
+     this.removeJsHandler(Ve);
+    }
+    }
+   }
+  }
+  else
+  {
+   this.removeJsHandler(AeventType);
+  }
+ }
+ else
+ {
+  this.addHandler(AeventType, Ahandler);
+ }
+}
+function YmNC(AeventType, Ahandler) { // MBaseModule__CWidget.addHandler
+ if ((this.Vhandlers == null))
+ {
+  this.Vhandlers = YByV(null);
+ }
+ this.Vhandlers.add(AeventType, Ahandler);
+ if ((AeventType == 0))
+ {
+  {
+   var Ve;
+   var Zf2 = ZforEnumNew(7);
+for (Ve = ZforEnumGet(Zf2); ZforEnumCont(Zf2); Ve = ZforEnumNext(Zf2)) {
+   if ((Ve != 0))
+   {
+    this.setJsHandler(Ve);
+   }
+   }
+  }
+ }
+ else
+ {
+  this.setJsHandler(AeventType);
+ }
+}
+function YK1u(AeventType) { // MBaseModule__CWidget.setJsHandler
+ if ((this.VhasJsHandler == null))
+ {
+  this.VhasJsHandler = Yt1A(null);
+ }
+ if (!(this.VhasJsHandler.has(AeventType)))
+ {
+  this.VhasJsHandler.add(AeventType);
+  var Vwg = this;
+        var f = function(e) { Yh_a(Vwg, AeventType, e); };
+  switch (AeventType)
+  {
+  case 1:
+   {
+             this.Velem.onclick = f;
+     break;
+   }
+  case 2:
+   {
+             this.Velem.onmouseover = f;
+     break;
+   }
+  case 3:
+   {
+             this.Velem.onmouseout = f;
+     break;
+   }
+  case 4:
+   {
+             this.Velem.onkeypress = f;
+     break;
+   }
+  case 5:
+   {
+             this.Velem.onkeydown = f;
+     break;
+   }
+  case 6:
+   {
+             this.Velem.onkeyup = f;
+     break;
+   }
+  }
+ }
+}
+function YcEP(AeventType) { // MBaseModule__CWidget.removeJsHandler
+ if ((this.VhasJsHandler == null))
+ {
+  return;
+ }
+ if (this.VhasJsHandler.has(AeventType))
+ {
+  this.VhasJsHandler.remove(AeventType);
+  switch (AeventType)
+  {
+  case 1:
+   {
+             this.Velem.onclick = null;
+     break;
+   }
+  case 2:
+   {
+             this.Velem.onmouseover = null;
+     break;
+   }
+  case 3:
+   {
+             this.Velem.onmouseout = null;
+     break;
+   }
+  case 4:
+   {
+             this.Velem.onkeypress = null;
+     break;
+   }
+  case 5:
+   {
+             this.Velem.onkeydown = null;
+     break;
+   }
+  case 6:
+   {
+             this.Velem.onkeyup = null;
+     break;
+   }
+  }
+ }
+}
+function YRwQ(Ahandler) { // MBaseModule__CWidget.setClickHandler
+ this.setHandler(1, Ahandler);
+}
+function YA4S(Ahandler) { // MBaseModule__CWidget.setMouseOverHandler
+ this.setHandler(2, Ahandler);
+}
+function YzQ6(Ahandler) { // MBaseModule__CWidget.setMouseOutHandler
+ this.setHandler(3, Ahandler);
+}
+function Yh_a(Aw, AeventType, Ajse) { // MBaseModule__CWidget__X.eventHandler
+ var Vze = YyE0(null, Aw, AeventType);
+        Vze.VjsEvent = Ajse || window.event;
+ if (Aw.Vhandlers.has(0))
+ {
+  {
+   var Vh;
+   var Zf2 = ZforListNew(Aw.Vhandlers.get(0));
+for (Vh = ZforListGet(Zf2); ZforListCont(Zf2); Vh = ZforListNext(Zf2)) {
+   (Vh)(Vze);
+   }
+  }
+ }
+ if (Aw.Vhandlers.has(AeventType))
+ {
+  {
+   var Vh1;
+   var Zf21 = ZforListNew(Aw.Vhandlers.get(AeventType));
+for (Vh1 = ZforListGet(Zf21); ZforListCont(Zf21); Vh1 = ZforListNext(Zf21)) {
+   (Vh1)(Vze);
+   }
+  }
+ }
+}
+// including ButtonModule bodies
+function YUJo(thisO, Atext, AclickHandler) { // MButtonModule__CButton.NEW
+ if (!thisO) thisO = YN0Oa(null);
+ thisO.VbuttonText = Atext;
+      thisO.Velem = $doc.createElement('button');
+      thisO.Velem.innerHTML = Atext;
+      thisO.Velem.style.whiteSpace = 'nowrap';
+ thisO.setClickHandler(AclickHandler);
+ return thisO;
+}
+function YVY8() { // MButtonModule__CButton.ToString
+ return "Button(" + this.VbuttonText + ")";
+}
+function YN0Oa(thisO) { // MButtonModule__CButton.Init
+ if (!thisO) thisO = new YN0O();
+ thisO.Vactive = 1;
+ return thisO;
+}
+// including CodeModule bodies
+// including DialogModule bodies
+function YgMr(thisO, Awidget) { // MDialogModule__CNoButtonDialog.NEW
+ if (!thisO) thisO = YslR(null);
+ thisO.setWidget(Awidget);
+ return thisO;
+}
+function YslR(thisO) { // MDialogModule__CNoButtonDialog.Init
+ if (!thisO) thisO = new Y1gh();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ thisO.Vx = -1;
+ thisO.Vy = -1;
+      thisO.Velem = $doc.createElement('div');
+      thisO.Velem.style.position = 'absolute';
+ var Vstyle = YH8J(null).setBGColorName(16).setBorder(2, 1, YfEv(null, 5));
+ thisO.setStyle(Vstyle);
+ thisO.Vtable = YjIc(null);
+ thisO.Vtable.setStyle(YH8J(null).setFullWidth().setFullHeight());
+ thisO.Vtable.setCellStyle(0, 0, YH8J(null).setFullHeight().setHorAlign(2).setPadding(10));
+ thisO.add(thisO.Vtable);
+ return thisO;
+}
+function YWJF() { // MDialogModule__CNoButtonDialog.show
+ this.Vbackground = YZjZa(null);
+ this.Vbackground.setHorizontalPosition(0);
+ this.Vbackground.setVerticalPosition(0);
+ this.Vbackground.setWidth(YbMN().getWidth());
+ this.Vbackground.setHeight(YbMN().getHeight());
+ this.Vbackground.setStyle(YH8J(null).setBGColorName(16).setOpacity(70));
+ this.Vbackground.show();
+ YJKA.call(this);
+}
+function Y0ou() { // MDialogModule__CNoButtonDialog.close
+ this.hide();
+ this.Vbackground.hide();
+}
+function Y9hM(Awidget) { // MDialogModule__CNoButtonDialog.setWidget
+ this.Vwidget = Awidget;
+ this.Vtable.setWidget(0, 0, Awidget);
+}
+function YXwX(thisO, Awidget, Ahandler) { // MDialogModule__CSimpleDialog.NEW
+ if (!thisO) thisO = YWCu(null);
+ Yjma__YgMr(thisO, Awidget);
+ thisO.Vhandler = Ahandler;
+ return thisO;
+}
+function YzuP() { // MDialogModule__CSimpleDialog.getButtons
+ var Vbuttons = [];
+ ZLa(Vbuttons, -1, YUJo(null, "OK", Zbind(Y7ly, this)));
+ return Vbuttons;
+}
+function YWCu(thisO) { // MDialogModule__CSimpleDialog.Init
+ if (!thisO) thisO = new Yjma();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ thisO.Vx = -1;
+ thisO.Vy = -1;
+      thisO.Velem = $doc.createElement('div');
+      thisO.Velem.style.position = 'absolute';
+ var Vstyle = YH8J(null).setBGColorName(16).setBorder(2, 1, YfEv(null, 5));
+ thisO.setStyle(Vstyle);
+ thisO.Vtable = YjIc(null);
+ thisO.Vtable.setStyle(YH8J(null).setFullWidth().setFullHeight());
+ thisO.Vtable.setCellStyle(0, 0, YH8J(null).setFullHeight().setHorAlign(2).setPadding(10));
+ thisO.add(thisO.Vtable);
+ thisO.Vbuttons = thisO.getButtons();
+ var VbuttonPanel = Y7Mca(null);
+ {
+  var Vbutton;
+  var Zf1 = ZforListNew(thisO.Vbuttons);
+for (Vbutton = ZforListGet(Zf1); ZforListCont(Zf1); Vbutton = ZforListNext(Zf1)) {
+  VbuttonPanel.add(Vbutton);
+  }
+ }
+ VbuttonPanel.setStyle(YH8J(null).setMarginBottom(10).setHorAlign(2));
+ thisO.Vtable.setWidget(1, 0, VbuttonPanel);
+ thisO.Vtable.setCellStyle(1, 0, YH8J(null).setFullWidth());
+ return thisO;
+}
+function Y7ly(Ae) { // MDialogModule__CSimpleDialog.handleOk
+ this.close();
+ if ((this.Vhandler != null))
+ {
+  (this.Vhandler)(1);
+ }
+}
+function Yjma__YgMr(thisO, Awidget) { // MDialogModule__CSimpleDialog.NEW__p1
+ if (!thisO) thisO = YWCu(null);
+ thisO.setWidget(Awidget);
+ return thisO;
+}
+function Y6IRa(thisO, Awidget) { // MDialogModule__COkCancelDialog.NEW
+ if (!thisO) thisO = YILpa(null);
+ thisO.setWidget(Awidget);
+ return thisO;
+}
+function Y4Mpa() { // MDialogModule__COkCancelDialog.getButtons
+ var Vbuttons = [];
+ var Vok = YUJo(null, "OK", Zbind(Y7ly, this));
+ var Vstyle = YH8J(null).setMarginLeft(20).setMarginRight(20);
+ Vok.setStyle(Vstyle);
+ ZLa(Vbuttons, -1, Vok);
+ var Vcancel = YUJo(null, "Cancel", Zbind(Yir6, this));
+ Vcancel.setStyle(Vstyle);
+ ZLa(Vbuttons, -1, Vcancel);
+ return Vbuttons;
+}
+function Yir6(Ae) { // MDialogModule__COkCancelDialog.handleCancel
+ this.close();
+ if ((this.Vhandler != null))
+ {
+  (this.Vhandler)(0);
+ }
+}
+function YILp__YXwX(thisO, Awidget, Ahandler) { // MDialogModule__COkCancelDialog.NEW__p1
+ if (!thisO) thisO = YILpa(null);
+ Y6IRa(thisO, Awidget);
+ thisO.Vhandler = Ahandler;
+ return thisO;
+}
+function YILpa(thisO) { // MDialogModule__COkCancelDialog.Init
+ if (!thisO) thisO = new YILp();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ thisO.Vx = -1;
+ thisO.Vy = -1;
+      thisO.Velem = $doc.createElement('div');
+      thisO.Velem.style.position = 'absolute';
+ var Vstyle = YH8J(null).setBGColorName(16).setBorder(2, 1, YfEv(null, 5));
+ thisO.setStyle(Vstyle);
+ thisO.Vtable = YjIc(null);
+ thisO.Vtable.setStyle(YH8J(null).setFullWidth().setFullHeight());
+ thisO.Vtable.setCellStyle(0, 0, YH8J(null).setFullHeight().setHorAlign(2).setPadding(10));
+ thisO.add(thisO.Vtable);
+ thisO.Vbuttons = thisO.getButtons();
+ var VbuttonPanel = Y7Mca(null);
+ {
+  var Vbutton;
+  var Zf1 = ZforListNew(thisO.Vbuttons);
+for (Vbutton = ZforListGet(Zf1); ZforListCont(Zf1); Vbutton = ZforListNext(Zf1)) {
+  VbuttonPanel.add(Vbutton);
+  }
+ }
+ VbuttonPanel.setStyle(YH8J(null).setMarginBottom(10).setHorAlign(2));
+ thisO.Vtable.setWidget(1, 0, VbuttonPanel);
+ thisO.Vtable.setCellStyle(1, 0, YH8J(null).setFullWidth());
+ return thisO;
+}
+// including DropdownModule bodies
+// including EventModule bodies
+function YyE0(thisO, Awidget, Atype) { // MEventModule__CEvent.NEW
+ if (!thisO) thisO = new YZDx();
+ thisO.Vwidget = Awidget;
+ thisO.Vtype = Atype;
+ return thisO;
+}
+// including InputModule bodies
+// including LabelModule bodies
+function YL0R(thisO) { // MLabelModule__CLabel.Init
+ if (!thisO) thisO = new YtSx();
+ thisO.Vactive = 1;
+      thisO.Velem = $doc.createElement('span');
+ return thisO;
+}
+function Yjd7(thisO, Atext) { // MLabelModule__CLabel.NEW
+ if (!thisO) thisO = YL0R(null);
+ thisO.setText(Atext);
+ return thisO;
+}
+function YnYb(Atext) { // MLabelModule__CLabel.setText
+ if ((Atext != this.VlabelText))
+ {
+  this.VlabelText = Atext;
+  if (typeof(this.Velem.textContent) != "undefined") {
+    this.Velem.textContent = Atext;
+  } else {
+    this.Velem.innerText = Atext;
+  }
+ }
+}
+function YiHk() { // MLabelModule__CLabel.ToString
+ return "Label(" + this.VlabelText + ")";
+}
+function YrSa(thisO) { // MLabelModule__CTextBlock.Init
+ if (!thisO) thisO = new YN0m();
+ thisO.Vactive = 1;
+      thisO.Velem = $doc.createElement('div');
+ return thisO;
+}
+function YL_6(thisO, Atext) { // MLabelModule__CTextBlock.NEW
+ if (!thisO) thisO = YrSa(null);
+ thisO.setText(Atext);
+ return thisO;
+}
+function Y690(Atext) { // MLabelModule__CTextBlock.setText
+ if ((Atext != this.Vtext))
+ {
+  this.Vtext = Atext;
+  if (typeof(this.Velem.textContent) != "undefined") {
+    this.Velem.textContent = Atext;
+  } else {
+    this.Velem.innerText = Atext;
+  }
+ }
+}
+function YzKa() { // MLabelModule__CTextBlock.ToString
+ return "TextBlock(" + this.Vtext + ")";
+}
+// including MenuModule bodies
+// including PanelModule bodies
+function Ydzz(thisO) { // MPanelModule__CPanel.NEW
+ if (!thisO) thisO = YVvXa(null);
+ return thisO;
+}
+function Y0Tr() { // MPanelModule__CPanel.detach
+}
+function YJNo() { // MPanelModule__CPanel.attach
+}
+function YCbm(Awidget) { // MPanelModule__CPanel.add
+ this.addItem(Awidget);
+      this.Velem.appendChild(Awidget.Velem);
+}
+function Y3xR(Awidget) { // MPanelModule__CPanel.addItem
+ if ((this.Vitems == null))
+ {
+  this.Vitems = [];
+ }
+ ZLa(this.Vitems, -1, Awidget);
+ Awidget.Vparent = this;
+}
+function Yx9a(Awidget) { // MPanelModule__CPanel.remove
+ {
+  var Vi;
+  var Zf1 = ZforRangeNew(0, this.Vitems.length, 1, 1);
+for (Vi = ZforRangeGet(Zf1); ZforRangeCont(Zf1); Vi = ZforRangeNext(Zf1)) {
+  if ((ZListGet(this.Vitems, Vi) == Awidget))
+  {
+   this.remove__1(Vi);
+   break;
+  }
+  }
+ }
+}
+function Yx9aa(Aindex) { // MPanelModule__CPanel.remove
+ if (((Aindex >= 0) && (Aindex < this.Vitems.length)))
+ {
+  var Vwidget = ZListPopItem(this.Vitems, Aindex, 1);
+  Vwidget.removeFromParent();
+  if ((Aindex == this.Vhighlighted))
+  {
+   this.Vhighlighted = -1;
+  }
+  this.Vhighlights.clear__1(Aindex);
+  return Vwidget;
+ }
+ return null;
+}
+function Y15_() { // MPanelModule__CPanel.clear
+ this.Vhighlighted = -1;
+ this.Vhighlights.clear();
+ if ((this.Vitems != null))
+ {
+  while ((this.Vitems.length > 0))
+  {
+   this.remove__1(0);
+  }
+ }
+}
+function YxGZ(Acontroller) { // MPanelModule__CPanel.setController
+ this.Vcontroller = Acontroller;
+}
+function YVvX__Y2AK(thisO) { // MPanelModule__CPanel.NEW__p1
+ if (!thisO) thisO = YVvXa(null);
+ return thisO;
+}
+function YVvXa(thisO) { // MPanelModule__CPanel.Init
+ if (!thisO) thisO = new YVvX();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ return thisO;
+}
+function Y3bna() { // MPanelModule__CCellPanel.detach
+      this.Velem.removeChild(this.Vbody);
+}
+function YM5ja() { // MPanelModule__CCellPanel.attach
+      this.Velem.appendChild(this.Vbody);
+}
+function Yiyaa(thisO) { // MPanelModule__CAbsolutePanel.NEW
+ if (!thisO) thisO = Ym2Ea(null);
+ return thisO;
+}
+function Ym2E__YVvX__Y2AK(thisO) { // MPanelModule__CAbsolutePanel.NEW__p2
+ if (!thisO) thisO = Ym2Ea(null);
+ return thisO;
+}
+function Ym2Ea(thisO) { // MPanelModule__CAbsolutePanel.Init
+ if (!thisO) thisO = new Ym2E();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ return thisO;
+}
+function YY8Sa(thisO) { // MPanelModule__CVerticalPanel.NEW
+ if (!thisO) thisO = YfXda(null);
+ return thisO;
+}
+function Yzw5a(Awidget) { // MPanelModule__CVerticalPanel.add
+ this.addItem(Awidget);
+      var tr = $doc.createElement('tr');
+      var td = $doc.createElement('td');
+      td.appendChild(Awidget.Velem);
+      tr.appendChild(td);
+      this.Vbody.appendChild(tr);
+}
+function Yjgwa(Aindex) { // MPanelModule__CVerticalPanel.remove
+ if (((Aindex >= 0) && (Aindex < this.Vitems.length)))
+ {
+  if ((this.Vhighlighted == Aindex))
+  {
+   this.Vhighlighted = -1;
+  }
+  var Vwidget = ZListPopItem(this.Vitems, Aindex, 1);
+  if ((Vwidget.Vparent == this))
+  {
+          this.Vbody.removeChild(Vwidget.Velem.parentNode.parentNode);
+   Vwidget.Vparent = null;
+  }
+  return Vwidget;
+ }
+ return null;
+}
+function Y4sJ() { // MPanelModule__CVerticalPanel.ToString
+ var Vls = [];
+ {
+  var Vitem;
+  var Zf1 = ZforListNew(this.Vitems);
+for (Vitem = ZforListGet(Zf1); ZforListCont(Zf1); Vitem = ZforListNext(Zf1)) {
+  ZLa(Vls, -1, Vitem.ToString());
+  }
+ }
+ return "VerticalPanel(" + ZListToString(Vls, 200, 1) + ")";
+}
+function YfXd__Ynpw__YVvX__Y2AK(thisO) { // MPanelModule__CVerticalPanel.NEW__p3
+ if (!thisO) thisO = YfXda(null);
+ return thisO;
+}
+function YfXda(thisO) { // MPanelModule__CVerticalPanel.Init
+ if (!thisO) thisO = new YfXd();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+      thisO.Velem = $doc.createElement('table');
+      thisO.Velem.border = 0;
+      thisO.Velem.cellPadding = 0;
+      thisO.Velem.cellSpacing = 0;
+      thisO.Vbody = $doc.createElement('tbody');
+      thisO.Velem.appendChild(thisO.Vbody);
+ return thisO;
+}
+function Y7Mca(thisO) { // MPanelModule__CHorizontalPanel.NEW
+ if (!thisO) thisO = Y7kt(null);
+ return thisO;
+}
+function Y7kt(thisO) { // MPanelModule__CHorizontalPanel.Init
+ if (!thisO) thisO = new YA6u();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+      thisO.Velem = $doc.createElement('table');
+      thisO.Velem.border = 0;
+      thisO.Velem.cellPadding = 0;
+      thisO.Velem.cellSpacing = 0;
+      thisO.Vbody = $doc.createElement('tbody');
+      thisO.Velem.appendChild(thisO.Vbody);
+      thisO.Vrow = $doc.createElement('tr');
+      thisO.Vbody.appendChild(thisO.Vrow)
+ return thisO;
+}
+function YJ9pa(Awidget) { // MPanelModule__CHorizontalPanel.add
+ this.addItem(Awidget);
+      var td = $doc.createElement('td');
+      td.appendChild(Awidget.Velem);
+      this.Vrow.appendChild(td);
+}
+function YodZa(Aindex) { // MPanelModule__CHorizontalPanel.remove
+ if (((Aindex >= 0) && (Aindex < this.Vitems.length)))
+ {
+  var Vwidget = ZListPopItem(this.Vitems, Aindex, 1);
+  if ((Vwidget.Vparent == this))
+  {
+          this.Vrow.removeChild(Vwidget.Velem.parentNode);
+   Vwidget.Vparent = null;
+  }
+  return Vwidget;
+ }
+ return null;
+}
+function Y9Lp() { // MPanelModule__CHorizontalPanel.ToString
+ var Vls = [];
+ {
+  var Vitem;
+  var Zf1 = ZforListNew(this.Vitems);
+for (Vitem = ZforListGet(Zf1); ZforListCont(Zf1); Vitem = ZforListNext(Zf1)) {
+  ZLa(Vls, -1, Vitem.ToString());
+  }
+ }
+ return "HorizontalPanel(" + ZListToString(Vls, 200, 1) + ")";
+}
+function YA6u__Ynpw__YVvX__Y2AK(thisO) { // MPanelModule__CHorizontalPanel.NEW__p3
+ if (!thisO) thisO = Y7kt(null);
+ return thisO;
+}
+function Yc8o(thisO) { // MPanelModule__CPopupPanel.Init
+ if (!thisO) thisO = new Y4xQ();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ thisO.Vx = -1;
+ thisO.Vy = -1;
+      thisO.Velem = $doc.createElement('div');
+      thisO.Velem.style.position = 'absolute';
+ var Vstyle = YH8J(null).setBGColorName(16).setBorder(2, 1, YfEv(null, 5));
+ thisO.setStyle(Vstyle);
+ return thisO;
+}
+function YZjZa(thisO) { // MPanelModule__CPopupPanel.NEW
+ if (!thisO) thisO = Yc8o(null);
+ return thisO;
+}
+function YpeS(Ax) { // MPanelModule__CPopupPanel.setHorizontalPosition
+ this.Vx = Ax;
+ return this;
+}
+function YX6B(Ay) { // MPanelModule__CPopupPanel.setVerticalPosition
+ this.Vy = Ay;
+ return this;
+}
+function Yh06(Awidth) { // MPanelModule__CPopupPanel.setWidth
+ this.Vwidth = Awidth;
+ return this;
+}
+function YP39(Aheight) { // MPanelModule__CPopupPanel.setHeight
+ this.Vheight = Aheight;
+ return this;
+}
+function YJKA() { // MPanelModule__CPopupPanel.show
+ if ((this.Vwidth > 0))
+ {
+        this.Velem.style.width = this.Vwidth + 'px';
+ }
+ if ((this.Vheight > 0))
+ {
+        this.Velem.style.height = this.Vheight + 'px';
+ }
+ if ((this.VusedParent == null))
+ {
+  if ((this.Vparent == null))
+  {
+   this.VusedParent = YbMN();
+  }
+  else
+  {
+   this.VusedParent = this.Vparent;
+  }
+  this.VusedParent.add(this);
+ }
+ var Vx = 0;
+ if ((this.Vx < 0))
+ {
+        Vx = (this.VusedParent.Velem.offsetWidth - this.Velem.offsetWidth) / 2;
+ }
+ else
+ {
+  Vx = this.Vx;
+ }
+ var Vy = 0;
+ if ((this.Vy < 0))
+ {
+        Vy = (this.VusedParent.Velem.offsetHeight - this.Velem.offsetHeight) / 2;
+ }
+ else
+ {
+  Vy = this.Vy;
+ }
+      this.Velem.style.left = Vx + 'px';
+      this.Velem.style.top = Vy + 'px';
+}
+function YyVS() { // MPanelModule__CPopupPanel.hide
+ if ((this.VusedParent != null))
+ {
+  this.VusedParent.remove(this);
+  this.VusedParent = null;
+ }
+ return this;
+}
+function Y4xQ__YVvX__Y2AK(thisO) { // MPanelModule__CPopupPanel.NEW__p2
+ if (!thisO) thisO = Yc8o(null);
+ return thisO;
+}
+function YSIg(thisO) { // MPanelModule__CScrollPanel.Init
+ if (!thisO) thisO = new YpCw();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+      thisO.Velem = $doc.createElement('div');
+      thisO.Velem.style.overflow = 'auto';
+      thisO.Velem.style.position = 'relative';
+ return thisO;
+}
+function YpfW(Apx) { // MPanelModule__CScrollPanel.scrollHorizontal
+      this.Velem.scrollLeft = Apx;
+}
+function Ypcy() { // MPanelModule__CScrollPanel.scrollRight
+      this.Velem.scrollLeft = this.Velem.scrollWidth;
+}
+function YJYF() { // MPanelModule__CScrollPanel.scrollLeft
+      this.Velem.scrollLeft = 0;
+}
+function YCg1() { // MPanelModule__CScrollPanel.getHorizontalScroll
+ var Vr = 0;
+      Vr = this.Velem.scrollLeft;
+ return Vr;
+}
+function YCSD(Apx) { // MPanelModule__CScrollPanel.scrollVertical
+      this.Velem.scrollTop = Apx;
+}
+function YR0k() { // MPanelModule__CScrollPanel.scrollTop
+      this.Velem.scrollTop = 0;
+}
+function YBl3() { // MPanelModule__CScrollPanel.scrollBottom
+      this.Velem.scrollTop = this.Velem.scrollHeight;
+}
+function Y7DS() { // MPanelModule__CScrollPanel.getVerticalScroll
+ var Vr = 0;
+      Vr = this.Velem.scrollTop;
+ return Vr;
+}
+function Yh40(Aw) { // MPanelModule__CScrollPanel.ensureVisible
+ this.ensureVisibleVertical(Aw);
+ this.ensureVisibleHorizontal(Aw);
+}
+function YZnn(Aw) { // MPanelModule__CScrollPanel.ensureVisibleVertical
+ var Vtop = Aw.getTop__1(this);
+      var s = this.Velem.clientHeight - Aw.Velem.offsetHeight;
+      s = s < 0 ? 0 : s / 2;
+      this.Velem.scrollTop = Vtop - s;
+}
+function Y3xE(Aw) { // MPanelModule__CScrollPanel.ensureVisibleHorizontal
+ var Vleft = Aw.getLeft__1(this);
+      var s = this.Velem.clientWidth - Aw.Velem.offsetWidth;
+      s = s < 0 ? 0 : s / 2;
+      this.Velem.scrollLeft = Vleft - s;
+}
+function YpCw__Ydzz(thisO) { // MPanelModule__CScrollPanel.NEW__p1
+ if (!thisO) thisO = YSIg(null);
+ return thisO;
+}
+function YpCw__YVvX__Y2AK(thisO) { // MPanelModule__CScrollPanel.NEW__p2
+ if (!thisO) thisO = YSIg(null);
+ return thisO;
+}
+// including StyleModule bodies
+function YfEv(thisO, AcolorName) { // MStyleModule__CColor.NEW
+ if (!thisO) thisO = new YJIL();
+ thisO.VcolorName = AcolorName;
+ return thisO;
+}
+function YfEva(thisO, Ar, Ag, Ab) { // MStyleModule__CColor.NEW
+ if (!thisO) thisO = new YJIL();
+ thisO.Vred = Ar;
+ thisO.Vgreen = Ag;
+ thisO.Vblue = Ab;
+ thisO.limit();
+ return thisO;
+}
+function YNC1(Ared) { // MStyleModule__CColor.setRed
+ this.Vred = Ared;
+ this.limit();
+}
+function Yz3l(Agreen) { // MStyleModule__CColor.setGreen
+ this.Vgreen = Agreen;
+ this.limit();
+}
+function Y9im(Ablue) { // MStyleModule__CColor.setBlue
+ this.Vblue = Ablue;
+ this.limit();
+}
+function Y2mV() { // MStyleModule__CColor.limit
+ if ((this.Vred < 0))
+ {
+  this.Vred = 0;
+ }
+ else {
+ if ((this.Vred > 255))
+ {
+  this.Vred = 255;
+ }
+ }
+ if ((this.Vgreen < 0))
+ {
+  this.Vgreen = 0;
+ }
+ else {
+ if ((this.Vgreen > 255))
+ {
+  this.Vgreen = 255;
+ }
+ }
+ if ((this.Vblue < 0))
+ {
+  this.Vblue = 0;
+ }
+ else {
+ if ((this.Vblue > 255))
+ {
+  this.Vblue = 255;
+ }
+ }
+}
+function YgAh() { // MStyleModule__CColor.ToString
+ if ((this.VcolorName != 0))
+ {
+  return "Color(" + MStyleModule__EColorName[this.VcolorName] + ")";
+ }
+ return "Color(" + "" + this.Vred + ", " + "" + this.Vgreen + ", " + "" + this.Vblue + ")";
+}
+function YH8J(thisO) { // MStyleModule__CStyle.NEW
+ if (!thisO) thisO = new YXEv();
+ thisO.Vproperties = ZnewDict(1, 1);
+ thisO.VstyleNr = (YphH)++;
+ thisO.Vname = "zwt" + "" + thisO.VstyleNr;
+ thisO.VruleNr = -1;
+ return thisO;
+}
+function YzLd() { // MStyleModule__CStyle.activate
+ if ((this.VruleNr < 0))
+ {
+   if ($doc.styleSheets[$sheetIndex].title != 'zwt') {
+     $findSheetIndex();
+   }
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.cssRules) {
+     this.VruleNr = sheet.cssRules.length;
+   } else {
+     this.VruleNr = sheet.rules.length;
+   }
+  this.setRule();
+ }
+}
+function YZfG() { // MStyleModule__CStyle.update
+ if ((this.VruleNr >= 0))
+ {
+   if ($doc.styleSheets[$sheetIndex].title != 'zwt') {
+     $findSheetIndex();
+   }
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.cssRules) {
+     sheet.deleteRule(this.VruleNr);
+   } else {
+     sheet.removeRule(this.VruleNr);
+   }
+  this.setRule();
+ }
+}
+function YrWD() { // MStyleModule__CStyle.setRule
+ var Vs = "";
+ {
+  var Vprop;
+  var Zf1 = ZforListNew(ZDictKeys(this.Vproperties, 0));
+for (Vprop = ZforListGet(Zf1); ZforListCont(Zf1); Vprop = ZforListNext(Zf1)) {
+  Vs += Vprop + ": " + this.Vproperties[':' + Vprop] + "; ";
+  }
+ }
+ var Vr = "." + this.Vname;
+   var sheet = $doc.styleSheets[$sheetIndex]
+   if (sheet.insertRule) {
+     sheet.insertRule(Vr + '{' + Vs + '}', this.VruleNr);
+   } else {
+     sheet.addRule(Vr, Vs, this.VruleNr);
+   }
+}
+function YZRy(Aprop, Av) { // MStyleModule__CStyle.setValue
+ this.Vproperties[':' + Aprop] = Av;
+ this.update();
+ return this;
+}
+function YH25(Aprop, Av) { // MStyleModule__CStyle.setPixelValue
+ this.Vproperties[':' + Aprop] = "" + Av + "px";
+ this.update();
+ return this;
+}
+function Ygmr(Aprop) { // MStyleModule__CStyle.getPixelValue
+ if (':' + Aprop in this.Vproperties)
+ {
+  var Vs = this.Vproperties[':' + Aprop];
+  if ((ZSlice(Vs, -2, -1, 0) == "px"))
+  {
+   return ZparseInt(ZSlice(Vs, 0, -3, 0), 10, 1, 0);
+  }
+ }
+ return -1;
+}
+function YACJ(Aprop, Av, Au) { // MStyleModule__CStyle.setUnitValue
+ this.Vproperties[':' + Aprop] = "" + Av + YPjV[':' + MStyleModule__EUnit[Au]];
+ this.update();
+ return this;
+}
+function YrJ7(Aprop, Acolor) { // MStyleModule__CStyle.setColorProp
+ if ((Acolor.VcolorName != 0))
+ {
+  this.Vproperties[':' + Aprop] = MStyleModule__EColorName[Acolor.VcolorName];
+ }
+ else
+ {
+  var Vr = (((Acolor.Vred < 0)) ? (0) : ((((Acolor.Vred > 255)) ? (255) : (Acolor.Vred))));
+  var Vg = (((Acolor.Vgreen < 0)) ? (0) : ((((Acolor.Vgreen > 255)) ? (255) : (Acolor.Vgreen))));
+  var Vb = (((Acolor.Vblue < 0)) ? (0) : ((((Acolor.Vblue > 255)) ? (255) : (Acolor.Vblue))));
+  this.Vproperties[':' + Aprop] = "rgb(" + "" + Vr + "," + "" + Vg + "," + "" + Vb + ")";
+ }
+ this.update();
+ return this;
+}
+function Y8Sr(Aprop) { // MStyleModule__CStyle.clearValue
+ if (':' + Aprop in this.Vproperties)
+ {
+  ZDictRemove(this.Vproperties, ':' + Aprop, 1);
+  this.update();
+ }
+ return this;
+}
+function Y9lb(Av) { // MStyleModule__CStyle.setMarginLeft
+ return this.setPixelValue("margin-left", Av);
+}
+function YNNp() { // MStyleModule__CStyle.getMarginLeft
+ return this.getPixelValue("margin-left");
+}
+function Y8DQ(Av) { // MStyleModule__CStyle.setMarginRight
+ return this.setPixelValue("margin-right", Av);
+}
+function YcLj() { // MStyleModule__CStyle.getMarginRight
+ return this.getPixelValue("margin-right");
+}
+function YTS2(Av) { // MStyleModule__CStyle.setMarginTop
+ return this.setPixelValue("margin-top", Av);
+}
+function Yx2P() { // MStyleModule__CStyle.getMarginTop
+ return this.getPixelValue("margin-top");
+}
+function Y5cS(Av) { // MStyleModule__CStyle.setMarginBottom
+ return this.setPixelValue("margin-bottom", Av);
+}
+function Yo8M(Av) { // MStyleModule__CStyle.setMarginBot
+ return this.setPixelValue("margin-bottom", Av);
+}
+function Y2iz() { // MStyleModule__CStyle.getMarginBot
+ return this.getPixelValue("margin-bottom");
+}
+function YaPx(Av) { // MStyleModule__CStyle.setPadding
+ this.setPaddingLeft(Av);
+ this.setPaddingRight(Av);
+ this.setPaddingTop(Av);
+ this.setPaddingBot(Av);
+ return this;
+}
+function YOar(Av) { // MStyleModule__CStyle.setPaddingLeft
+ return this.setPixelValue("padding-left", Av);
+}
+function Y1Wp(Av) { // MStyleModule__CStyle.setPaddingRight
+ return this.setPixelValue("padding-right", Av);
+}
+function YU4V(Av) { // MStyleModule__CStyle.setPaddingTop
+ return this.setPixelValue("padding-top", Av);
+}
+function YoPb(Av) { // MStyleModule__CStyle.setPaddingBot
+ return this.setPixelValue("padding-bottom", Av);
+}
+function YvB9(Aalign) { // MStyleModule__CStyle.setHorAlign
+ if ((Aalign == 0))
+ {
+  this.clearValue("text-align");
+  this.clearValue("margin-left");
+  this.clearValue("margin-right");
+  return this;
+ }
+ if ((Aalign == 2))
+ {
+  this.setValue("text-align", "center");
+  this.setValue("margin-left", "auto");
+  this.setValue("margin-right", "auto");
+ }
+ else
+ {
+  this.setValue("text-align", MStyleModule__EHorAlign[Aalign]);
+ }
+ return this;
+}
+function YNO7(Aalign) { // MStyleModule__CStyle.setVerAlign
+ if ((Aalign == 0))
+ {
+  return this.clearValue("vertical-align");
+ }
+ return this.setValue("vertical-align", (((Aalign == 3)) ? ("middle") : (MStyleModule__EVerAlign[Aalign])));
+}
+function Ykgm(Awidth) { // MStyleModule__CStyle.setWidth
+ return this.setPixelValue("width", Awidth);
+}
+function YpB9() { // MStyleModule__CStyle.setFullWidth
+ this.setUnitValue("width", 100, 1);
+ return this;
+}
+function Y_xK(Aheight) { // MStyleModule__CStyle.setHeight
+ return this.setPixelValue("height", Aheight);
+}
+function YOjB() { // MStyleModule__CStyle.setFullHeight
+ return this.setUnitValue("height", 100, 1);
+}
+function Yf58(Athickness, Abs, Ac) { // MStyleModule__CStyle.setBorder
+ this.setPixelValue("border-width", Athickness);
+ this.setBorderStyle(Abs);
+ return this.setColorProp("border-color", Ac);
+}
+function Yh2i(Athickness) { // MStyleModule__CStyle.setBorderThickness
+ return this.setPixelValue("border-width", Athickness);
+}
+function Yt3W(Abs) { // MStyleModule__CStyle.setBorderStyle
+ if ((Abs == 0))
+ {
+  return this.clearBorderStyle();
+ }
+ return this.setValue("border-style", MStyleModule__EBorderStyle[Abs]);
+}
+function Y_eb() { // MStyleModule__CStyle.clearBorderStyle
+ return this.clearValue("border-style");
+}
+function Yf7b(Ac) { // MStyleModule__CStyle.setBorderColor
+ return this.setColorProp("border-color", Ac);
+}
+function YOn8(Ac) { // MStyleModule__CStyle.setColor
+ return this.setColorProp("color", Ac);
+}
+function Y9ZK(Ac) { // MStyleModule__CStyle.setBGColor
+ return this.setColorProp("background-color", Ac);
+}
+function Y4LI(AcolorName) { // MStyleModule__CStyle.setBGColorName
+ return this.setColorProp("background-color", YfEv(null, AcolorName));
+}
+function YvfU() { // MStyleModule__CStyle.clearBGColor
+ return this.clearValue("background-color");
+}
+function Y44W(Apercent) { // MStyleModule__CStyle.setOpacity
+ var Vval = null;
+ if ((Apercent >= 100))
+ {
+  Vval = ("" + Math.floor(Apercent / 100)) + "." + ("" + (Apercent % 100));
+ }
+ else {
+ if ((Apercent < 10))
+ {
+  Vval = "0.0" + "" + Apercent;
+ }
+ else
+ {
+  Vval = "0." + "" + Apercent;
+ }
+ }
+ this.setValue("opacity", Vval);
+ return this;
+}
+function Ya0K(Aelem, Astyles) { // MStyleModule.setElementStyle
+ if (((Astyles == null) || (Astyles.length == 0)))
+ {
+      Aelem.className = null;
+ }
+ else
+ {
+  var Vname = null;
+  {
+   var Vs;
+   var Zf2 = ZforListNew(Astyles);
+for (Vs = ZforListGet(Zf2); ZforListCont(Zf2); Vs = ZforListNext(Zf2)) {
+   Vs.activate();
+   if ((Vname == null))
+   {
+    Vname = Vs.Vname;
+   }
+   else
+   {
+    Vname += " " + Vs.Vname;
+   }
+   }
+  }
+      Aelem.className = Vname;
+ }
+}
+// including TableModule bodies
+function YVAn(thisO, Awidget) { // MTableModule__CTableCell.NEW
+ if (!thisO) thisO = new Y1yz();
+ thisO.Vwidget = Awidget;
+ thisO.Vrowspan = 1;
+ thisO.Vcolspan = 1;
+      thisO.Velem = $doc.createElement('td');
+ if ((Awidget != null))
+ {
+        thisO.Velem.appendChild(Awidget.Velem);
+ }
+ return thisO;
+}
+function Ygq2() { // MTableModule__CTableCell.ToString
+ if ((this.Vwidget == null))
+ {
+  return "NIL";
+ }
+ return this.Vwidget.ToString();
+}
+function YBrY(Awidget) { // MTableModule__CTableCell.setWidget
+ if ((this.Vwidget != null))
+ {
+  this.Vwidget.removeFromParent();
+ }
+ this.Vwidget = Awidget;
+ if ((Awidget != null))
+ {
+  Awidget.addToParent(this);
+ }
+}
+function Ylk9(thisO) { // MTableModule__CTableRow.NEW
+ if (!thisO) thisO = new YidE();
+ thisO.Ventries = [];
+      thisO.Velem = $doc.createElement('tr');
+ return thisO;
+}
+function YksY() { // MTableModule__CTableRow.ToString
+ var Vret = "Row(";
+ var Vcomma = "";
+ {
+  var Ve;
+  var Zf1 = ZforListNew(this.Ventries);
+for (Ve = ZforListGet(Zf1); ZforListCont(Zf1); Ve = ZforListNext(Zf1)) {
+  if ((Ve == null))
+  {
+   Vret += Vcomma + "NIL";
+  }
+  else
+  {
+   Vret += Ve.ToString();
+  }
+  Vcomma = ", ";
+  }
+ }
+ return Vret + ")";
+}
+function YhJK(Alen) { // MTableModule__CTableRow.resize
+ while ((this.Ventries.length < Alen))
+ {
+  this.addCell();
+ }
+ if ((Alen >= 0))
+ {
+  while ((this.Ventries.length > Alen))
+  {
+   this.deleteCell(Alen);
+  }
+ }
+}
+function YNQD() { // MTableModule__CTableRow.addCell
+ var Vcell = YVAn(null, null);
+ ZLa(this.Ventries, -1, Vcell);
+      this.Velem.appendChild(Vcell.Velem);
+}
+function Ypnw(Aidx) { // MTableModule__CTableRow.deleteCell
+ if (((Aidx < 0) || (Aidx >= this.Ventries.length)))
+ {
+  return;
+ }
+ var Vcell = ZListPopItem(this.Ventries, Aidx, 1);
+ Vcell.setWidget(null);
+      this.Velem.removeChild(Vcell.Velem);
+}
+function YU2p(Aidx, Awidget) { // MTableModule__CTableRow.setWidget
+ if ((Aidx < 0))
+ {
+  return;
+ }
+ if ((this.Ventries.length <= Aidx))
+ {
+  this.resize((Aidx + 1));
+ }
+ ZListGet(this.Ventries, Aidx).setWidget(Awidget);
+}
+function YRJI(AcolIdx) { // MTableModule__CTableRow.getWidget
+ if (((AcolIdx < 0) || (AcolIdx >= this.Ventries.length)))
+ {
+  return null;
+ }
+ return ZListGet(this.Ventries, AcolIdx).Vwidget;
+}
+function YTsy(AcolIdx, Astyle) { // MTableModule__CTableRow.setColStyle
+ if (((AcolIdx >= 0) && (AcolIdx < this.Ventries.length)))
+ {
+  ZListGet(this.Ventries, AcolIdx).setStyle(Astyle);
+ }
+}
+function YjIc(thisO) { // MTableModule__CTable.NEW
+ if (!thisO) thisO = YZQ2(null);
+ return thisO;
+}
+function YZQ2(thisO) { // MTableModule__CTable.Init
+ if (!thisO) thisO = new YrNL();
+ thisO.Vactive = 1;
+ thisO.Vhighlighted = -1;
+ thisO.Vhighlights = Yh95(null);
+ thisO.Vrows = [];
+      thisO.Velem = $doc.createElement('table');
+      thisO.Velem.border = 0;
+      thisO.Velem.cellPadding = 0;
+      thisO.Velem.cellSpacing = 0;
+      thisO.Vbody = $doc.createElement('tbody');
+      thisO.Velem.appendChild(thisO.Vbody);
+ return thisO;
+}
+function YeKc() { // MTableModule__CTable.clear
+ this.resizeRows(0);
+}
+function YC3E() { // MTableModule__CTable.ToString
+ var Vret = "Table(";
+ var Vcomma = "";
+ {
+  var Vr;
+  var Zf1 = ZforListNew(this.Vrows);
+for (Vr = ZforListGet(Zf1); ZforListCont(Zf1); Vr = ZforListNext(Zf1)) {
+  Vret += Vcomma + Vr.ToString();
+  Vcomma = ", ";
+  }
+ }
+ return Vret + ")";
+}
+function YIk_(Awidget) { // MTableModule__CTable.add
+ YKvi("Table.add() cannot be used");
+}
+function Y36p(Awidget) { // MTableModule__CTable.remove
+ YKvi("Table.remove() cannot be used");
+}
+function YIDH(ArowIdx, AcolIdx, Awidget) { // MTableModule__CTable.setWidget
+ if ((ArowIdx >= this.Vrows.length))
+ {
+  this.resizeRows((ArowIdx + 1));
+ }
+ ZListGet(this.Vrows, ArowIdx).setWidget(AcolIdx, Awidget);
+}
+function YFj_(ArowIdx, AcolIdx) { // MTableModule__CTable.getWidget
+ if (((ArowIdx < 0) || (ArowIdx >= this.Vrows.length)))
+ {
+  return null;
+ }
+ return ZListGet(this.Vrows, ArowIdx).getWidget(AcolIdx);
+}
+function YxaR(ArowIdx, Astyle) { // MTableModule__CTable.setRowStyle
+ if (((ArowIdx >= 0) && (ArowIdx < this.Vrows.length)))
+ {
+  ZListGet(this.Vrows, ArowIdx).setStyle(Astyle);
+ }
+}
+function YCAj(ArowIdx, AcolIdx, Astyle) { // MTableModule__CTable.setCellStyle
+ if (((ArowIdx >= 0) && (ArowIdx < this.Vrows.length)))
+ {
+  ZListGet(this.Vrows, ArowIdx).setColStyle(AcolIdx, Astyle);
+ }
+}
+function YPru() { // MTableModule__CTable.addRow
+ var Vr = Ylk9(null);
+ ZLa(this.Vrows, -1, Vr);
+      this.Vbody.appendChild(Vr.Velem);
+}
+function YZmd(Aidx) { // MTableModule__CTable.deleteRow
+ if (((Aidx < 0) || (Aidx >= this.Vrows.length)))
+ {
+  return;
+ }
+ var Vr = ZListPopItem(this.Vrows, Aidx, 1);
+      this.Vbody.removeChild(Vr.Velem);
+}
+function YnB1(Asize) { // MTableModule__CTable.resizeRows
+ if ((Asize >= 0))
+ {
+  while ((this.Vrows.length < Asize))
+  {
+   this.addRow();
+  }
+  while ((this.Vrows.length > Asize))
+  {
+   this.deleteRow(Asize);
+  }
+ }
+}
+function YrNL__Ydzz(thisO) { // MTableModule__CTable.NEW__p1
+ if (!thisO) thisO = YZQ2(null);
+ return thisO;
+}
+function YrNL__YVvX__Y2AK(thisO) { // MTableModule__CTable.NEW__p2
+ if (!thisO) thisO = YZQ2(null);
+ return thisO;
+}
+// including TextareaModule bodies
+function YbMN() { // MZWTModule.root
+ if ((YATn == null))
+ {
+  YATn = Yiyaa(null);
+  var Vv = null;
+        Vv = $doc.body;
+  YATn.Velem = Vv;
+ }
+ return YATn;
+}
+function Y7to(Amessage) { // MZWTModule.alert
+      alert(Amessage);
+}
+function YKvi(Amessage) { // MZWTModule.error
+      throw(Amessage);
+}
+function Y_kp(thisO, Aview, Amodel, Abuilder) { // MZWTModule__CListController__t1.NEW
+ if (!thisO) thisO = new Y8bA();
+ thisO.Vview = Aview;
+ if ((thisO.Vview != null))
+ {
+  thisO.Vview.setController(thisO);
+ }
+ thisO.Vbuilder = Abuilder;
+ thisO.setModel(Amodel);
+ return thisO;
+}
+function Ytq3(Amodel) { // MZWTModule__CListController__t1.setModel
+ this.Vmodel = Amodel;
+ this.update();
+}
+function Yqzp() { // MZWTModule__CListController__t1.update
+ if ((this.Vview != null))
+ {
+  this.Vview.detach();
+  this.Vview.clear();
+  if ((this.Vmodel != null))
+  {
+   {
+    var Vitem;
+    var Zf3 = ZforListNew(this.Vmodel);
+for (Vitem = ZforListGet(Zf3); ZforListCont(Zf3); Vitem = ZforListNext(Zf3)) {
+    this.Vview.add(this.Vbuilder.get(Vitem));
+    }
+   }
+  }
+  this.Vview.attach();
+ }
+}
+// including CHECKModule bodies
+function Y8UT(Ab) { // MCHECKModule.true
+ if (!(Ab))
+ {
+  alert("Exception in D:/zimbu/lib/CHECKModule.zu line 22 col 7: " + YtEE__YwtA__YRHRa(null, null, "CHECK.true() failed").Vmessage);
+  return;
+ }
+}
+// including BOXModule bodies
+// including ARGModule bodies
+// including INTModule bodies
+function YIUba(Athis, AminSize) { // MINTModule.toHex
+ var Vval = Athis;
+ var Vw = new YjUM();
+ while ((Vval != 0))
+ {
+  var Vc = (Vval & 15);
+  Vval = (Vval >> 4);
+  if ((Vval < 0))
+  {
+   Vval = (Vval & 1152921504606846975);
+  }
+  Vw.writeChar(YZEe[Vc]);
+ }
+ while ((Vw.Size() < AminSize))
+ {
+  Vw.writeChar(48);
+ }
+ return YO0w(Vw.ToString());
+}
+// including DYNModule bodies
+// including addressbook bodies
+function YgTL(thisO) { // MTutorial__CPerson.NEW
+ if (!thisO) thisO = new YBfl();
+ return thisO;
+}
+function YNDja() { // MTutorial__CPerson.name
+ return "Person";
+}
+function YUWc(thisO) { // MTutorial__CPerson__CPhoneNumber.NEW
+ if (!thisO) thisO = new YVpY();
+ return thisO;
+}
+function YEDsa() { // MTutorial__CPerson__CPhoneNumber.name
+ return "PhoneNumber";
+}
+function Y1zE() { // MTutorial__CPerson__CPhoneNumber.getNumber
+ if ((this.Vf_number == null))
+ {
+  return "";
+ }
+ return this.Vf_number;
+}
+function YwDN() { // MTutorial__CPerson__CPhoneNumber.hasNumber
+ return (this.Vf_number != null);
+}
+function YeLS() { // MTutorial__CPerson__CPhoneNumber.getType
+ if ((this.Vf_type == 0))
+ {
+  return 2;
+ }
+ return this.Vf_type;
+}
+function YWby() { // MTutorial__CPerson__CPhoneNumber.hasType
+ return (this.Vf_type != 0);
+}
+function YZMda(AfieldNr) { // MTutorial__CPerson__CPhoneNumber.enumGet
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   return YyE5[':' + this.Vf_type];
+  }
+ }
+ return 0;
+}
+function YP9ga(AfieldNr) { // MTutorial__CPerson__CPhoneNumber.enumNameGet
+ var Vs = null;
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   Vs = MTutorial__CPerson__X__EPhoneType[this.Vf_type];
+   return (((Vs == "unknown")) ? (Vs) : (ZSlice(Vs, 1, -1, 0)));
+  }
+ }
+ return "";
+}
+function YWWJa(AfieldNr, Avalue) { // MTutorial__CPerson__CPhoneNumber.enumSet
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   this.Vf_type = ((':' + Avalue in YO_w) ? (YO_w[':' + Avalue]) : (0));
+    break;
+  }
+ }
+}
+function YMjNa(AfieldNr, Aname) { // MTutorial__CPerson__CPhoneNumber.enumNameSet
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   this.Vf_type = MTutorial__CPerson__X__EPhoneType.indexOf("e" + Aname);
+    break;
+  }
+ }
+}
+function YJsba(AfieldNr) { // MTutorial__CPerson__CPhoneNumber.stringGet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.Vf_number;
+  }
+ }
+ return "";
+}
+function YMiGa(AfieldNr, Avalue) { // MTutorial__CPerson__CPhoneNumber.stringSet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   this.Vf_number = Avalue;
+    break;
+  }
+ }
+}
+function YBy4a(AfieldNr) { // MTutorial__CPerson__CPhoneNumber.hasField
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.hasNumber();
+  }
+ case 2:
+  {
+   return this.hasType();
+  }
+ }
+ return 0;
+}
+function YkyPa() { // MTutorial__CPerson__CPhoneNumber.fieldSpecs
+ return YUUR;
+}
+function Y303(Aformat, Areader) { // MTutorial__CPerson__CPhoneNumber.mergeFromReader
+ Yngm(this, Aformat, YUUR, Areader);
+ return this;
+}
+function YW6g() { // MTutorial__CPerson.getName
+ if ((this.Vf_name == null))
+ {
+  return "";
+ }
+ return this.Vf_name;
+}
+function YDyX() { // MTutorial__CPerson.hasName
+ return (this.Vf_name != null);
+}
+function YgQT() { // MTutorial__CPerson.getId
+ if (!(this.Vhas_id))
+ {
+  return 0;
+ }
+ return this.Vf_id;
+}
+function YJsf() { // MTutorial__CPerson.hasId
+ return this.Vhas_id;
+}
+function YB8m() { // MTutorial__CPerson.getEmail
+ if ((this.Vf_email == null))
+ {
+  return "";
+ }
+ return this.Vf_email;
+}
+function Y3Jk() { // MTutorial__CPerson.hasEmail
+ return (this.Vf_email != null);
+}
+function Y8OP() { // MTutorial__CPerson.getPhoneList
+ return this.Vf_phone;
+}
+function Ywxva(AfieldNr) { // MTutorial__CPerson.int32Get
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   return this.Vf_id;
+  }
+ }
+ return 0;
+}
+function Yzn_a(AfieldNr, Avalue) { // MTutorial__CPerson.int32Set
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   this.Vf_id = Avalue;
+   this.Vhas_id = 1;
+    break;
+  }
+ }
+}
+function YnRYa(AfieldNr) { // MTutorial__CPerson.stringGet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.Vf_name;
+  }
+ case 3:
+  {
+   return this.Vf_email;
+  }
+ }
+ return "";
+}
+function Yk0ta(AfieldNr, Avalue) { // MTutorial__CPerson.stringSet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   this.Vf_name = Avalue;
+    break;
+  }
+ case 3:
+  {
+   this.Vf_email = Avalue;
+    break;
+  }
+ }
+}
+function YdZ6a(AfieldNr, Aidx) { // MTutorial__CPerson.messageGet
+ switch (AfieldNr)
+ {
+ case 4:
+  {
+   return ZListGet(this.Vf_phone, Aidx);
+  }
+ }
+ return null;
+}
+function YBqma(AfieldNr, Am) { // MTutorial__CPerson.messageAdd
+ switch (AfieldNr)
+ {
+ case 4:
+  {
+   if ((this.Vf_phone == null))
+   {
+    this.Vf_phone = [];
+   }
+   ZLa(this.Vf_phone, -1, Am);
+    break;
+  }
+ }
+}
+function YecSa(AfieldNr, Aformat, Areader) { // MTutorial__CPerson.mergeMessageFromReader
+ switch (AfieldNr)
+ {
+ case 4:
+  {
+   if ((this.Vf_phone == null))
+   {
+    this.Vf_phone = [];
+   }
+   var Vm = YUWc(null);
+   ZLa(this.Vf_phone, -1, Vm);
+   Areader.addRef(Vm);
+   Vm.mergeFromReader(Aformat, Areader);
+   return 1;
+  }
+ }
+ return 0;
+}
+function YT1aa(AfieldNr) { // MTutorial__CPerson.hasField
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.hasName();
+  }
+ case 2:
+  {
+   return this.hasId();
+  }
+ case 3:
+  {
+   return this.hasEmail();
+  }
+ }
+ return 0;
+}
+function YVsfa(AfieldNr) { // MTutorial__CPerson.size
+ switch (AfieldNr)
+ {
+ case 4:
+  {
+   return (((this.Vf_phone == null)) ? (0) : (this.Vf_phone.length));
+  }
+ }
+ return 0;
+}
+function Y8cba() { // MTutorial__CPerson.fieldSpecs
+ return YpbS;
+}
+function YBwy(Aformat, Areader) { // MTutorial__CPerson.mergeFromReader
+ Yngm(this, Aformat, YpbS, Areader);
+ return this;
+}
+function Yy1O(thisO) { // MTutorial__CAddressBook.NEW
+ if (!thisO) thisO = new YggY();
+ return thisO;
+}
+function YpkPa() { // MTutorial__CAddressBook.name
+ return "AddressBook";
+}
+function YiWD() { // MTutorial__CAddressBook.getPersonList
+ return this.Vf_person;
+}
+function Yi3Da(AfieldNr, Aidx) { // MTutorial__CAddressBook.messageGet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return ZListGet(this.Vf_person, Aidx);
+  }
+ }
+ return null;
+}
+function YGvTa(AfieldNr, Am) { // MTutorial__CAddressBook.messageAdd
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   if ((this.Vf_person == null))
+   {
+    this.Vf_person = [];
+   }
+   ZLa(this.Vf_person, -1, Am);
+    break;
+  }
+ }
+}
+function YN1Qa(AfieldNr, Aformat, Areader) { // MTutorial__CAddressBook.mergeMessageFromReader
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   if ((this.Vf_person == null))
+   {
+    this.Vf_person = [];
+   }
+   var Vm = YgTL(null);
+   ZLa(this.Vf_person, -1, Vm);
+   Areader.addRef(Vm);
+   Vm.mergeFromReader(Aformat, Areader);
+   return 1;
+  }
+ }
+ return 0;
+}
+function Yx9Ka(AfieldNr) { // MTutorial__CAddressBook.size
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return (((this.Vf_person == null)) ? (0) : (this.Vf_person.length));
+  }
+ }
+ return 0;
+}
+function Y37Ea() { // MTutorial__CAddressBook.fieldSpecs
+ return YDAS;
+}
+function YGIB(Areader) { // MTutorial__CAddressBook.mergeFromBinary
+ Y1co(this, YDAS, Areader);
+ return this;
+}
+function YoZG(Areader) { // MTutorial__CAddressBook.mergeFromJson
+ YsvG(this, YDAS, Areader);
+ return this;
+}
+function YIK8(Areader) { // MTutorial__CAddressBook__X.createMessageFromBinaryDeref
+ return Yg2I(Areader);
+}
+function Y5Vs(Areader) { // MTutorial__CAddressBook__X.createMessageFromJsonDeref
+ return Y2gv(Areader);
+}
+function Yg2I(Areader) { // MTutorial__CAddressBook__X.createFromBinaryDeref
+ return Yy1O(null).mergeFromBinary(YtIR(null, Areader, 1));
+}
+function Y2gv(Areader) { // MTutorial__CAddressBook__X.createFromJsonDeref
+ return Yy1O(null).mergeFromJson(YtIRa(null, Areader, 1));
+}
+function YVu2(thisO) { // MTutorial__CGetOptions.NEW
+ if (!thisO) thisO = new Yckw();
+ return thisO;
+}
+function YJ0Ea() { // MTutorial__CGetOptions.name
+ return "GetOptions";
+}
+function YAUM(Av) { // MTutorial__CGetOptions.setName
+ this.Vf_name = Av;
+ return this;
+}
+function YHye() { // MTutorial__CGetOptions.hasName
+ return (this.Vf_name != null);
+}
+function Y8Gy() { // MTutorial__CGetOptions.valid
+ return 1;
+}
+function Y2v2a(AfieldNr) { // MTutorial__CGetOptions.stringGet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.Vf_name;
+  }
+ }
+ return "";
+}
+function Y_Fya(AfieldNr, Avalue) { // MTutorial__CGetOptions.stringSet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   this.Vf_name = Avalue;
+    break;
+  }
+ }
+}
+function YPXNa(AfieldNr) { // MTutorial__CGetOptions.hasField
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.hasName();
+  }
+ }
+ return 0;
+}
+function YKIca() { // MTutorial__CGetOptions.fieldSpecs
+ return YZsK;
+}
+function YmNka() { // MTutorial__CStatus.name
+ return "Status";
+}
+function YdgU() { // MTutorial__CStatus.hasOk
+ return (this.Vf_ok != 0);
+}
+function Yc27() { // MTutorial__CStatus.hasError
+ return (this.Vf_error != null);
+}
+function YGI8a(AfieldNr) { // MTutorial__CStatus.boolGet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return (this.Vf_ok == 2);
+  }
+ }
+ return 0;
+}
+function YJyDa(AfieldNr, Avalue) { // MTutorial__CStatus.boolSet
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   this.Vf_ok = (((Avalue) ? (2) : (1)));
+    break;
+  }
+ }
+}
+function YJYPa(AfieldNr) { // MTutorial__CStatus.stringGet
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   return this.Vf_error;
+  }
+ }
+ return "";
+}
+function YMOja(AfieldNr, Avalue) { // MTutorial__CStatus.stringSet
+ switch (AfieldNr)
+ {
+ case 2:
+  {
+   this.Vf_error = Avalue;
+    break;
+  }
+ }
+}
+function YKyGa(AfieldNr) { // MTutorial__CStatus.hasField
+ switch (AfieldNr)
+ {
+ case 1:
+  {
+   return this.hasOk();
+  }
+ case 2:
+  {
+   return this.hasError();
+  }
+ }
+ return 0;
+}
+function YubJa() { // MTutorial__CStatus.fieldSpecs
+ return Y1gv;
+}
+function YBoY(Arequest, Adone) { // MTutorial__MAddressService.callGetAddressBook
+ if (!(Arequest.valid()))
+ {
+  return null;
+ }
+ return YUu6("AddressService.GetAddressBook", Arequest, Y5Vs, null, Adone);
+}
+function YsHW() { // MZwtDemoPage.init
+ var Vhello = Yjd7(null, "Hello, World!");
+ Vhello.setStyle(YH8J(null).setMarginBottom(10));
+ YbMN().add(Vhello);
+ YZSN();
+ YTzC();
+ Ydzc();
+ YLeN();
+ Y8Eu();
+ Ygic();
+ Y6Xi();
+ YD_Z();
+ YJe_();
+ YJXA();
+ YbMN().add(Y7Mca(null));
+ YbMN().add(YUJo(null, "Close", Yj0u));
+ YbMN().add(Y7Mca(null));
+ YbMN().add(YUJo(null, "Load adressbook", YUWi));
+}
+function YZSN() { // MZwtDemoPage.createTable
+ var Vt = YjIc(null);
+ Vt.setWidget(0, 0, Yjd7(null, "wrong"));
+ Vt.setWidget(0, 0, Yjd7(null, "0-0"));
+ {
+  var Vi;
+  var Zf1 = ZforRangeNew(1, 4, 0, 1);
+for (Vi = ZforRangeGet(Zf1); ZforRangeCont(Zf1); Vi = ZforRangeNext(Zf1)) {
+  Vt.setWidget(1, Vi, Yjd7(null, "1-" + "" + Vi));
+  }
+ }
+ var Vr2c0 = Yjd7(null, "row 2 col 0");
+ Vr2c0.setStyle(YH8J(null).setPaddingBot(10).setPaddingLeft(10));
+ Vt.setWidget(2, 0, Vr2c0);
+ {
+  var Vi;
+  var Zf1 = ZforRangeNew(5, 2, 0, -1);
+for (Vi = ZforRangeGet(Zf1); ZforRangeCont(Zf1); Vi = ZforRangeNext(Zf1)) {
+  Vt.setWidget(0, Vi, Yjd7(null, "row 0 col " + "" + Vi));
+  }
+ }
+ Vt.setStyle(YH8J(null).setBorderColor(YfEva(null, 255, 20, 20)).setBorderThickness(2).setBorderStyle(3).setMarginTop(10).setMarginBot(10));
+ var Vcs = YH8J(null).setBorderThickness(1).setBorderStyle(1).setBorderColor(YfEva(null, 20, 200, 20)).setPaddingTop(5).setMarginTop(17);
+ Vt.setCellStyle(0, 3, Vcs);
+ Vt.setCellStyle(0, 4, Vcs);
+ var Vrs = YH8J(null).setBorderThickness(5).setBorderStyle(4).setBorderColor(YfEva(null, 20, 20, 200));
+ Vt.setCellStyle(1, 1, Vrs);
+ var Vms = YH8J(null).setMarginLeft(10).setMarginRight(10).setPaddingTop(10).setMarginTop(8);
+ Vt.getWidget(0, 3).setStyle(Vms);
+ Vt.getWidget(0, 4).setStyle(Vms);
+ var Vmiddle = YH8J(null).setHorAlign(2).setVerAlign(2);
+ Vt.setCellStyle(0, 0, Vmiddle);
+ Vt.setCellStyle(1, 3, Vmiddle);
+ var Vtopright = YH8J(null).setHorAlign(4).setVerAlign(1);
+ Vt.setCellStyle(1, 4, Vtopright);
+ var Vbotleft = YH8J(null).setHorAlign(1).setVerAlign(4);
+ Vt.setCellStyle(1, 2, Vbotleft);
+ YbMN().add(Vt);
+}
+function YTzC() { // MZwtDemoPage.createButtons
+ YbMN().add(YUJo(null, "Create an alert", Yvju));
+ YbMN().add(YUJo(null, "Add something", YALH));
+ YbMN().add(YUJo(null, "Show Vertical panel", Y_IB));
+ YbMN().add(YUJo(null, "Show Horizontal panel", YTOB));
+}
+function Yvju(Ae) { // MZwtDemoPage.alert
+ Y7to("Alert button: " + MEventModule__EEventType[Ae.Vtype] + " event");
+}
+function YALH(Ae) { // MZwtDemoPage.say
+ var Vl = Yjd7(null, "Something");
+ Vl.setStyle(YH8J(null).setPaddingLeft(15));
+ YbMN().add(Vl);
+}
+function Y_IB(Ae) { // MZwtDemoPage.showVPanel
+ if ((YYlJ == null))
+ {
+  YYlJ = YY8Sa(null);
+  YYlJ.add(Yjd7(null, "This is a VerticalPanel"));
+  YYlJ.add(YUJo(null, "Remove panel", YIlD));
+  YbMN().add(YYlJ);
+ }
+}
+function YIlD(Ae) { // MZwtDemoPage.removeVPanel
+ if ((YYlJ != null))
+ {
+  YYlJ.clear();
+  YYlJ.removeFromParent();
+  YYlJ = null;
+ }
+}
+function YTOB(Ae) { // MZwtDemoPage.showHPanel
+ if ((Y4fJ == null))
+ {
+  Y4fJ = Y7Mca(null);
+  Y4fJ.add(Yjd7(null, "This is a Horizontal Panel"));
+  Y4fJ.add(YUJo(null, "Remove panel", YPfD));
+  YbMN().add(Y4fJ);
+ }
+}
+function YPfD(Ae) { // MZwtDemoPage.removeHPanel
+ if ((Y4fJ != null))
+ {
+  Y4fJ.clear();
+  Y4fJ.removeFromParent();
+  Y4fJ = null;
+ }
+}
+function Ydzc() { // MZwtDemoPage.createButtonTable
+ var Vbtable = YjIc(null);
+ Vbtable.setStyle(YH8J(null).setMarginTop(10).setMarginBot(10));
+ var Vsome = YUJo(null, "Change me", null);
+ YlDX = YH8J(null).setBGColor(YDgo);
+ Vsome.setStyle(YlDX);
+ Vbtable.setWidget(1, 1, Vsome);
+ Yivf = YH8J(null).setBGColor(YfEva(null, 190, 220, 90));
+ Yrfg = YH8J(null).clearBGColor();
+ var Vdown = YUJo(null, "VVVVV", Yhf2);
+ Vdown.setMouseOverHandler(Y5Dm);
+ Vdown.setMouseOutHandler(YuAg);
+ Vbtable.setWidget(0, 1, Vdown);
+ Vbtable.setCellStyle(0, 1, YH8J(null).setHorAlign(2));
+ var Vleft = YUJo(null, ">>>>", YGsg);
+ Vleft.setMouseOverHandler(Y5Dm);
+ Vleft.setMouseOutHandler(YuAg);
+ Vbtable.setWidget(1, 0, Vleft);
+ var Vright = YUJo(null, "<<<<", Y4B1);
+ Vright.setMouseOverHandler(Y5Dm);
+ Vright.setMouseOutHandler(YuAg);
+ Vbtable.setWidget(1, 2, Vright);
+ var Vup = YUJo(null, "^^^^", YhhY);
+ Vup.setMouseOverHandler(Y5Dm);
+ Vup.setMouseOutHandler(YuAg);
+ Vbtable.setWidget(2, 1, Vup);
+ Vbtable.setCellStyle(2, 1, YH8J(null).setHorAlign(2));
+ YbMN().add(Vbtable);
+}
+function Y5Dm(Ae) { // MZwtDemoPage.buttonOver
+ Ae.Vwidget.setStyle(Yivf);
+}
+function YuAg(Ae) { // MZwtDemoPage.buttonOut
+ Ae.Vwidget.setStyle(Yrfg);
+}
+function YLeN() { // MZwtDemoPage.createColorButtons
+ var Vcolors = Y7Mca(null);
+ var Vred = YY8Sa(null);
+ Vred.add(YUJo(null, "R ^", YTRm));
+ YvdVa = Yjd7(null, "" + YDgo.Vred + "");
+ Vred.add(YvdVa);
+ Vred.add(YUJo(null, "R V", YFMH));
+ Vcolors.add(Vred);
+ var Vgreen = YY8Sa(null);
+ Vgreen.add(YUJo(null, "G ^", Ykdv));
+ YVRF = Yjd7(null, "" + YDgo.Vgreen + "");
+ Vgreen.add(YVRF);
+ Vgreen.add(YUJo(null, "G V", YhZJ));
+ Vcolors.add(Vgreen);
+ var Vblue = YY8Sa(null);
+ Vblue.add(YUJo(null, "B ^", YmRu));
+ YAWR = Yjd7(null, "" + YDgo.Vblue + "");
+ Vblue.add(YAWR);
+ Vblue.add(YUJo(null, "B V", Yb5I));
+ Vcolors.add(Vblue);
+ YbMN().add(Vcolors);
+ YvdVa.setMouseOverHandler(YF5a);
+ YvdVa.setMouseOutHandler(Yvck);
+ YVRF.setMouseOverHandler(YF5a);
+ YVRF.setMouseOutHandler(Yvck);
+ YAWR.setMouseOverHandler(YF5a);
+ YAWR.setMouseOutHandler(Yvck);
+}
+function YF5a(Ae) { // MZwtDemoPage.helloOver
+ if ((YW3O == null))
+ {
+  YW3O = YH8J(null);
+  YW3O.setColor(YfEva(null, 0, 0, 255));
+ }
+ Ae.Vwidget.setStyle(YW3O);
+}
+function Yvck(Ae) { // MZwtDemoPage.helloOut
+ Ae.Vwidget.setStyle(null);
+}
+function YTRm(Ae) { // MZwtDemoPage.redUp
+ YDgo.setRed((YDgo.Vred + 10));
+ YvdVa.setText("" + YDgo.Vred + "");
+ YlDX.setBGColor(YDgo);
+}
+function YFMH(Ae) { // MZwtDemoPage.redDown
+ YDgo.setRed((YDgo.Vred - 10));
+ YvdVa.setText("" + YDgo.Vred + "");
+ YlDX.setBGColor(YDgo);
+}
+function Ykdv(Ae) { // MZwtDemoPage.greenUp
+ YDgo.setGreen((YDgo.Vgreen + 10));
+ YVRF.setText("" + YDgo.Vgreen + "");
+ YlDX.setBGColor(YDgo);
+}
+function YhZJ(Ae) { // MZwtDemoPage.greenDown
+ YDgo.setGreen((YDgo.Vgreen - 10));
+ YVRF.setText("" + YDgo.Vgreen + "");
+ YlDX.setBGColor(YDgo);
+}
+function YmRu(Ae) { // MZwtDemoPage.blueUp
+ YDgo.setBlue((YDgo.Vblue + 10));
+ YAWR.setText("" + YDgo.Vblue + "");
+ YlDX.setBGColor(YDgo);
+}
+function Yb5I(Ae) { // MZwtDemoPage.blueDown
+ YDgo.setBlue((YDgo.Vblue - 10));
+ YAWR.setText("" + YDgo.Vblue + "");
+ YlDX.setBGColor(YDgo);
+}
+function Y8Eu() { // MZwtDemoPage.horAndVer
+ YSOca = Y7Mca(null);
+ YSOca.add(Yjd7(null, "h1"));
+ var Vv2 = YY8Sa(null);
+ Vv2.add(Yjd7(null, "v2"));
+ Vv2.add(Yjd7(null, "Label"));
+ YSOca.add(Vv2);
+ var Vls = Yjd7(null, "L1111111");
+ YSOca.add(Vls);
+ Vls.setMouseOverHandler(YF5a);
+ Vls.setMouseOutHandler(Yvck);
+ YSOca.add(YUJo(null, "panel info", YOEn));
+ YbMN().add(YSOca);
+ YSOca.setStyle(YH8J(null).setMarginTop(10).setMarginBot(10));
+}
+function YOEn(Ae) { // MZwtDemoPage.showInfo
+ Y7to("topPanel: " + YSOca.ToString());
+}
+function Yhf2(Ae) { // MZwtDemoPage.toggleTopMargin
+ YlDX.setMarginTop((((YlDX.getMarginTop() > 0)) ? (0) : (20)));
+}
+function YGsg(Ae) { // MZwtDemoPage.toggleLeftMargin
+ YlDX.setMarginLeft((((YlDX.getMarginLeft() > 0)) ? (0) : (20)));
+}
+function Y4B1(Ae) { // MZwtDemoPage.toggleRightMargin
+ YlDX.setMarginRight((((YlDX.getMarginRight() > 0)) ? (0) : (20)));
+}
+function YhhY(Ae) { // MZwtDemoPage.toggleBottomMargin
+ YlDX.setMarginBot((((YlDX.getMarginBot() > 0)) ? (0) : (20)));
+}
+function Ygic() { // MZwtDemoPage.scrollPanel
+ Yeli = YpCw__Ydzz(null);
+ YZbc = YL_6(null, "top left top left top left top left top left");
+ YYbc = YL_6(null, "top middle top middle top middle top");
+ YTbc = YL_6(null, "top right top right top right top");
+ Ycnc = YL_6(null, "middle left middle left middle left");
+ Ybnc = YL_6(null, "middle middle middle middle middle");
+ Y6mc = YL_6(null, "middle right middle right middle");
+ YQEc = YL_6(null, "bottom left bottom left bottom left");
+ YPEc = YL_6(null, "bottom middle bottom middle bottom");
+ YKEc = YL_6(null, "bottom right bottom right bottom right");
+ var Vgrey = YH8J(null).setBGColor(YfEva(null, 230, 230, 230)).setWidth(100);
+ YYbc.setStyle(Vgrey);
+ Ycnc.setStyle(Vgrey);
+ Y6mc.setStyle(Vgrey);
+ YPEc.setStyle(Vgrey);
+ var Vtable = YjIc(null);
+ Vtable.setWidget(0, 0, YZbc);
+ Vtable.setWidget(0, 1, YYbc);
+ Vtable.setWidget(0, 2, YTbc);
+ Vtable.setWidget(1, 0, Ycnc);
+ Vtable.setWidget(1, 1, Ybnc);
+ Vtable.setWidget(1, 2, Y6mc);
+ Vtable.setWidget(2, 0, YQEc);
+ Vtable.setWidget(2, 1, YPEc);
+ Vtable.setWidget(2, 2, YKEc);
+ Yeli.add(Vtable);
+ var Vsps = YH8J(null).setWidth(150).setHeight(100).setBorderThickness(2).setBorderStyle(1).setBorderColor(YfEva(null, 200, 200, 200));
+ Yeli.setStyle(Vsps);
+ var VhorPanel = Y7Mca(null);
+ VhorPanel.add(Yeli);
+ var VverPanel = YY8Sa(null);
+ VhorPanel.add(VverPanel);
+ VverPanel.add(YUJo(null, "show top-left", Y0mc));
+ VverPanel.add(YUJo(null, "show bot-right", Y_uz));
+ VverPanel.add(YUJo(null, "show middle", Y3O8));
+ VverPanel = YY8Sa(null);
+ VhorPanel.add(VverPanel);
+ VverPanel.add(YUJo(null, "scroll Left", YEvY));
+ VverPanel.add(YUJo(null, "scroll 20 right", YmNJ));
+ VverPanel.add(YUJo(null, "scroll Right", Y4d6));
+ VverPanel = YY8Sa(null);
+ VhorPanel.add(VverPanel);
+ VverPanel.add(YUJo(null, "scroll Top", Y1Bo));
+ VverPanel.add(YUJo(null, "scroll 20 down", Y0uI));
+ VverPanel.add(YUJo(null, "scroll Bottom", YQfO));
+ YbMN().add(VhorPanel);
+}
+function Y0mc(Ae) { // MZwtDemoPage.showTopLeft
+ Yeli.ensureVisible(YZbc);
+}
+function Y_uz(Ae) { // MZwtDemoPage.showBotRight
+ Yeli.ensureVisible(YKEc);
+}
+function Y3O8(Ae) { // MZwtDemoPage.showMiddle
+ Yeli.ensureVisible(Ybnc);
+}
+function YEvY(Ae) { // MZwtDemoPage.gotoLeft
+ Yeli.scrollLeft();
+}
+function Y4d6(Ae) { // MZwtDemoPage.gotoRight
+ Yeli.scrollRight();
+}
+function YmNJ(Ae) { // MZwtDemoPage.gotoRight20
+ Yeli.scrollHorizontal((Yeli.getHorizontalScroll() + 20));
+}
+function Y1Bo(Ae) { // MZwtDemoPage.gotoTop
+ Yeli.scrollTop();
+}
+function YQfO(Ae) { // MZwtDemoPage.gotoBottom
+ Yeli.scrollBottom();
+}
+function Y0uI(Ae) { // MZwtDemoPage.gotoDown20
+ Yeli.scrollVertical((Yeli.getVerticalScroll() + 20));
+}
+function Yj0u(Ae) { // MZwtDemoPage.closeProc
+ var Vdialog = YILp__YXwX(null, Yjd7(null, "Really close?"), YnF7);
+ Vdialog.show();
+}
+function YnF7(Aok) { // MZwtDemoPage.doClose
+ if ((Aok == 1))
+ {
+  YbMN().clear();
+  YbMN().add(Yjd7(null, "Bye bye"));
+ }
+}
+function YMTZ(thisO, Aa) { // MZwtDemoPage__CTop.NEW
+ if (!thisO) thisO = new YEzw();
+ thisO.Va = "Top " + Aa;
+ return thisO;
+}
+function YMTZa(thisO, Aa, Ab) { // MZwtDemoPage__CTop.NEW
+ if (!thisO) thisO = new YEzw();
+ YMTZ(thisO, Aa);
+ thisO.Vb = Ab;
+ return thisO;
+}
+function YcTw() { // MZwtDemoPage__CTop.getA
+ return this.Va + " from Top";
+}
+function YdTw() { // MZwtDemoPage__CTop.getB
+ return this.Vb + " from Top";
+}
+function YCBG() { // MZwtDemoPage__CTop.getBoth
+ return this.getA() + " and " + this.getB();
+}
+function YMjva(thisO, Aa) { // MZwtDemoPage__CChild.NEW
+ if (!thisO) thisO = new YHHb();
+ thisO.Va = "Child " + Aa;
+ return thisO;
+}
+function YzRra() { // MZwtDemoPage__CChild.getB
+ return this.Vb + " from Child";
+}
+function YHHb__YMTZa(thisO, Aa, Ab) { // MZwtDemoPage__CChild.NEW__p1
+ if (!thisO) thisO = new YHHb();
+ YMjva(thisO, Aa);
+ thisO.Vb = Ab;
+ return thisO;
+}
+function Y6Xi() { // MZwtDemoPage.checkExtend
+ var Vpanel = YY8Sa(null);
+ var Vc = YHHb__YMTZa(null, "one", "two");
+ Vpanel.add(Yjd7(null, "Should say \"Child one\": " + Vc.Va));
+ Vpanel.add(Yjd7(null, "Should say \"Child one from Top and two from Child\": " + Vc.getBoth()));
+ YbMN().add(Vpanel);
+}
+function YTDg(At) { // YD_Z__CMyBuilder.get
+ return null;
+}
+function YD_Z() { // MZwtDemoPage.checkISA
+ var Vpanel = YY8Sa(null);
+ if (Vpanel instanceof YfXd)
+ {
+  Vpanel.add(Yjd7(null, "checkISA: OK"));
+ }
+ else
+ {
+  Vpanel.add(Yjd7(null, "checkISA: wrong for VerticalPanel"));
+ }
+ var VmyList = null;
+ var Vdummy = YY8Sa(null);
+ var VlistCtrl = Y_kp(null, Vdummy, VmyList, new YtdR());
+ if (Vpanel instanceof Y8bA)
+ {
+  Vpanel.add(Yjd7(null, "checkISA: wrong for panel"));
+ }
+ else {
+ if (!(VlistCtrl instanceof Y8bA))
+ {
+  Vpanel.add(Yjd7(null, "checkISA: wrong for ListController"));
+ }
+ else
+ {
+  Vpanel.add(Yjd7(null, "checkISA: OK"));
+ }
+ }
+ YbMN().add(Vpanel);
+}
+function Lambda0(As) { // YJe_.Lambda0
+ return As + As;
+}
+function Lambda1(Ai, As) { // YJe_.Lambda1
+ return "" + Ai + ": " + As;
+}
+function Lambda2(An) { // YJe_.Lambda2
+ return (An * 2);
+}
+function Lambda3(Ai, An) { // YJe_.Lambda3
+ return (An + Ai);
+}
+function YJe_() { // MZwtDemoPage.checkListMap
+ var Vpanel = YY8Sa(null);
+ var Vsl = ["one", "two", "three"];
+ Vpanel.add(Yjd7(null, "mapped string list: " + ZListToString(ZListMap(Vsl, Lambda0), 200, 1)));
+ Vpanel.add(Yjd7(null, "keymapped string list: " + ZListToString(ZListKeyMap(Vsl, Lambda1), 200, 1)));
+ var Vil = [11, 22, 33];
+ Vpanel.add(Yjd7(null, "mapped int list: " + ZListToString(ZListMap(Vil, Lambda2), 0, 1)));
+ Vpanel.add(Yjd7(null, "keymapped int list: " + ZListToString(ZListKeyMap(Vil, Lambda3), 0, 1)));
+ YbMN().add(Vpanel);
+}
+function YoK_(thisO, Aname) { // MZwtDemoPage__CFoo.NEW
+ if (!thisO) thisO = new YKAX();
+ thisO.Vname = Aname;
+ return thisO;
+}
+function Yn3L() { // MZwtDemoPage__CFoo.ToString
+ return this.Vname;
+}
+function YJXA() { // MZwtDemoPage.checkListJoin
+ var Vpanel = YY8Sa(null);
+ var Vsl = ["one", "two", "three"];
+ Vpanel.add(Yjd7(null, "joined string list: " + ZListJoin(Vsl, " ", 200, 0)));
+ Vpanel.add(Yjd7(null, "joined string list: " + ZListJoin(Vsl, "/", 200, 0)));
+ var Vil = [11, 22, 33];
+ Vpanel.add(Yjd7(null, "joined int list: " + ZListJoin(Vil, " ", 0, 0)));
+ Vpanel.add(Yjd7(null, "joined int list: " + ZListJoin(Vil, ", ", 0, 0)));
+ var Vol = ZLa(ZLa(ZLa([], -1, YoK_(null, "a")), -1, YoK_(null, "b")), -1, YoK_(null, "c"));
+ Vpanel.add(Yjd7(null, "joined object list: " + ZListJoin(Vol, " ", 390, 0)));
+ Vpanel.add(Yjd7(null, "joined object list: " + ZListJoin(Vol, "<=>", 390, 0)));
+ YbMN().add(Vpanel);
+}
+function YUWi(Ae) { // MZwtDemoPage.loadAddressBook
+ var Voptions = YVu2(null);
+ Voptions.setName("this is not used");
+ var Vcontrol = YBoY(Voptions, YGc3);
+}
+function YGc3(Acontrol, Amsg) { // MZwtDemoPage.gotAddressBook
+ var Vbook = Amsg;
+ if ((Yqz6 == null))
+ {
+  Yqz6 = YjIc(null);
+  YbMN().add(Yqz6);
+ }
+ else
+ {
+  Yqz6.clear();
+ }
+ var Vml = YH8J(null).setMarginLeft(10).setMarginRight(10);
+ var VoddStyle = YH8J(null).setBGColor(YfEva(null, 220, 220, 220));
+ var VevenStyle = YH8J(null).setBGColor(YfEva(null, 190, 190, 190));
+ if ((Vbook.getPersonList() == null))
+ {
+  Yl0k("personList is NIL");
+  return;
+ }
+ var Vrow = 0;
+ {
+  var Vperson;
+  var Zf1 = ZforListNew(Vbook.getPersonList());
+for (Vperson = ZforListGet(Zf1); ZforListCont(Zf1); Vperson = ZforListNext(Zf1)) {
+  var Vl = Yjd7(null, "Person: " + Vperson.getName());
+  Vl.setStyle(Vml);
+  Yqz6.setWidget(Vrow, 0, Vl);
+  Vl = Yjd7(null, "ID: " + "" + Vperson.getId());
+  Vl.setStyle(Vml);
+  Yqz6.setWidget(Vrow, 1, Vl);
+  if (Vperson.hasEmail())
+  {
+   Vl = Yjd7(null, Vperson.getEmail());
+   Vl.setStyle(Vml);
+   Yqz6.setWidget(Vrow, 2, Vl);
+  }
+  var Vvp = YY8Sa(null);
+  {
+   var Vphone;
+   var Zf2 = ZforListNew(Vperson.getPhoneList());
+for (Vphone = ZforListGet(Zf2); ZforListCont(Zf2); Vphone = ZforListNext(Zf2)) {
+   var Vhp = Y7Mca(null);
+   Vl = Yjd7(null, "tel: ");
+   Vl.setStyle(Vml);
+   Vhp.add(Vl);
+   Vhp.add(Yjd7(null, Vphone.getNumber()));
+   if (Vphone.hasType())
+   {
+    Vhp.add(Yjd7(null, ZSlice(MTutorial__CPerson__X__EPhoneType[Vphone.getType()], 1, -1, 0)));
+   }
+   Vvp.add(Vhp);
+   }
+  }
+  Yqz6.setWidget(Vrow, 3, Vvp);
+  if (((Vrow & 1) == 0))
+  {
+   Yqz6.setRowStyle(Vrow, VevenStyle);
+  }
+  else
+  {
+   Yqz6.setRowStyle(Vrow, VoddStyle);
+  }
+  ++(Vrow);
+  }
+ }
+}
+
+YsHW();
+    --></script>
+  </body>
+</html>

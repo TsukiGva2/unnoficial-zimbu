@@ -1,0 +1,79 @@
+# Test file for type type.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE TypeTest @public
+
+  PROC test() @public
+    IO.print("testdir/TypeTest.zu")
+    testSize()
+    testToString()
+    testType()
+    testEqual()
+    testCompare()
+  }
+
+  CLASS Foo
+    int $i
+  }
+
+  PROC testSize()
+    # The size may be different on 32 bit or 64 bit systems.
+    # Just check that the value is reasonable.
+    int i
+    int isize = i.Type().Size()
+    IO.print("int type size: " .. (isize >= 12 && isize <= 24))
+    float f
+    int fsize = f.Type().Size()
+    IO.print("float type size: " .. (fsize >= 12 && fsize <= 24))
+    Foo foo
+    int foosize = foo.Type().Size()
+    IO.print("object type size: " .. (foosize >= 12 && foosize <= 24))
+  }
+
+  PROC testType()
+    int i
+    IO.print("int type type: " .. i.Type().Type().ToString())
+  }
+  
+  PROC testToString()
+    int i
+    IO.print("int: " .. i.Type().ToString())
+    int8 i8
+    IO.print("int8: " .. i8.Type().ToString())
+    float f
+    IO.print("float: " .. f.Type().ToString())
+    string s
+    IO.print("string: " .. s.Type().ToString())
+    Foo foo
+    IO.print("foo: " .. foo.Type().ToString())
+  }
+  
+  PROC testEqual()
+    int i
+    int j
+    float f
+    Foo foo
+    Foo foo2
+    IO.print("int is int: " .. i.Type().Equal(j.Type()))
+    IO.print("int is float: " .. i.Type().Equal(f.Type()))
+    IO.print("Foo is float: " .. foo.Type().Equal(f.Type()))
+    IO.print("Foo is Foo: " .. foo.Type().Equal(foo2.Type()))
+  }
+
+  PROC testCompare()
+    int i
+    int j
+    float f
+    Foo foo
+    Foo foo2
+    IO.print("int vs int: " .. i.Type().Compare(j.Type()))
+    IO.print("int vs float: " .. i.Type().Compare(f.Type()))
+    IO.print("float vs int: " .. f.Type().Compare(i.Type()))
+    IO.print("Foo vs float: " .. foo.Type().Compare(f.Type()))
+    IO.print("Foo vs Foo: " .. foo.Type().Compare(foo2.Type()))
+  }
+}

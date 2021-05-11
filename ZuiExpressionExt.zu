@@ -1,0 +1,82 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.Expression message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "CodeProperties.zu"
+IMPORT "Conversion.zu"
+IMPORT "Declaration.zu"
+IMPORT "ClassType.zu"
+IMPORT "Parse.zu"
+IMPORT "Type.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiExpressionExt @items=public
+  Type           $leftExprType
+  Type           $rightExprType
+  Type           $resultType
+  Type           $noAllocType
+  Declaration    $decl
+  Conversion     $conversion
+  ClassType      $retClass
+  string         $toplevelVar
+  Declaration    $tempDecl
+  CodeProperties $props
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.Expression, ZuiExpressionExt> $ext
+  }
+
+  SHARED
+
+    int undefinedInit = 81
+
+    # Set expr.undefined from the lhs.undefined and rhs.undefined. 
+    PROC setUndefined(Zui.Expression expr)
+      VAR exprExt = get(expr)
+      exprExt.undefined = 0
+      IF expr.hasLeft()
+        exprExt.undefined += get(expr.getLeft()).undefined
+      }
+      IF expr.hasRight()
+        exprExt.undefined += get(expr.getRight()).undefined
+      }
+      IF expr.hasCond()
+        exprExt.undefined += get(expr.getCond()).undefined
+      }
+    }
+
+    # For debugging: recursively report undefined count.
+    PROC reportUndefined(string what, Zui.Expression expr)
+      IO.print("\(what): \(expr.getType()) \(get(expr).undefined)")
+      IF expr.hasLeft()
+        reportUndefined(what .. "-left", expr.getLeft())
+      }
+      IF expr.hasRight()
+        reportUndefined(what .. "-right", expr.getRight())
+      }
+      IF expr.hasCond()
+        reportUndefined(what .. "-cond", expr.getCond())
+      }
+      IF expr.hasMethodCall()
+        reportUndefined(what .. "-call", expr.getMethodCall())
+      }
+    }
+
+    PROC reportUndefined(string what, Zui.MethodCall call)
+      reportUndefined(what .. "-name", call.getName())
+      FOR arg IN call.getArgumentList()
+        reportUndefined(what .. "-arg", arg)
+      }
+    }
+
+  }
+}

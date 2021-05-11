@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>HTTP.Request class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='HTTP.html'>up:&nbsp;HTTP</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> HTTP.Request
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The HTTP request fields.
+</p>
+<table><tr><td align='right'><small><span class='type'><A class='typehref' href='HTTP.RequestType.html'>HTTP.RequestType</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$type'><b>$type</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The type of request.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$path'><b>$path</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The path found in the request, up to
+ any '?'.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$params'><b>$params</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> "?arg=val&amp;arg=val"  without the '?'.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$httpVersion'><b>$httpVersion</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> HTTP version from the first line
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$headerItems'><b>$headerItems</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Items found in the header.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Request.html#$body'><b>$body</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> for a POST: the data
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='HTTP.Request.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Request.html#$paramDict'><b>$paramDict</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get a dictionary with the parameters, the "key=value" that come after a
+ "?" in the URL and are separated with "&amp;".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Request.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string with all the information of this request.
+ To be used for debugging.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span>&nbsp;<A name='$body'><b>$body</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> for a POST: the data
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='$headerItems'><b>$headerItems</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Items found in the header.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$httpVersion'><b>$httpVersion</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> HTTP version from the first line
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$params'><b>$params</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> "?arg=val&amp;arg=val"  without the '?'.
+</p>
+<p class='ptext'> If there is no ? in the path then NIL.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$path'><b>$path</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> The path found in the request, up to
+ any '?'.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='HTTP.RequestType.html'>HTTP.RequestType</A></span>&nbsp;<A name='$type'><b>$type</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> The type of request.
+</p>
+<p class='ptext'> Usually this is RequestType.get or
+ RequestType.post.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string with all the information of this request.
+ To be used for debugging.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$paramDict'><b>$paramDict</b></A>() <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get a dictionary with the parameters, the "key=value" that come after a
+ "?" in the URL and are separated with "&amp;".
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

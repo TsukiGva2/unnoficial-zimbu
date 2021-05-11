@@ -1,0 +1,46 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ValueType class.
+#
+# A Type used for variables with "pass by value" semantics
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Type.zu"
+
+CLASS ValueType EXTENDS Type @items=public
+  int $decimals    # for Type.Enum.fixed
+
+  int $value       # For an enum entry and a literal BITS value
+
+  int $mask        # used for BITS members: masks off used bits
+  int $shift       # used for BITS members: bit shift
+
+  FUNC $isValueType() bool @replace
+    RETURN TRUE
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    ValueType.C ret = NEW($ttype, $name)
+    $copyValueValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyValueValues(ValueType ret) @default
+    $copyTypeValues(ret)
+    ret.decimals = $decimals
+    ret.value = $value
+    ret.mask = $mask
+    ret.shift = $shift
+  }
+
+  FUNC $isManaged() bool @replace @default
+    RETURN FALSE
+  }
+}

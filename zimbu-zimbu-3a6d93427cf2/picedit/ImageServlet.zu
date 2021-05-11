@@ -1,0 +1,26 @@
+# A servlet that reads an image file and returns it to the browser.
+#
+# Copyright 2016 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS ImageServlet EXTENDS HTTP.Servlet
+
+  NEW()
+    $addPath("/image")
+  }
+
+  FUNC $serve(HTTP.Context context) bool @replace @public
+    VAR params = context.request.paramDict()
+    IF !params.has("dir") || !params.has("file")
+      RETURN FALSE
+    }
+
+    string filename = params["dir"] .. "/" .. params["file"]
+    context.response.body = IO.readFile(filename)
+
+    $setMimeType("binary/image")
+    RETURN TRUE
+  }
+}

@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT.TableRow class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZWT.html'>up:&nbsp;ZWT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZWT.TableRow
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A row in the table.
+</p>
+<p class='ptext'> The number of entries is flexible, each row can have a different size.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a new, empty table row.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Return "Row(item, item, ...)"
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Return the size of the row, the number of entries.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$resize'><b>$resize</b></a>(<small>len</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Resize the row to be <b>len</b> entries long.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$addCell'><b>$addCell</b></a>(<small></small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Add an empty cell to the row.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$deleteCell'><b>$deleteCell</b></a>(<small>idx</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Delete cell <b>idx</b> from the row.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$setWidget'><b>$setWidget</b></a>(<small>idx, widget</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the widget at position <b>idx</b>.  Resizes the row as needed.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$getWidget'><b>$getWidget</b></a>(<small>colIdx</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Get the Widget at column <b>colIdx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.TableRow.html#$setColStyle'><b>$setColStyle</b></a>(<small>colIdx, style</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the style for the widget at column <b>colIdx</b>
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='ZWT.UIObject.html'>ZWT.UIObject</A>:</td></tr>
+
+<tr><td align='right'><small><span class='type'><A class='typehref' href='ZWT.Element.html'>ZWT.Element</A></span></small>&nbsp;</td><td class='nowrap'><A href='ZWT.UIObject.html#$elem'><b>$elem</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The HTML element for this Item.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyle'><b>$setStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the main Style for this UIObject to <b>style</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyleList'><b>$setStyleList</b></a>(<small>styles</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the list of Styles for this UIObject to <b>styles</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$addStyle'><b>$addStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>style</b> to this UIObject, keeping previously set ones.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$removeStyle'><b>$removeStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>style</b> from this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyle'><b>$getStyle</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the main Style for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyleList'><b>$getStyleList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='ZWT.Style.html'>ZWT.Style</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the list of Styles for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getWidth'><b>$getWidth</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the width of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getHeight'><b>$getHeight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the height of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setHidden'><b>$setHidden</b></a>(<small>hidden</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item to be hidden or displayed.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new, empty table row.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the size of the row, the number of entries.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return "Row(item, item, ...)"
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addCell'><b>$addCell</b></A>()<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an empty cell to the row.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$deleteCell'><b>$deleteCell</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Delete cell <b>idx</b> from the row.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getWidget'><b>$getWidget</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> colIdx) <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the Widget at column <b>colIdx</b>.
+</p>
+<p class='ptext'> Returns NIL when not found
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$resize'><b>$resize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> len)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Resize the row to be <b>len</b> entries long.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setColStyle'><b>$setColStyle</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> colIdx, <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span> style)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the style for the widget at column <b>colIdx</b>
+</p>
+<p class='ptext'> Doesn't work well.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setWidget'><b>$setWidget</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx, <span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span> widget)<span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the widget at position <b>idx</b>.  Resizes the row as needed.
+</p>
+</td></tr></table></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

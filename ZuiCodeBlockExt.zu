@@ -1,0 +1,28 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Extension to the Zui.CodeBlock message.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Scope.zu"
+IMPORT "ZuiExt.zu"
+
+CLASS ZuiCodeBlockExt @items=public
+  Scope $scope
+
+  INCLUDE
+    # introduces the get() method
+    ZuiExt<Zui.CodeBlock, ZuiCodeBlockExt> $ext
+  }
+
+  SHARED
+    int undefinedInit = 75
+  }
+
+}

@@ -1,0 +1,42 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ForLoopInfo class.  Used to store information about a FOR loop.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "Type.zu"
+
+# Info put in the scope of a FOR loop
+CLASS ForLoopInfo @items=public
+  Zui.ForStatement  $forStmt
+  
+  # One iterable item after IN.
+  CLASS Iter @items=public
+    # The variable that stores information about what's being iterated over.
+    # When using an iterator it is the iterator object.
+    Declaration       $varDecl
+
+    # When not NIL: Iterator() method to call for the object being iterated
+    # over: "FOR i IN iterable"
+    Declaration       $iteratorMethod
+
+    # TRUE when the expression results in an iterator.
+    bool              $isIterator
+
+    # Type of the iterator being used.  Either the return type of
+    # $iteratorMethod or the iterator of "FOR i IN iterator"
+    Type              $iteratorType
+  }
+
+  list<Iter>     $iters
+
+  # Dummy expression, it holds the tempDecl used for "FOR i, j IN x"
+  Zui.Expression    $multiExpr
+}

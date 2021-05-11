@@ -1,0 +1,376 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>DICT.dict class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='DICT.html'>up:&nbsp;DICT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.dict&lt;Tkey, Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type dict.
+</p>
+<p class='ptext'> A dict contains zero or more items of the item type specified in the
+ declaration, looked up by a key.
+<p class='ptext'> The key can be a number, string, enum, bool, status or an object.  In
+ case of an object its identity is used, thus two different objects
+ with the exactly the same value function as different keys.
+<p class='ptext'> Besides the object methods, Zimbu has these syntax items for dict:
+<pre class='example'> dict&lt;string, int&gt; dict = ["one": 1, "two": 2]  # dict initializer
+ dict&lt;string, int&gt; dict = O["one": 1, "two": 2] # idem, with ordered keys
+ string s = dict["one"]                         # get dict item by key
+ intdict["nine"] = 9                            # set dict item by key
+ dict&lt;string, bool&gt; another = [:]               # empty dict initializer
+</pre>
+<p class='ptext'>
+ When getting an item by index with <span class='commentcode'>intdict[key]</span> and the key does not
+ exist this throws an exception.
+<p class='ptext'> When setting an item by key with <span class='commentcode'>intdict[key] = value</span> and the key
+ already exists the value is overwritten, just like with $set().  Use
+ $add() to throw an exception for this situation.
+<p class='ptext'> Optionally the dict can be created ordered. It then uses a list to
+ remember the order in which keys were added.  ToString(), keys() and
+ values() will then have the items in the order they were added.  This has
+ a small overhead.  Without the list the order of items depends on the
+ hash value and the number of items, which is rather arbitrary.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new, empty dictionary.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#NEW'><b>NEW</b></a>(<small>ordered</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new, empty dictionary.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items in the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$isOrdered'><b>$isOrdered</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return whether this dict keeps ordering of items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a shallow copy of the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the dict with specified formatting.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$Type'><b>$Type</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the type of the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$has'><b>$has</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when there is an item with key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$get'><b>$get</b></a>(<small>key</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of the item with key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$get'><b>$get</b></a>(<small>key, default</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of the item with key <b>key</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$getByIndex'><b>$getByIndex</b></a>(<small>idx</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of the item at index <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$getByIndex'><b>$getByIndex</b></a>(<small>idx, default</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of the item at index <b>idx</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$add'><b>$add</b></a>(<small>key, value</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the value of the item with key <b>key</b> to <b>value</b>.
+ Throws an exception when <b>key</b> is already present.
+ Use $set() if that is not wanted.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$set'><b>$set</b></a>(<small>key, value</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the value of the item with key <b>key</b> to <b>value</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$clear'><b>$clear</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes all items from the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$clear'><b>$clear</b></a>(<small>key</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the item with key <b>key</b> and returns the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$remove'><b>$remove</b></a>(<small>key</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Removes the item with key <b>key</b> and returns the removed value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$keys'><b>$keys</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns a list with all the keys of the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$values'><b>$values</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns a list with all the values of the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$map'><b>$map</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item value.  Each item is replaced by the
+ result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$keyMap'><b>$keyMap</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item key and value.  Each item is replaced
+ by the result of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$mapTo'><b>$mapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new dict where each item is the result of executing function <b>f</b>
+ on each item value of this dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$keyMapTo'><b>$keyMapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new dict where each item is the result of executing function <b>f</b>
+ on each item key and value of this dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$forEach'><b>$forEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item value in the dict.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='DICT.dict.html#$forKeyEach'><b>$forKeyEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item key and value in the dict.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new, empty dictionary.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> ordered)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new, empty dictionary.
+</p>
+<p class='ptext'> When <b>ordered</b> is TRUE keep the order in which the items were added.
+ values() and keys() return the items in that order.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items in the dict.
+</p>
+<p class='ptext'> When used on NIL Size() returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the dict.
+</p>
+<p class='ptext'> Starts with "[" and ends in "]". Between the key and the
+ item ": " is used.  Key-item pairs are separated with ", ".
+<p class='ptext'> An empty dict returns "[:]".
+<pre class='example'> string s = ["a": 12, "b": 34].ToString()
+ # s == "["a": 12, "b": 34]".
+</pre>
+<p class='ptext'>
+ A NIL dict returns "NIL"
+<p class='ptext'> Each item is converted to a string by calling its ToString() method, if
+ there is one.
+<p class='ptext'> The order of items is unpredictable, unless this is an ordered dict, then
+ the items will be in the order they were added.
+<p class='ptext'> If the dict contains itself somehow, instead of recursing
+ "[recursive-dict]" will be used.  However, if multiple threads are doing
+ this for the same dict the effect is unpredictable.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the dict with specified formatting.
+</p>
+<p class='ptext'> Currently works like ToString() without a format argument.
+<p class='ptext'> TODO: limit depth, limit number of items (like string truncation,
+ optional ellipses), etc.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Type'><b>$Type</b></A>() <span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the type of the dict.
+</p>
+<p class='ptext'> Invoking ToString() on the returned type results in something like
+ "dict&lt;string, int&gt;".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> value) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the value of the item with key <b>key</b> to <b>value</b>.
+ Throws an exception when <b>key</b> is already present.
+ Use $set() if that is not wanted.
+</p>
+<p class='ptext'> Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>() <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes all items from the dict.
+</p>
+<p class='ptext'> Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clear'><b>$clear</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the item with key <b>key</b> and returns the dict.
+</p>
+<p class='ptext'> Throws an exception when <b>key</b> is not present in the dict.
+<p class='ptext'> Returns the dict.  $remove(key) does the same but returns the value.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a shallow copy of the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEach'><b>$forEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Titem&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item value in the dict.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the value.
+<p class='ptext'> The order in which <b>f</b> is called for each item is undefined.
+<p class='ptext'> Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEach'><b>$forKeyEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Tkey, Titem&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item key and value in the dict.
+</p>
+<p class='ptext'> The first argument for f is the key, the second argument is the value.
+<p class='ptext'> The order in which <b>f</b> is called for each item is undefined.
+<p class='ptext'> Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of the item with key <b>key</b>.
+</p>
+<p class='ptext'> Throws an exception when <b>key</b> is not present in the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$get'><b>$get</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> default) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of the item with key <b>key</b>.
+</p>
+<p class='ptext'> When <b>key</b> is not present in the dict returns <b>default</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getByIndex'><b>$getByIndex</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of the item at index <b>idx</b>.
+</p>
+<p class='ptext'> Throws an exception when the dict is not ordered and when <b>idx</b> is out of
+ range.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getByIndex'><b>$getByIndex</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> idx, <span class='type'>Titem</span> default) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of the item at index <b>idx</b>.
+</p>
+<p class='ptext'> Returns <b>default</b> when the dict is not ordered or when <b>idx</b> is out of
+ range.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Tkey</span> key) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when there is an item with key <b>key</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$isOrdered'><b>$isOrdered</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return whether this dict keeps ordering of items.
+</p>
+<p class='ptext'> When the order in which items are added is remembered, values() and
+ keys() return the items in that order.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMap'><b>$keyMap</b></A>(<span class='type'><span class='type'>func</span>&lt;Tkey, Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item key and value.  Each item is replaced
+ by the result of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The key and the value of the item.  <b>f</b> must
+ return the new value of the item.
+<pre class='example'> dict&lt;int, string&gt; d = [1: "a", 2: "b", 3: "c"]
+ d.keyMap({ k, v =&gt; k .. "/" .. v })
+ # d == [1: "1/a", 2: "2/b", 3: "3/c"]
+</pre>
+<p class='ptext'>
+ Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapTo'><b>$keyMapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;Tkey, Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new dict where each item is the result of executing function <b>f</b>
+ on each item key and value of this dict.
+</p>
+<p class='ptext'> This is like keyMap() but with a different result type.
+<p class='ptext'> If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> <b>f</b> has two arguments: The key in the dict and the value of the item.
+ <b>f</b> must return the value for the new dict.
+<pre class='example'> dict&lt;string, int&gt; id = ["one": 11, "two": 22, "three": 33]
+ dict&lt;string, string&gt; sd = id.keyMapTo({ k, n =&gt; k .. ": " .. n })
+ # sd == ["one": "one: 11", "two": "two: 22", "three": "three: 33"]
+</pre>
+<p class='ptext'>
+ Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keys'><b>$keys</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Tkey&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns a list with all the keys of the dict.
+</p>
+<p class='ptext'> The order is undefined, unless this is an ordered dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$map'><b>$map</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item value.  Each item is replaced by the
+ result of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value of the item, and must
+ return the new value of the item.
+<pre class='example'> dict&lt;int, string&gt; d = [1: "a", 2: "b", 3: "c"]
+ d.map({ s =&gt; s .. "+" })
+ # d == [1: "a+", 2: "b+", 3: "c+"]
+</pre>
+<p class='ptext'>
+ Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapTo'><b>$mapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new dict where each item is the result of executing function <b>f</b>
+ on each item value of this dict.
+</p>
+<p class='ptext'> This is like map() but with a different result type.
+<p class='ptext'> If this dict is ordered, the resulting dict will also be ordered, thus
+ the order of keys remains the same
+<p class='ptext'> <b>f</b> has one argument, which is the value of the item, and must return the
+ value for the new dict.
+<pre class='example'> dict&lt;string, int&gt; id = ["one": 1, "two": 2, "three": 3]
+ dict&lt;string, string&gt; sd = id.mapTo({ n =&gt; n .. ":" })
+ # sd == ["one": "1:", "two": "2:", "three": "3:"]
+</pre>
+<p class='ptext'>
+ Returns the new dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>(<span class='type'>Tkey</span> key) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Removes the item with key <b>key</b> and returns the removed value.
+</p>
+<p class='ptext'> Throws an exception when <b>key</b> is not present in the dict.
+<p class='ptext'> Returns the value of the removed item.  $clear(key) does the same but
+ returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'>Tkey</span> key, <span class='type'>Titem</span> value) <span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;Tkey, Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the value of the item with key <b>key</b> to <b>value</b>.
+</p>
+<p class='ptext'> When <b>key</b> is already present in the dict the value is replaced.
+ Use $add() to disallow replacing.
+<p class='ptext'> Returns the dict.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$values'><b>$values</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns a list with all the values of the dict.
+</p>
+<p class='ptext'> The order is undefined, unless this is an ordered dict.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

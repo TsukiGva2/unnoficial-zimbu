@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  RETURN 0
+}
+
+CLASS test11
+  int $i
+}

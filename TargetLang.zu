@@ -1,0 +1,14 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# TargetLang bits: Possible target languages.
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+BITS TargetLang
+  bool  $c
+  bool  $js
+}

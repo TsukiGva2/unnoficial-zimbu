@@ -1,0 +1,341 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module DICT - dictionary support
+#
+
+#= Methods for the builtin dict type.
+#= An dict contains zero or more items of the type specified in the
+#= declaration.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE DICTModule @public
+
+  #= The builtin type dict.
+  #- A dict contains zero or more items of the item type specified in the
+  #- declaration, looked up by a key.
+  #
+  #- The key can be a number, string, enum, bool, status or an object.  In
+  #- case of an object its identity is used, thus two different objects
+  #- with the exactly the same value function as different keys.
+  #
+  #- Besides the object methods, Zimbu has these syntax items for dict:
+  #% dict<string, int> dict = ["one": 1, "two": 2]  # dict initializer
+  #% dict<string, int> dict = O["one": 1, "two": 2] # idem, with ordered keys
+  #% string s = dict["one"]                         # get dict item by key
+  #% intdict["nine"] = 9                            # set dict item by key
+  #% dict<string, bool> another = [:]               # empty dict initializer
+  #
+  #- When getting an item by index with `intdict[key]` and the key does not
+  #- exist this throws an exception.
+  #
+  #- When setting an item by key with `intdict[key] = value` and the key
+  #- already exists the value is overwritten, just like with $set().  Use
+  #- $add() to throw an exception for this situation.
+  #
+  #- Optionally the dict can be created ordered. It then uses a list to
+  #- remember the order in which keys were added.  ToString(), keys() and
+  #- values() will then have the items in the order they were added.  This has
+  #- a small overhead.  Without the list the order of items depends on the
+  #- hash value and the number of items, which is rather arbitrary.
+  CLASS STARTdict<Tkey, Titem> @public
+    # For Zudocu: start of dict class.
+    # This is not an actual class to make generating code easier.
+
+    #= Create a new, empty dictionary.
+    NEW() @public
+      ###### Only for generating documentation.
+    }
+
+    #= Create a new, empty dictionary.
+    #- When |ordered| is TRUE keep the order in which the items were added.
+    #- values() and keys() return the items in that order.
+    NEW(bool ordered) @public
+      ###### Only for generating documentation.
+    }
+  }
+
+  #= Return the number of items in the dict.
+  #- When used on NIL Size() returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size<Tkey, Titem>(dict<Tkey, Titem> this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return whether this dict keeps ordering of items.
+  #- When the order in which items are added is remembered, values() and
+  #- keys() return the items in that order.
+  FUNC isOrdered<Tkey, Titem>(dict<Tkey, Titem> this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a shallow copy of the dict.
+  FUNC copy<Tkey, Titem>(dict<Tkey, Titem> this) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a string representation of the dict.
+  #- Starts with "[" and ends in "]". Between the key and the
+  #- item ": " is used.  Key-item pairs are separated with ", ".
+  #
+  #- An empty dict returns "[:]".
+  #% string s = ["a": 12, "b": 34].ToString()
+  #% # s == "["a": 12, "b": 34]".
+  #
+  #- A NIL dict returns "NIL"
+  #
+  #- Each item is converted to a string by calling its ToString() method, if
+  #- there is one.
+  #
+  #- The order of items is unpredictable, unless this is an ordered dict, then
+  #- the items will be in the order they were added.
+  #
+  #- If the dict contains itself somehow, instead of recursing
+  #- "[recursive-dict]" will be used.  However, if multiple threads are doing
+  #- this for the same dict the effect is unpredictable.
+  FUNC ToString<Tkey, Titem>(dict<Tkey, Titem> this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a string representation of the dict with specified formatting.
+  #- Currently works like ToString() without a format argument.
+  #
+  #- TODO: limit depth, limit number of items (like string truncation,
+  #- optional ellipses), etc.
+  FUNC ToString<Titem>(dict<Tkey, Titem> this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN ""
+  }
+
+  #= Return the type of the dict.
+  #- Invoking ToString() on the returned type results in something like
+  #- "dict<string, int>".
+  FUNC Type<Titem>(dict<Tkey, Titem> this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return TRUE when there is an item with key |key|.
+  FUNC has<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the value of the item with key |key|.
+  #- Throws an exception when |key| is not present in the dict.
+  FUNC get<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the value of the item with key |key|.
+  #- When |key| is not present in the dict returns |default|.
+  FUNC get<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key, Titem default
+                       ) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the value of the item at index |idx|.
+  #- Throws an exception when the dict is not ordered and when |idx| is out of
+  #- range.
+  FUNC getByIndex<Tkey, Titem>(dict<Tkey, Titem> this, int idx) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the value of the item at index |idx|.
+  #- Returns |default| when the dict is not ordered or when |idx| is out of
+  #- range.
+  FUNC getByIndex<Tkey, Titem>(dict<Tkey, Titem> this, int idx, Titem default
+                              ) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Set the value of the item with key |key| to |value|.
+  #= Throws an exception when |key| is already present.
+  #= Use $set() if that is not wanted.
+  #
+  #- Returns the dict.
+  FUNC add<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key, Titem value
+                       ) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Set the value of the item with key |key| to |value|.
+  #- When |key| is already present in the dict the value is replaced.
+  #- Use $add() to disallow replacing.
+  #
+  #- Returns the dict.
+  FUNC set<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key, Titem value
+                       ) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Removes all items from the dict.
+  #- Returns the dict.
+  FUNC clear<Tkey, Titem>(dict<Tkey, Titem> this) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Removes the item with key |key| and returns the dict.
+  #- Throws an exception when |key| is not present in the dict.
+  #
+  #- Returns the dict.  $remove(key) does the same but returns the value.
+  FUNC clear<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key
+                         ) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Removes the item with key |key| and returns the removed value.
+  #- Throws an exception when |key| is not present in the dict.
+  #
+  #- Returns the value of the removed item.  $clear(key) does the same but
+  #- returns the dict.
+  FUNC remove<Tkey, Titem>(dict<Tkey, Titem> this, Tkey key) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Returns a list with all the keys of the dict.
+  #- The order is undefined, unless this is an ordered dict.
+  FUNC keys<Tkey, Titem>(dict<Tkey, Titem> this) list<Tkey> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Returns a list with all the values of the dict.
+  #- The order is undefined, unless this is an ordered dict.
+  FUNC values<Tkey, Titem>(dict<Tkey, Titem> this) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Execute function |f| on each item value.  Each item is replaced by the
+  #= result of the function.
+  #- |f| has one argument, which is the current value of the item, and must
+  #- return the new value of the item.
+  #% dict<int, string> d = [1: "a", 2: "b", 3: "c"]
+  #% d.map({ s => s .. "+" })
+  #% # d == [1: "a+", 2: "b+", 3: "c+"]
+  #
+  #- Returns the dict.
+  FUNC map<Tkey, Titem>(dict<Tkey, Titem> this, func<Titem => Titem> f
+                       ) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Execute function |f| on each item key and value.  Each item is replaced
+  #= by the result of the function.
+  #- |f| has two arguments: The key and the value of the item.  |f| must
+  #- return the new value of the item.
+  #% dict<int, string> d = [1: "a", 2: "b", 3: "c"]
+  #% d.keyMap({ k, v => k .. "/" .. v })
+  #% # d == [1: "1/a", 2: "2/b", 3: "3/c"]
+  #
+  #- Returns the dict.
+  FUNC keyMap<Tkey, Titem>(dict<Tkey, Titem> this,
+                           func<Tkey, Titem => Titem> f
+                          ) dict<Tkey, Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Create a new dict where each item is the result of executing function |f|
+  #= on each item value of this dict.
+  #- This is like map() but with a different result type.
+  #
+  #- If this dict is ordered, the resulting dict will also be ordered, thus
+  #- the order of keys remains the same
+  #
+  #- |f| has one argument, which is the value of the item, and must return the
+  #- value for the new dict.
+  #% dict<string, int> id = ["one": 1, "two": 2, "three": 3]
+  #% dict<string, string> sd = id.mapTo({ n => n .. ":" })
+  #% # sd == ["one": "1:", "two": "2:", "three": "3:"]
+  #
+  #- Returns the new dict.
+  FUNC mapTo<Tkey, Titem, Tresult>(dict<Tkey, Titem> this,
+                                   func<Titem => Tresult> f
+                                  ) dict<Tkey, Tresult> @public
+    dict<Tkey, Tresult> r = NEW(this.isOrdered())
+    FOR key IN this.keys()
+      r.add(key, f(this[key]))
+    }
+    RETURN r
+  }
+
+  #= Create a new dict where each item is the result of executing function |f|
+  #= on each item key and value of this dict.
+  #- This is like keyMap() but with a different result type.
+  #
+  #- If this dict is ordered, the resulting dict will also be ordered, thus
+  #- the order of keys remains the same
+  #
+  #- |f| has two arguments: The key in the dict and the value of the item.
+  #- |f| must return the value for the new dict.
+  #% dict<string, int> id = ["one": 11, "two": 22, "three": 33]
+  #% dict<string, string> sd = id.keyMapTo({ k, n => k .. ": " .. n })
+  #% # sd == ["one": "one: 11", "two": "two: 22", "three": "three: 33"]
+  #
+  #- Returns the dict.
+  FUNC keyMapTo<Tkey, Titem, Tresult>(dict<Tkey, Titem> this,
+                                      func<Tkey, Titem => Tresult> f
+                                     ) dict<Tkey, Tresult> @public
+    dict<Tkey, Tresult> r = NEW(this.isOrdered())
+    FOR key IN this.keys()
+      r.add(key, f(key, this[key]))
+    }
+    RETURN r
+  }
+
+  #= Call method |f| for every item value in the dict.
+  #- The argument for |f| is the value.
+  #
+  #- The order in which |f| is called for each item is undefined.
+  #
+  #- Returns the dict.
+  FUNC forEach<Tkey, Titem>(dict<Tkey, Titem> this,
+                            proc<Titem> f
+                           ) dict<Tkey, Titem> @public
+    FOR item IN this
+      f(item)
+    }
+    RETURN this
+  }
+
+  #= Call method |f| for every item key and value in the dict.
+  #- The first argument for f is the key, the second argument is the value.
+  #
+  #- The order in which |f| is called for each item is undefined.
+  #
+  #- Returns the dict.
+  FUNC forKeyEach<Tkey, Titem>(dict<Tkey, Titem> this,
+                               proc<Tkey, Titem> f
+                              ) dict<Tkey, Titem> @public
+    FOR key, val IN this
+      f(key, val)
+    }
+    RETURN this
+  }
+
+  #! For Zudocu: End of the dict class.
+  CLASS ENDdict
+  }
+
+}

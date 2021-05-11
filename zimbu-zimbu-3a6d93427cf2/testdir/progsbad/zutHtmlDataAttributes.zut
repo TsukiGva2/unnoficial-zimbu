@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML data / Attributes
+  TEMPLATE inDataAttributes(ZUT.Attributes text) ZUT.Html @public
+    <title>[=text]</titleiv>
+  }
+}
+

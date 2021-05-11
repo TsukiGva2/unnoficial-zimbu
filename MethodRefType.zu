@@ -1,0 +1,121 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# MethodRefType class.
+#
+# A Type used for a reference to a method: funcRef, procRef
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+
+CLASS MethodRefType EXTENDS ReferenceType @items=public
+  MethodType         $method
+
+  NEW(Type.Enum type, Type method, string name) @replace @default
+    PARENT.NEW(type, name)
+    IF type != Type.Enum.procRef && type != Type.Enum.funcRef
+      LOG.internal("Setting reference for type that is not ref")
+    }
+    $method = method
+    $zuiPos = method.zuiPos
+  }
+
+  FUNC $typeToString() string @replace @default
+    string s = PARENT.typeToString()
+    IF $method != NIL
+      s ..= " method: " .. $method.typeToString()
+    }
+    RETURN s
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    MethodRefType ret = NEW($ttype, $name)
+    $copyMethodRefValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyMethodRefValues(MethodRefType ret) @default
+    $copyReferenceValues(ret)
+    ret.method = $method
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace @default
+    SWITCH $ttype
+      CASE Type.Enum.procRef
+      CASE Type.Enum.funcRef
+        IF $method != NIL
+          RETURN $method.typeName(long) .. " &"
+        }
+    }
+    RETURN PARENT.typeName(long)
+  }
+
+  FUNC $typeDefined() bool @replace
+    IF $method == NIL
+      RETURN FALSE
+    }
+    RETURN $method.typeDefined()
+  }
+
+  # Return TRUE if this is a method or a reference to a method.
+  FUNC $isMethodOrRefType() bool @replace
+    RETURN TRUE
+  }
+
+  # Return the name for the object declaration table.
+  # Return NIL if this is not an object.
+  FUNC $getTypeName(SContext ctx) string @replace
+    RETURN "cb"
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN TRUE
+  }
+
+  # For a proc, func, procRef, funcRef: return the method type.
+  # Otherwise return NIL
+  FUNC $getMethod() MethodType @replace @default
+    RETURN $method
+  }
+
+  # For a method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @replace @default
+    IF $method != NIL
+      RETURN $method.getArgList()
+    }
+    RETURN NIL
+  }
+
+  # For a method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @replace @default
+    IF $method != NIL
+      RETURN $method.getReturnType()
+    }
+    RETURN NIL
+  }
+
+  # Return the types as they are used in a typespec.
+  FUNC $getTypespecType(int idx) Type @replace @default
+    IF $method != NIL
+      RETURN $method.getTypespecType(idx)
+    }
+    RETURN NIL
+  }
+}

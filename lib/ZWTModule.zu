@@ -1,0 +1,696 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module ZWT.
+#
+# Beware of browser incompabilities!
+# compatibility tables: http://www.quirksmode.org/
+#
+# Javascript tutorial:
+# https://docs.google.com/a/google.com/Doc?docid=0AR71dZfgJD1pZGc2dDJmajVfMWY4djd0emd0&hl=en
+
+IMPORT "zwt/BaseModule.zu"
+IMPORT "zwt/ButtonModule.zu"
+IMPORT "zwt/CodeModule.zu"
+IMPORT "zwt/DialogModule.zu"
+IMPORT "zwt/DropdownModule.zu"
+IMPORT "zwt/EventModule.zu"
+IMPORT "zwt/InputModule.zu"
+IMPORT "zwt/LabelModule.zu"
+IMPORT "zwt/MenuModule.zu"
+IMPORT "zwt/PanelModule.zu"
+IMPORT "zwt/StyleModule.zu"
+IMPORT "zwt/TableModule.zu"
+IMPORT "zwt/TextareaModule.zu"
+
+#= Zimbu Web Toolkit.  A GUI in a web browser.
+#
+#*credits
+#* The Class hierarchy, generated Javascript and a few other things
+#* are based on the Google Web Toolkit.
+#* http://code.google.com/webtoolkit/overview.html
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE ZWTModule @public
+
+  #
+  # The tree of classes is only used when generating Javascript.
+  #
+  GENERATE_IF Z.lang == "JS"
+#    GENERATE_IF FALSE
+      #= Lowest level object, an HTML element.
+      #- Only to be used in Javascript code.
+      CLASS Element @public
+      }
+
+      #= Lowest level object, a Javascript event.
+      #- Only to be used in Javascript code.
+      CLASS JsEvent @public
+      }
+#    }
+
+    # Basic UI elements.
+    ALIAS BaseModule.UIObject               UIObject @public
+    ALIAS BaseModule.Widget                 Widget @public
+    ALIAS BaseModule.TreeItem               TreeItem @public
+
+    # Event handling
+    ALIAS EventModule.Event                 Event @public
+    ALIAS EventModule.EventType             EventType @public
+
+    # Panels
+    ALIAS PanelModule.Panel                 Panel @public
+    ALIAS PanelModule.AbsolutePanel         AbsolutePanel @public
+    ALIAS PanelModule.CellPanel             CellPanel @public
+    ALIAS PanelModule.DockPanel             DockPanel @public
+    ALIAS PanelModule.HorizontalPanel       HorizontalPanel @public
+    ALIAS PanelModule.ScrollPanel           ScrollPanel @public
+    ALIAS PanelModule.PopupPanel            PopupPanel @public
+    ALIAS PanelModule.VerticalPanel         VerticalPanel @public
+
+    # Dialogs
+    ALIAS DialogModule.NoButtonDialog       NoButtonDialog @public
+    ALIAS DialogModule.SimpleDialog         SimpleDialog @public
+    ALIAS DialogModule.OkCancelDialog       OkCancelDialog @public
+
+    # Table
+    ALIAS TableModule.TableCell             TableCell @public
+    ALIAS TableModule.TableRow              TableRow @public
+    ALIAS TableModule.Table                 Table @public
+
+    # Menu elements
+    ALIAS MenuModule.MenuBar                MenuBar @public
+    ALIAS MenuModule.MenuItem               MenuItem @public
+    ALIAS MenuModule.MenuItemSeparator      MenuItemSeparator @public
+
+    # Text widgets
+    ALIAS LabelModule.Label                 Label @public
+    ALIAS LabelModule.TextBlock             TextBlock @public
+
+    # Button widget
+    ALIAS ButtonModule.Button               Button @public
+
+    # Code widget
+    ALIAS CodeModule.Code                   Code @public
+
+    # Input widget
+    ALIAS InputModule.Input                 Input @public
+    ALIAS InputModule.Checkbox              Checkbox @public
+
+    # Dropdown widget
+    ALIAS DropdownModule.Dropdown           Dropdown @public
+
+    # Textarea widget
+    ALIAS TextareaModule.Textarea           Textarea @public
+
+    # Style 'n stuff
+    ALIAS StyleModule.Color                 Color @public
+    ALIAS StyleModule.ColorName             ColorName @public
+    ALIAS StyleModule.Unit                  Unit @public
+    ALIAS StyleModule.BorderStyle           BorderStyle @public
+    ALIAS StyleModule.HorAlign              HorAlign @public
+    ALIAS StyleModule.VerAlign              VerAlign @public
+    ALIAS StyleModule.Style                 Style @public
+    ALIAS StyleModule.setElementStyle       setElementStyle @public
+
+    #! don't mention this
+    AbsolutePanel rootPanel
+
+    #= Get the toplevel Panel.  Widgets added to this will appear in the page.
+    FUNC root() AbsolutePanel @public
+      IF rootPanel == NIL
+        rootPanel = NEW()
+        Element v
+>>>
+        %v% = $doc.body;
+<<<
+        rootPanel.elem = v
+      }
+      RETURN rootPanel
+    }
+
+    #= Open a popup window to display |message|.
+    PROC alert(string message) @public
+>>>
+      alert(%message%);
+<<<
+    }
+
+    #= Abort execution with an error, displayed in the JS console.
+    PROC error(string message) @public
+>>>
+      throw(%message%);
+<<<
+    }
+
+    #= Install |handler| to be called when the page is about to be abandoned.
+    #- When the user closes the window, tab or leaves the page in another way,
+    #- the |handler| will be called.  If it returns NIL or an empty string the
+    #- close will continue.  If it returns a non-empty string a dialog will
+    #- popup to ask the user if he really wants to close the window.
+    #
+    #- Example:
+    #% ZWT.setCloseHandler({ => isChanged()
+    #%                       ? "There are unsaved changes."
+    #%                       : NIL })
+    PROC setCloseHandler(func< => string> handler) @public
+>>>
+      var f = function (e) {
+        var msg = %handler%();
+        (e || window.event).returnValue = msg;  // Gecko, IE
+        return msg;                             // Webkit, Safari, Chrome etc.
+       };
+      if (typeof window.addEventListener != 'undefined') {
+       window.addEventListener('beforeunload', f, true);
+       window.addEventListener('unload', f, true);
+      } else if (typeof document.addEventListener != 'undefined') {
+       document.addEventListener('beforeunload', f, true);
+       document.addEventListener('unload', f, true);
+      } else if (typeof window.attachEvent != 'undefined') {
+       window.attachEvent('onbeforeunload', f);
+       window.attachEvent('onunload', f);
+      } else {
+       window.onbeforeunload = f;
+       window.onunload = f;
+      }
+<<<
+    }
+
+    #= Abort execution of the UI.
+    PROC close() @public
+      EXIT 0
+    }
+
+    # TODO: Move the following to a separate file once ALIAS works for a
+    # templated class.
+
+    INTERFACE I_Controller @public
+    }
+
+    #= Display a list of items in a Panel.
+    #- This is the controller in a model-view-controller construction, where
+    #- the model is a list of items and the view is a Panel.
+    CLASS ListController<Titem> IMPLEMENTS I_Controller @public
+      Panel                  $view           #!
+      list<Titem>            $model          #!
+      I_WidgetBuilder<Titem> $builder        #!
+      proc<SelectEvent>      $selectHandler  #!
+      bool                   $sorted         #!
+      func<Titem, Titem => int>  $sortMethod   #!
+
+      #= Display the items of |model| in |view|.
+      #- The |view| must be a Panel, it will show the items of |model|.
+      #- The |builder|  is used to turn |Titem| into a Widget that can be
+      #- added to |view|.
+      NEW(Panel view, list<Titem> model, I_WidgetBuilder<Titem> builder
+                                                                     ) @public
+        $view = view
+        IF $view != NIL
+          $view.setController(THIS)
+        }
+        $builder = builder
+        $setModel(model)
+      }
+
+      #= Set the model to be displayed.
+      #= Set to NIL to not display any items.
+      PROC $setModel(list<Titem> model) @public
+        $model = model
+        $update()
+      }
+
+      #= Return the current model.
+      FUNC $getModel() list<Titem> @public
+        RETURN $model
+      }
+
+      #= Set the view to display the items in.
+      #- Use NIL to not display the items.
+      PROC $setView(Panel view) @public
+        IF $view != NIL
+          $view.setController(NIL)
+          $view.clear()
+        }
+        IF $selectHandler != NIL
+#          TODO
+#          $view.removeClickHandler(clickHandler)
+        }
+
+        $view = view
+        IF $view != NIL
+          $view.setController(THIS)
+          IF $selectHandler != NIL
+            $view.setClickHandler(clickHandler)
+          }
+          $update()
+        }
+      }
+
+      #= Return the current view.
+      FUNC $getView() Panel @public
+        RETURN $view
+      }
+
+      #= Fill the view with items from the model.
+      #- This rebuilds the whole view.
+      PROC $update()
+        IF $view != NIL
+          # Detach the panel while updating, it's faster.
+          $view.detach()
+          $view.clear()
+          IF $model != NIL
+            FOR item IN $model
+              $view.add($builder.get(item))
+            }
+          }
+          $view.attach()
+        }
+      }
+
+      #= Update the view for |item|.
+      #- Does nothing when |item| is not found in the model.
+      #
+      #- When $keepSorted(TRUE) was called the item will most likely be moved
+      #- to another position.
+      PROC $update(Titem item) @public
+        int index = $model.find(item)
+        IF index >= 0
+          $update(item, index)
+        }
+      }
+
+      #= Update the view for the item at position |index|.
+      #- Does nothing when |index| is out of range.
+      #
+      #- When $keepSorted(TRUE) was called the item will most likely be moved
+      #- to another position.
+      PROC $update(int index) @public
+        IF index >= 0 && index < $model.Size()
+          $update($model[index], index)
+        }
+      }
+
+      #! Internal part of update()
+      PROC $update(Titem item, int index)
+        int hlIndex = $view == NIL ? -1 : $view.getHighlightIndex()
+        ZWT.Widget w
+        IF $sorted
+          $remove(index)
+          w = $add(item)
+        ELSEIF $view != NIL
+          w = $builder.get(item)
+          $view.set(w, index)
+        }
+        IF hlIndex == index
+          # restore highlight
+          $view.setHighlighted(w)
+        }
+      }
+
+      #= Add |item| to the list of items.
+      #- Will update the model and the view.
+      #
+      #- When sorted the item will be put in the right place.  When not sorted
+      #- the item is added to the end of the list.
+      #
+      #- Returns the created widget.
+      FUNC $add(Titem item) ZWT.Widget @public
+        ZWT.Widget w = $builder.get(item)
+        IF $sorted
+          IF $sortMethod == NIL
+            THROW "No sort method was set; call setSortMethod()"
+          }
+
+          # Binary search for the place to to insert.
+          int low = 0
+          int high = $model.Size() - 1
+          WHILE high >= low
+            int n = (low + high) / 2
+            int cmp = $sortMethod(item, $model[n])
+            IF cmp == 0
+              low = n
+              BREAK
+            }
+            IF cmp < 0
+              IF n == 0
+                low = 0
+                BREAK
+              }
+              high = n - 1
+            ELSE
+              low = n + 1
+            }
+          }
+          $model.insert(item, low)
+          IF $view != NIL
+            $view.insert(w, low)
+          }
+        ELSE
+          $model.add(item)
+          IF $view != NIL
+            $view.add(w)
+          }
+        }
+        RETURN w
+      }
+
+      #= Insert |item| at the start of the list of items.
+      #- Will update the model and the view.
+      PROC $insert(Titem item) @public
+        IF $sorted
+          $add(item)
+        ELSE
+          $insert(item, 0)
+        }
+      }
+
+      #= Insert |item| before item |index| in the list of items.
+      #- Will update the model and the view.
+      #
+      #- When $keepSorted(TRUE) was called then |index| is ignored.
+      PROC $insert(Titem item, int index) @public
+        IF $sorted
+          $add(item)
+        ELSE
+          $model.insert(item, index)
+          IF $view != NIL
+            $view.insert($builder.get(item), index)
+          }
+        }
+      }
+
+      #= Remove the |item|.
+      #- Will update the model and the view.
+      #- Does noting if the item cannot be found.
+      PROC $remove(Titem item) @public
+        int index = $model.find(item)
+        IF index >= 0
+          $remove(index)
+        }
+      }
+
+      #= Remove the item at |index|.
+      #- Will update the model and the view.
+      #- Returns the removed item.
+      FUNC $remove(int index) Titem @public
+        IF $view != NIL
+          $view.remove(index)
+        }
+        RETURN $model.remove(index)
+      }
+
+      #= Get the item in the model at |index|.
+      #= Return NIL when |index| is out of range.
+      FUNC $getItem(int index) Titem @public
+        IF index >= 0 && index < $model.Size()
+          RETURN $model[index]
+        }
+        RETURN NIL
+      }
+
+      #= Get the Widget in the view at |index|.
+      #= Return NIL when |index| is out of range.
+      FUNC $getWidget(int index) Widget @public
+        IF $view != NIL && index >= 0 && index < $view.items.Size()
+          RETURN $view.items[index]
+        }
+        RETURN NIL
+      }
+
+      #= Get the Widget in the view for |item| in the model.
+      #= Return NIL when not found.
+      FUNC $getWidget(Titem item) Widget @public
+        IF $view != NIL
+          int index = $model.find(item)
+          IF index >= 0
+            RETURN $view.items[index]
+          }
+        }
+        RETURN NIL
+      }
+
+      #= Set the highlight in the view by index.
+      #- Remove highlight when |index| is < 0.
+      PROC $setHighlightIndex(int index) @public
+        IF $view != NIL
+          $view.setHighlighted(index)
+        }
+      }
+
+      #= Set the highlight in the view for an item in the model.
+      #- Remove highlight when |item| is NIL or is not in the model.
+      PROC $setHighlighted(Titem item) @public
+        IF $view != NIL
+          int index = $model.find(item)
+          $view.setHighlighted(index)
+        }
+      }
+
+      #= Add a highlighted item in the view by index.
+      PROC $addHighlighted(int index) @public
+        IF $view != NIL
+          $view.addHighlighted(index)
+        }
+      }
+
+      #= Add a highlighted item in the view for an item in the model.
+      PROC $addHighlighted(Titem item) @public
+        IF $view != NIL
+          int index = $model.find(item)
+          IF index >= 0
+            $view.addHighlighted(index)
+          }
+        }
+      }
+
+      #= Return the first highlighted item in the view. NIL if there is none.
+      FUNC $getHighlighted() ZWT.Widget @public
+        RETURN $view == NIL ? NIL : $view.getHighlighted()
+      }
+
+      #= Return the first highlighted item in the model. NIL if there is none.
+      FUNC $getHighlightedItem() Titem @public
+        IF $view == NIL
+          RETURN NIL
+        }
+        int i = $view.getHighlightIndex()
+        RETURN i < 0 ? NIL : $model[i]
+      }
+
+      #= Return the lowest highlighted item index.
+      #- Return -1 when there is no highlight.
+      FUNC $getHighlightIndex() int @public
+        RETURN $view == NIL ? -1 : $view.getHighlightIndex()
+      }
+
+      # The selection handler receives an object of this class.
+      CLASS SelectEvent @public @items=public
+        ZWT.Event              $zwtEvent
+        ListController<Titem>  $listController
+        Titem                  $item
+        int                    $itemIndex
+      }
+
+      #= Set a handler for selection events.  Currently only mouse clicks.
+      PROC $setSelectionHandler(proc<SelectEvent> handler) @public
+        IF $selectHandler == NIL && $view != NIL
+          $view.setClickHandler(clickHandler)
+        }
+        $selectHandler = handler
+      }
+
+      #= Set sorting to |on|.
+      #- When adding items with $add() or $insert() they are put in the right
+      #- place.
+      #
+      #- When |on| is TRUE you need to call $setSortMethod() before updating
+      #- the model, otherwise an exception will be thrown.
+      #
+      #- Note that calling this method does not trigger a sort, when the items
+      #- are not already sorted the result is unpredictable.  When an item in
+      #- the model is changed you need to call $update() to keep the items
+      #- sorted.
+      PROC $keepSorted(bool on) @public
+        $sorted = on
+      }
+
+      #= Set the method to use for sorting.
+      #- The method must return zero when the two items are equal, < 0 when
+      #- the first one sorts before the second one and > 0 when the first one
+      #- sorts after the second one.
+      #
+      #- If Titem has the Compare() method you can use:
+      #% FUNC sortMethod(Titem a, Titem b) int
+      #%   RETURN a.Compare(b)
+      #% }
+      PROC $setSortMethod(func<Titem, Titem => int> method) @public
+        $sortMethod = method
+      }
+
+      # TODO:
+      # $removeHighlighted()
+      # $moveItem(int index, bool up)
+
+      # $replaceHighlighted(Titem)
+
+      # $detachView()
+      # $detachModel()
+      # $attachView(Panel view)
+      # $setBuilder(I_WidgetBuilder<Titem> builder)
+
+      SHARED
+
+        PROC clickHandler(ZWT.Event event)
+          Panel panel = event.widget
+          I_Controller controller = panel.getController()
+#          IF controller ISA ListController<Titem>
+            ListController<Titem> lc = controller
+
+            # Figure out the widget that was clicked on.  Use the target in
+            # the JS event, walk up the tree until the Panel is found, use the
+            # item in the last TD found.
+            ZWT.Element lastTdChild
+>>>
+            var e = %event.jsEvent%;
+            var panelElem = %event.widget.elem%;
+            var target = e.target;
+            %lastTdChild% = target;
+            while (1) {
+              var parent = target.parentNode;
+              if (!parent) {
+                break;
+              }
+              if (parent.tagName && parent.tagName == 'TD') {
+                %lastTdChild% = target;
+              }
+              if (parent === panelElem) {
+                break;
+              }
+              target = parent;
+            }
+<<<
+            int index = -1
+            FOR i IN 0 UNTIL lc.view.items.Size()
+              IF lc.view.items[i].elem IS lastTdChild
+                index = i
+                BREAK
+              }
+            }
+
+            IF index != -1
+              SelectEvent se = NEW()
+              se.zwtEvent = event
+              se.listController = controller
+              se.item = lc.model[index]
+              se.itemIndex = index
+              lc.selectHandler(se)
+            }
+#          }
+        }
+      }
+    }
+
+    #= Interface for a builder that can create a Widget from a |Titem|.
+    INTERFACE I_WidgetBuilder<Titem> @public
+
+      #= Get a widget for |item|.
+      #- This is used by a Controller to add the item to a Panel.
+      FUNC $get(Titem item) Widget @public
+      }
+    }
+  }
+
+  GENERATE_IF Z.lang == "C"
+    #
+    #= Create the HTML page that selects the Javascript file to load.
+    #= Makes all necessary items available through |server|.
+    #- |path| is the path under which the page will be available, e.g.
+    #- "index.html".
+    #
+    #- |title| is the page title.
+    #
+    #- |moduleType| is the type of the module of the page to be displayed.
+    #- This is only used by the server, not by the Javascript files.
+    #
+    #- Example for http://localhost/index.html displaying the page created by
+    #- MyZwtModule:
+    #% HTTP.Server server = NEW(80)
+    #% ZWT.createPage(server, "index.html", "My ZWT page", MyZwtModule.Type()
+    PROC createPage(HTTP.Server server,
+                    string path,
+                    string title,
+                    type moduleType) @public
+      string leader = ''"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>"''
+      string middle = ''"</title>
+    <style title="zwt" type="text/css">
+      zwt {}
+    </style>
+  <script type="text/javascript">
+    var $wnd = parent;
+    var $doc = $wnd.document;
+  </script>
+</head>
+<body>
+  <iframe src="javascript:''" id="__zwt_historyFrame" tabIndex='-1' style="position:absolute;width:0;height:0;border:0"></iframe>
+  <script type="text/javascript">
+  function getPageName() {
+    return "''
+      string footer = ''";
+  };
+  function loadIframe(fname) {
+    var iframe = $doc.createElement('iframe');
+    iframe.src = "javascript:''";
+    iframe.id = 'demoapp';
+    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none';
+    iframe.tabIndex = -1;
+    $doc.body.appendChild(iframe);
+    iframe.contentWindow.location.replace(fname);
+  };
+  var pname = getPageName();
+  if (pname && pname != 'unknown') {
+    loadIframe(pname);
+  } else {
+    var e = $doc.createElement('div');
+    e.innerHTML = "Sorry, your browser is not supported.";
+    $doc.body.appendChild(e);
+  }
+  </script>
+</body>
+</html>
+"''
+
+      # There is one file to load.
+      string jsName = moduleType.name() .. ".html"
+
+      # Serve the file that is loaded by the HTML page.
+      # TODO: jsPath should be configurable.
+      string jsPath = ""
+      HTTP.FileServlet fs = NEW(jsPath .. jsName)
+      fs.addPath("/" .. jsName)
+      server.addServlet(fs)
+
+      # Serve the HTML file that is the entry point.
+      # TODO: HTML-escape title.
+      string html = leader .. title .. middle
+      html ..= "'" .. jsName .. "'"
+      html ..= footer
+
+      HTTP.StringServlet ss = NEW(html)
+      ss.addPath("/" .. path)
+      # TODO: set caching to 5 minutes.
+      # ss.setCacheTime(5 * 60)
+      server.addServlet(ss)
+
+    }
+
+  } # GENERATE_IF
+}

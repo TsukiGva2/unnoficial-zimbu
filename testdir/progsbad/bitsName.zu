@@ -1,0 +1,15 @@
+# Small test program: Verify that this does not compile.
+
+BITS Foo
+  bool $b
+}
+
+FUNC Main() int
+  Foo x
+  test(x)
+  RETURN 0
+}
+
+PROC test(Foo n)
+  n.b = TRUE
+}

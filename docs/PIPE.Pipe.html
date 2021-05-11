@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>PIPE.Pipe class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='PIPE.html'>up:&nbsp;PIPE</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.pipe&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type pipe.
+</p>
+<p class='ptext'> Pipes are a thread-safe way to send objects from one thread to another
+ thread.  Or from one collection of threads to another collection of
+ threads.
+<p class='ptext'> Example:
+<pre class='example'> pipe&lt;string&gt; tp = T.evalThread&lt;string&gt;.NEW().eval({ =&gt; "hello thread!" })
+ IO.print("from thread: " .. tp.read())
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'><small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small>&nbsp;</td><td class='nowrap'><A href='PIPE.Pipe.html#$isOpen'><b>$isOpen</b></A><span class='attribute'><small> @file</small></span>&nbsp;</td><td> state of the pipe
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='PIPE.Pipe.html#$bufferSize'><b>$bufferSize</b></A><span class='attribute'><small> @file</small></span>&nbsp;</td><td> maximum number of items buffered
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new pipe with buffer size one.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#NEW'><b>NEW</b></a>(<small>bufferSize</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new pipe with buffer size <b>bufferSize</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$setBufferSize'><b>$setBufferSize</b></a>(<small>bufferSize</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Change the buffer size to <b>bufferSize</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$close'><b>$close</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Close the pipe.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$wait'><b>$wait</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait for the pipe to be empty and closed.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items currently buffered and ready to be read.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$write'><b>$write</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Write one item into the pipe.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$read'><b>$read</b></a>(<small>st</small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read one item from the pipe.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='PIPE.Pipe.html#$read'><b>$read</b></a>(<small></small>) <small><span class='type'>Titem</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Read one item from the pipe.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$bufferSize'><b>$bufferSize</b></A><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> maximum number of items buffered
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span>&nbsp;<A name='$isOpen'><b>$isOpen</b></A><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> state of the pipe
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new pipe with buffer size one.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> bufferSize)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new pipe with buffer size <b>bufferSize</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items currently buffered and ready to be read.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$close'><b>$close</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Close the pipe.
+</p>
+<p class='ptext'> All further writes will fail.
+ Reading is still possible so long as there are items to read.
+ Once the pipe is empty reading will fail.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$read'><b>$read</b></A>(<span class='type'><A class='typehref' href='STATUS.status.html'>status</A> &</span>st) <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read one item from the pipe.
+</p>
+<p class='ptext'> Blocks until an item is available or the pipe is closed.
+ When an item is available <b>st</b> is set to OK.
+ When the pipe is closed <b>st</b> is set to FAIL and return NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$read'><b>$read</b></A>() <span class='type'>Titem</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Read one item from the pipe.
+</p>
+<p class='ptext'> Blocks until an item is available or the pipe is closed.
+ When an item is available it is returned.
+ When the pipe is closed returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setBufferSize'><b>$setBufferSize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> bufferSize)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Change the buffer size to <b>bufferSize</b>.
+</p>
+<p class='ptext'> When the buffer size increases it triggers writers to fill the space.
+ When the buffer size decreases nothing happens, readers must first read
+ any items to get below the new buffer size.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$wait'><b>$wait</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Wait for the pipe to be empty and closed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Write one item into the pipe.
+</p>
+<p class='ptext'> Blocks until there is space in the pipe buffer.
+ Returns FAIL if the pipe has been closed.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

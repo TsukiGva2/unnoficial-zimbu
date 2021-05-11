@@ -1,0 +1,624 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT.Style class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZWT.html'>up:&nbsp;ZWT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZWT.Style
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A style to be attached to a Widget or Table cell.
+ Specifies various properties for the item.
+</p>
+<table><tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZWT.Wrap.html'><b>Wrap</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='ZWT.Style.html#$name'><b>$name</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> name used for CSS
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new, default Style.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clear'><b>$clear</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove all properties.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$copy'><b>$copy</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of this style that can be modified.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setName'><b>$setName</b></a>(<small>newName</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the name.  It's up to the caller to make sure it's unique.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setValue'><b>$setValue</b></a>(<small>prop, v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Generic way to add a property value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getValue'><b>$getValue</b></a>(<small>prop</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the string value for <b>prop</b>.  Returns ""1 if there is no value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPixelValue'><b>$setPixelValue</b></a>(<small>prop, v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> TODO: add "em" and "ex", with a float value
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPixelValue'><b>$getPixelValue</b></a>(<small>prop</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the pixel value for <b>prop</b>.  Returns -1 if there is no pixel
+ value.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setUnitValue'><b>$setUnitValue</b></a>(<small>prop, v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> "in", "cm", "mm", "pt" and "pc" are not generally used.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setColorProp'><b>$setColorProp</b></a>(<small>prop, color</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set color property <b>prop</b> to <b>color</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearValue'><b>$clearValue</b></a>(<small>prop</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the value for property <b>prop</b> if it exists.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginLeft'><b>$setMarginLeft</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the left margin in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getMarginLeft'><b>$getMarginLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the left margin value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginLeft'><b>$setMarginLeft</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the left margin to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearMarginLeft'><b>$clearMarginLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the left margin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginRight'><b>$setMarginRight</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the right margin in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getMarginRight'><b>$getMarginRight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the right margin value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginRight'><b>$setMarginRight</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the right margin to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearMarginRight'><b>$clearMarginRight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the right margin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginTop'><b>$setMarginTop</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the top margin in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getMarginTop'><b>$getMarginTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the top margin value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginTop'><b>$setMarginTop</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the top margin to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearMarginTop'><b>$clearMarginTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the top margin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginBottom'><b>$setMarginBottom</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom margin in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginBot'><b>$setMarginBot</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom margin in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getMarginBot'><b>$getMarginBot</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the bottom margin value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getMarginBottom'><b>$getMarginBottom</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the bottom margin value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginBottom'><b>$setMarginBottom</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom margin to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setMarginBot'><b>$setMarginBot</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom margin to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearMarginBottom'><b>$clearMarginBottom</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the bottom margin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearMarginBot'><b>$clearMarginBot</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the bottom margin.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPadding'><b>$setPadding</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set padding on all sides in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingLeft'><b>$setPaddingLeft</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set left padding in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingLeft'><b>$setPaddingLeft</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the left padding to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPaddingLeft'><b>$getPaddingLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the left padding value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearPaddingLeft'><b>$clearPaddingLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the left padding.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingRight'><b>$setPaddingRight</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set right padding in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingRight'><b>$setPaddingRight</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the right padding to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPaddingRight'><b>$getPaddingRight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the right padding value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearPaddingRight'><b>$clearPaddingRight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the right padding.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingTop'><b>$setPaddingTop</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set top padding in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingTop'><b>$setPaddingTop</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the top padding to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPaddingTop'><b>$getPaddingTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the top padding value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearPaddingTop'><b>$clearPaddingTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the top padding.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingBottom'><b>$setPaddingBottom</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set bottom padding in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingBot'><b>$setPaddingBot</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set bottom padding in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingBottom'><b>$setPaddingBottom</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom padding to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setPaddingBot'><b>$setPaddingBot</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the bottom padding to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPaddingBot'><b>$getPaddingBot</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the bottom padding value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getPaddingBottom'><b>$getPaddingBottom</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the bottom padding value in pixels / units
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearPaddingBottom'><b>$clearPaddingBottom</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the bottom padding.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearPaddingBot'><b>$clearPaddingBot</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the bottom padding.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setHorAlign'><b>$setHorAlign</b></a>(<small>align</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the horizontal alignment to <b>align</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getHorAlign'><b>$getHorAlign</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.HorAlign.html'>ZWT.HorAlign</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the horizontal alignment.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearHorAlign'><b>$clearHorAlign</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the horizontal alignment.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setVerAlign'><b>$setVerAlign</b></a>(<small>align</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the vertical alignment to <b>align</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getVerAlign'><b>$getVerAlign</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.VerAlign.html'>ZWT.VerAlign</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the vertical alignment.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearVerAlign'><b>$clearVerAlign</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the vertical alignment.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setWrap'><b>$setWrap</b></a>(<small>on</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set text wrapping on or off.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setWrap'><b>$setWrap</b></a>(<small>how</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set text wrapping specifically
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setWidth'><b>$setWidth</b></a>(<small>width</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the width to <b>width</b> pixels.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setWidth'><b>$setWidth</b></a>(<small>width, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the width to <b>width</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setFullWidth'><b>$setFullWidth</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the width to 100%.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setHeight'><b>$setHeight</b></a>(<small>height</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the height to <b>height</b> pixels.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setHeight'><b>$setHeight</b></a>(<small>height, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the height to <b>height</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setFullHeight'><b>$setFullHeight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the height to 100%.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBorder'><b>$setBorder</b></a>(<small>thickness, bs, c</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the border thickness to <b>thickness</b> pixels , style to <b>bs</b> and color
+ to <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBorderThickness'><b>$setBorderThickness</b></a>(<small>thickness</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the border thickness to <b>thickness</b> pixels.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBorderThickness'><b>$setBorderThickness</b></a>(<small>thickness, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the border thickness to <b>thickness</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearBorderThickness'><b>$clearBorderThickness</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the border thickness, no border.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBorderStyle'><b>$setBorderStyle</b></a>(<small>bs</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the border style to <b>bs</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getBorderStyle'><b>$getBorderStyle</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.BorderStyle.html'>ZWT.BorderStyle</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the border style.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearBorderStyle'><b>$clearBorderStyle</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the border style.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBorderColor'><b>$setBorderColor</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the border color to <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearBorderColor'><b>$clearBorderColor</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the border color.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setColor'><b>$setColor</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the foreground color to <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setColorName'><b>$setColorName</b></a>(<small>colorName</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the foreground color to <b>colorName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearColor'><b>$clearColor</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the color, back to black.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBGColor'><b>$setBGColor</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the background color to <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setBGColorName'><b>$setBGColorName</b></a>(<small>colorName</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the background color to <b>colorName</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearBGColor'><b>$clearBGColor</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the background color.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setOpacity'><b>$setOpacity</b></a>(<small>percent</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the opacity to <b>percent</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setFontName'><b>$setFontName</b></a>(<small>fontName</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the font name.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setFontSize'><b>$setFontSize</b></a>(<small>v</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the font size in pixels.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$getFontSize'><b>$getFontSize</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the font size value in pixels.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$setFontSize'><b>$setFontSize</b></a>(<small>v, u</small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the font size to <b>v</b> in unit <b>u</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Style.html#$clearFontSize'><b>$clearFontSize</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Clear the font size.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$name'><b>$name</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> name used for CSS
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new, default Style.
+</p>
+<p class='ptext'> sets <b>name</b> to a unique name.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$clear'><b>$clear</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Remove all properties.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearBGColor'><b>$clearBGColor</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the background color.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearBorderColor'><b>$clearBorderColor</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the border color.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearBorderStyle'><b>$clearBorderStyle</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the border style.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearBorderThickness'><b>$clearBorderThickness</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the border thickness, no border.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearColor'><b>$clearColor</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the color, back to black.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearFontSize'><b>$clearFontSize</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the font size.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearHorAlign'><b>$clearHorAlign</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the horizontal alignment.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearMarginBot'><b>$clearMarginBot</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the bottom margin.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearMarginBottom'><b>$clearMarginBottom</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the bottom margin.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearMarginLeft'><b>$clearMarginLeft</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the left margin.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearMarginRight'><b>$clearMarginRight</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the right margin.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearMarginTop'><b>$clearMarginTop</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the top margin.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearPaddingBot'><b>$clearPaddingBot</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the bottom padding.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearPaddingBottom'><b>$clearPaddingBottom</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the bottom padding.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearPaddingLeft'><b>$clearPaddingLeft</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the left padding.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearPaddingRight'><b>$clearPaddingRight</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the right padding.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearPaddingTop'><b>$clearPaddingTop</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the top padding.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearValue'><b>$clearValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the value for property <b>prop</b> if it exists.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$clearVerAlign'><b>$clearVerAlign</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Clear the vertical alignment.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$copy'><b>$copy</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of this style that can be modified.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getBorderStyle'><b>$getBorderStyle</b></A>() <span class='type'><A class='typehref' href='ZWT.BorderStyle.html'>ZWT.BorderStyle</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the border style.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getFontSize'><b>$getFontSize</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the font size value in pixels.
+</p>
+<p class='ptext'> Returns -1 if the font size was not set or not set in pixels.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getHorAlign'><b>$getHorAlign</b></A>() <span class='type'><A class='typehref' href='ZWT.HorAlign.html'>ZWT.HorAlign</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the horizontal alignment.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getMarginBot'><b>$getMarginBot</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the bottom margin value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getMarginBottom'><b>$getMarginBottom</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the bottom margin value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getMarginLeft'><b>$getMarginLeft</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the left margin value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getMarginRight'><b>$getMarginRight</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the right margin value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getMarginTop'><b>$getMarginTop</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the top margin value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPaddingBot'><b>$getPaddingBot</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the bottom padding value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPaddingBottom'><b>$getPaddingBottom</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the bottom padding value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPaddingLeft'><b>$getPaddingLeft</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the left padding value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPaddingRight'><b>$getPaddingRight</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the right padding value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPaddingTop'><b>$getPaddingTop</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the top padding value in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPixelValue'><b>$getPixelValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the pixel value for <b>prop</b>.  Returns -1 if there is no pixel
+ value.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getValue'><b>$getValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the string value for <b>prop</b>.  Returns ""1 if there is no value.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getVerAlign'><b>$getVerAlign</b></A>() <span class='type'><A class='typehref' href='ZWT.VerAlign.html'>ZWT.VerAlign</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the vertical alignment.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBGColor'><b>$setBGColor</b></A>(<span class='type'><A class='typehref' href='ZWT.Color.html'>ZWT.Color</A></span> c) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the background color to <b>c</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBGColorName'><b>$setBGColorName</b></A>(<span class='type'><A class='typehref' href='ZWT.ColorName.html'>ZWT.ColorName</A></span> colorName) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the background color to <b>colorName</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBorder'><b>$setBorder</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> thickness, <span class='type'><A class='typehref' href='ZWT.BorderStyle.html'>ZWT.BorderStyle</A></span> bs, <span class='type'><A class='typehref' href='ZWT.Color.html'>ZWT.Color</A></span> c) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the border thickness to <b>thickness</b> pixels , style to <b>bs</b> and color
+ to <b>c</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBorderColor'><b>$setBorderColor</b></A>(<span class='type'><A class='typehref' href='ZWT.Color.html'>ZWT.Color</A></span> c) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the border color to <b>c</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBorderStyle'><b>$setBorderStyle</b></A>(<span class='type'><A class='typehref' href='ZWT.BorderStyle.html'>ZWT.BorderStyle</A></span> bs) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the border style to <b>bs</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBorderThickness'><b>$setBorderThickness</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> thickness) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the border thickness to <b>thickness</b> pixels.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setBorderThickness'><b>$setBorderThickness</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> thickness, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the border thickness to <b>thickness</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setColor'><b>$setColor</b></A>(<span class='type'><A class='typehref' href='ZWT.Color.html'>ZWT.Color</A></span> c) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the foreground color to <b>c</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setColorName'><b>$setColorName</b></A>(<span class='type'><A class='typehref' href='ZWT.ColorName.html'>ZWT.ColorName</A></span> colorName) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the foreground color to <b>colorName</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setColorProp'><b>$setColorProp</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop, <span class='type'><A class='typehref' href='ZWT.Color.html'>ZWT.Color</A></span> color) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set color property <b>prop</b> to <b>color</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setFontName'><b>$setFontName</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fontName) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the font name.
+</p>
+<p class='ptext'> Example: setFontName("arial,sans-serif")
+ Pass an empty string to clear.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setFontSize'><b>$setFontSize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the font size in pixels.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setFontSize'><b>$setFontSize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the font size to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setFullHeight'><b>$setFullHeight</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the height to 100%.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setFullWidth'><b>$setFullWidth</b></A>() <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the width to 100%.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setHeight'><b>$setHeight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> height) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the height to <b>height</b> pixels.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setHeight'><b>$setHeight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> height, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the height to <b>height</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setHorAlign'><b>$setHorAlign</b></A>(<span class='type'><A class='typehref' href='ZWT.HorAlign.html'>ZWT.HorAlign</A></span> align) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the horizontal alignment to <b>align</b>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginBot'><b>$setMarginBot</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom margin in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginBot'><b>$setMarginBot</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom margin to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginBottom'><b>$setMarginBottom</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom margin in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginBottom'><b>$setMarginBottom</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom margin to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginLeft'><b>$setMarginLeft</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the left margin in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginLeft'><b>$setMarginLeft</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the left margin to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginRight'><b>$setMarginRight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the right margin in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginRight'><b>$setMarginRight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the right margin to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginTop'><b>$setMarginTop</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the top margin in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setMarginTop'><b>$setMarginTop</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the top margin to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setName'><b>$setName</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> newName)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the name.  It's up to the caller to make sure it's unique.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setOpacity'><b>$setOpacity</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> percent) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the opacity to <b>percent</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPadding'><b>$setPadding</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set padding on all sides in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingBot'><b>$setPaddingBot</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set bottom padding in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingBot'><b>$setPaddingBot</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom padding to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingBottom'><b>$setPaddingBottom</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set bottom padding in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingBottom'><b>$setPaddingBottom</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the bottom padding to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingLeft'><b>$setPaddingLeft</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set left padding in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingLeft'><b>$setPaddingLeft</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the left padding to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingRight'><b>$setPaddingRight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set right padding in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingRight'><b>$setPaddingRight</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the right padding to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingTop'><b>$setPaddingTop</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set top padding in pixels / units
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPaddingTop'><b>$setPaddingTop</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the top padding to <b>v</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setPixelValue'><b>$setPixelValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> TODO: add "em" and "ex", with a float value
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setUnitValue'><b>$setUnitValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> v, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> "in", "cm", "mm", "pt" and "pc" are not generally used.
+</p>
+<p class='ptext'> TODO: value should be float
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setValue'><b>$setValue</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> prop, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> v) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Generic way to add a property value.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setVerAlign'><b>$setVerAlign</b></A>(<span class='type'><A class='typehref' href='ZWT.VerAlign.html'>ZWT.VerAlign</A></span> align) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the vertical alignment to <b>align</b>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setWidth'><b>$setWidth</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> width) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the width to <b>width</b> pixels.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setWidth'><b>$setWidth</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> width, <span class='type'><A class='typehref' href='ZWT.Unit.html'>ZWT.Unit</A></span> u) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the width to <b>width</b> in unit <b>u</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setWrap'><b>$setWrap</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> on) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set text wrapping on or off.
+</p>
+<p class='ptext'> When <b>on</b> is TRUE works like Wrap.none.
+ When <b>on</b> is FALSE works like Wrap.normal.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setWrap'><b>$setWrap</b></A>(<span class='type'><A class='typehref' href='ZWT.Wrap.html'>ZWT.Wrap</A></span> how) <span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set text wrapping specifically
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

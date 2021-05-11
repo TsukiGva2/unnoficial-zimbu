@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>TIME.Values class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='TIME.html'>up:&nbsp;TIME</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> TIME.Values
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Broken-down values of a moment in time.
+</p>
+<p class='ptext'> Second resolution.
+<p class='ptext'> Example:
+<pre class='example'> IO.print(TIME.Values.NEW().ToString())
+</pre>
+ Equivalent to:
+<pre class='example'> IO.print(TIME.Values.NEW(TIME.current()).ToString())
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$usec'><b>$usec</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> microseconds, 0 - 999'999
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$sec'><b>$sec</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> seconds, 0 - 59
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$min'><b>$min</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> minutes, 0 - 59
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$hour'><b>$hour</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> hour, 0 - 23
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$day'><b>$day</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> day of the month, 1 - 31
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$month'><b>$month</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> month, 1 - 12
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$year'><b>$year</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> year, negative for BC
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$weekDay'><b>$weekDay</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> day of the week, 1 (Sunday) - 7 (Saturday)
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$yearDay'><b>$yearDay</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> day of the year, 1 - 366
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='TIME.Dst.html'>TIME.Dst</A></span></small>&nbsp;</td><td class='nowrap'><A href='TIME.Values.html#$dst'><b>$dst</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> information about daylight saving time
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new object using the current time and system time zone.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#NEW'><b>NEW</b></a>(<small>empty</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new object. When <b>empty</b> is TRUE all fields are zero.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#NEW'><b>NEW</b></a>(<small>usec</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new object using the time <b>usec</b> and using the system time
+ zone.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#$getUsec'><b>$getUsec</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the time stored in the object as micro seconds.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the time in international format: YYYY/MM/DD hh:mm:ss.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#$toStringDash'><b>$toStringDash</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the time in international format, but using dashes: YYYY-MM-DD
+ hh:mm:ss.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#$toStringShort'><b>$toStringShort</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the time in global English short format: Day, YYYY Mon DD
+ hh:mm:ss.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#$toStringFull'><b>$toStringFull</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the time in global English format: Weekday, YYYY Month DD
+ hh:mm:ss.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='TIME.Values.html#fromString'><b>fromString</b></a>(<small>t</small>) <small><span class='type'><A class='typehref' href='TIME.Values.html'>TIME.Values</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a TIME.Values from a string like it is returned from
+ $ToString() or $toStringDash().
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$day'><b>$day</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> day of the month, 1 - 31
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='TIME.Dst.html'>TIME.Dst</A></span>&nbsp;<A name='$dst'><b>$dst</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> information about daylight saving time
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$hour'><b>$hour</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> hour, 0 - 23
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$min'><b>$min</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> minutes, 0 - 59
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$month'><b>$month</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> month, 1 - 12
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$sec'><b>$sec</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> seconds, 0 - 59
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$usec'><b>$usec</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> microseconds, 0 - 999'999
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$weekDay'><b>$weekDay</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> day of the week, 1 (Sunday) - 7 (Saturday)
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$year'><b>$year</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> year, negative for BC
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$yearDay'><b>$yearDay</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> day of the year, 1 - 366
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new object using the current time and system time zone.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span> empty)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new object. When <b>empty</b> is TRUE all fields are zero.
+</p>
+<p class='ptext'> When <b>empty</b> is FALSE does the same as NEW().
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> usec)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new object using the time <b>usec</b> and using the system time
+ zone.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the time in international format: YYYY/MM/DD hh:mm:ss.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getUsec'><b>$getUsec</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the time stored in the object as micro seconds.
+</p>
+<p class='ptext'> Returns -1 if the member values are wrong.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toStringDash'><b>$toStringDash</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the time in international format, but using dashes: YYYY-MM-DD
+ hh:mm:ss.
+</p>
+<p class='ptext'> This can be used in a file name, where slashes are not allowed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toStringFull'><b>$toStringFull</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the time in global English format: Weekday, YYYY Month DD
+ hh:mm:ss.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toStringShort'><b>$toStringShort</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the time in global English short format: Day, YYYY Mon DD
+ hh:mm:ss.
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='fromString'><b>fromString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> t) <span class='type'><A class='typehref' href='TIME.Values.html'>TIME.Values</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a TIME.Values from a string like it is returned from
+ $ToString() or $toStringDash().
+</p>
+<p class='ptext'> The string must contain "YYYY.MM.DD.hh.mm.ss", where each dot can be
+ one or more of slash, dash, space or colon.  The seconds can be
+ omitted, zero will be used then.
+<p class='ptext'> $weekDay, $yearDay and $dst will not be set.
+<p class='ptext'> If the format is wrong a E.BadValue exception is thrown.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2010 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

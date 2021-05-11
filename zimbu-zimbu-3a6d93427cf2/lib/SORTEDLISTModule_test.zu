@@ -1,0 +1,80 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tests for the builtin module SORTEDLIST.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+FUNC test_slice() status
+  sortedList<int> l = [0, 1, 2, 3, 4, 5]
+  TEST.equal([4, 5].<list<int>>, l.slice(4))
+  TEST.equal([5].<list<int>>, l.slice(5))
+  TEST.equal([].<list<int>>, l.slice(6))
+  TEST.equal([].<list<int>>, l.slice(99))
+  TEST.equal(l.getList(), l.slice(0))
+  TEST.equal(l.getList(), l.slice(-1))
+  TEST.equal(l.getList(), l.slice(-22))
+
+  l = NIL
+  TEST.equal(NIL, l.slice(2))
+
+  RETURN OK
+}
+
+FUNC test_slice2() status
+  sortedList<int> l = [0, 1, 2, 3, 4, 5]
+  TEST.equal([2, 3, 4].<list<int>>, l.slice(2, 4))
+  TEST.equal([5].<list<int>>, l.slice(5, 10))
+  TEST.equal([].<list<int>>, l.slice(6, 10))
+  TEST.equal([].<list<int>>, l.slice(99, 95))
+  TEST.equal([].<list<int>>, l.slice(4, 3))
+  TEST.equal([].<list<int>>, l.slice(1, 0))
+  TEST.equal([].<list<int>>, l.slice(0, -1))
+
+  TEST.equal([0, 1, 2, 3].<list<int>>, l.slice(0, 3))
+  TEST.equal([0, 1, 2, 3].<list<int>>, l.slice(-1, 3))
+  TEST.equal([0, 1, 2, 3].<list<int>>, l.slice(-22, 3))
+
+  l = NIL
+  TEST.equal(NIL, l.slice(2, 3))
+
+  RETURN OK
+}
+
+FUNC test_sliceSize() status
+  sortedList<int> l = [0, 1, 2, 3, 4, 5]
+  TEST.equal([0, 1, 2, 3].<list<int>>, l.sliceSize(0, 4))
+  TEST.equal([2, 3].<list<int>>, l.sliceSize(2, 2))
+
+  TEST.equal([5].<list<int>>, l.sliceSize(5, 5))
+  TEST.equal([].<list<int>>, l.sliceSize(6, 5))
+  TEST.equal([0, 1, 2, 3, 4].<list<int>>, l.sliceSize(-1, 5))
+  TEST.equal([0, 1, 2, 3, 4].<list<int>>, l.sliceSize(-2, 5))
+
+  l = NIL
+  TEST.equal(NIL, l.sliceSize(-2, 5))
+
+  RETURN OK
+}
+
+FUNC test_sliceWrapSize() status
+  sortedList<int> l = [0, 1, 2, 3, 4, 5]
+  TEST.equal([0, 1, 2, 3].<list<int>>, l.sliceWrapSize(0, 4))
+  TEST.equal([2, 3, 4].<list<int>>, l.sliceWrapSize(-4, 3))
+  TEST.equal([4, 5].<list<int>>, l.sliceWrapSize(4, 5))
+
+  TEST.equal([5].<list<int>>, l.sliceWrapSize(5, 5))
+  TEST.equal([].<list<int>>, l.sliceWrapSize(6, 5))
+  TEST.equal([5].<list<int>>, l.sliceWrapSize(-1, 5))
+  TEST.equal([4, 5].<list<int>>, l.sliceWrapSize(-2, 5))
+
+  l = NIL
+  TEST.equal(NIL, l.sliceWrapSize(-2, 5))
+
+  RETURN OK
+}

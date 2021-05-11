@@ -1,0 +1,163 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ContainerType class.
+#
+# A Type used for a list, dict, array, etc.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Declaration.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+
+CLASS ContainerType EXTENDS ReferenceType @items=public
+  # Item type for array, list, dict, etc.
+  Type              $itemType
+
+  # Key type for dict and multiDict
+  Type              $keyType
+
+  # Number of dimensions for an array.  When zero anything goes.
+  int                 $dimensions
+
+  NEW(Type.Enum ttype, Type itemType, string name) @replace
+    PARENT.NEW(ttype, name)
+    $itemType = itemType
+    IF itemType != NIL && itemType.typeDefined()
+      $addDependsOn(itemType.getEffType())
+    }
+  }
+
+  NEW(Type.Enum ttype, Type itemType, Type keyType, string name)
+    PARENT.NEW(ttype, name)
+    $itemType = itemType
+    $keyType = keyType
+    IF itemType != NIL && itemType.typeDefined()
+      $addDependsOn(itemType.getEffType())
+    }
+    IF keyType != NIL && keyType.typeDefined()
+      $addDependsOn(keyType.getEffType())
+    }
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    ContainerType ret = NEW($ttype, $name)
+    $copyContainerValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyContainerValues(ContainerType ret) @default
+    $copyReferenceValues(ret)
+    ret.itemType = $itemType
+    ret.keyType = $keyType
+    ret.dimensions = $dimensions
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace @default
+    SWITCH $ttype
+      CASE Enum.list
+        RETURN "list<" .. Type.typeName($itemType, long) .. ">"
+      CASE Enum.array
+        RETURN "array<" .. Type.typeName($itemType, long)
+                       .. ($dimensions == 0 ? "" : ", " .. $dimensions) .. ">"
+      CASE Enum.dict
+        RETURN "dict<" .. Type.typeName($keyType, long) ..
+                                 ", " .. Type.typeName($itemType, long) .. ">"
+    }
+    RETURN PARENT.typeName(long)
+  }
+
+  # Return the name for the object declaration table.
+  # Return NIL if this is not an object.
+  FUNC $getTypeName(SContext ctx) string @replace
+    SWITCH $ttype
+      CASE Enum.array
+        RETURN "array"
+      CASE Enum.list
+        RETURN "list"
+      CASE Enum.dict
+        RETURN "dict"
+    }
+    THROW "INTERNAL: Unknown container type: " .. $ttype.ToString()
+  }
+
+  # Mark this combination of types used by Type().
+  FUNC $typeUsed(SContext ctx) Declaration
+    string s = $typeName(FALSE)
+    Declaration ret = %usedTypes.get(s, NIL)
+    IF ret == NIL
+      ret = NEW(s, THIS)
+      ret.pName = WriteCommon.getUid(s)
+      %usedTypes.add(s, ret)
+    }
+    ctx.addUsedItem(ret)
+    RETURN ret
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace @default
+    RETURN TRUE
+  }
+
+  FUNC $typeDefined() bool @replace
+    IF $itemType == NIL || !$itemType.typeDefined()
+      RETURN FALSE
+    }
+    IF $ttype == Type.Enum.dict
+      RETURN $keyType != NIL && $keyType.typeDefined()
+    }
+    RETURN TRUE
+  }
+
+  FUNC $hasAnyMembers() bool @replace
+    RETURN TRUE
+  }
+
+  # Return the types as they are used in a typespec.
+  # foo<type0, type1>
+  FUNC $getTypespecType(int idx) Type @replace
+    SWITCH $ttype
+      CASE Enum.array
+      CASE Enum.list
+        IF idx == 0
+          RETURN $itemType
+        }
+      CASE Enum.dict
+        IF idx == 0
+          RETURN $keyType
+        ELSEIF idx == 1
+          RETURN $itemType
+        }
+    }
+    RETURN NIL
+  }
+
+  # For a method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @replace @default
+    RETURN NIL
+  }
+
+  # For a method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @replace @default
+    RETURN NIL
+  }
+
+  SHARED
+    # Type names used.  Key is "list<int>", value is a Declaration.
+    dict<string, Declaration> %usedTypes = NEW()
+  }
+
+}

@@ -1,0 +1,14 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+    CLASS Foo
+      int $foo
+    }
+    TYPE Foo TheFoo
+    TYPE Foo NotTheFoo
+    TheFoo f = NEW()
+    NotTheFoo b = NEW()
+    b = f
+
+  RETURN 0
+}

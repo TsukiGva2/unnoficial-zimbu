@@ -1,0 +1,52 @@
+# A Zimbu program for testing that building works without managing memory.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+ARG.String xflag = NEW("x", NIL, "nothing", "The X flag")
+
+FUNC Main() int
+
+  SYS.shell("echo SYS says hello")
+
+  IO.print("testing IO")
+  IO.flush()
+
+  IO.delete("/dev/null")  # fails
+
+  testDefer()
+
+  # Finish called on exit.
+  keep = NEW("call Finish on exit")
+
+  IF xflag.get() != "right"
+    IO.print("x flag value wrong: " .. xflag.get())
+    EXIT 1
+  }
+
+  RETURN 0
+}
+
+MyObject keep
+
+CLASS MyObject
+  string $msg
+  NEW(string msg)
+    $msg = msg
+  }
+  FUNC $Finish() status
+    IO.print($msg .. "; exiting == " .. Z.exiting)
+    RETURN OK
+  }
+}
+
+PROC testDefer()
+  DEFER IO.print("deferred")
+  DEFER doIt("doIt()")
+  IO.print("before returning")
+}
+
+PROC doIt(string text)
+  IO.print(text)
+}

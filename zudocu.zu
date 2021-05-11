@@ -1,0 +1,2505 @@
+#
+# Zudocu: Generate documentation from a Zimbu file.
+#
+# Usage:
+#      zudocu input.zu ... outputDirectory
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# TODO: The way to produce HTML is very primitive.  Should use some sort of
+# template.
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Parse.zu"
+
+FUNC Main() int
+  IF ARG.Size() < 1
+    IO.print("Usage: " .. ARG.rawName .. " filename.zu ... outputDir")
+    EXIT 1
+  }
+
+  string outDirName = ARG.get(ARG.Size() - 1)
+  IO.FileInfo info = IO.fileInfo(outDirName)
+  IF !info.isDir
+    IF info.status == OK
+      IO.print("Last argument is not a directory: " .. outDirName)
+    ELSE
+      IO.print("Last argument not accessible: " .. outDirName)
+    }
+  }
+
+  # Go over all the files and add an entry in "pages".
+  FOR i IN 0 TO ARG.Size() - 2
+    processFile(ARG.get(i))
+  }
+
+  # Create the pages.
+  FOR page IN pages
+    IF !page.hide
+      writePage(page, outDirName)
+    }
+  }
+
+  # Create the page index.
+  writeIndex(outDirName)
+
+  RETURN 0
+}
+
+
+# Information collected for a documentation page.
+# There is one for every Module, Class and Enum.
+CLASS Page
+  Parent   $parent     # parent item, NIL for toplevel module or class
+  list<Page> $children # classes inside a module
+
+  string   $name       # e.g., "Server"
+  string   $fullName   # parent.name, e.g. "HTTP.Server"; equal to |name| when
+                       # |parent| is NIL
+  Zui.Statement $stmt  # Statement that declares the item.
+  Zui.Attributes $attr
+
+  string   $type       # "class", "module", "enum", "bits"
+  string   $typeSpec   # "<Type, Titem>" or NIL
+  string   $comment    # main comment for this item
+  bool     $noIndex    # don't list in index
+  bool     $hide       # there was a #! comment
+
+  Summary  $summary    # summary of items in this file.
+  string   $extends    # name of class or interface being extended
+  list<string> $implements  # list of implemented interfaces
+  list<string> $includes    # list of included pieces/classes/interfaces
+  string   $extendsNoType    # idem, without <Type>
+  string   $header     # before the summary
+  string   $tail       # after the summary
+
+  NEW(Parent parent, string name,
+                              Zui.Statement stmt, Zui.Attributes attr,
+                              string type, DocItems items)
+    $parent = parent
+    $children = NEW()
+    $name = name
+    $stmt = stmt
+    $attr = attr
+    $type = type
+    IF parent == NIL
+      $fullName = name
+    ELSE
+      $fullName = $parent.fullName .. "." .. name
+    }
+    pages.add($fullName, THIS)
+
+    $header = ""
+    $tail = ""
+    IF items == NIL || items.summary == NIL
+      $comment = ""
+    ELSE
+      $comment = items.summary
+    }
+    IF items != NIL
+      $noIndex = items.noIndex
+      $hide = items.hide
+    }
+    $implements = NEW()
+  }
+
+  # For use in sortedList.
+  FUNC $Compare(Page other) int @public
+    RETURN $name.toLower().Compare(other.name.toLower())
+  }
+  FUNC $ToString() string @public
+    RETURN $name
+  }
+
+  # Return the full name of the parent class.  This is a bit of guessing.
+  FUNC $parentName() string
+    IF $parent != NIL
+      # First try parent.extends.  E.g. ZWT.Label for "EXTENDS Label"
+      string pName = $parent.fullName .. "." .. $extendsNoType
+      IF pages.has(pName)
+        RETURN pName
+      }
+    }
+    # Try without adding the parent, e.g. for "EXTENDS HTTP.Servlet"
+    RETURN $extendsNoType
+  }
+
+  PROC $addHeader(string text)
+    $header ..= text
+  }
+
+  PROC $addTail(string text)
+    $tail ..= text
+  }
+
+  PROC $addImplements(Parent parent, list<Zui.Expression> implements)
+    FOR impl IN implements
+      # Prepend the surrounding module or class name, unless the names starts
+      # with "I.".
+      string s = getDotName(impl, parent)
+      IF parent != NIL && !s.startsWith("I.")
+        s = parent.fullName .. "." .. s
+      }
+      $implements.add(s)
+    }
+  }
+}
+
+# Defines a parent (e.g. a Class).
+CLASS Parent
+  Parent $parent      # parent of this parent
+  Page   $page        # page for this parent
+  string $name        # name of the parent itself
+  string $fullName    # name of the parent and its parents
+  Zui.Attributes   $attr
+  bool   $isLibModule # builtin module
+  bool   $isLibClass  # special class in builtin module
+  DocItems $items
+
+  set<string> $typeNames  # type names used in class template
+
+  NEW(Zui.Attributes attr, Parent parent, Page page,
+                                                  string name, DocItems items)
+    $attr = attr
+    $parent = parent
+    $page = page
+    $name = name
+    IF parent != NIL
+      $fullName = parent.fullName .. "." .. name
+    ELSE
+      $fullName = name
+    }
+    $items = items
+  }
+
+  PROC $addType(string name)
+    IF $typeNames == NIL
+      $typeNames = NEW()
+    }
+    $typeNames.set(name)
+  }
+
+  FUNC $hasType(string name) bool
+    IF $typeNames == NIL || !$typeNames.has(name)
+      IF $parent == NIL
+        RETURN FALSE
+      }
+      RETURN $parent.hasType(name)
+    }
+    RETURN TRUE
+  }
+}
+
+# Dictionary with all the pages.
+# Key is the full name, e.g. "IO", "HTTP.Server".
+dict<string, Page> pages = NEW()
+
+
+PROC processFile(string inFileName)
+  # Catch common mistakes in arguments.
+  IF inFileName.slice(-3) != ".zu"
+    IO.print("ERROR: file name must end in '.zu': " .. inFileName)
+    EXIT 1
+  }
+
+  #
+  # Parse |inFileName|.
+  #
+  Zui.Contents contents, Parse.ParseResult parsed =
+       Parse.parseFile(inFileName, "", toplevel + mainfile + import + keepEnd)
+
+  #
+  # Produce HTML from the parse tree and write it to stdout.
+  #
+  IF LOG.errorCount == 0
+    # Go through the parsed file.
+    FOR stmt IN contents.getStatementList()
+      SWITCH stmt.getType()
+        CASE Zui.StatementType.eCLASS_DECL
+        CASE Zui.StatementType.eENUM_DECL
+        CASE Zui.StatementType.eBITS_DECL
+          handleClass(stmt, NIL, NIL)
+
+        CASE Zui.StatementType.eALIAS_DECL
+          handleAlias(stmt, NIL)
+
+        CASE Zui.StatementType.eMODULE_DECL
+          handleModule(stmt)
+      }
+    }
+  }
+}
+
+dict<string, string> builtinMap = [
+    "ARRAY.array": "T.array",
+    "BOOL.bool": "T.bool",
+    "BYTESTRING.byteString": "T.byteString",
+    "THREAD.Cond": "T.cond",
+    "DICT.dict": "T.dict",
+    "DYN.dyn": "T.dyn",
+    "THREAD.EvalThread": "T.evalThread",
+    "FLOAT.float": "T.float",
+    "INT.int": "T.int",
+    "LIST.list": "T.list",
+    "THREAD.Lock": "T.lock",
+    "THREAD.AutoLock": "T.autoLock",
+    "MULTIDICT.MultiDict": "T.multiDict",
+    "MULTISET.MultiSet": "T.multiSet",
+    "NAT.nat": "T.nat",
+    "PIPE.Pipe": "T.pipe",
+    "SET.Set": "T.set",
+    "SORTEDLIST.SortedList": "T.sortedList",
+    "STATUS.status": "T.status",
+    "STRING.string": "T.string",
+    "TYPE.type": "T.type",
+    "THREAD.Thread": "T.thread",
+    "TUPLE.Tuple": "T.tuple",
+    "TYPE.Type": "T.type",
+    "VARBYTESTRING.varByteString": "T.varByteString",
+    "VARSTRING.varString": "T.varString",
+]
+
+dict<string, string> knownTypes = [
+  "array": "<A class='typehref' href='ARRAY.array.html'>array</A>",
+  "bool": "<A class='typehref' href='BOOL.bool.html'>bool</A>",
+  "byteString": "<A class='typehref' href='BYTES.byteString.html'>byteString</A>",
+  "cond": "<A class='typehref' href='THREAD.Cond.html'>cond</A>",
+  "dict": "<A class='typehref' href='DICT.dict.html'>dict</A>",
+  "dyn": "<A class='typehref' href='DYN.dyn.html'>dyn</A>",
+  "evalThread": "<A class='typehref' href='THREAD.EvalThread.html'>evalThread</A>",
+  "float": "<A class='typehref' href='FLOAT.float.html'>float</A>",
+  "int": "<A class='typehref' href='INT.int.html'>int</A>",
+  "list": "<A class='typehref' href='LIST.list.html'>list</A>",
+  "lock": "<A class='typehref' href='THREAD.Lock.html'>lock</A>",
+  "autoLock": "<A class='typehref' href='THREAD.AutoLock.html'>autoLock</A>",
+  "multiDict": "<A class='typehref' href='MULTIDICT.MultiDict.html'>multiDict</A>",
+  "multiSet": "<A class='typehref' href='MULTISET.MultiSet.html'>multiSet</A>",
+  "nat": "<A class='typehref' href='NAT.nat.html'>nat</A>",
+  "pipe": "<A class='typehref' href='PIPE.Pipe.html'>pipe</A>",
+  "set": "<A class='typehref' href='SET.Set.html'>set</A>",
+  "sortedList": "<A class='typehref' href='SORTEDLIST.SortedList.html'>sortedList</A>",
+  "status": "<A class='typehref' href='STATUS.status.html'>status</A>",
+  "string": "<A class='typehref' href='STRING.string.html'>string</A>",
+  "thread": "<A class='typehref' href='THREAD.Thread.html'>thread</A>",
+  "type": "<A class='typehref' href='TYPE.type.html'>type</A>",
+  "tuple": "<A class='typehref' href='TUPLE.Tuple.html'>tuple</A>",
+  "varByteString": "<A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A>",
+  "varString": "<A class='typehref' href='VARSTRING.varString.html'>varString</A>",
+]
+
+# Change known internal names into builtin type names.
+FUNC builtinTranslate(string name) string
+  RETURN builtinMap.get(name, name)
+}
+
+dict<Zui.Visibility, string> visName = [
+    Zui.Visibility.ePRIVATE:   "@private",
+    Zui.Visibility.ePROTECTED: "@protected",
+    Zui.Visibility.ePUBLIC:    "@public",
+    Zui.Visibility.eFILE:      "@file",
+    Zui.Visibility.eDIRECTORY: "@directory",
+    ]
+
+# Write a page into a HTML file.
+PROC writePage(Page page, string outDirName)
+  IO.File out = writeHeader(outDirName, page.fullName,
+                               page.fullName .. " " .. page.type, page.parent)
+  out.write("<h1>" .. htmlKeyStart .. page.type.toUpper() .. htmlKeyEnd)
+
+  out.write(" " .. builtinTranslate(page.fullName))
+  IF page.typeSpec != NIL
+    out.write(page.typeSpec)
+  }
+  out.print()
+  Zui.Attributes attr = page.attr
+  IF attr.getAbstract()
+      && page.stmt.getDeclaration().getType().getType() == Zui.TypeEnum.eCLASS
+    out.write(htmlSmallAttrStart .. "@abstract" .. htmlSmallAttrEnd)
+  }
+
+  IF attr.getEarlyInit()
+    out.write(htmlSmallAttrStart .. "@earlyInit" .. htmlSmallAttrEnd)
+  }
+
+  Zui.Visibility vis = attr.hasVisibility()
+                                ? attr.getVisibility() : Zui.Visibility.eUNSET
+  IF vis == Zui.Visibility.eUNSET
+    IF page.parent == NIL || !page.parent.attr.hasItemsVisibility()
+      vis = Zui.Visibility.eDIRECTORY
+    ELSEIF page.parent.attr.getItemsVisibility() != Zui.Visibility.eUNSET
+      vis = page.parent.attr.getItemsVisibility()
+    ELSE
+      vis = Zui.Visibility.eFILE
+    }
+  }
+  out.write(htmlSmallAttrStart .. visName[vis] .. htmlSmallAttrEnd)
+
+  out.print("</h1>")
+  out.print("<h2>summary</h2>")
+  out.print(htmlIndentStart)
+
+  out.write(page.header)
+
+  writeImplements(page, out)
+
+  out.write("<table>")
+  set<string> done = NEW()
+  out.write(page.summary.toString(done))
+
+  # write inherited stuff, recursively
+  writeInherited(page, done, out)
+
+  # write included pieces
+  writePieces(page, out)
+
+  out.write("</table>")
+
+  # "Known implementing classes"
+  writeImplementers(page, out)
+
+  # "Known subclasses"
+  writeSubClasses(page, out)
+
+  out.print(htmlIndentEnd)
+
+  out.write(page.tail)
+
+  out.print(htmlFooter)
+}
+
+# Write the interfaces that the class implements
+PROC writeImplements(Page page, IO.File out)
+  IF page.implements.Size() > 0
+    out.write("&nbsp;<br>")
+  }
+  FOR impl IN page.implements
+    out.write("<div>Implements " .. pageRef(impl, FALSE) .. "</div>")
+  }
+  IF page.implements.Size() > 0
+    out.write("&nbsp;<br>")
+  }
+}
+
+# Write the classes that are known to implement the interface.
+PROC writeImplementers(Page page, IO.File out)
+  list<string> classNames = NEW()
+  FOR p IN pages
+    FOR impl IN p.implements
+      IF impl == page.fullName
+        classNames.add(p.fullName)
+      }
+    }
+  }
+
+  IF classNames.Size() > 0
+    out.write("Known implementing classes:<br>")
+    out.print(htmlIndentStart)
+    FOR n IN classNames
+      out.write("<div>" .. pageRef(n, FALSE) .. "</div>")
+    }
+    out.print(htmlIndentEnd)
+    out.write("&nbsp;<br>")
+  }
+}
+
+# Write the classes that are known to extend the class.
+PROC writeSubClasses(Page page, IO.File out)
+  list<string> classNames = NEW()
+  FOR p IN pages
+    IF p.extends != NIL && p.parentName() == page.fullName && !p.hide
+      classNames.add(p.fullName)
+    }
+  }
+
+  IF classNames.Size() > 0
+    out.write("Known subclasses:<br>")
+    out.print(htmlIndentStart)
+    FOR n IN classNames.sort()
+      out.write("<div>" .. pageRef(n, FALSE) .. "</div>")
+    }
+    out.print(htmlIndentEnd)
+    out.write("&nbsp;<br>")
+  }
+}
+
+# Write summary for items that are inherited from the parent class.
+# Skip items in |done|, add listed items to that.
+PROC writeInherited(Page page, set<string> done, IO.File out)
+  IF page.extends == NIL
+    RETURN
+  }
+  string parentName = page.parentName()
+  IF pages.has(parentName)
+    Page parentPage = pages[parentName]
+    string text = parentPage.summary.toString(done)
+    IF text == ""
+      out.print("<tr><td colspan=3>Parent: "
+                    .. pageRef(parentPage.fullName, FALSE) .. "</td></tr>\n")
+    ELSE
+      out.print("<tr><td colspan=3>Inherited from "
+                    .. pageRef(parentPage.fullName, FALSE) .. ":</td></tr>\n")
+      out.write(text)
+    }
+
+    # Recurse into the parent.
+    writeInherited(parentPage, done, out)
+  }
+}
+
+# Write summary for items that are included pieces
+# Skip items in |done|, add listed items to that.
+PROC writePieces(Page page, IO.File out)
+  FOR piece IN page.includes ?: []
+    IF pages.has(piece)
+      Page piecePage = pages[piece]
+      string text = piecePage.summary.toString(NEW())
+      IF text != ""
+        out.print("<tr><td colspan=3>Included from "
+                      .. pageRef(piecePage.fullName, FALSE) .. ":</td></tr>\n")
+        out.write(text)
+      }
+    }
+  }
+}
+
+# Collect the items for the index.html file here.
+CLASS IndexEntry
+  string $type   # "CLASS", "MODULE", "PIECE"
+  string $name
+  string $summary
+  string $fname   # file for link, excluding ".html"
+
+  NEW(string type, string name, DocItems items, string fname)
+    $type = type
+    $name = name
+    IF items == NIL || items.summary == NIL
+      $summary = ""
+    ELSE
+      $summary = items.summary
+    }
+    $fname = fname
+  }
+}
+
+PROC writeIndex(string outDirName)
+  IO.File out = writeHeader(outDirName, "index", "index", NIL)
+  out.print("<h1>index</h1>")
+
+  #
+  # Go through the pages to identify builtin types and modules.
+  # Some builtin modules only define one type, these are not listed.
+  #
+  sortedList<Page> classList = NEW()
+  sortedList<Page> moduleList = NEW()
+  FOR key IN pages.keys().sort()
+    Page page = pages[key]
+    IF page.parent == NIL && !page.noIndex && !page.hide
+      bool isClass
+      IF page.children.Size() == 1
+        string childName = page.children[0].name
+        IF knownTypes.has(childName)
+             || childName == "MultiDict"
+             || childName == "MultiSet"
+             || childName == "Pipe"
+             || childName == "Set"
+             || childName == "SortedList"
+          # For a module with one class item, list the class and omit the
+          # module E.g. for "STRING" show the "string" class.
+          isClass = TRUE
+          page = page.children[0]
+        }
+      ELSEIF page.name == "THREAD"
+        # The THREAD module has "thread", "cond" and "lock" classes.
+        FOR child IN page.children
+          IF child.name == "Thread"
+              || child.name == "Cond"
+              || child.name == "Lock"
+              || child.name == "AutoLock"
+            classList.add(child)
+          }
+        }
+      }
+      IF isClass
+        classList.add(page)
+      ELSE
+        moduleList.add(page)
+      }
+    }
+  }
+
+  FOR pageList IN [classList, moduleList]
+    out.write("<h3>")
+    out.write(pageList IS classList ? "builtin types" : "builtin modules")
+    out.print("</h3>")
+    out.print(htmlIndentStart)
+    out.print("<table>")
+
+    FOR page IN pageList
+      string name = page.name
+      IF name.Size() > 1 && name[0].isUpper() && name[1].isLower()
+        # Thread -> thread, SortedList -> sortedList, etc.
+        name = name[0].toLowerAscii().asString() .. name.slice(1)
+      }
+      out.write("<tr><td align='right'>")
+      out.write(htmlKeyStart .. page.type.toUpper() .. htmlKeyEnd)
+      out.write("&nbsp;</td><td class='nowrap'>")
+      out.write(pageRef(page.fullName, name, TRUE))
+      out.write("&nbsp;</td><td>" .. page.comment .. "</td></tr>")
+    }
+
+    out.print("</table>")
+    out.print(htmlIndentEnd)
+  }
+
+
+  out.print("<h3>second level items</h3>")
+  out.print(htmlIndentStart)
+  out.print("<table>")
+  FOR key IN pages.keys().sort()
+    Page page = pages[key]
+    IF page.parent != NIL && !page.noIndex && !page.hide
+      out.write("<tr><td align='right'>")
+      out.write(htmlKeyStart .. page.type.toUpper() .. htmlKeyEnd)
+      out.write("&nbsp;</td><td class='nowrap'>")
+      out.write(pageRef(page.fullName, TRUE))
+      out.write("&nbsp;</td><td>" .. page.comment .. "</td></tr>")
+    }
+  }
+  out.print("</table>")
+  out.print(htmlIndentEnd)
+
+  out.print(htmlFooter)
+}
+
+# Create a page for a class, interface, bits or enum_decl.
+PROC handleClass(Zui.Statement stmt, list<Zui.Statement> libStatements,
+                                                                Parent parent)
+  Zui.Declaration decl = stmt.getDeclaration()
+  string name = decl.getName()
+  IF parent != NIL && parent.isLibModule
+                       && (name.startsWith("START") || name.startsWith("END"))
+    # A dummy class added for builtin types.
+    IF libStatements == NIL
+      RETURN
+    }
+    name = name.slice(5)
+  }
+
+  DocItems items = NEW(parent, stmt, FALSE)
+
+  string what
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      IF decl.getType().getType() == Zui.TypeEnum.eINTERFACE
+        what = "interface"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.eCLASS
+        what = "class"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.ePIECE
+        what = "piece"
+      ELSE
+        what = "?????"
+      }
+    CASE Zui.StatementType.eENUM_DECL
+      what = "enum"
+    CASE Zui.StatementType.eBITS_DECL
+      what = "bits"
+    CASE Zui.StatementType.eALIAS_DECL
+      what = "alias"
+  }
+
+  Zui.Type type = decl.getType()
+  Zui.Attributes attr = type.hasAttr() ? type.getAttr() : NEW()
+  Page page = NEW(parent, name, stmt, attr, what, items)
+  Parent thisClass = NEW(attr, parent, page, name, items)
+  IF libStatements != NIL
+    thisClass.isLibClass = TRUE
+  }
+
+  # Add the class to the parent page, so that we can figure out if it's the
+  # only one when generating the index.
+  # Skip SortedListIterator, so that SortedList is used.
+  IF parent != NIL && parent.page != NIL
+          && page.name != "SortedListIterator"
+    parent.page.children.add(page)
+  }
+
+  IF items != NIL
+    page.addHeader(getTextSection(items.summary))
+    page.addHeader(getTextSection(items.details))
+  }
+
+  Zui.ClassType class
+
+  list<Zui.Statement> statements
+  list<Zui.Statement> sharedStatements
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      class = decl.getType().getClassDecl()
+      IF libStatements != NIL
+        statements = libStatements
+      ELSEIF class.hasMember()
+        statements = class.getMemberList()
+      }
+      IF class.hasShared()
+        sharedStatements = class.getShared().getStatementList()
+      }
+      IF class.hasTemplateTypeName()
+        page.typeSpec = getTypeSpecString(class.getTemplateTypeNameList(),
+                                                  NIL, thisClass, FALSE, TRUE)
+      }
+
+    CASE Zui.StatementType.eENUM_DECL
+      Zui.EnumType enum = decl.getType().getEnumDecl()
+      IF enum.hasMember()
+        statements = enum.getMemberList()
+      }
+    CASE Zui.StatementType.eBITS_DECL
+      Zui.BitsType bits = decl.getType().getBitsDecl()
+      IF bits.hasMember()
+        statements = bits.getMemberList()
+      }
+  }
+
+  page.summary = summarize(statements, sharedStatements,
+                                             parent, thisClass, page.fullName)
+
+  IF class != NIL && class.hasImplements()
+    page.addImplements(parent, class.getImplementsList())
+  }
+
+  IF class != NIL && class.hasExtends()
+    page.extends = getDotName(class.getExtends(), parent)
+    int typeIdx = page.extends.find("&lt;")
+    IF typeIdx > 0
+      page.extendsNoType = page.extends.slice(0, typeIdx - 1)
+    ELSE
+      page.extendsNoType = page.extends
+    }
+  }
+
+  # Find Pieces used in INCLUDE.
+  page.includes = findIncludes(statements, parent, thisClass)
+
+  IF stmt.getType() == Zui.StatementType.eENUM_DECL
+    page.addTail(listEnumValues(decl.getType().getEnumDecl()))
+  }
+
+  IF stmt.getType() == Zui.StatementType.eALIAS_DECL
+    page.addTail(printAlias(stmt, parent, thisClass))
+  ELSE
+    page.addTail(listMembers(statements, sharedStatements, parent, thisClass))
+  }
+
+  # Do the "footer" section.
+  page.addTail(getFooter(items, parent))
+}
+
+PROC handleModule(Zui.Statement stmt)
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.ModuleType module = decl.getType().getModuleDecl()
+
+  DocItems items = NEW(NIL, stmt, FALSE)
+
+  string name = decl.getName()
+  string className
+  bool isLibModule
+  # TODO: only when processing Zimbu modules.
+  IF name.endsWith("Module")
+    isLibModule = TRUE
+    name = name.slice(0, -7)  # Remove "Module".
+  }
+  Zui.Attributes attr = decl.getType().getAttr()
+  Page page = NEW(NIL, name, stmt, attr, "module", items)
+  Parent parent = NEW(attr, NIL, page, name, items)
+  parent.isLibModule = isLibModule
+
+  IF items != NIL
+    page.addHeader(getTextSection(items.summary))
+    page.addHeader(getTextSection(items.details))
+  }
+
+  list<Zui.Statement> statements
+  IF module.hasStatement()
+    statements = module.getStatementList()
+  }
+
+  IF statements != NIL
+    # Find all the CLASSes and BITS in the module and generate a page for
+    # them.  Figure out ALIAS source.
+    handleClasses(statements, parent)
+
+    IF isLibModule
+      # Find all fake classes in the library module and generate a page for
+      # them.
+      handleLibClasses(statements, parent)
+    }
+  }
+
+  page.summary = summarize(statements, NIL, parent, NIL, name)
+
+  # Do the "members" section.
+  page.addTail(listMembers(statements, NIL, parent, NIL))
+
+  # Do the "footer" section.
+  page.addTail(getFooter(items, NIL))
+}
+
+# Remember all the methods that were encountered.  Used to lookup aliases.
+dict<string, Zui.Statement> methods = NEW()
+
+
+# Figure out what type the alias is for and include the item here, instead of
+# where it's defined.
+PROC handleAlias(Zui.Statement stmt, Parent parent)
+  Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+
+  string leftName = getDotName(alias.getFrom(), parent)
+  IF !pages.has(leftName)
+    IF methods.has(leftName)
+      # It's a method, link its method.
+      alias.setFor(methods[leftName])
+      RETURN
+    }
+
+    # Remove Module, works for ZWT.PanelModule.Panel -> ZWT.Panel
+    int i = leftName.find("Module")
+    IF i > 0
+      leftName = leftName.slice(0, i - 1) .. leftName.slice(i + 6)
+    }
+    IF !pages.has(leftName)
+      IF methods.has(leftName)
+        # It's a method, link its method.
+        alias.setFor(methods[leftName])
+        RETURN
+      }
+
+      # Must be something else, e.g. func<string>.  Use the alias itself.
+      alias.setFor(stmt)
+
+      # Create a dummy page for the type, so that we can jump there where the
+      # alias is used.
+      handleClass(stmt, NIL, parent)
+      RETURN
+    }
+  }
+
+  # Now generate the page with the alias name.  Remove the "from" one.
+  Page page = pages[leftName]
+  pages.remove(leftName)
+  handleClass(page.stmt, NIL, parent)
+
+  # Trick: add aliased statement in for field, so that we know the type.
+  stmt.getDeclaration().getType().getAlias().setFor(page.stmt)
+}
+
+CLASS SummaryEntry
+  string $itemName   # name of the item that this entry is for
+                     # includes argument types: NEW(Foo,IO.File)
+  string $tableRow   # the text to put in the HTML file; NIL for hidden entry
+
+  NEW(string name, string row)
+    $itemName = name
+    $tableRow = row
+  }
+}
+
+CLASS Summary
+  list<SummaryEntry> $entries
+  int                $count  # number of not hidden, item entries
+
+  NEW()
+    $entries = NEW()
+  }
+
+  FUNC $Size() int
+    RETURN $count
+  }
+  
+  # Add an entry. "row" can be NIL for a hidden entry.
+  PROC $add(string itemName, string row)
+    $entries.add(NEW(itemName, row))
+    IF itemName != "" && row != NIL
+      ++$count
+    }
+  }
+
+  PROC $addSep()
+    # Only add a separator if there is a non-separator item at the end of the
+    # list.
+    IF $entries.Size() > 0
+                     && $entries[$entries.Size() - 1].tableRow != htmlTableSep
+      $entries.add(NEW("", htmlTableSep))
+    }
+  }
+
+  PROC $addHeader(string text)
+    $entries.add(NEW("", "<tr><td colspan=3>" .. text .. "</td></tr>\n"))
+  }
+
+  # Return all the entry rows concatenated.
+  # Skip items already in |done|, add listed items to |done|.
+  FUNC $toString(set<string> done) string
+    string ret = ""
+    FOR e IN $entries
+      IF e.itemName == "" || !done.has(e.itemName)
+        IF e.itemName != ""
+          done.add(e.itemName)
+        }
+        IF e.tableRow != NIL
+          ret ..= e.tableRow
+        }
+      }
+    }
+    RETURN ret
+  }
+}
+
+# Return a string with a summary for |statements|.
+# These are <tr> entries for a table.
+# When not empty ends in a separator.
+FUNC summarize(list<Zui.Statement> statements,
+               list<Zui.Statement> sharedStatements,
+               Parent parent,
+               Parent thisClass,
+               string itemName
+     ) Summary
+  Summary summary = NEW()
+
+  # Find all the member classes for the summary.
+  int l = summary.Size()
+  summarizeClasses(statements, parent, thisClass, summary)
+  IF sharedStatements != NIL
+    summarizeClasses(sharedStatements, parent, thisClass, summary)
+  }
+  IF summary.Size() > l
+    summary.addSep()
+  }
+
+  # Find all the member variables for the summary.
+  l = summary.Size()
+  summarizeVars(statements, thisClass != NIL, itemName,
+                                                   parent, thisClass, summary)
+  IF summary.Size() > l
+    summary.addSep()
+  }
+  IF sharedStatements != NIL
+    l = summary.Size()
+    summarizeVars(sharedStatements, FALSE, itemName, parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+  # Find all the methods for the summary.
+  l = summary.Size()
+  summarizeMethods(statements, thisClass != NIL, FALSE, itemName,
+                                                   parent, thisClass, summary)
+  IF summary.Size() > l
+    summary.addSep()
+  }
+
+  # Find all the object methods for a library module.
+  IF thisClass != NIL && thisClass.isLibClass
+    l = summary.Size()
+    summarizeMethods(statements, TRUE, TRUE, itemName,
+                                                   parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+
+  IF sharedStatements != NIL
+    l = summary.Size()
+    summarizeMethods(sharedStatements, FALSE, FALSE, itemName,
+                                                   parent, thisClass, summary)
+    IF summary.Size() > l
+      summary.addSep()
+    }
+  }
+
+  RETURN summary
+}
+
+# Add a summary of classes in |statements| to |summary|.
+PROC summarizeClasses(list<Zui.Statement> statements, Parent parent,
+                                            Parent thisClass, Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eALIAS_DECL
+        # The "for" item was set here, not by Parse.
+        Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+        IF alias.hasFor()
+          Zui.Statement classStmt = alias.getFor()
+          IF classStmt.getType() == Zui.StatementType.eCLASS_DECL
+              || classStmt.getType() == Zui.StatementType.eBITS_DECL
+              || classStmt.getType() == Zui.StatementType.eENUM_DECL
+              || classStmt.getType() == Zui.StatementType.eALIAS_DECL
+            summarizeClass(classStmt, parent, summary)
+          }
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeClasses(cond.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeClasses(elseif.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeClasses(cond.getElse().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeClasses(stmt.getBlock().getStatementList(),
+                                                   parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eCLASS_DECL
+      CASE Zui.StatementType.eBITS_DECL
+      CASE Zui.StatementType.eENUM_DECL
+        summarizeClass(stmt, parent, summary)
+
+    }
+  }
+}
+
+FUNC getVisibility(Zui.Attributes attr, Parent parent) Zui.Visibility
+  Zui.Visibility vis
+  IF attr.hasVisibility()
+    vis = attr.getVisibility()
+  }
+  IF vis == Zui.Visibility.eUNSET || vis == Zui.Visibility.unknown
+    IF parent == NIL
+      vis = Zui.Visibility.eDIRECTORY
+    ELSEIF parent.attr.hasItemsVisibility()
+                  && parent.attr.getItemsVisibility() != Zui.Visibility.eUNSET
+      vis = parent.attr.getItemsVisibility()
+    ELSE
+      vis = Zui.Visibility.eFILE
+    }
+  }
+  RETURN vis
+}
+
+PROC summarizeClass(Zui.Statement stmt, Parent parent, Summary summary)
+  Zui.Declaration decl = stmt.getDeclaration()
+  string name = decl.getName()
+  IF parent.isLibModule
+    IF name.startsWith("START")
+      name = name.slice(5)
+    ELSEIF name.startsWith("END")
+      RETURN
+    }
+  }
+
+  string what
+  SWITCH stmt.getType()
+    CASE Zui.StatementType.eCLASS_DECL
+      IF decl.getType().getType() == Zui.TypeEnum.eINTERFACE
+        what = "INTERFACE"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.eCLASS
+        what = "CLASS"
+      ELSEIF decl.getType().getType() == Zui.TypeEnum.ePIECE
+        what = "PIECE"
+      ELSE
+        what = "?????"
+      }
+    CASE Zui.StatementType.eENUM_DECL
+      what = "ENUM"
+    CASE Zui.StatementType.eBITS_DECL
+      what = "BITS"
+    CASE Zui.StatementType.eALIAS_DECL
+      what = "ALIAS"
+  }
+  DocItems di = NEW(parent, decl)
+  IF di.header != NIL
+    summary.addSep()
+    summary.addHeader(di.header)
+  }
+
+  IF di.hide || di.noIndex
+    summary.add(name, NIL)
+  ELSE
+    string ret = "<tr><td align='right'>"
+               .. htmlKeyStart .. what .. htmlKeyEnd .. "&nbsp;</td>"
+    ret ..= "<td class='nowrap'>" .. getHref(parent, name, NIL)
+    IF stmt.getType() == Zui.StatementType.eCLASS_DECL
+                        && decl.getType().getClassDecl().hasTemplateTypeName()
+      ret ..= "<small>" .. getTypeSpecString(
+                      decl.getType().getClassDecl().getTemplateTypeNameList(),
+                                                 NIL, NIL, FALSE, FALSE)
+              .. "</small>"
+    }
+
+    Zui.Attributes attr = decl.getType().hasAttr()
+                                            ? decl.getType().getAttr() : NEW()
+    Zui.Visibility vis = getVisibility(attr, parent)
+    ret ..= htmlSmallAttrStart .. visName[vis] .. htmlSmallAttrEnd
+    ret ..= "&nbsp;</td>"
+    IF di.summary != NIL
+      ret ..= getSection(di.summary, "td")
+    }
+    ret ..= "</tr>\n"
+    summary.add(name, ret)
+  }
+}
+
+PROC summarizeVars(list<Zui.Statement> statements,
+                   bool member,
+                   string itemName,
+                   Parent parent,
+                   Parent thisClass,
+                   Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eVAR_DECL
+        DocItems di = NEW(parent, stmt.getDeclaration())
+        IF di.header != NIL
+          summary.addSep()
+          summary.addHeader(di.header)
+        }
+        Zui.Declaration decl = stmt.getDeclaration()
+        string name = decl.getName()
+        IF di.hide
+          summary.add(name, NIL)
+        ELSE
+          string ret = "<tr><td align='right'>"
+          string dollarName = member && name != "NEW" ? "$" .. name : name
+          ret ..= "<small>"
+          ret ..= getTypeName(decl.getType(), parent, thisClass, TRUE)
+          ret ..= "</small>&nbsp;"
+          ret ..= "</td><td class='nowrap'>"
+          ret ..= "<A href='" .. itemName .. ".html#" .. dollarName .. "'><b>"
+                                               .. dollarName .. "</b></A>"
+          Zui.Visibility vis = getVisibility(
+                                    stmt.getDeclaration().getType().getAttr(),
+                                        thisClass == NIL ? parent : thisClass)
+          ret ..= htmlSmallAttrStart .. visName[vis] .. htmlSmallAttrEnd
+          ret ..= "&nbsp;</td>"
+          IF di.summary != NIL
+            ret ..= getSection(di.summary, "td")
+          }
+          ret ..= "</tr>\n"
+          summary.add(name, ret)
+        }
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # TODO
+        BREAK
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeVars(cond.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeVars(elseif.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeVars(cond.getElse().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeVars(stmt.getBlock().getStatementList(), member,
+                                         itemName, parent, thisClass, summary)
+        }
+    }
+  }
+}
+
+PROC summarizeMethods(list<Zui.Statement> statements,
+                      bool member, bool doLibMethod,
+            string itemName, Parent parent, Parent thisClass, Summary summary)
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eMETHOD_DECL
+        summarizeMethod(stmt, member, doLibMethod,
+                                   itemName, parent, thisClass, summary, TRUE)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # The "for" item was set in handleAlias().
+        Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+        IF alias.hasFor()
+          Zui.Statement methodStmt = alias.getFor()
+          IF methodStmt.getType() == Zui.StatementType.eMETHOD_DECL
+            summarizeMethod(methodStmt, member, doLibMethod,
+                                  itemName, parent, thisClass, summary, FALSE)
+          }
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          summarizeMethods(cond.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            summarizeMethods(elseif.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          summarizeMethods(cond.getElse().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          summarizeMethods(stmt.getBlock().getStatementList(), member,
+                            doLibMethod, itemName, parent, thisClass, summary)
+        }
+    }
+  }
+}
+
+FUNC makeDollarName(string name, bool member) string
+  RETURN member && name != "NEW" ? "$" .. name : name
+}
+
+PROC summarizeMethod(Zui.Statement stmt,
+                     bool member,
+                     bool doLibMethod,
+                     string itemName,
+                     Parent parent,
+                     Parent thisClass,
+                     Summary summary,
+                     bool register)
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  DocItems di = NEW(parent, decl)
+  string name = decl.getName()
+
+  VAR argList = method.getArgumentList()
+  bool typeMethod = isTypeMethod(parent, stmt)
+  IF typeMethod
+    IF member
+      # Object method defined in a builtin type module: remove the first
+      # argument.
+      argList = argList.slice(1)
+    ELSE
+      # Only list the method as an object method.
+      RETURN
+    }
+    IF name == "cOMPARE"
+      # Can't use Compare outside of a class, thus cOMPARE is used and it's
+      # fixed here.
+      name = "Compare"
+    }
+  }
+
+  IF register
+    string fullName
+    IF thisClass != NIL
+      fullName = thisClass.fullName .. "." .. name
+    ELSEIF parent != NIL
+      fullName = parent.fullName .. "." .. name
+    ELSE
+      fullName = name
+    }
+    methods[fullName] = stmt
+  }
+  string dollarName = makeDollarName(name, member)
+
+  # handle template
+  Parent thisMethod = NEW(decl.getType().getAttr(), thisClass, NIL, name, di)
+
+  string typeSpec = ""
+  IF method.hasTemplateTypeName() && !typeMethod
+    typeSpec = getTypeSpecString(method.getTemplateTypeNameList(),
+                                                 NIL, thisMethod, FALSE, TRUE)
+  }
+
+  string nameWithArgs = dollarName .. typeSpec .. "("
+                       .. getArgumentTypes(argList, parent, thisMethod) .. ")"
+  IF di.header != NIL
+    summary.addSep()
+    summary.addHeader(di.header)
+  }
+  IF di.hide
+    summary.add(nameWithArgs, NIL)
+  ELSE
+    string ret = "<tr><td align='right'>"
+    ret ..= "</td><td class='nowrap'><A href='" .. itemName .. ".html#" .. dollarName
+                                .. "'><b>" .. dollarName .. "</b></a>"
+    IF typeSpec != ""
+      ret ..= "<small>" .. typeSpec .. "</small>"
+    }
+    ret ..= "(<small>"
+    ret ..= getArgumentNames(argList)
+    ret ..= "</small>)"
+
+    IF method.hasReturnType()
+      ret ..= " <small>"
+      string comma = ""
+      FOR t IN method.getReturnTypeList()
+        ret ..= comma
+        ret ..= getTypeName(t, parent, thisMethod, TRUE)
+        comma = ", "
+      }
+      ret ..= "</small>"
+    }
+
+    Zui.Visibility vis = getVisibility(decl.getType().getAttr(),
+                                        thisClass == NIL ? parent : thisClass)
+    ret ..= htmlSmallAttrStart .. visName[vis] .. htmlSmallAttrEnd
+    ret ..= "&nbsp;</td>\n"
+    IF di.summary != NIL
+      ret ..= getSection(di.summary, "td")
+    }
+    ret ..= "</tr>\n"
+    summary.add(nameWithArgs, ret)
+  }
+}
+
+# Verbose listing of values of |enum|.
+FUNC listEnumValues(Zui.EnumType enum) string
+  string ret = ""
+
+  # Find all the members for the details.
+  ret ..= "<h2>values</h2>"
+  ret ..= htmlIndentStart
+  ret ..= "<table>"
+
+  FOR item IN enum.getItemList()
+    DocItems di = NEW(NIL, item)
+    IF !di.hide
+      ret ..= "<tr><td><b>" .. item.getName() .. "</b>&nbsp;</td><td>"
+      IF di.summary != NIL || di.details != NIL
+        ret ..= getTextSection(di.summary)
+        ret ..= getTextSection(di.details)
+      }
+      ret ..= "</td></tr>"
+    }
+  }
+
+  ret ..= "</table>"
+  ret ..= htmlIndentEnd
+
+  RETURN ret
+}
+
+FUNC findIncludes(list<Zui.Statement> statements,
+                  Parent parent, Parent thisClass
+                 ) list<string>
+  list<string> includes = NEW()
+
+  FOR stmt IN statements ?: []
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eINCLUDE
+        Zui.Include include = stmt.getInclude()
+        FOR incStmt IN include.getStatementList()
+          IF incStmt.getType() == Zui.StatementType.eVAR_DECL
+            string type = getTypeName(incStmt.getDeclaration().getType(),
+                                                    parent, thisClass, FALSE)
+            int i = type.find("&lt;")
+            IF i > 0
+              # Remove the template type.
+              type = type.slice(0, i - 1)
+            }
+            # We don't know what the page name is, guess it's either the name
+            # as specified or the name with the parent name prepended, add
+            # both. TODO: figure out which one it really is.
+            includes.add(type)
+            IF parent != NIL && !type.startsWith("I.")
+              type = parent.fullName .. "." .. type
+              includes.add(type)
+            }
+          }
+        }
+
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          includes.extend(findIncludes(
+                       cond.getBlock().getStatementList(), parent, thisClass))
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            includes.extend(findIncludes(
+                     elseif.getBlock().getStatementList(), parent, thisClass))
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          includes.extend(findIncludes(
+                        cond.getElse().getStatementList(), parent, thisClass))
+        }
+    }
+  }
+  RETURN includes
+}
+
+
+# Verbose listing of members of |statements|.
+FUNC listMembers(list<Zui.Statement> statements,
+                 list<Zui.Statement> sharedStatements,
+                 Parent parent,
+                 Parent thisClass
+     ) string
+  string ret = ""
+
+  # Find all the members for the details.
+  ret ..= "<h2>members (alphabetically)</h2>\n"
+  ret ..= htmlIndentStart
+  IF statements != NIL
+    dict<string, string> vars = NEW()
+    listVars(statements, thisClass != NIL, parent, thisClass, vars)
+    ret ..= sortMembers(vars)
+
+    dict<string, string> members = NEW()
+    listMethods(statements, thisClass != NIL, parent, thisClass, members)
+    ret ..= sortMembers(members)
+  }
+
+  IF sharedStatements != NIL
+    # Find all the shared members for the details.
+    ret ..= htmlIndentEnd
+    ret ..= "<h2>shared (alphabetically)</h2>\n"
+    ret ..= htmlIndentStart
+    dict<string, string> vars = NEW()
+    listVars(sharedStatements, FALSE, parent, thisClass, vars)
+    ret ..= sortMembers(vars)
+
+    dict<string, string> members = NEW()
+    listMethods(sharedStatements, FALSE, parent, thisClass, members)
+    ret ..= sortMembers(members)
+  }
+
+  RETURN ret .. htmlIndentEnd
+}
+
+# Text of an alias.
+FUNC printAlias(Zui.Statement stmt,
+                Parent parent,
+                Parent thisClass
+     ) string
+  string ret = ""
+
+  ret ..= "<h2>aliased type</h2>\n"
+  ret ..= htmlIndentStart
+
+  Zui.AliasType alias = stmt.getDeclaration().getType().getAlias()
+  ret ..= getTypeFromExpr(alias.getFrom(), parent, thisClass, TRUE, FALSE)
+
+  RETURN ret .. htmlIndentEnd
+}
+
+# Sort member entries and concatenate them into one string.
+FUNC sortMembers(dict<string, string> members) string
+  string ret = ""
+  FOR k IN members.keys().sort()
+    ret ..= members[k]
+  }
+  RETURN ret
+}
+
+# Recursive function of listMembers.
+PROC listVars(list<Zui.Statement> statements,
+              bool member,
+              Parent parent,
+              Parent thisClass,
+              dict<string, string> vars)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eVAR_DECL
+        DocItems di = NEW(parent, stmt.getDeclaration())
+        IF !di.hide
+          Zui.Declaration decl = stmt.getDeclaration()
+          string name = (member ? "$" : "") .. decl.getName()
+          string ret = ""
+          ret ..= "<p>"
+          ret ..= getTypeName(decl.getType(), parent, thisClass, TRUE)
+          ret ..= "&nbsp;"
+          ret ..= "<A name='" .. name .. "'><b>" .. name .. "</b></A>"
+          Zui.Visibility vis = getVisibility(
+                                    stmt.getDeclaration().getType().getAttr(),
+                                      thisClass == NIL ? parent : thisClass)
+          ret ..= htmlAttrStart .. " " .. visName[vis] .. htmlAttrEnd
+          ret ..= "</p>"
+
+          IF di.summary != NIL || di.details != NIL
+            ret ..= htmlIndentStart
+            ret ..= getTextSection(di.summary)
+            ret ..= getTextSection(di.details)
+            ret ..= htmlIndentEnd
+          }
+          vars[name] = ret
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          listVars(stmt.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          listVars(cond.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            listVars(elseif.getBlock().getStatementList(), member,
+                                                      parent, thisClass, vars)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          listVars(cond.getElse().getStatementList(), member,
+                                                      parent, thisClass, vars)
+        }
+    }
+  }
+}
+
+# Recursive function of listMembers.
+PROC listMethods(list<Zui.Statement> statements,
+                 bool member,
+                 Parent parent,
+                 Parent thisClass,
+                 dict<string, string> members)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eMETHOD_DECL
+        listMethod(stmt, member, parent, thisClass, members)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        # TODO: if the alias is for a method then call listMethod()
+#          listMethod(stmt.getSome(), member, parent, thisClass)
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          listMethods(stmt.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          listMethods(cond.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            listMethods(elseif.getBlock().getStatementList(), member,
+                                                   parent, thisClass, members)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          listMethods(cond.getElse().getStatementList(), member,
+                                                   parent, thisClass, members)
+        }
+    }
+  }
+}
+
+FUNC isTypeMethod(Parent parent, Zui.Statement stmt) bool
+  Zui.Declaration decl = stmt.getDeclaration()
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  VAR argList = method.getArgumentList()
+  RETURN parent != NIL
+      && parent.isLibModule
+      && argList != NIL
+      && argList.Size() > 0
+      && argList[0].getName() == "this"
+}
+
+# Create the HTML for a method.
+# Add it to |members| under the method name, so that they can be sorted.
+PROC listMethod(Zui.Statement stmt,
+                bool member,
+                Parent parent,
+                Parent thisClass,
+                dict<string, string> members)
+  Zui.Declaration decl = stmt.getDeclaration()
+  DocItems di = NEW(parent, decl)
+  IF di.hide
+    RETURN
+  }
+
+  Zui.MethodType method = decl.getType().getMethodDecl()
+  VAR argList = method.getArgumentList()
+  bool typeMethod = isTypeMethod(parent, stmt)
+  string name = decl.getName()
+  IF typeMethod
+    IF member
+      # Object method defined in a builtin type module: remove the first
+      # argument.
+      argList = argList.slice(1)
+    ELSE
+      # Only list the method as an object method.
+      RETURN
+    }
+    IF name == "cOMPARE"
+      # Can't use Compare outside of a class, thus cOMPARE is used and it's
+      # fixed here.
+      name = "Compare"
+    }
+  }
+
+  string methodName = makeDollarName(name, member)
+
+  # Handle template.  But not for a type method.
+  Parent thisMethod = NEW(decl.getType().getAttr(), thisClass, NIL,
+                                                               methodName, di)
+  string typeSpec = ""
+  IF method.hasTemplateTypeName() && !typeMethod
+    typeSpec = getTypeSpecString(method.getTemplateTypeNameList(),
+                                               NIL, thisMethod, FALSE, TRUE)
+  }
+
+  string ret = ""
+  ret ..= "<p class='pheader'>"
+  IF decl.getType().getType() == Zui.TypeEnum.eFUNC
+    ret ..= htmlKeyStart .. "FUNC" .. htmlKeyEnd .. " "
+  ELSE
+    ret ..= htmlKeyStart .. "PROC" .. htmlKeyEnd .. " "
+  }
+  ret ..= "<A name='" .. methodName .. "'><b>"
+                                           .. methodName .. "</b></A>"
+  ret ..= typeSpec
+  ret ..= "("
+  ret ..= getArguments(argList, parent, thisMethod)
+  ret ..= ")"
+
+  IF decl.getType().getType() == Zui.TypeEnum.eFUNC
+    string comma = ""
+    FOR t IN method.getReturnTypeList()
+      ret ..= comma
+      ret ..= " " .. getTypeName(t, parent, thisMethod, TRUE)
+      comma = ", "
+    }
+  }
+
+  Zui.Attributes attr = decl.getType().getAttr()
+  IF attr.getAbstract()
+    ret ..= htmlAttrStart .. " @abstract" .. htmlAttrEnd
+  }
+  IF attr.getIsdefault()
+    ret ..= htmlAttrStart .. " @default" .. htmlAttrEnd
+  }
+  IF attr.getReplace()
+    ret ..= htmlAttrStart .. " @replace" .. htmlAttrEnd
+  }
+  Zui.Visibility vis = getVisibility(decl.getType().getAttr(),
+                                      thisClass == NIL ? parent : thisClass)
+  ret ..= htmlAttrStart .. " " .. visName[vis] .. htmlAttrEnd
+  ret ..= "</p>"
+  IF di.summary != NIL || di.details != NIL
+    ret ..= htmlIndentStart
+    ret ..= getTextSection(di.summary)
+    ret ..= getTextSection(di.details)
+    ret ..= htmlIndentEnd
+  }
+
+  # A method name can be overloaded, find the next available key.
+  # This keeps methods with the same name in the original order.
+  # Put NEW and predefined methods at the top.
+  string key = methodName
+  IF key == "NEW"
+    key = "!0NEW"
+  ELSEIF key == "Init"
+    key = "!1Init"
+  ELSEIF key == "Finish"
+    key = "!2Finish"
+  ELSEIF key == "Compare"
+    key = "!3Compare"
+  ELSEIF key == "Equal"
+    key = "!4Equal"
+  ELSEIF key == "FromString"
+    key = "!5FromString"
+  ELSEIF key == "Iterator"
+    key = "!6Iterator"
+  ELSEIF key == "ToString"
+    key = "!7ToString"
+  }
+  int nr
+  WHILE members.has(key .. nr)
+    ++nr
+  }
+
+  members[key .. nr] = ret
+}
+
+FUNC getFooter(DocItems itemsArg, Parent parentArg) string
+  # Find "extra" in this item or a parent.
+  DocItems items = itemsArg
+  Parent parent = parentArg
+  WHILE items.extra == NIL && parent != NIL
+    items = parent.items
+    parent = parent.parent
+  }
+
+  string ret = ""
+  IF items.extra != NIL
+    FOR section IN items.extra
+      ret ..= "<h2>" .. section[0] .. "</h2>\n"
+      ret ..= htmlIndentStart
+      int i = 1
+      WHILE i < section.Size()
+        ret ..= section[i]
+        ++i
+      }
+      ret ..= htmlIndentEnd
+    }
+  }
+  RETURN ret
+}
+
+PROC handleClasses(list<Zui.Statement> statements, Parent parent)
+  FOR stmt IN statements
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eCLASS_DECL
+      CASE Zui.StatementType.eENUM_DECL
+      CASE Zui.StatementType.eBITS_DECL
+        handleClass(stmt, NIL, parent)
+
+      CASE Zui.StatementType.eALIAS_DECL
+        handleAlias(stmt, parent)
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          handleClasses(stmt.getBlock().getStatementList(), parent)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          handleClasses(cond.getBlock().getStatementList(), parent)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            handleClasses(elseif.getBlock().getStatementList(), parent)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          handleClasses(cond.getElse().getStatementList(), parent)
+        }
+    }
+  }
+}
+
+# Handle classes marked with STARTname.
+PROC handleLibClasses(list<Zui.Statement> statements, Parent parent)
+  int i
+  WHILE i < statements.Size()
+    Zui.Statement stmt = statements[i]
+    SWITCH stmt.getType()
+      CASE Zui.StatementType.eCLASS_DECL
+        Zui.Declaration decl = stmt.getDeclaration()
+        IF decl.getName().startsWith("START")
+          list<Zui.Statement> stmts = NEW()
+          # The NEW() methods are inside the class.
+          Zui.ClassType class = decl.getType().getClassDecl()
+          IF class.hasMember()
+            stmts = class.getMemberList()
+          }
+
+          ++i
+          WHILE i < statements.Size()
+            Zui.Statement classStmt = statements[i]
+            IF classStmt.getType() == Zui.StatementType.eCLASS_DECL
+                     && classStmt.getDeclaration().getName().startsWith("END")
+              BREAK
+            }
+            stmts.add(classStmt)
+            ++i
+          }
+          IF stmts.Size() > 0
+            handleClass(stmt, stmts, parent)
+          }
+        }
+
+      CASE Zui.StatementType.eBLOCK
+        IF stmt.hasBlock()
+          handleLibClasses(stmt.getBlock().getStatementList(), parent)
+        }
+
+      CASE Zui.StatementType.eGENERATEIF
+        # IF part
+        Zui.Condition cond = stmt.getCondition()
+        IF cond.hasBlock()
+          handleLibClasses(cond.getBlock().getStatementList(), parent)
+        }
+        # Loop over ELSEIFs.
+        FOR elseif IN cond.getElseifList() ?: []
+          IF elseif.hasBlock()
+            handleLibClasses(elseif.getBlock().getStatementList(), parent)
+          }
+        }
+        # ELSE part
+        IF cond.hasElse()
+          handleLibClasses(cond.getElse().getStatementList(), parent)
+        }
+    }
+
+    ++i
+  }
+}
+
+
+# Return a section encl0sed in <|item|>, </|item|>.
+# Return an empty string for a NIL |text|.
+FUNC getSection(string text, string item) string
+  IF text == NIL
+    RETURN ""
+  }
+  RETURN "<" .. item .. ">" .. text .. "</" .. item .. ">\n"
+}
+
+# Return a section encl0sed in <p>, </p> and using the "ptext" class.
+# Return an empty string for a NIL |text|.
+FUNC getTextSection(string text) string
+  IF text == NIL
+    RETURN ""
+  }
+  RETURN htmlTextStart .. text .. "</p>\n"
+}
+
+# Escape HTML in |text| and make words in bars bold.
+# TODO: this only works for latin1, not utf-8.
+FUNC processComment(Parent parent, string text) string
+  string ret = ""
+  int len = text.Size()
+  int idx
+  int startIdx
+  WHILE idx < len
+    int c = text[idx]
+    IF c == '<' || c == '>' || c == '&'
+      IF idx > startIdx
+        ret ..= text.slice(startIdx, idx - 1)
+      }
+      startIdx = idx + 1
+      SWITCH c
+        CASE '<'; ret ..= "&lt;"
+        CASE '>'; ret ..= "&gt;"
+        CASE '&'; ret ..= "&amp;"
+      }
+    ELSEIF parent != NIL
+      IF c == '|'
+        # Text inside |bars|, used for reference to an argument.
+        int bar2
+        bar2 = idx + 1
+        WHILE bar2 < len && text[bar2] != '|' && text[bar2] != ' '
+          ++bar2
+        }
+        IF text[bar2] == '|'
+          IF idx > startIdx
+            ret ..= text.slice(startIdx, idx - 1)
+          }
+          startIdx = bar2 + 1
+          ret ..= "<b>" ..  text.slice(idx + 1, bar2 - 1) .. "</b>"
+          idx = startIdx
+        }
+      ELSEIF c == '`'
+        # Text inside `backticks`, used for code.
+        int bar2
+        bar2 = idx + 1
+        WHILE bar2 < len && text[bar2] != '`'
+          ++bar2
+        }
+        IF text[bar2] == '`'
+          IF idx > startIdx
+            ret ..= text.slice(startIdx, idx - 1)
+          }
+          startIdx = bar2 + 1
+          ret ..= "<span class='commentcode'>"
+                                ..  text.slice(idx + 1, bar2 - 1) .. "</span>"
+          idx = startIdx
+        }
+      ELSEIF c == '@'
+        int end
+        end = idx + 1
+        WHILE end < len && "@ ()".find(text[end]) < 0
+          ++end
+        }
+        IF end < len && text[end] == '@'
+          #  @http://some/page@link this@
+          int third
+          third = end + 1
+          WHILE third < len && text[third] != '@'
+            ++third
+          }
+          IF text[third] == '@'
+            IF idx > startIdx
+              ret ..= text.slice(startIdx, idx - 1)
+            }
+            startIdx = third + 1
+            ret ..= "<A href=\"" ..  text.slice(idx + 1, end - 1) .. "\">"
+                                    ..  text.slice(end + 1, third - 1) .. "</a>"
+            idx = startIdx
+          }
+        ELSEIF end > idx + 1
+          # @Item  link
+          IF idx > startIdx
+            ret ..= text.slice(startIdx, idx - 1)
+          }
+          startIdx = end
+          ret ..= getHref(parent, text.slice(idx + 1, end - 1), NIL)
+          idx = startIdx
+        }
+      }
+    }
+    ++idx
+  }
+  IF idx > startIdx
+    ret ..= text.slice(startIdx, idx - 1)
+  }
+  RETURN ret
+}
+
+# Get a reference to the file#item that defines parent.name.
+FUNC getHref(Parent parent, string name, string item) string
+  string fname
+  IF name == NIL
+    fname = ""
+  ELSE
+    fname = name .. ".html"
+    IF parent != NIL
+      fname = parent.fullName .. "." .. fname
+    }
+  }
+  string ret = "<A href='" .. fname
+  IF item != NIL
+    ret ..= "#" .. item
+  }
+  RETURN ret ..  "'><b>" .. (name == NIL ? item : name) .. "</b></A>"
+}
+
+# Return html code for a reference to page |name|.
+# Put the name in bold if |bold| is TRUE.
+FUNC pageRef(string name, bool bold) string
+  RETURN pageRef(name, name, bold)
+}
+
+# Return html code for a reference to page |name|.
+# Put the name in bold if |bold| is TRUE.
+FUNC pageRef(string fullName, string name, bool bold) string
+  string ret = "<A href='" .. fullName .. ".html'>"
+  IF bold
+    ret ..= "<b>"
+  }
+  ret ..= name
+  IF bold
+    ret ..= "</b>"
+  }
+  RETURN ret .. "</A>"
+}
+
+# Return a string for a type name.
+# |parent| is the item one level higher.  E.g. when defining a method in a
+# CLASS inside a MODULE it's the MODULE.  Types are assumed to be defined at
+# the MODULE level.
+# |thisClass| is the class we are currently in, and it points to its parents.
+# Used to lookup types defined in a template.
+#
+# When |wrap| is TRUE wrap it in HTML stuff.
+FUNC getTypeName(Zui.Type type, Parent parent, Parent thisClass, bool wrap
+     ) string
+  string s = getTypeList([type], parent, thisClass, wrap, FALSE, FALSE)
+  IF wrap
+    RETURN htmlTypeStart .. s .. htmlTypeEnd
+  }
+  RETURN s
+}
+
+FUNC getTypeList(list<Zui.Type> typeList, Parent parent,
+                        Parent thisClass, bool wrap, bool addType, bool isFunc
+     ) string
+  string res = ""
+  string comma = ""
+  FOR i IN 0 UNTIL typeList.Size()
+    VAR type = typeList[i]
+    IF isFunc && i == typeList.Size() - 1
+      IF comma == ""
+        res ..= " =&gt; "
+      ELSE
+        comma = " =&gt; "
+      }
+    }
+    string item = getTypeRecurse(type, parent, thisClass, wrap, addType)
+    res ..= comma .. wrapTypeRef(item, thisClass, wrap)
+    comma = ", "
+  }
+  RETURN res
+}
+
+FUNC getTypeList(list<Zui.Id> typeList, Parent parent,
+                                    Parent thisClass, bool wrap, bool addType
+     ) string
+  string res = ""
+  string comma = ""
+  FOR id IN typeList
+    res ..= comma .. wrapTypeRef(id.getName(), thisClass, wrap)
+    comma = ", "
+  }
+  RETURN res
+}
+
+FUNC getTypeRecurse(Zui.Type type, Parent parent, Parent thisClass,
+                                                      bool wrap, bool addType
+     ) string
+  IF type == NIL
+    RETURN "nil"
+  }
+
+  string ret = ""
+  IF type.getType() == Zui.TypeEnum.eNAME
+    ret ..= getTypeFromExpr(type.getName(), parent, thisClass, wrap, addType)
+    
+  ELSEIF type.getType() == Zui.TypeEnum.eREF
+    ret ..= getTypeRecurse(type.getRef(), parent, thisClass, wrap, addType)
+            .. " &"
+  ELSE
+    IO.print("Type not supported: " .. type.getType().ToString())
+    ret ..= "unknown"
+  }
+
+  RETURN ret
+}
+
+# When |addType| is TRUE add type names to the |thisClass|.
+FUNC getTypeFromExpr(Zui.Expression expr, Parent parent,
+                                    Parent thisClass, bool wrap, bool addType
+     ) string
+  string ret = ""
+  IF expr.getType() == Zui.ExprType.eID
+    string name = expr.getId().getName()
+    IF addType
+      # Inside a template of a class: add type names to the class
+      ret ..= name
+      thisClass.addType(name)
+    ELSEIF parent != NIL && name.Size() >= 2
+               && name[0] >= 'A' && name[0] <= 'Z'
+               && name[0] != 'T'  # HACK: exclude Titem, template type
+               && (name[1] < 'A' || name[1] > 'Z')
+               && (thisClass == NIL || !thisClass.hasType(name))
+      # Special case: prepend parent name to class name.
+      # This is very simplistic, but it appears to work for the libraries.
+      ret ..= parent.fullName .. "." .. name
+    ELSE
+      ret ..= wrapKnownTypes(name, wrap)
+    }
+  ELSEIF expr.getType() == Zui.ExprType.eTHIS
+    ret ..= "THIS"
+  ELSEIF expr.getType() == Zui.ExprType.eMEMBER
+    ret ..= getTypeFromExpr(expr.getLeft(), parent, thisClass, wrap, addType)
+    ret ..= "."
+    ret ..= getTypeFromExpr(expr.getRight(), NIL, thisClass, wrap, addType)
+  ELSEIF expr.getType() == Zui.ExprType.eSUBSCRIPT
+    ret ..= getTypeFromExpr(expr.getLeft(), parent, thisClass, wrap, addType)
+    ret ..= "["
+    ret ..= getTypeFromExpr(expr.getRight(), parent, thisClass, wrap, addType)
+    ret ..= "]"
+
+  ELSEIF expr.getType() == Zui.ExprType.eTYPESPEC
+    string specName
+    bool isType
+    bool isFunc
+    IF expr.getLeft().getType() == Zui.ExprType.eID
+      specName = expr.getLeft().getId().getName()
+      isType = ["func", "proc", "callback"].has(specName)
+      isFunc = specName == "func"
+    }
+    IF isType
+      ret ..= htmlTypeStart
+    }
+
+    # Don't pass parent to avoid SET.Set instead of Set.
+    ret ..= getTypeFromExpr(expr.getLeft(), NIL, thisClass, wrap, addType)
+    IF isType
+      ret ..= htmlTypeEnd
+    }
+
+    ret ..= getTypeSpecString(expr.getTypespecList(), parent, thisClass,
+                                            wrap, addType, specName == "func")
+  ELSE
+    IO.print("ExprType not supported: " .. expr.getType().ToString())
+    ret ..= "unknown"
+  }
+  RETURN ret
+}
+ 
+FUNC getTypeSpecString(list<Zui.Type> types, Parent parent,
+                        Parent thisClass, bool wrap, bool addType, bool isFunc
+     ) string
+  string ret = "&lt;"
+  ret ..= getTypeList(types, parent, thisClass, wrap, addType, isFunc)
+  ret ..= "&gt;"
+  RETURN ret
+}
+
+FUNC getTypeSpecString(list<Zui.Id> types, Parent parent,
+                                    Parent thisClass, bool wrap, bool addType
+     ) string
+  string ret = "&lt;"
+  ret ..= getTypeList(types, parent, thisClass, wrap, addType)
+  ret ..= "&gt;"
+  RETURN ret
+}
+
+FUNC wrapKnownTypes(string name, bool wrap) string
+  IF !wrap
+    RETURN name
+  }
+  IF knownTypes.has(name)
+    RETURN knownTypes[name]
+  }
+  RETURN name
+}
+
+# Wrap a type with a link when it starts with something that is a toplevel
+# item.
+FUNC wrapTypeRef(string type, Parent thisClass, bool wrap) string
+  IF !wrap
+    RETURN type
+  }
+  IF thisClass != NIL && thisClass.hasType(type)
+    RETURN type
+  }
+
+  # This is a bit of guessing: only wrap items starting with "FOO." or "Foo."
+  # TODO: make this work properly.
+  IF !startsWithDotname(type)
+    RETURN type
+  }
+  string lead
+  IF type.endsWith(".I")
+    # Interface is defined in the page of its class.
+    lead = type.slice(0, -3)
+  ELSE
+    lead = type
+  }
+  RETURN "<A class='typehref' href='" .. lead .. ".html'>" .. type .. "</A>"
+}
+
+# Return TRUE if |s| starts with "XXX." or "Xxx.".
+FUNC startsWithDotname(string s) bool
+  IF s[0] < 'A' || s[0] > 'Z'
+    RETURN FALSE
+  }
+  IF s == "THIS"
+    RETURN FALSE
+  }
+  IF s == "Titem" || s == "Tkey" || s == "Tresult" 
+    # generic template types, no link
+    RETURN FALSE
+  }
+  FOR c IN s
+    IF c == '.'
+      BREAK
+    }
+    IF !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+      RETURN FALSE
+    }
+  }
+  RETURN TRUE
+}
+
+# Return the list of argument names.
+FUNC getArgumentNames(list<Zui.Declaration> arguments) string
+  string ret = ""
+  string comma = ""
+  FOR arg IN arguments ?: []
+    ret ..= comma
+    ret ..= arg.getName()
+    comma = ", "
+  }
+  RETURN ret
+}
+
+# Return the list of argument types.  No HTML wrapping.
+FUNC getArgumentTypes(list<Zui.Declaration> arguments,
+                                              Parent parent, Parent thisClass
+     ) string
+  string ret = ""
+  string comma = ""
+  FOR arg IN arguments ?: []
+    ret ..= comma
+    ret ..= getTypeName(arg.getType(), parent, thisClass, FALSE)
+    comma = ","
+  }
+  RETURN ret
+}
+
+# Write the arguments, type and name.
+FUNC getArguments(list<Zui.Declaration> arguments,
+                                              Parent parent, Parent thisClass
+     ) string
+  string ret = ""
+  string comma = ""
+  FOR arg IN arguments ?: []
+    ret ..= comma
+    ret ..= getTypeName(arg.getType(), parent, thisClass, TRUE)
+    IF arg.getType().getType() != Zui.TypeEnum.eREF  # "int ref" vs "int &ref"
+      ret ..= " "
+    }
+    ret ..= arg.getName()
+    comma = ", "
+  }
+  RETURN ret
+}
+
+CLASS DocItems
+  string             $header
+  string             $summary
+  string             $details
+  list<list<string>> $extra   # extra items from #*section
+  bool               $hide    # when TRUE hide this item (not public)
+  bool               $noIndex # when TRUE don't list this item in the index
+
+  # Fill in the fields from |comment|, which is below the item when |useStart|
+  # is TRUE.
+  NEW(Parent parent, string comment, bool useStart)
+    IF comment != NIL
+      $create(parent, comment, useStart)
+    }
+  }
+
+  # Fill in the fields from |stmt|.
+  NEW(Parent parent, Zui.Statement stmt, bool dummy)
+    IF stmt.hasDeclaration()
+      Zui.Declaration decl = stmt.getDeclaration()
+      IF decl.hasCommentBefore()
+        $create(parent, decl.getCommentBefore(), FALSE)
+      }
+    }
+  }
+
+
+  # Fill in the fields from |decl|.commentBefore and |decl|.commentAfter
+  NEW(Parent parent, Zui.Declaration decl)
+    # Use the next comment first, then the previous comment.  That means the
+    # previous overrules the next when both contain something useful.
+    # But the "hide" flag is used from both.
+    bool   nextHide
+    string nextSummary
+    string nextDetails
+    bool   hasNext
+    IF decl.hasCommentAfter()
+      $create(parent, decl.getCommentAfter(), TRUE)
+      # Remember the values, they will be cleared when the previous comment
+      # exists but has no useful text after an empty line.
+      nextHide = $hide
+      nextSummary = $summary
+      nextDetails = $details
+      hasNext = nextSummary != NIL || nextDetails != NIL
+      $header = NIL  # ignore header after the item
+    }
+    IF decl.hasCommentBefore()
+      $summary = NIL
+      $details = NIL
+      $create(parent, decl.getCommentBefore(), FALSE)
+      $hide = $hide || nextHide
+      IF $summary == NIL || (decl.getPreferCommentAfter() && hasNext)
+        $summary = nextSummary
+      }
+      IF $details == NIL || (decl.getPreferCommentAfter() && hasNext)
+        $details = nextDetails
+      }
+    }
+  }
+
+  # Fill in $summary and $details from |comment|.
+  # When |useStart| is TRUE then use the start of the comment, up to an empty
+  # line.  When |useStart| is FALSE use the end of the comment, restart at
+  # every empty line.
+  PROC $create(Parent parent, string comment, bool useStart)
+    string s = comment
+    bool headerBreak
+    bool summaryBreak
+    string detailsBreak
+    bool   detailsInExample
+    string extraBreak
+    int    extraIdx
+
+    WHILE TRUE
+      int idx = s.find('#')
+      int end = s.find('\n')
+      IF end >= 0 && (end < idx || idx < 0)
+        # Line without comment.  When using start don't look at the rest.
+        # When using end discard what we found previously.
+        IF useStart
+          BREAK
+        }
+        $summary = NIL
+        $details = NIL
+        $extra = NIL
+        extraBreak = NIL
+        $hide = FALSE
+        $noIndex = FALSE
+      }
+      IF idx < 0
+        BREAK  # no comment, done
+      }
+      IF end >= idx
+        IF   s[idx + 1] == ':'  #  #:  part of the header
+          || s[idx + 1] == '='  #  #=  part of the summary
+          || s[idx + 1] == '*'  #  #*  part of the footer
+          || s[idx + 1] == '-'  #  #-  part of the details
+          || s[idx + 1] == '%'  #  #%  example in <pre>
+          #  #+  argument or return value TODO
+          #  #.>  literal HTML
+          #  #.?  not in index
+          $hide = FALSE
+
+          string text
+          IF s[idx + 2] == '>'
+            # HTML line, use literally.
+            text = s.slice(idx + 3, end)
+          ELSEIF s[idx + 1] == '%'
+            # Escape HTML, no bolding
+            text = processComment(NIL, s.slice(idx + 2, end))
+          ELSEIF s[idx + 2] == '?'
+            $noIndex = TRUE
+            # Escape HTML, make words in bars bold.
+            text = processComment(parent, s.slice(idx + 3, end))
+          ELSE
+            # Escape HTML, make words in bars bold.
+            text = processComment(parent, s.slice(idx + 2, end))
+          }
+
+          SWITCH s[idx + 1]
+            CASE ':'
+              IF $header == NIL
+                $header = text
+              ELSEIF headerBreak
+                $header ..= htmlTextStart .. text
+              ELSE
+                $header ..= text
+              }
+              headerBreak = FALSE
+            CASE '='
+              IF $summary == NIL
+                $summary = text
+              ELSEIF summaryBreak
+                $summary ..= htmlTextStart .. text
+              ELSE
+                $summary ..= text
+              }
+              summaryBreak = FALSE
+            CASE '-'
+              IF $details == NIL
+                $details = text
+              ELSE
+                IF detailsInExample
+                  $details ..= "</pre>\n"
+                }
+                $details ..= text
+              }
+              detailsBreak = htmlTextStart
+              detailsInExample = FALSE
+            CASE '%'
+              IF $details == NIL
+                $details = "<pre class='example'>" .. text
+              ELSEIF !detailsInExample
+                $details ..= "<pre class='example'>" .. text
+              ELSE
+                $details ..= text
+              }
+              detailsBreak = "</pre>\n" .. htmlTextStart .. "\n"
+              detailsInExample = TRUE
+            CASE '*'
+              IF $extra == NIL
+                $extra = NEW()
+                extraIdx = 0
+              }
+              IF $extra.Size() <= extraIdx
+                $extra.add([text])
+              ELSEIF s[idx + 2] != ' '
+                $extra.add([text])
+                ++extraIdx
+              ELSE
+                $extra[extraIdx].add(text)
+              }
+              extraBreak = htmlTextStart
+          }
+        ELSEIF s[idx + 1] == '!'  #  #!  hidden item
+          $hide = TRUE
+        ELSE
+          headerBreak = TRUE
+          summaryBreak = TRUE
+          IF detailsBreak != NIL
+            $details ..= detailsBreak
+            detailsBreak = NIL
+            detailsInExample = FALSE
+          }
+          IF extraBreak != NIL
+            $extra[extraIdx].add(extraBreak)
+            extraBreak = NIL
+          }
+        }
+      }
+      s = s.slice(end + 1)
+    }
+    IF detailsInExample && detailsBreak != NIL
+      $details ..= detailsBreak
+    }
+  }
+}
+
+# Return a string for an expression that can be a member list.
+FUNC getDotName(Zui.Expression expr, Parent parent) string
+  SWITCH expr.getType()
+    CASE Zui.ExprType.eID
+      RETURN expr.getId().getName()
+    CASE Zui.ExprType.eMEMBER
+      RETURN getDotName(expr.getLeft(), parent)
+                                 .. "." .. getDotName(expr.getRight(), parent)
+    CASE Zui.ExprType.eTYPESPEC
+      RETURN getDotName(expr.getLeft(), parent)
+                  .. getTypeSpecString(expr.getTypespecList(), parent, NIL,
+                                                          FALSE, FALSE, FALSE)
+  }
+  RETURN "unknown"
+}
+
+# Open the output file |fullName|.html in directory |outDirName|.
+# Write the header. Use |title| for the title.
+# Return the output file.
+FUNC writeHeader(string outDirName, string fullName, string title, Parent parent
+     ) IO.File
+  string outFileName = outDirName .. "/" .. fullName .. ".html"
+  IO.File out = IO.fileWriter(outFileName)
+  IF out == NIL
+    IO.print("ERROR: Cannot open file for writing: " .. outFileName)
+    EXIT 1
+  }
+  IO.print("Writing " .. outFileName)
+
+  out.print(htmlHeader)
+  out.print("<title>" .. title .. " - Zimbu documentation</title>")
+  out.print(htmlMiddle)
+
+  out.print("<table width='500'><tr><td>")
+  IF parent != NIL
+    out.print("<A href='" .. parent.fullName
+                           .. ".html'>up:&nbsp;" .. parent.fullName .. "</A>")
+  }
+
+  out.print("</td><td>")
+  out.print("&nbsp;&nbsp;&nbsp;")
+  out.print("</td><td>")
+  IF fullName != "index"
+    out.print("<A href='index.html'>index</A>")
+  }
+
+  out.print("</td><td align='right' width='90%'>")
+  out.print("<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>")
+  out.print("</td></tr></table>")
+
+  RETURN out
+}
+
+
+# TODO: should get header/middle/footer from a file or template.
+string htmlHeader = ''"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+"''
+string htmlMiddle = "</head><body>"
+string htmlFooter = "</body></html>"
+
+string htmlIndentStart = "<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>"
+string htmlIndentEnd = "</td></tr></table>"
+string htmlTypeStart = "<span class='type'>"
+string htmlTypeEnd = "</span>"
+string htmlAttrStart = "<span class='attribute'>"
+string htmlAttrEnd = "</span>"
+string htmlSmallAttrStart = "<span class='attribute'><small> "
+string htmlSmallAttrEnd = "</small></span>"
+string htmlKeyStart = "<span class='keyword'>"
+string htmlKeyEnd = "</span>"
+string htmlTableSep = "<tr><td>&nbsp;</td></tr>"
+string htmlTextStart = "<p class='ptext'>"

@@ -1,0 +1,741 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Declaration class.
+#
+# A name that is declared to have a certain type.
+# Stores the context of the declaration (position, scope).
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "ExprArg.zu"
+IMPORT "FileScope.zu"
+IMPORT "MethodType.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "SharedScope.zu"
+IMPORT "SymUse.zu"
+IMPORT "TargetLang.zu"
+IMPORT "Type.zu"
+IMPORT "ValueType.zu"
+IMPORT "Visibility.zu"
+IMPORT "ZuiFile.zu"
+
+CLASS Declaration @items=public
+  string        $name         # Name as where the item was declared.
+  string        $scopeName    # Name of the scope, used for a comment when
+                              # writing the declaration.
+
+  string        $pName        # Name used in the produced C code and in
+                              # JavaScript for non-methods.
+  string        $jsMName      # Name of an object method for JavaScript.
+  string        $jsFName      # Name of the function that implements the object
+                              # method for JavaScript.
+
+  Type          $type         # the type
+
+  ValueType     $bitsMember   # When $type is a BitsType this field can be set
+                              # to indicate what member of that BITS to use.
+                              # Passed from generateVarname() to
+                              # generateAssign() and others.
+
+  bool          $isArg        # Argument to a method, can't assign to it.
+  bool          $isLoopVar    # loop variable, declared one scope higher up
+  bool          $isUsedInTry  # variable is used inside a TRY statement, may
+                              # need to add "volatile" to the declaration.
+  bool          $needAlloc    # variable is normally on stack but is used in USE
+                              # argument and must be allocated, like an object.
+  bool          $fake         # Created by the compiler.
+  bool          $temp         # Temp variable and being used.  When FALSE it
+                              # can be re-used.  Stored in MethodScope.tempVars.
+
+  Scope         $scopeBase    # Scope that contains this symbol.
+
+  Zui.Position  $zuiPos       # only set for tuple types
+
+  Zui.Declaration $zuiDecl    # Zui file Declaration.  Uniquely identifies this
+                              # declaration.
+  Zui.Declaration $autoZuiDecl  # Fake Zui Declaration used for auto-USE
+                                # arguments
+
+  Zui.Attributes $zuiAttr     # visibility, wantBacktrace, etc.
+                              # NOT @earlyInit, @final, @abstract
+
+  bool          $inMethodScope  # Variable is declared at method scope.
+
+  bool          $typeUsed     # Set to TRUE when .Type() is used.
+
+  TargetLang    $used         # Languages for which this item is used.
+
+  bool          $hasDirectRef  # method used in a callback on an iobject
+
+  dict<string, Declaration> $usedInterfaceTables
+                              # For a class: key is the interface table name
+                              # that are actually used with this class. Item
+                              # is a Declaration that can be marked as used.
+
+  set<Declaration> $dependsOn
+                              # Declarations that, when this item is used also
+                              # need to be considered as used, for all
+                              # languages).
+
+  dict<Declaration, Declaration> $dependsOnCond
+                              # Like $dependsOn, but under the condition that
+                              # the item Declaration is used.  E.g. for a
+                              # method that is used only when the class that
+                              # contains it is used.
+
+  multiDict<TargetLang, Declaration> $langDependsOn
+                              # Key is the language, item is an item that this
+                              # declaration depends on.  When this declaration
+                              # is marked as used the dependency will be
+                              # marked as used too.
+
+  multiDict<TargetLang, list<Declaration>> $langDependsOnCond
+                              # Like $langDependsOn, but under the condition
+                              # that the first Declaration is used will the
+                              # second Declaration be marked as used.
+
+  int            $id          # Unique ID used to tell items with an identical
+                              # name apart.
+
+  PROC $Init()
+    $id = nextId++
+  }
+
+  # New Declaration with only the name filled in.
+  NEW(string name)
+    $name = name
+  }
+  
+  # New Declaration with the type set and the back references
+  # filled in.
+  NEW(string name, Type type) @default
+    NEW(name)
+    $type = type
+  }
+
+  # Needed for having Declaration in a multiDict.
+  # We only check for identical Declaration, not equal value.
+  FUNC $Equal(Declaration other) bool
+    RETURN THIS IS other
+  }
+
+  # For sort() used in writeDirectRefs(): sort on pName to avoid the generated
+  # code to change when another name is added.
+  FUNC $Compare(Declaration other) int
+    IF $pName == NIL
+      IF other.pName == NIL
+        RETURN 0
+      }
+      RETURN -1
+    }
+    IF other.pName == NIL
+      RETURN 1
+    }
+    RETURN $pName.Compare(other.pName)
+  }
+
+  # Return a shallow copy of this Declaration.
+  # Does not include all the members, see $copyDeclValues().
+  FUNC $copy() Declaration @default
+    Declaration.C ret = NEW($name)
+    $copyDeclValues(ret)
+    RETURN ret
+  }
+
+  PROC $copyDeclValues(Declaration ret)
+    ret.pName = $pName
+    ret.jsMName = $jsMName
+    ret.jsFName = $jsFName
+    ret.type = $type
+    ret.isArg = $isArg
+    ret.scopeBase = $scopeBase
+    ret.zuiAttr = $zuiAttr
+    ret.zuiPos = $zuiPos
+    ret.isUsedInTry = $isUsedInTry
+  }
+
+  # Get the full name, including the scope name and pName if present.
+  FUNC $getName(bool addId) string
+    IF $name == NIL
+      RETURN "unknown"
+    }
+    string name
+    IF $scopeName != NIL
+      name = $scopeName .. "." .. $name
+    ELSE
+      name = $name
+    }
+    IF $pName != NIL
+      name ..= " - " .. $pName
+    }
+    IF addId
+      name ..= "/" .. $id
+    }
+    RETURN name
+  }
+
+  # Return TRUE if the declaration is in the SHARED section of a class.
+  FUNC $inShared() bool
+    RETURN $scopeBase ISA SharedScope
+  }
+
+  # Return the name of this interface, or when this is a class, the class name
+  # with ".I" appended.
+  FUNC $getInterfaceName(SContext ctx) string
+    string iname = $name
+    IF iname == NIL
+      iname = $type.getClassType(ctx).name .. ".I"
+    }
+    RETURN iname
+  }
+
+  FUNC $ToString() string @default
+    string typeString
+    IF $type != NIL
+      typeString = " of type " .. $type.typeName()
+    ELSE
+      typeString = "[unknown type]"
+    }
+    RETURN "Declaration " .. $getName(TRUE) .. typeString
+  }
+
+  FUNC $typeName() string @default
+    IF $type == NIL
+      RETURN "unknown"
+    }
+    RETURN $type.typeName(TRUE)
+  }
+
+  FUNC $toString(string indent, bool recurse, bool doType) string
+    string res = indent .. "Declaration"
+    IF $name != NIL
+      res ..= " name: " .. $name
+    }
+    IF $isArg
+      res ..= " ARG"
+    }
+    # res ..= " declaration: " .. $zuiDecl.ToString()
+    IF $type != NIL && doType
+      res ..= " " .. $type.toString(indent, FALSE)
+    ELSE
+      res ..= "\n"
+    }
+
+    IF $zuiAttr != NIL
+      string attr = $zuiAttr.ToString()
+      IF attr != ""
+        res ..= indent .. "  attributes: " .. attr .. "\n"
+      }
+    }
+
+    RETURN res
+  }
+
+  PROC $usingInterface(Declaration idecl, SContext ctx)
+    IF $usedInterfaceTables == NIL
+      $usedInterfaceTables = NEW()
+    }
+
+    Declaration.C decl
+    string tableName = interfaceMemberTableName(THIS, idecl, ctx)
+    IF $usedInterfaceTables.has(tableName)
+      decl = $usedInterfaceTables[tableName]
+    ELSE
+      decl = NEW("use " .. tableName)
+      $usedInterfaceTables[tableName] = decl
+    }
+    ctx.addUsedItem(decl)
+  }
+
+  # When this class is using the interface |idecl| return the Declaration that
+  # can be marked as used.
+  FUNC $isUsingInterface(Declaration idecl, SContext ctx) Declaration
+    string tableName = interfaceMemberTableName(THIS, idecl, ctx)
+    IF $usedInterfaceTables != NIL && $usedInterfaceTables.has(tableName)
+      RETURN $usedInterfaceTables[tableName]
+    }
+    RETURN NIL
+  }
+
+  PROC $setUsed(TargetLang lang)
+    $used = $used | lang
+  }
+
+  FUNC $isUsed(TargetLang lang) bool
+    RETURN $used & lang != 0
+  }
+
+  PROC $clearUsed()
+    $used = 0
+  }
+
+  PROC $addDependsOn(Declaration decl) @default
+    IF decl != NIL
+      IF $dependsOn == NIL
+        $dependsOn = NEW()
+      }
+      $dependsOn.set(decl)
+    }
+  }
+
+  PROC $addDependsOnCond(Declaration decl, Declaration dependency) @default
+    IF decl != NIL && dependency != NIL
+      IF $dependsOnCond == NIL
+        $dependsOnCond = NEW()
+      }
+      $dependsOnCond[decl] = dependency
+    }
+  }
+
+  PROC $addDependsOn(set<Declaration> decls)
+    # TODO: use set.merge().
+    IF $dependsOn == NIL
+      $dependsOn = NEW()
+    }
+    FOR decl IN decls.keys()
+      $dependsOn.set(decl)
+    }
+  }
+
+  FUNC $getDependsOnKeys() list<Declaration>
+    IF $dependsOn == NIL
+      RETURN []
+    }
+    RETURN $dependsOn.keys()
+  }
+
+  # Clear dependencies.  To be used after making a copy.
+  PROC $clearDependencies()
+    $clearDependsOn()
+    $clearDependsOnCond()
+    $langDependsOn = NIL
+  }
+
+  PROC $clearDependsOn()
+    $dependsOn = NIL
+  }
+
+  FUNC $getDependsOnCondKeys() list<Declaration>
+    IF $dependsOnCond == NIL
+      RETURN []
+    }
+    RETURN $dependsOnCond.keys()
+  }
+
+  PROC $clearDependsOnCond()
+    $dependsOnCond = NIL
+  }
+
+  PROC $addLangDependsOn(TargetLang lang, Declaration on)
+    IF $langDependsOn == NIL
+      $langDependsOn = NEW()
+    }
+    $langDependsOn.add(lang, on)
+  }
+
+  FUNC $getLangDependsOnList(TargetLang lang) list<Declaration>
+    IF $langDependsOn == NIL
+      RETURN []
+    }
+    RETURN $langDependsOn.get(lang, [])
+  }
+
+  PROC $clearLangDependsOn(TargetLang lang)
+    IF $langDependsOn != NIL
+      $langDependsOn.clear(lang)
+    }
+  }
+
+  PROC $addLangDependsOnCond(TargetLang lang,
+                                         Declaration cond, Declaration on)
+    IF $langDependsOnCond == NIL
+      $langDependsOnCond = NEW()
+    }
+    $langDependsOnCond.add(lang, [cond, on])
+  }
+
+  FUNC $getLangDependsOnCondList(TargetLang lang) list<list<Declaration>>
+    IF $langDependsOnCond == NIL
+      RETURN []
+    }
+    RETURN $langDependsOnCond.get(lang, [])
+  }
+
+  PROC $clearLangDependsOnCond(TargetLang lang)
+    IF $langDependsOnCond != NIL
+      $langDependsOnCond.clear(lang)
+    }
+  }
+
+  # Set $zuiAttr from |decl|, using default visibility from |scope|.
+  PROC $setAttributes(Zui.Declaration zuiDecl, SContext ctx)
+    $zuiAttr = zuiDecl.getType().getAttr()
+    $setDefaultVisibility(ctx.zcPos(zuiDecl.getPos()), ctx.scope)
+  }
+
+  # Set the visibility attributes from |decl|.
+  PROC $setVisibilityAttr(Zui.Declaration decl, SContext ctx)
+    $setVisibilityAttr(decl.getType().getAttr(), decl.getPos(), ctx)
+  }
+
+  # Set the visibility attributes from |attr|.
+  # For an error message use |pos|.
+  # Keeps other attributes as they are.
+  PROC $setVisibilityAttr(Zui.Attributes attr, Zui.Position pos, SContext ctx)
+    IF $zuiAttr == NIL
+      $zuiAttr = NEW()
+    }
+    IF attr.hasVisibility()
+      $zuiAttr.setVisibility(attr.getVisibility())
+    }
+    IF attr.hasReadVisibility()
+      $zuiAttr.setReadVisibility(attr.getReadVisibility())
+    }
+    IF attr.hasItemsVisibility()
+      $zuiAttr.setItemsVisibility(attr.getItemsVisibility())
+    }
+
+    $setDefaultVisibility(ctx.zcPos(pos), ctx.scope)
+  }
+
+  # When $visibility is unset, set it to the itemsVisibility from |scope|.
+  # When still unset set it to @file, @directory for toplevel item.
+  PROC $setDefaultVisibility(Z.Pos pos, Scope scope)
+    IF $zuiAttr == NIL
+      $zuiAttr = NEW()
+    }
+    IF !$zuiAttr.hasVisibility()
+      IF scope.zuiAttr != NIL && scope.zuiAttr.hasItemsVisibility()
+        $zuiAttr.setVisibility(scope.zuiAttr.getItemsVisibility())
+      ELSEIF scope ISNOTA FileScope
+        # not a toplevel item, use @file
+        $zuiAttr.setVisibility(Zui.Visibility.eFILE)
+      ELSE
+        # toplevel item, use @directory
+        $zuiAttr.setVisibility(Zui.Visibility.eDIRECTORY)
+      }
+    }
+
+    # Produce an error if this item is at the toplevel of a file and not
+    # visible outside it.
+    IF scope ISA FileScope
+      FileScope fscope = scope
+      IF !fscope.zimbuFile.isMainFile
+           && $zuiAttr.hasVisibility()
+           && ($zuiAttr.getVisibility() == Zui.Visibility.ePRIVATE
+               || $zuiAttr.getVisibility() == Zui.Visibility.eFILE)
+        LOG.error("Toplevel item must be visible outside the file", pos)
+      }
+    }
+  }
+
+  FUNC $isClassMember() bool
+    RETURN $scopeBase != NIL
+           && $scopeBase.isClassScope()
+           && !$scopeBase.hasStatements()
+           && $scopeBase.classType != NIL
+  }
+
+  # If this item is a class member, return the declaration of the class.
+  # If this item is a class, return it.
+  # Otherwise return NIL
+  FUNC $getClass() Declaration
+    IF $type ISA ClassType
+      RETURN $type
+    }
+    IF $scopeBase != NIL
+           && $scopeBase.isClassScope()
+           && !$scopeBase.hasStatements()
+           && $scopeBase.classType != NIL
+      RETURN $scopeBase.classType
+    }
+    RETURN NIL
+  }
+
+  # If this item is a class member, return the full name of the class.
+  # If this item is a class, return the full name of it.
+  # Otherwise return NIL
+  FUNC $getClassName() string
+    Declaration decl = $getClass()
+    IF decl != NIL
+      RETURN decl.pName
+    }
+    RETURN NIL
+  }
+
+  # Return TRUE if this item was declared @local.
+  FUNC $hasLocalAttr() bool
+    RETURN $zuiAttr != NIL && $zuiAttr.hasVisibility()
+                          && $zuiAttr.getVisibility() == Zui.Visibility.eLOCAL
+  }
+
+  SHARED
+
+    # For debugging only.
+    int nextId
+
+    # Canned Declarations for built-in functionality.  These are marked as
+    # used in the scope where they are used.  The language write can then
+    # figure out what needs to be generated.
+    Declaration %varString = NEW("varString")
+    Declaration %varByteString = NEW("varByteString")
+    Declaration %array = NEW("array")
+    Declaration %list = NEW("list")
+    Declaration %dict = NEW("dict")
+    Declaration %alloc = NEW("alloc")
+    Declaration %try = NEW("try")
+    Declaration %exit = NEW("exit")
+    Declaration %defer = NEW("defer")
+    Declaration %iobject2object = NEW("iobject2object")
+    Declaration %objectMember = NEW("objectMember")
+    Declaration %objectMemberDotnil = NEW("objectMemberDotnil")
+    Declaration %convertZoref = NEW("convertZoref")
+    Declaration %convert2dyn = NEW("convert2dyn")
+    Declaration %convertFromDyn = NEW("convertFromDyn")
+    Declaration %convertDynToIobject = NEW("convertDynToIobject")
+
+    Declaration %itemToString = NEW("itemToString")
+    Declaration %itemEqual = NEW("itemEqual")
+    Declaration %itemCompare = NEW("itemCompare")
+    Declaration %newArray = NEW("newArray")
+    Declaration %newList = NEW("newList")
+    Declaration %dictIntKey = NEW("dictIntKey")
+    Declaration %dictStringKey = NEW("dictStringKey")
+    Declaration %funcRef = NEW("funcRef")
+    Declaration %dynEqual = NEW("dynEqual")
+    Declaration %dynCompare = NEW("dynCompare")
+    Declaration %dynSize = NEW("dynSize")
+
+    # exception stuff
+    Declaration %throwObject = NEW("throwObject")
+    Declaration %throwThisNil = NEW("throwThisNil")
+    Declaration %throwCstringNil = NEW("throwCstringNil")
+    Declaration %throwPos = NEW("throwPos")
+    Declaration %throwCstringBadValue = NEW("throwCstringBadValue")
+    Declaration %throwCstringOutOfRange = NEW("throwCstringOutOfRange")
+    Declaration %throwDeadly = NEW("throwDeadly")
+    Declaration %throwThread = NEW("throwThread")
+    Declaration %throwDyn = NEW("throwDyn")
+    Declaration %throwInternal = NEW("throwInternal")
+    Declaration %throwOutOfMemory = NEW("throwOutOfMemory")
+    Declaration %throwCstringInit = NEW("throwCstringInit")
+
+    # Used to specify if the language wants the class declaration of an
+    # abstract class to be written when one of its child classes is used.
+    Declaration %abstractClass = NEW("abstractClass")
+
+    # Used to specify if the language inherits methods from a parent class.
+    Declaration %inheritMethod = NEW("inheritMethod")
+
+    # Various methods to produce code.
+    Declaration %stringConcat = NEW("stringConcat")
+    Declaration %stringGetChar = NEW("stringGetChar")
+    Declaration %stringSlice = NEW("stringSlice")
+    Declaration %stringFindChar = NEW("stringFindChar")
+    Declaration %stringFindChar2 = NEW("stringFindChar2")
+    Declaration %stringToInt = NEW("stringToInt")
+    Declaration %stringToFloat = NEW("stringToFloat")
+    Declaration %stringBinToInt = NEW("stringBinToInt")
+    Declaration %stringHexToInt = NEW("stringHexToInt")
+    Declaration %stringEqual = NEW("stringEqual")
+    Declaration %stringFind = NEW("stringFind")
+    Declaration %stringFind2 = NEW("stringFind2")
+    Declaration %stringCompare = NEW("stringCompare")
+    Declaration %byteStringSize = NEW("byteStringSize")
+    Declaration %byteStringHash = NEW("byteStringHash")
+    Declaration %stringStartsWith = NEW("stringStartsWith")
+    Declaration %stringSplit = NEW("stringSplit")
+    Declaration %stringEndsWith = NEW("stringEndsWith")
+    Declaration %varStringStartsWith = NEW("varStringStartsWith")
+    Declaration %stringFindLastChar2 = NEW("stringFindLastChar2")
+    Declaration %stringFindLastChar = NEW("stringFindLastChar")
+    Declaration %asString = NEW("asString")
+    Declaration %byteStringGetByte = NEW("byteStringGetByte")
+    Declaration %byteStringGetChar = NEW("byteStringGetChar")
+    Declaration %byteStringGetCharSize = NEW("byteStringGetCharSize")
+    Declaration %varStringAddVal = NEW("varStringAddVal")
+    Declaration %varStringToLowerAscii = NEW("varStringToLowerAscii")
+    Declaration %varStringToUpperAscii = NEW("varStringToUpperAscii")
+    Declaration %stringToLowerAscii = NEW("stringToLowerAscii")
+    Declaration %stringToUpperAscii = NEW("stringToUpperAscii")
+    Declaration %forBytestring = NEW("forBytestring")
+    Declaration %forString = NEW("forString")
+    Declaration %varStringSize = NEW("varStringSize")
+    Declaration %varByteStringSize = NEW("varByteStringSize")
+    Declaration %varByteStringHash = NEW("varByteStringHash")
+    Declaration %stringFindLast = NEW("stringFindLast")
+    Declaration %varStringFind = NEW("varStringFind")
+    Declaration %varStringFindLast = NEW("varStringFindLast")
+    Declaration %byteStringFind = NEW("byteStringFind")
+    Declaration %byteStringFindLast = NEW("byteStringFindLast")
+    Declaration %varByteStringFind = NEW("varByteStringFind")
+    Declaration %varByteStringFindLast = NEW("varByteStringFindLast")
+    Declaration %varStringFindChar = NEW("varStringFindChar")
+    Declaration %varStringFindChar2 = NEW("varStringFindChar2")
+    Declaration %varStringEndsWith = NEW("varStringEndsWith")
+    Declaration %varStringFindLastChar = NEW("varStringFindLastChar")
+    Declaration %varStringFindLastChar2 = NEW("varStringFindLastChar2")
+    Declaration %byteStringFindByte = NEW("byteStringFindByte")
+    Declaration %byteStringFindByte2 = NEW("byteStringFindByte2")
+    Declaration %byteStringFindLastByte = NEW("byteStringFindLastByte")
+    Declaration %byteStringFindLastByte2 = NEW("byteStringFindLastByte2")
+    Declaration %varByteStringFindByte = NEW("varByteStringFindByte")
+    Declaration %varByteStringFindByte2 = NEW("varByteStringFindByte2")
+    Declaration %varByteStringFindLastByte = NEW("varByteStringFindLastByte")
+    Declaration %varByteStringFindLastByte2 = NEW("varByteStringFindLastByte2")
+    Declaration %varStringSplit = NEW("varStringSplit")
+    Declaration %byteStringSplit = NEW("byteStringSplit")
+    Declaration %varByteStringSplit = NEW("varByteStringSplit")
+    Declaration %varByteStringSlice = NEW("varByteStringSlice")
+    Declaration %varStringSlice = NEW("varStringSlice")
+    Declaration %byteStringSlice = NEW("byteStringSlice")
+    Declaration %varStringConcatAssign = NEW("varStringConcatAssign")
+    Declaration %concatVarStringBB = NEW("concatVarStringBB")
+    Declaration %concatVarStringBV = NEW("concatVarStringBV")
+    Declaration %concatVarStringVB = NEW("concatVarStringVB")
+    Declaration %concatVarStringVV = NEW("concatVarStringVV")
+    Declaration %ptrToInt = NEW("ptrToInt")
+    Declaration %stringQuotedHexToInt = NEW("stringQuotedHexToInt")
+    Declaration %stringQuotedToInt = NEW("stringQuotedToInt")
+    Declaration %stringQuotedBinToInt = NEW("stringQuotedBinToInt")
+    Declaration %varStringToInt = NEW("varStringToInt")
+    Declaration %varStringBinToInt = NEW("varStringBinToInt")
+    Declaration %varStringHexToInt = NEW("varStringHexToInt")
+    Declaration %varStringQuotedHexToInt = NEW("varStringQuotedHexToInt")
+    Declaration %varStringQuotedToInt = NEW("varStringQuotedToInt")
+    Declaration %varStringQuotedBinToInt = NEW("varStringQuotedBinToInt")
+    Declaration %hasFinish = NEW("hasFinish")
+    Declaration %typeToString = NEW("typeToString")
+    Declaration %typeNameFunc = NEW("typeNameFunc")
+    Declaration %gcRun = NEW("gcRun")
+
+    # Find the first Declaration with name |name| in the declaration dict
+    # |declDict|.
+    FUNC find(multiDict<string, Declaration> declDict,
+                                                    string name) Declaration
+      IF declDict != NIL
+        list<Declaration> declList = declDict.get(name, NIL)
+        IF declList != NIL && declList.Size() > 0
+          RETURN declList[0]
+        }
+      }
+      RETURN NIL
+    }
+
+    # Return the list of Declaration with name |name| in the declaration dict
+    # |declDict|.
+    FUNC findAll(multiDict<string, Declaration> declDict,
+                                              string name) list<Declaration>
+      IF declDict != NIL
+        list<Declaration> declList = declDict.get(name, NIL)
+        IF declList != NIL && declList.Size() > 0
+          RETURN declList
+        }
+      }
+      RETURN NIL
+    }
+
+    # Return TRUE if all the Declarations in list |a| match list |b|.
+    FUNC typeListMatch(list<Declaration> a, list<Declaration> b,
+                                                            SContext ctx) bool
+      IF a.Size() != b.Size()
+        RETURN FALSE
+      }
+      FOR i IN 0 UNTIL a.Size()
+        IF a[i] == NIL || b[i] == NIL
+                             || !Type.matchingTypes(a[i].type, b[i].type, ctx)
+          RETURN FALSE
+        }
+      }
+      RETURN TRUE
+    }
+
+    FUNC toString(list<Declaration.C> decls) string
+      string res = "["
+      string comma = ""
+      FOR decl IN decls
+        res ..= comma .. decl.ToString()
+        comma = ", "
+      }
+
+      RETURN res .. "]"
+    }
+
+    # Report the position information in |decl| if available.
+    # Does not report anything when the position is unavailable.
+    PROC reportError(string msg, Declaration decl, SContext ctx)
+      IF decl != NIL
+        IF decl.zuiPos != NIL
+          # This works everywhere.
+          ctx.error(msg, decl.zuiPos)
+        ELSEIF decl != NIL && decl.zuiDecl != NIL && decl.zuiDecl.hasPos()
+          # This only works in the same file.
+          LOG.error(msg, ctx.zcPos(decl.zuiDecl.getPos()))
+        }
+      }
+    }
+
+    # Called when creating an iobject for interface |destClass| for an object
+    # of |symClass|.  When a member of destClass is used then that member of
+    # symClass must also be considered to be used.
+    # Return the number of missing items.
+    FUNC addMemberDependsOn(ClassType symClass, ClassType destClass,
+                                                             SContext ctx) int
+      int undef
+      IF destClass.getObjectDeclDict() != NIL
+        FOR dl IN destClass.getObjectDeclDict().values()
+          FOR decl IN dl
+            # Skip methods copied from the parent.
+            IF decl.name.find("__p") == -1
+              Declaration other
+              IF decl.type ISA MethodType
+                MethodType mt = decl.type
+                other = symClass.findMatchingMethod(decl.name, TRUE,
+                                   mt.arguments, NIL, methodArgs, &undef, ctx)
+              ELSE
+                other = symClass.findObjectMember(decl.name, NIL,
+                                                          searchParent, FALSE)
+              }
+              IF other == NIL
+                ++undef
+              ELSE
+                decl.addDependsOnCond(other, symClass)
+              }
+            }
+          }
+        }
+      }
+      RETURN undef
+    }
+
+    # Return the interface member table name for class |decl| implementing
+    # interface |itfDecl|.
+    FUNC interfaceMemberTableName(Declaration decl, Declaration itfDecl,
+                                  SContext ctx) string
+      string name
+      IF itfDecl.type.ttype == Type.Enum.iobject
+        name = itfDecl.type.getClassType(ctx).pName .. "_I"
+      ELSEIF itfDecl.type.ttype == Type.Enum.class
+        name = itfDecl.pName .. "_I"
+      ELSE
+        name = itfDecl.pName
+        IF name == NIL
+          RETURN "NIL"
+        }
+      }
+      IF decl.pName == NIL
+        RETURN "NIL"
+      }
+      RETURN decl.pName .. "__" .. name .. "_imt"
+    }
+
+  }
+}

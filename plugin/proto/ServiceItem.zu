@@ -1,0 +1,34 @@
+# The Zimbu compiler written in Zimbu
+#
+# Part of the protocol buffer plugin
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "RpcItem.zu"
+IMPORT "I_ProtoItem.zu"
+IMPORT "I_ItemFinder.zu"
+
+CLASS ServiceItem IMPLEMENTS I_ProtoItem, I_ItemFinder @items=directory
+  string         $name
+  list<RpcItem>  $rpcs
+
+  NEW()
+    $rpcs = NEW()
+  }
+
+  PROC $add(RpcItem rpc)
+    $rpcs.add(rpc)
+  }
+
+  FUNC $findItem(string name) I_ProtoItem
+    FOR rpc IN $rpcs
+      IF rpc.name == name
+        RETURN rpc
+      }
+    }
+    RETURN NIL
+  }
+}

@@ -1,0 +1,88 @@
+#
+# Picture editor main page
+#
+# Copyright 2016 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT PageArgs.zu
+IMPORT SizeController.zu
+
+MODULE PicEditPage
+
+  CSS
+    body {
+      font-family: arial,sans-serif;
+      background-color: #777;
+    }
+    button {
+      white-space: nowrap;
+    }
+    .page {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+    }
+    .left {
+      width: 300px;
+      height: 100%;
+      flex-grow: 0;
+      flex-shrink: 0;
+    }
+    .tile {
+      margin-bottom: 20px;
+    }
+    .tileHeader {
+      color: #ccc;
+    }
+    .right {
+      flex-grow: 1;
+      flex-shrink: 1;
+      height: 100%;
+      overflow: auto;
+    }
+    .image {
+      text-align: center;
+    }
+  }
+
+  TEMPLATE body(PageArgs pageArgs) ZUT.Html
+    <div class="page">
+      <div class="left">
+        <div class="tile">
+          <div class="tileHeader">
+            Album:
+          </div>
+          [=pageArgs.imageDir]
+        </div>
+        <div class="tile">
+          <div class="tileHeader">
+            Picture:
+          </div>
+          [=pageArgs.imageName]
+        </div>
+        <div class="tile"
+             zcontroller="SizeController">
+          <button zaction="click: fit">
+            fit
+          </button>
+          <button zaction="click: one2one">
+            1:1
+          </button>
+          <button zaction="click: twoTimes">
+            2x
+          </button>
+        </div>
+      </div>
+      <div class="right" id="rightPane">
+        <div class="image">
+          <img id="image"
+               src="/image?dir=[=pageArgs.imageDir]&file=[=pageArgs.imageName]">
+        </div>
+      </div>
+    </div>
+  }
+
+}

@@ -1,0 +1,9 @@
+# Test that we can compile the produced Zimbu code from ZUT templates.
+
+IMPORT.ZUT zutExample.zut
+IMPORT.ZUT zutInput.zut
+
+FUNC Main() int
+  RETURN 0
+}
+

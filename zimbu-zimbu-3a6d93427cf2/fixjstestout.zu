@@ -1,0 +1,153 @@
+# Small program to filter jstest.out.
+
+FUNC Main() int
+
+  IF ARG.Size() != 1
+    IO.print("Usage: fixjstestout <filename>")
+    EXIT 1
+  }
+
+  IO.File r = IO.fileReader(ARG.get(0))
+  list<string> lines = r.readAllLines()
+  r.close()
+
+  bool seenBinaryFailed
+  bool seenSysHello
+
+  I.MutateIterator<string> it = lines.Iterator()
+  FOR l IN it
+    # stores int and nat value as a float, only 53 bits accuracy
+    IF l == "T.int.min: -9223372036854776000"
+      it.set("T.int.min: -9223372036854775808")
+    ELSEIF l == "T.int.max: 9223372036854776000"
+      it.set("T.int.max: 9223372036854775807")
+    ELSEIF l == "int max abs: 9223372036854776000"
+      it.set("int max abs: 9223372036854775807")
+    ELSEIF l == "int min abs: 9223372036854776000"
+      it.set("int min abs: 9223372036854775808")
+    ELSEIF l == "T.nat.max: 18446744073709552000"
+      it.set("T.nat.max: 18446744073709551615")
+    ELSEIF l == "18374686479671624000"
+      it.set("18374686479671623680")
+    ELSEIF l == "18374686479671624000UL"
+      it.set("18374686479671623680UL")
+    # stores big nat value as a float
+    ELSEIF l == "nat to int: 18374686479671624000"
+      it.set("nat to int: -72057594037927936")
+    # Always uses 64 bit floats
+    ELSEIF l == "float32 list: 1.1, 1.2e-05, 199999, 1.4e+100, "
+      it.set("float32 list: 1.1, 1.2e-05, 199999, inf, ")
+    ELSEIF l == "float32 list copy: [1.1, 1.2e-05, 199999, 1.4e+100]"
+      it.set("float32 list copy: [1.1, 1.2e-05, 199999, inf]")
+    ELSEIF l == "float32 keymap: [1.1, 12346, 200001, 1.4e+100]"
+      it.set("float32 keymap: [1.1, 12346, 200001, inf]")
+    ELSEIF l == "float32 map: [-0.9, 12344, 199999, 1.4e+100]"
+      it.set("float32 map: [-0.9, 12344, 199999, inf]")
+    ELSEIF l == "float32 join: -0.9_12344_199999_1.4e+100"
+      it.set("float32 join: -0.9_12344_199999_inf")
+    ELSEIF l == "18446744073709551615: 18446744073709552000"
+      it.set("18446744073709551615: 18446744073709551615")
+    # set order is undefined.
+    ELSEIF l == "bool set: [TRUE, FALSE]"
+      it.set("bool set: [FALSE, TRUE]")
+    # callerPos() is not implemented yet
+    ELSEIF l == "addSet: caught Exception: key already present: 3"
+      it.set("addSet: caught lib/SETModule.zu line col 9: Exception: key already present: 3")
+    ELSEIF l == "addList: caught Exception: key already present: 3"
+      it.set("addList: caught lib/SETModule.zu line col 9: Exception: key already present: 3")
+    ELSEIF l == "Caught peek: Exception: Calling peek() while there is no next item"
+      it.set("Caught peek: testdir/BoxTest.zu line col 21: Exception: Calling peek() while there is no next item")
+    ELSEIF l == "Caught remove: Exception: Calling remove() not after next() or previous()"
+      it.set("Caught remove: testdir/BoxTest.zu line col 7: Exception: Calling remove() not after next() or previous()")
+    ELSEIF l == "Caught remove 2: Exception: Calling remove() not after next() or previous()"
+      it.set("Caught remove 2: testdir/BoxTest.zu line col 7: Exception: Calling remove() not after next() or previous()")
+    # No position in exceptions yet
+    ELSEIF l == "Caught string/int: Exception: Type mismatch; expected int but found string"
+      it.set("Caught string/int: testdir/DynTest.zu line col 11: Exception: Type mismatch; expected int but found string")
+    ELSEIF l == "Caught enum/enum: Exception: Type mismatch; expected enum Color but found enum Time"
+      it.set("Caught enum/enum: testdir/DynTest.zu line col 11: Exception: Type mismatch; expected enum Color but found enum Time")
+    ELSEIF l == "Caught class/class: Exception: Type mismatch; expected object of 0 but found object of Other"
+      it.set("Caught class/class: testdir/DynTest.zu line col 12: Exception: Type mismatch; expected object of MyClass but found object of Other")
+    ELSEIF l == "Caught: Exception: item not found"
+      it.set("Caught: testdir/PieceTest.zu line col 9: Exception: item not found")
+    # nat.max is not equal to -1
+    ELSEIF l == "-1 == nat.max: FALSE"
+      it.set("-1 == nat.max: TRUE")
+    ELSEIF l == "-1 != nat.max: TRUE"
+      it.set("-1 != nat.max: FALSE")
+    ELSEIF l == "2. float == float32: TRUE"
+      it.set("2. float == float32: FALSE")
+    ELSEIF l == "2. float != float32: FALSE"
+      it.set("2. float != float32: TRUE")
+    # Caught error goes in normal output, not stderr
+    ELSEIF l.endsWith("Don't worry, Intentionally throwing an exception.")
+      it.remove()
+    # Finish() is not called when an object is garbagecollected
+    ELSEIF l == "testdir/NotManaged.zu done"
+      it.add("WithFinish finishing not peter for unused")
+      it.add("FinishParent finishing throw iobject later for unused")
+      it.add("FinishParent finishing parent later for unused")
+      it.add("DoFinishChild finishing new df child for unused")
+      it.add("DoFinishGrandchild finishing oldGrand for unused")
+    ELSEIF l == "near the end"
+      it.add("call Finish on exit; exiting == TRUE")
+    # Binary protocol buffer fails.
+    ELSEIF l == "Read binary failed"
+      seenBinaryFailed = TRUE
+      it.remove()
+    ELSEIF l == "rep_enum: unknown" && seenBinaryFailed
+      it.set("rep_enum: zero")
+    # TryCatch: exception information lacking.
+    ELSEIF l == "TryCatch.test1: Stack backtrace: not available"
+      it.set("TryCatch.test1: Stack backtrace (last called first):")
+      it.add("testdir/TryCatch.zu line 33 col 7: TryCatch.Class4.showStack()")
+      it.add("testdir/TryCatch.zu line 40 col 5: TryCatch.test1()")
+      it.add("testdir/TryCatch.zu line 14 col 5: TryCatch.test()")
+      it.add("testdir/Common.zu line YYY col 5: Common.test()")
+      it.add("testprog.zu line XXX col 3: Main()")
+    ELSEIF l == "tryWithCatch caught: Exception: Accessing NIL list"
+      it.set("tryWithCatch caught: testdir/TryCatch.zu line col 14: Exception: Accessing NIL list")
+      it.add("Stack backtrace (last called first):")
+      it.add("testdir/TryCatch.zu line 184 col 14: TryCatch.tryWithCatch()")
+      it.add("testdir/TryCatch.zu line 165 col 5: TryCatch.test2()")
+      it.add("testdir/TryCatch.zu line 15 col 5: TryCatch.test()")
+      it.add("testdir/Common.zu line YYY col 5: Common.test()")
+      it.add("testprog.zu line XXX col 3: Main()")
+    ELSEIF l == "test6 caught SEGV: TypeError: Cannot set property 'Vnext' of null"
+      it.set("test6 caught SEGV: testdir/TryCatch.zu line col 12: Exception: signal SEGV")
+      it.add("Stack backtrace (last called first):")
+      it.add("testdir/TryCatch.zu line 306 col 12: TryCatch.breakMe()")
+      it.add("testdir/TryCatch.zu line 313 col 15: TryCatch.test6()")
+      it.add("testdir/TryCatch.zu line 22 col 5: TryCatch.test()")
+      it.add("testdir/Common.zu line YYY col 5: Common.test()")
+      it.add("testprog.zu line XXX col 3: Main()")
+    ELSEIF l == "test6 caught SEGV again: TypeError: Cannot set property 'Vnext' of null"
+      it.set("test6 caught SEGV again: testdir/TryCatch.zu line col 12: Exception: signal SEGV")
+      it.add("Stack backtrace (last called first):")
+      it.add("testdir/TryCatch.zu line 306 col 12: TryCatch.breakMe()")
+      it.add("testdir/TryCatch.zu line 320 col 15: TryCatch.test6()")
+      it.add("testdir/TryCatch.zu line 22 col 5: TryCatch.test()")
+      it.add("testdir/Common.zu line YYY col 5: Common.test()")
+      it.add("testprog.zu line XXX col 3: Main()")
+    ELSEIF l == "Exception: Accessing NIL list - tryNested caught"
+      it.set("testdir/TryCatch.zu line col 20: Exception: Accessing NIL list - tryNested caught")
+    # SYS.shell() output only comes at the end.
+    ELSEIF l == "SYS says hello"
+      seenSysHello = TRUE
+      it.remove()
+    ELSEIF l == "testdir/IOtests.zu"
+      it.add("SYS says hello")
+    }
+  }
+
+  IF !seenSysHello
+    lines.add("missing: SYS says hello")
+  }
+
+  IO.File w = IO.fileWriter(ARG.get(0))
+  w.writeAllLines(lines)
+  w.close()
+
+
+  RETURN 0
+}

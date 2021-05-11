@@ -1,0 +1,67 @@
+# Test file for ALIAS
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "its_Another.zu"
+
+MODULE Alias @public
+
+  PROC test() @public
+    IO.print("testdir/Alias.zu")
+    test1()
+    test2()
+  }
+
+  ###############################################################
+
+  # Test ALIAS for classes
+  PROC test1()
+    ALIAS Another.ForwardDeclTest Forward
+
+    Forward f = NEW()
+    f.lll = NEW()
+    f.lll.add(NEW())
+    f.lll[0].number = 33
+
+    ALIAS Another.ForwardDeclTest.OtherClass Other
+
+    Other o = NEW()
+    o.number = 66
+  }
+
+  # Test ALIAS for class methods
+  PROC test2()
+    CLASS ItemList
+      list<string> $items
+      NEW()
+        $items = NEW()
+      }
+      FUNC $Size() int
+        RETURN $items.Size()
+      }
+      PROC $add(string s)
+        $items.add(s)
+      }
+    }
+
+    CLASS ItemWrapper
+      ItemList $itemList
+      NEW()
+        $itemList = NEW()
+      }
+
+      ALIAS $itemList.Size $Size
+      ALIAS $itemList.add $add
+    }
+
+    ItemWrapper il = NEW()
+    IO.print("itemWrapper.Size(): " .. il.Size())
+    il.add("nothing")
+    IO.print("size now: " .. il.Size())
+    IO.print("item: " .. il.itemList.items[0])
+  }
+
+}

@@ -1,0 +1,121 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for sortedList type
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE SortedListTest @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/SortedListTest.zu")
+    test1()
+    test2()
+    test3()
+    testMap()
+    testReduce()
+    testForEach()
+  }
+
+  PROC test1()
+    sortedList<string> l = NEW()
+    l.add("one")
+    IO.print(l.Size() .. ": " .. l.ToString())
+    l.add("and")
+    l.add("three")
+    IO.print(l.Size() .. ": " .. l.ToString())
+    l.removeItem("and")
+    l.clearItem("and")
+    l.add("six")
+    IO.print(l.Size() .. ": " .. l.ToString())
+    l.clearItem("six")
+    IO.print(l.Size() .. ": " .. l.ToString())
+    l.clearItem("six")
+    IO.print(l.Size() .. ": " .. l.ToString())
+
+    IO.print("l has one: " .. l.has("one"))
+    IO.print("l has six: " .. l.has("six"))
+
+    l.clearItem("four")
+    IO.print(l.Size() .. ": " .. l.ToString())
+    l.insert("three")
+    IO.print(l.Size() .. ": " .. l.ToString())
+
+    IO.print("copy: " .. l.copy().ToString())
+
+    l.clear()
+    IO.print("empty: " .. l.ToString())
+
+    l = ["x", "b", "c"]
+    IO.print(l.Size() .. ": " .. l.ToString())
+  }
+
+  CLASS Item
+    int $number
+
+    NEW(int n)
+      $number = n
+    }
+
+    FUNC $Compare(Item other) int @public
+      RETURN $number - other.number
+    }
+
+    FUNC $ToString() string @public
+      RETURN $number.ToString()
+    }
+  }
+
+  PROC test2()
+    sortedList<Item> l = NEW()
+    l.add(NEW(11)).add(NEW(9)).add(NEW(22)).add(NEW(5))
+    IO.print("Items: " .. l.ToString())
+  }
+
+  PROC test3()
+    sortedList<int> l = NEW()
+    l.add(8)
+    l.add(4)
+    l.add(9)
+    l.add(7)
+    IO.print("sorted int list: " .. l.ToString())
+  }
+
+  PROC testMap()
+    sortedList<int> sli = [1, 2, 3]
+    sli.map({ n => n + 3 })
+    IO.print("mapped: " .. sli.ToString())
+
+    sli.keyMap({ n, i => n + i })
+    IO.print("keyMapped: " .. sli.ToString())
+
+    sortedList<string> sls = sli.mapTo({ n => n .. ":" })
+    IO.print("mapTo: " .. sls.ToString())
+
+    sls = sli.keyMapTo({ i, n => i .. ": " .. n })
+    IO.print("keyMapTo: " .. sls.ToString())
+  }
+
+  PROC testReduce()
+    sortedList<int> nrl = [3, 2, 1, 4]
+    int total = nrl.reduce({ a, b => a + b })
+    IO.print("total: " .. total)
+    total = nrl.reduce(8, { a, b => a + b })
+    IO.print("total: " .. total)
+
+    string values = nrl.reduceTo("values:", { s, v => s .. " " .. v })
+    IO.print("reduceTo: '" .. values .. "'")
+  }
+
+  PROC testForEach()
+    list<string> isl = ["one", "two", "three"]
+    VAR l = isl.forEach({ s => IO.print(s) })
+    l.forKeyEach({ i, s => IO.print(i .. ": " .. s) })
+  }
+
+}
+

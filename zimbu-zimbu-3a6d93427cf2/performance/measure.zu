@@ -1,0 +1,53 @@
+# Run the "true" program written in different languages and measure how many
+# times per second it can be executed.
+
+FUNC Main() int
+  runAll()
+  RETURN 0
+}
+
+PROC runAll()
+  run("./true_zimbu", [])
+  run("./true_c", [])
+  run("python", ["true_python.pyc"])
+  run("java", ["True"])
+  run("./true_go", [])
+}
+
+PROC run(string exe, list<string> args)
+  int count
+  int start = TIME.current()
+  int now
+  WHILE TRUE
+    now = TIME.current()
+    IF now > start + 1'000'000
+      BREAK
+    }
+    SYS.Process p = NEW(exe, args)
+    p.start()
+    p.wait()
+    IF !p.didExitNormally()
+      IO.print("Count not execute " .. exe)
+      BREAK
+    }
+    IF p.getExitValue() != 1
+      IO.print(exe .. " exited with " .. p.getExitValue()
+                       .. " instead of 1")
+      BREAK
+    }
+    ++count
+  }
+
+  string exeString = exe .. (args.Size() == 0 ? "" : " ") .. args.join()
+  string spaces1 = "                      "
+  string filler1 = spaces1.slice(exeString.Size())
+
+  int msec = (((now - start) / count) / 1000)
+  int msec10 = (((now - start) / count + 50) / 100) - msec * 10
+  string filler2 = msec < 10 ? "  " : (msec < 100 ? " " : "")
+
+  IO.print("\"" .. exeString
+                .. "\"" .. filler1 .. " Executes in "
+                .. filler2 .. msec .. "." .. msec10 .. " msec ("
+                .. count .. " runs in " .. (now - start) .. " usec)")
+}

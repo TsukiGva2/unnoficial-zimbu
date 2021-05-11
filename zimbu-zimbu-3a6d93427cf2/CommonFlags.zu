@@ -1,0 +1,76 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# CommonFlags class: flags used both by zimbu and zimbu2c.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT Arguments.zu
+IMPORT Config.zu
+
+MODULE CommonFlags
+
+  # For debugging: Set to FALSE to enter all scopes even when there were no
+  # undefined symbols in a previous pass.
+  ARG.Bool undefinedFlag = NEW("z", "zeroundef", TRUE,
+                   "Skip resolving symbols if there are no undefined symbols")
+
+  ARG.Bool writeJsFlag = NEW(NIL, "js", FALSE, "Produce a Javascript program.")
+  ARG.Bool writeJavaFlag = NEW(NIL, "java", FALSE,
+                               "Produce a Java program.")
+
+  ARG.Bool keepUnusedFlag = NEW(NIL, "keepunused", FALSE,
+                                "Do write unused items")
+
+  ARG.Bool reportErrorInUnused = NEW(NIL, "reportErrorInUnused", FALSE,
+                        "Do report errors in code that is not used")
+
+  ARG.String manageFlag = NEW(NIL, "manage", "default",
+                  "Memory management method; one of: "
+                  .. "default, none, linked")
+
+  ARG.Bool exitclean = NEW(NIL, "exitclean", FALSE,
+                  "Run the garbage collector on exit")
+
+  # Return arguments of zimbu that need to be passed to zimbu2c.
+  FUNC getArguments() string
+    string cmd = ""
+    IF Config.quick.get()
+      cmd ..= " -q"
+    }
+    IF Config.profalloc
+      cmd ..= " --profalloc"
+    }
+    cmd ..= LOG.getFlags()
+    IF !undefinedFlag.get()
+      cmd ..= " -z"
+    }
+    IF writeJsFlag.get()
+      cmd ..= " --js"
+    }
+    IF writeJavaFlag.get()
+      cmd ..= " --java"
+    }
+    IF keepUnusedFlag.get()
+      cmd ..= " --keepunused"
+    }
+    IF reportErrorInUnused.get()
+      cmd ..= " --reportErrorInUnused"
+    }
+    IF Config.portableFlag.get()
+      cmd ..= " --portable"
+    }
+    cmd ..= " --manage=" .. manageFlag.get()
+    IF exitclean.get()
+      cmd ..= " --exitclean"
+    }
+    IF Arguments.testMode
+      cmd ..= " test"
+    }
+    cmd ..= " \"" .. Arguments.inFileName .. "\""
+    RETURN cmd
+  }
+}

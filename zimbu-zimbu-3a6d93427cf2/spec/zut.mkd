@@ -1,0 +1,1342 @@
+Zimbu Templates Specification
+============================
+
+Last Change: 2015 Sep 29
+
+<img src="underconstruction.png">&nbsp;UNDER CONSTRUCTION
+
+This page contains both an informal explanation and a formal specification of
+Zimbu Templates or ZUT.<br>
+
+Zimbu Templates contain HTML and CSS mixed with Zimbu commands and expressions.
+They result in HTML pages that can be interactively used in a browser.
+
+Zimbu Templates can be used both on the server and in the browser.  On the
+server they are compiled into efficient binary code.  For the browser they are
+compiled into Javascript.
+
+
+Contents
+-------
+
+
+ZUT File
+==========
+
+A Zimbu Template is specified in a ZUT file.
+
+Example:
+<zimbu>
+# Description of what this template is for.
+# Copyright, license.
+
+# Include another module.
+IMPORT Colors.zu
+
+# A module is used as a namespace for what follows.
+MODULE MyTemplate
+
+  # Methods and declarations go here.
+
+  # CSS that applies to all the templates below.
+  CSS
+    .hello {
+      color: [=Colors.foreground];  # get color from imported module
+    }
+  }
+
+  # This is a template that produces HTML. The syntax resembles a function
+  # call, the return type specifies what it produces.
+  # When this template is used, the CSS above will be automatically included.
+  TEMPLATE message(string text) ZUT.Html
+    <div class="hello">
+      [=text]  # the text will be HTML-escaped
+    </div>
+  }
+}
+</zimbu>
+
+A ZUT file is always UTF-8 encoded.
+
+The file name must end in ".zut".
+
+The file name up to ".zut" must match the module in the file.
+
+
+Preprocessing
+-------------
+
+This is the same as for a Zimbu file, see zimbu.html.
+Note that Tab characters are not allowed.
+
+
+File Level
+----------
+
+The ZUT file toplevel is equal to a Zimbu file for a module.
+
+Inside the module there are two special items that do not appear in a Zimbu
+file: CSS and TEMPLATE.
+
+
+Comments
+-------
+
+The Zimbu-style comment, starting with # and continuing until the end of the
+line, can be used anywhere.  They are stripped out before producing the
+generated CSS, HTML, et al.
+
+To avoid # to be recognized as the start of a comment accidentally, it is
+required to have two spaces before it, or have the # appear as the first
+non-white character in the line.  Additionally, a space must follow right after the #.
+
+To insert a literal # in the html where it would be recognized as a comment use
+["#"].
+
+<zimbu>
+  # Comment
+  CSS
+    # This is a comment, but the next line is not.
+    #id {
+      color: #555;  # Note the two spaces before this comment
+    }
+  }
+  TEMPLATE show(string text) ZUT.Html @public
+    <div>
+      # This is a comment.
+      #Not a comment
+      ["#"] Also not a comment
+    </div>
+  }
+</zimbu>
+
+CSS and HTML comments can also be used where they are valid, these are kept in
+the generated CSS and HTML.
+
+
+Special characters
+----------
+
+Some characters have a special meaning.  To insert them literally use a [""]
+block.  These characters need to be escaped:
+
+| } | ["}"] | end of a TEMPLATE |
+| [ | ["["] | start of a Zimbu statement or expression |
+| # | ["#"] | comment |
+|   | [" "] | space |
+|   | ["\n"] | line break |
+
+Note how [}] differs from ["}"].  [}] is used as the end of a code block, it is
+part of the generated Zimbu statements.
+["}"] inserts a literal }, it is part of the produced HTML.
+
+Any text can be used inside the quotes, but it is best to only use it for
+special characters.
+
+
+White space removal
+----------
+
+In many places white space is removed where it is not needed in the output.
+This applies to spaces and line breaks.
+
+Usually the indent is dropped, allowing the templates to add indent to follow
+the element structure.
+
+Trailing white space is removed before a Zimbu statement.
+
+When white space is removed where it should be kept, use special character.
+For a single space: [" "]
+
+
+CSS template - ZUT.Css
+========
+
+nameless CSS block
+---------
+
+A CSS block defines the Cascading Style Sheets used for the templates in this
+module. It ends at the matching }.
+
+The syntax is just like a style tag in HTML, with the addition of the ZUT items
+in square brackets and the Zimbu style comments. 
+
+This block does not have arguments, since it's not called from code you write.
+It can use expressions that use variables in the module and any imported
+modules.
+
+### Example
+
+<zimbu>
+  string myColor = "black"
+
+  CSS
+    .hello {
+      color: [=myColor];  # uses the value of the myColor variable
+    }
+  }
+</zimbu>
+
+When a template in the same ZUT file is used the nameless CSS block is
+automatically added to the page.  On the server all the CSS of all the used
+templates is concatenated and results in one "style" element.  In the browser
+every CSS block is added as a separate "style" element.  Each CSS block is
+added only once.
+
+
+CSS template
+---------
+
+CSS can also be produced with a TEMPLATE that returns ZUT.Css.  This CSS is not
+automatically included, templates that use this CSS must explicitly state this
+with a CSS statement.  Another difference with a CSS block is that arguments
+can be passed in.
+
+### Example
+
+<zimbu>
+  TEMPLATE classColor(string name, string color) ZUT.Css @public
+    .[=name] {
+      color: [=color];
+    }
+  }
+  TEMPLATE titleDiv(string text, string color) ZUT.Html @public
+    [ZUT.addCss("title/" .. color, classColor("title", color))]
+    <div class="title">
+      [=text]
+    </div>
+  }
+</zimbu>
+
+To include a CSS template where it is needed, use the ZUT.addCss method.
+This is the relevant line:
+<zimbu>
+    [ZUT.addCss("title/" .. color, classColor("title", color))]
+</zimbu>
+
+The first argument is the name of the style element.  If this name
+was encountered before the CSS will not be added again.  In the example the
+name is the concatenation of the class name and the color value.  If this
+combination is encountered a second time the style was already defined and will
+not be added again.
+
+The name can be NIL to add the style unconditionally.  Only do this for
+templates that are used once.
+
+The second argument is an expression resulting in a ZUT.Css object, usually by
+invoking a template.
+
+The ZUT.addCss method can be used in Zimbu code just like it is used here.
+
+
+HTML template - ZUT.Html
+========
+
+A TEMPLATE returning ZUT.Html defines a HTML template.  The syntax is similar
+to a Zimbu method, with a name and arguments inside parenthesis, the return
+type followed by optional attributes.  It ends at the matching }.
+
+### Example
+
+<zimbu>
+  TEMPLATE show(string text) ZUT.Html @public
+    <div class="hello">
+      [=text]
+    </div>
+  }
+</zimbu>
+
+The syntax of the contents is just like HTML, with the addition of the ZUT
+items in square brackets, the Zimbu style comments, and the special meaning of
+"zcontroller" and "zaction" attributes. 
+
+The name of the template must start with a lower case letter, just like a Zimbu
+method.
+
+The arguments are specified with their type. Optional arguments are allowed,
+again just like with Zimbu methods.
+
+The returned ZUT.Html object is more or less a string with the produced HTML.
+The ZUT.Html type is used to have the compiler check for proper escaping.
+
+The validity of the produced HTML is not verified.  It is possible to have one
+HTML template that contains <div> and another one that contains </div> and
+concatenate them later.
+
+
+Attributes template - ZUT.Attributes
+========
+
+An attributes template is like a HTML template, but instead of HTML elements it
+only contains the attributes for an HTML element.  The return type is
+ZUT.Attributes.
+
+This is useful to generate attributes that are added in multiple elements.
+Especially as used in the decorator of a controller.
+
+### Example
+
+<zimbu>
+  TEMPLATE fancy() ZUT.Attributes @public
+    class="fancy-text"
+  }
+</zimbu>
+
+
+URL template - ZUT.Url
+========
+
+A URL template is like a HTML template, but instead of HTML elements it only
+contains a URL.  The return type is ZUT.Url.
+
+This is useful to generate a URL that is used in another template.
+
+### Example
+
+<zimbu>
+  TEMPLATE link(string domain, string path, string param) ZUT.Url @public
+    [=domain]/[=path]?[=param]  # Special characters will be Url-escaped.
+  }
+</zimbu>
+
+
+Text template
+========
+
+A text template is like a HTML template, but instead of HTML elements it only
+contains plain, unescaped text.  The return type is string.
+
+This is useful to generate text that is used in another template or as the
+value of a text area.  The parameters do not get escaped.
+
+### Example
+
+<zimbu>
+  TEMPLATE fancy(string title) string @public
+    Title: [=title]  # Special characters in |title| are not escaped.
+  }
+</zimbu>
+
+### No escaping
+
+While other template types have escaping rules, the text template does not
+escape anything.  The escaping will happen when using the result of the
+template in another template.
+
+Keep in mind there also is no un-escaping.  For example, when passing in a
+ZUT.Html argument it is turned into a string.  If then using the result of the
+text template in another HTML template special characters will be
+escaped twice.
+
+Example:
+<zimbu>
+  TEMPLATE titleHeader(ZUT.Html title) string
+    Title: [=title]
+  }
+  TEMPLATE titleDiv(ZUT.Html title) ZUT.Html @public
+    <div>[=titleHeader(title)]</div>
+  }
+</zimbu>
+
+If title is "this &amp; that", when used as HTML it would be displayed as "this
+& that". When passed to the titleHeader template, it will return "this &amp;
+that" as a text string, no escaping or un-escaping takes place.
+Inside titleDiv the result of titleHeader is a string, which will be escaped,
+resulting in "this &amp;amp; that", which shows up as "this &amp; that"
+
+
+Javascript template - ZUT.Javascript
+========
+
+A Javascript template is like a HTML template, but instead of HTML elements it
+only contains Javascript.  The return type is ZUT.Javascript.
+
+This is useful to generate a Javascript that is used in a &lt;script&gt; tag.
+Escaping makes sure that the script is not terminated early by a
+&lt;/script&gt; end tag somewhere.
+
+### Example
+
+<zimbu>
+  TEMPLATE onclick(string func, string arg) ZUT.Javascript @public
+    [=func]([=arg])  # Special characters will be escaped.
+  }
+</zimbu>
+
+
+ZUT.Context
+=========
+
+The context "ZUT.Context" is available with:
+<zimbu>
+  VAR context = CTX.get(ZUT.Context.Type())
+</zimbu>
+
+On the server it provides information about the Http request.  In the browser
+it provides information about the browser.
+
+
+Template items
+=========
+
+Zimbu statement
+----------
+
+In CSS and TEMPLATE Zimbu statements can be used in square brackets.
+For example, to get a unique ID to use:
+<zimbu>
+  TEMPLATE message() ZUT.Html
+    [string helloId = ZUT.uid()]
+    <div id=[=helloId]>Hello!</div>
+  }
+</zimbu>
+
+It does not have to be a complete statement, it can also be one line of a
+multi-line statement.  For example, an IF statement can be used to select what
+HTML to produce:
+<zimbu>
+  TEMPLATE message(bool useDiv) ZUT.Html
+    [IF useDiv]
+      <div>Hello</div>
+    [ELSE]
+      <span>Hello</span>
+    [}]
+  }
+</zimbu>
+
+The template arguments can be used.  Variable names starting with "zut" are
+reserved for internal use.
+
+Although there are no restrictions on what statements you can use here, avoid
+putting to much functionality into the template.  It is best restricted to
+calls invoking methods which are implemented in a Zimbu file.
+
+
+Zimbu expression
+----------
+
+In CSS and TEMPLATE blocks a ZUT expression can be used to insert the result of
+that expression.  It has the form "[=expr]".  The type of the result should be a
+string or a ZUT object.  Other types are converted to a string by invoking
+their ToString() method.
+
+Depending on the type and where it is used the proper escaping will be
+automatically performed.  This prevents XSS security problems.
+
+A typical form of such an expression is invoking a template.  Example:
+<zimbu>
+  TEMPLATE button(bool big, string text) ZUT.Html @public
+    [IF big]
+      [=MyButtons.bigButton(text)]
+    [ELSE]
+      [=MyButtons.smallButton(text)]
+    [}]
+  }
+</zimbu>
+
+Note that the expression is supposed to only contain text that is appropriate
+for the context.  E.g., it should not start an element but not end it, or
+terminate a string.  The escaping rules prevent this from happening.
+
+Example that doesn't work:
+
+<zimbu>
+  TEMPLATE head() ZUT.Html
+    <style>  # this doesn't work
+  }
+  TEMPLATE tail() ZUT.Html
+    </style>  # this doesn't work
+  }
+  TEMPLATE whole(string myStyle) ZUT.Html
+    [=head()]
+    [=myStyle]
+    [=tail()]
+  }
+</zimbu>
+
+The problem here is that where "text" is used we can't know we are in the style
+element, which requires different escaping.
+
+
+Escaping and filtering contexts
+----------
+
+Cross-site scripting (XSS) vulnerabilities are a main cause for security
+problems in websites.  This basically means that a hacker can inject code on a
+web page, using the users's authentication to steal information or even change
+it.
+
+ZUT tries hard to avoid XSS by filtering out text that shouldn't be there and
+escaping text that might cause problems.  This is similar to strict
+autoescaping in Google Closure templates.
+
+The plain text in the template is not filtered or escaped.  Thus you still have
+to make sure that this text is correct.  What is escaped is what is inserted
+from expressions.  How this happens depends on the context, where the
+expression is used, and on the result type of the expression.
+
+The following sections list the filtering and escaping rules used for every
+known context, depending on the expression result type.  Keep in mind that
+"string" is often used for a type that is not listed if the expression result
+is converted to a string with the ToString() method.
+
+If the expression appears in a place that is not any of the mentioned contexts,
+then this is a compile time error.
+
+The escaping rules themselves are explained in the
+[[Escaping and filtering rules|next section]].
+
+Overview:
+
+|+* Context                      | string | Html | Url | Attributes | Css | Javascript |
+| [[Escaping and filtering contexts_HTML|HTML]]                                 | [[Escaping and filtering rules_HTML-escape|escape]] | *as-is* | [[Escaping and filtering rules_HTML-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_HTML data|HTML data]]                       | [[Escaping and filtering rules_HTML-escape|escape]] | [[Escaping and filtering rules_HTML-data-escape|escape]] | [[Escaping and filtering rules_HTML-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_HTML tag name|HTML tag name]]               | [[Escaping and filtering rules_HTML-tagname-escape|escape]] | error | error | error | error | error |
+| [[Escaping and filtering contexts_HTML attributes|HTML attributes]]             | [[Escaping and filtering rules_HTML-attributes-escape|escape]] | error | error | *as-is* | error | error |
+| [[Escaping and filtering contexts_HTML attribute value|HTML attribute value]] | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] | error | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_HTML style attribute value|HTML style attribute value]] | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] | error | error | error | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] | error |
+| [[Escaping and filtering contexts_HTML style attribute value|HTML script attribute value]] | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] | error | error | error | error | [[Escaping and filtering rules_HTML-attr-value-escape|escape]] |
+| [[Escaping and filtering contexts_HTML unquoted attribute value|HTML unquoted attribute value]] | [[Escaping and filtering rules_HTML-attr-nospace-escape|escape]] | error | [[Escaping and filtering rules_HTML-attr-nospace-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_URL|URL]]                                   | [[Escaping and filtering rules_URL-escape|escape]] | error | *as-is* or [[Escaping and filtering rules_URL-param-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_CSS|CSS]]                                   | [[Escaping and filtering rules_CSS-escape|escape]] | error | error | error | *as-is* | error |
+| [[Escaping and filtering contexts_CSS string|CSS string]]                     | [[Escaping and filtering rules_CSS-string-escape|escape]] | error | error | error | error | error |
+| [[Escaping and filtering contexts_CSS URL|CSS URL]]                           | [[Escaping and filtering rules_URL-escape|escape]] | error | *as-is* or [[Escaping and filtering rules_URL-param-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_CSS comment|CSS comment]]             | [[Escaping and filtering rules_CSS-comment-escape|escape]] | [[Escaping and filtering rules_CSS-comment-escape|escape]] | [[Escaping and filtering rules_CSS-comment-escape|escape]] | [[Escaping and filtering rules_CSS-comment-escape|escape]] | [[Escaping and filtering rules_CSS-comment-escape|escape]] | [[Escaping and filtering rules_CSS-comment-escape|escape]] |
+| [[Escaping and filtering contexts_Javascript|Javascript]]                     | [[Escaping and filtering rules_Javascript-escape|escape]] | error | error | error | error | *as-is* |
+| [[Escaping and filtering contexts_Javascript string|Javascript string]]              | [[Escaping and filtering rules_Javascript-string-escape|escape]] | error | [[Escaping and filtering rules_Javascript-string-escape|escape]] | error | error | error |
+| [[Escaping and filtering contexts_Javascript comment|Javascript comment]]             | [[Escaping and filtering rules_Javascript-comment-escape|escape]] | [[Escaping and filtering rules_Javascript-comment-escape|escape]] | [[Escaping and filtering rules_Javascript-comment-escape|escape]] | [[Escaping and filtering rules_Javascript-comment-escape|escape]] | [[Escaping and filtering rules_Javascript-comment-escape|escape]] | [[Escaping and filtering rules_Javascript-comment-escape|escape]] |
+
+
+"error" means that there will be a compile time error.
+
+Expressions of type int and float are converted to string and handled like
+string.
+
+
+### HTML
+
+Let's start with a very common context: In a HTML template, not inside a tag,
+inside a normal element.
+
+<zimbu>
+  TEMPLATE sections(SomeType here) ZUT.Html @public
+    [=here]
+    <div>or [=here]</div>
+    <div>and [=here] too</div>
+  }
+</zimbu>
+
+Inside some elements, such as title, the HTML data context applies,
+see the
+[[Escaping and filtering contexts_HTML data|next section]].
+
+Inside style elements the
+[[Escaping and filtering contexts_CSS|CSS context]].
+applies.
+
+Inside script elements the
+[[Escaping and filtering contexts_Javascript|Javascript context]].
+applies.
+
+#### string
+
+A string in HTML context uses the
+[[Escaping and filtering rules_HTML-escape|HTML-escape]] rule,
+so that the literal text will be displayed.
+
+Any type not specifically recognized is converted to a string with the
+ToString() method.  This allows for many objects to be displayed in a
+straightforward way.  For example, if the "here" argument in the sections
+template above is a list of strings, it is displayed in the ["one", "two",
+"three"] form.
+
+
+#### ZUT.Html
+
+Since a ZUT.Html expression already is well-formed HTML, this is inserted
+as-is.
+
+#### ZUT.Css, ZUT.Attributes, ZUT.Javascript
+
+This is most likely a mistake in the template and results in a compilation error.
+If you really want to insert this expression, convert it to string.  It
+will then be escaped and show up as text.
+
+#### ZUT.Url
+
+When a ZUT.Url is used where plain text is expected, we assume that the URL is
+the be displayed literally.  Example:
+
+<zimbu>
+  TEMPLATE urlWithText(ZUT.Url url) ZUT.Html @public
+    <a href="[=url]">[=url]</a>
+  }
+</zimbu>
+
+The first use of "url" is escaped so that it can be clicked on (see the
+[[Escaping and filtering contexts_HTML attribute value|attribute value context]]
+below), the second one uses the
+[[Escaping and filtering rules_HTML-escape|HTML-escape]] rule,
+so that it shows up literally.
+
+
+### HTML data
+
+Inside some HTML tags the rules are different.
+
+<zimbu>
+  TEMPLATE header(SomeType here) ZUT.Html @public
+    <title>[=here]</title>    # HTML-escape
+  }
+</zimbu>
+
+
+#### ZUT.Html
+
+Although ZUT.Html is already proper HTML, the title element does not
+nest, therefore elements are escaped.  This uses the 
+[[Escaping and filtering rules_HTML-data-escape|HTML-data-escape]] rule.
+
+#### other types
+
+Everything else is handled like HTML, see above.
+
+
+### HTML tag name
+
+This comes right after the &lt; that starts an opening tag, the &lt;/ that
+starts a closing tag or the &lt;! that is used for DOCTYPE:
+
+<zimbu>
+  TEMPLATE divOrSpan(string tagName) ZUT.Html @public
+    <[=tagName]>some text</[=tagName]>
+    <[=tagName] class="gold">some text</[=tagName]>
+  }
+</zimbu>
+
+#### string
+
+The string is only accepted if it is a normal tag name, otherwise a
+ZUT.E_BadValue exeption is thrown.
+See the [[Escaping and filtering rules_HTML-tagname-escape|HTML-tagname-escape]] rule.
+
+
+#### ZUT.Html, ZUT.Attributes, ZUT.Javascript, ZUT.Url
+
+This is most likely a mistake in the template and resuls in a compilation error.
+If you really want to insert this expression, convert it to string first.
+
+
+### HTML attributes
+
+This is inside a tag, after the tag name:
+
+<zimbu>
+  TEMPLATE something(SomeType attributes) ZUT.Html @public
+    <div [=attributes]>some text</div>
+    <div class="nice" [=attributes]>some text</div>
+    <div [=attributes] id="yes">some text</div>
+  }
+</zimbu>
+
+Note that it is not possible to use a Zimbu expression to set the attribute
+name.  That is to avoid problems with escaping certain kinds of attributes.
+
+#### ZUT.Attributes
+
+Since a ZUT.Attributes expression already is well-formed Attributes, this is
+inserted as-is.
+
+#### string
+
+Strings undergo the
+[[Escaping and filtering rules_HTML-attributes-escape|HTML-attributes-escape]] rule,
+to make sure only valid attributes are inserted.
+
+#### other types
+
+No other type makes sense here and results in a compilation error.
+
+
+### HTML attribute value
+
+This is inside a tag, in the quoted argument of a normal parameter:
+
+<zimbu>
+  TEMPLATE something(string className) ZUT.Html @public
+    <div class="[=className]">some text</div>
+    <span class='[=className]'>some text</span>
+  }
+</zimbu>
+
+For the "style" parameter the
+[[Escaping and filtering contexts_HTML style attribute value|HTML style attribute value]]
+context applies.
+
+For the parameters that have a Javascript value the
+[[Escaping and filtering contexts_HTML script attribute value|HTML script attribute value]]
+context applies.
+
+
+#### string
+
+The attribute name matters here.  The escaping is different for URL attributes,
+such as "href", which use the
+[[Escaping and filtering rules_URL-escape|URL-escape]] rule.
+
+Otherwise, encodes all special characters and quotes, but not spaces.  See the
+[[Escaping and filtering rules_HTML-attr-value-escape|HTML-attr-value-escape]]
+rule.
+
+
+#### ZUT.Url
+
+The Url is used as a string and the escaped like a string.  This prevents the special meaning of &amp;, among others.
+
+
+#### other types
+
+No other type makes sense here and results in a compilation error.
+
+
+### HTML style attribute value
+
+This is inside a style attribute of a tag.  This requires both escaping for the
+style and the attribute value.
+
+<zimbu>
+  TEMPLATE something(string css) ZUT.Html @public
+    <div style=[=css]>unquoted</div>
+    <div style="[=css]">quoted</div>
+  }
+</zimbu>
+
+#### string
+
+First applies the
+[[Escaping and filtering rules_CSS-escape|CSS-escape]] rule
+and then on top of that the
+[[Escaping and filtering rules_HTML-attr-nospace-escape|HTML-attr-nospace-escape]] rule for an unquoted attribute or the 
+[[Escaping and filtering rules_HTML-attributes-escape|HTML-attributes-escape]] rule for a quoted attribute.
+
+### ZUT.Css
+
+Uses the properly formed CSS as-is, and applies the
+[[Escaping and filtering rules_HTML-attr-nospace-escape|HTML-attr-nospace-escape]] rule for an unquoted attribute or the 
+[[Escaping and filtering rules_HTML-attributes-escape|HTML-attributes-escape]] rule for a quoted attribute.
+
+#### other types
+
+No other type makes sense here and results in a compilation error.
+
+
+### HTML script attribute value
+
+This is inside an attribute of a tag that uses Javascript, such as "onclick".
+This requires both escaping for the Javascript and the attribute value.
+
+<zimbu>
+  TEMPLATE something(string js) ZUT.Html @public
+    <div onclick=[=js]>unquoted</div>
+    <div onclick="[=js]">quoted</div>
+  }
+</zimbu>
+
+#### string
+
+First applies the
+[[Escaping and filtering rules_Javascript-escape|Javascript-escape]] rule.
+and then on top of that the
+[[Escaping and filtering rules_HTML-attr-nospace-escape|HTML-attr-nospace-escape]] rule for an unquoted attribute or the 
+[[Escaping and filtering rules_HTML-attributes-escape|HTML-attributes-escape]] rule for a quoted attribute.
+
+### ZUT.Javascript
+
+Uses the properly formed Javascript as-is, and applies the
+[[Escaping and filtering rules_HTML-attr-nospace-escape|HTML-attr-nospace-escape]] rule for an unquoted attribute or the 
+[[Escaping and filtering rules_HTML-attributes-escape|HTML-attributes-escape]] rule for a quoted attribute.
+
+#### other types
+
+No other type makes sense here and results in a compilation error.
+
+
+
+### HTML unquoted attribute value
+
+This is inside a tag, in the argument of a parameter that is not quoted:
+
+<zimbu>
+  TEMPLATE something(string name) ZUT.Html @public
+    <div id=[=name]>some text</div>
+  }
+</zimbu>
+
+
+#### string
+
+Encodes all special characters and spaces with the
+Strings undergo the
+[[Escaping and filtering rules_HTML-attr-nospace-escape|HTML-attr-nospace-escape]] rule,
+to make sure only one valid attributes value results.
+
+
+#### ZUT.Url
+
+The Url is used as a string and the escaped like a string.  This prevents the special meaning of &amp;, among others.
+
+
+#### other types
+
+No other types make sense here and result in a compilation error.
+
+
+### URL
+
+The most common use is to insert a URL from a string.  The whole URL will then
+be escaped in a way it won't be misinterpreted.  It is also possible to build a
+URL from pieces.
+
+The URL context is used for URL attribute in a HTML tag, such as "href", as
+well as for ZUT.Url templates.
+
+<zimbu>
+  TEMPLATE simpleLink(string url, string text) ZUT.Html @public
+    <a href="[=url]">[=text]</a>
+  }
+  TEMPLATE flexiLink(string scheme, string domain, string path, string parameters, string fragment, string text) ZUT.Url @public
+    [=scheme]//[=domain]/[=path]?[=parameters]#[=fragment]
+  }
+  TEMPLATE google(string query) ZUT.Html @public
+    <a href="https://www.google.com/search?q=[=query]">[=query]</a>
+  }
+</zimbu>
+
+#### string
+
+At the start, scheme names that are likely to cause problems, such
+as javascript:, cause a ZUT.E_BadValue exception to be thrown.
+
+In most places the
+[[Escaping and filtering rules_URL-escape|URL-escape]] rule is used.
+
+For the parameter value, such as "query" in the third example, the
+[[Escaping and filtering rules_URL-escape|URL-param-escape]] rule is used.
+All characters that are special in the value, such as "&"
+and "=" are also escaped.
+
+The detection of using a Zimbu expression that contains a parameter value
+happens at runtime: If the generated URL is ending in "?name=", or "&name="
+after finding a ?, and an expression follows.
+This allows for an expression at any point to start the parameters.
+For example:
+
+<zimbu>
+  TEMPLATE paramLink(string paramName, string paramValue) ZUT.Html @public
+    <a href="localhost/path?[=paramName][=paramValue]">here</a>
+  }
+</zimbu>
+
+When this is invoked with:
+
+<zimbu>
+    MyTemplates.paramLink("q=", "it is true")
+</zimbu>
+
+The result will be "&lt;a href="localhost/path?q=it%20is%20true">here&lt;/a>".
+
+
+#### ZUT.Url
+
+Since ZUT.Url is already a well-formed URL, this is passed on as-is, except
+when used as a parameter value, then the 
+[[Escaping and filtering rules_URL-escape|URL-param-escape]] rule is used.
+
+
+#### other types
+
+No other type makes sense here and results in a compilation error.
+
+
+### CSS
+
+CSS is used inside a style element and a ZUT template returning ZUT.Css.
+It can also be used inside a style parameter of an HTML tag, with some
+restrictions.
+
+<zimbu>
+TEMPLATE header(ZUT.Css css) ZUT.Html
+  <style>
+    [=css]
+  </style>
+}
+
+TEMPLATE top(string color) ZUT.Css
+  p {
+    text-color: [=color];
+  }
+}
+
+TEMPLATE section(string style, string text) ZUT.Html
+  <div style="[=style]">[=text]</div>
+}
+</zimbu>
+
+
+#### string
+
+A string is escaped with the
+[[Escaping and filtering rules_CSS-escape|CSS-escape]] rule.
+to make sure it does not terminate the style element prematurely.
+
+#### ZUT.Css
+
+A ZUT.Css object is properly formed and is passed on as-is.
+
+#### other types
+
+No other type makes sense in CSS and result in a compilation error.
+Note that a URL must always be inside url(), See
+[[Escaping and filtering contexts_CSS URL|CSS URL]]
+
+
+### CSS string
+
+A CSS string can be single or double quoted.
+
+<zimbu>
+TEMPLATE strings(string text) ZUT.Css
+  single: '[=text]';
+  double: "[=text]";
+}
+</zimbu>
+
+#### string
+
+Strings are escaped with the
+[[Escaping and filtering rules_CSS-string-escape|CSS-string-escape]] rule
+so that they are used literally.
+
+
+#### other types
+
+No other type makes sense in a CSS string and results in a compilation error.
+Note that a URL must always be inside url(), See
+[[Escaping and filtering contexts_CSS URL|CSS URL]]
+
+
+### CSS URL
+
+A CSS accepts a URL inside url(), with or without quotes:
+
+<zimbu>
+TEMPLATE strings(string url) ZUT.Css
+  h1 { background: url([=url]); }
+  h2 { background: url('[=url]'); }
+  h3 { background: url("[=url]"); }
+}
+</zimbu>
+
+#### string
+
+Strings are escaped with the
+[[Escaping and filtering rules_URL-escape|URL-escape]] rule
+to ensure the result is a valid URL.
+
+
+#### ZUT.Url
+
+A ZUT.Url is already well-formed and will be inserted as-is when used without
+any prefix.  It will be escaped when there is a prefix.
+
+
+#### other types
+
+No other type makes sense in a CSS string and results in a compilation error.
+
+
+### CSS comment
+
+A CSS comment must be a block comment.
+
+<zimbu>
+TEMPLATE comments(string text) ZUT.Css
+  /* [=text]
+   */
+}
+</zimbu>
+
+Any type can be passed here, the
+[[Escaping and filtering rules_CSS-comment-escape|CSS-comment-escape]]
+rule will be used.
+
+
+
+### Javascript
+
+Javascript code is used inside a script element and in handler attributes of
+elements, such as "onclick".
+
+<zimbu>
+TEMPLATE error(int error, string varName) ZUT.Javascript
+  alert('error ' + [=error]);
+  [=varName] = false;
+}
+</zimbu>
+
+#### string
+
+A string is escaped with the
+[[Escaping and filtering rules_Javascript-escape|Javascript-escape]] rule.
+This does not do much escaping, it does check for valid Javascript.
+Inside a script element it makes sure it does not terminate the script element.
+
+Note that it is still very well possible to mess up the resulting Javascript,
+be careful!
+
+
+#### ZUT.Javascript
+
+A ZUT.Javascript object is properly formed and is passed on as-is.
+
+
+#### other types
+
+No other type makes sense in Javascript and results in a compilation error.
+
+
+### Javascript string
+
+A Javascript string can be single or double quoted.  We also handle a regular
+expression like a string.
+
+<zimbu>
+TEMPLATE strings(string text) ZUT.Javascript
+  var single = '[=text]';
+  var double = "[=text]";
+  var regexp = /[=text]/;
+}
+</zimbu>
+
+#### string
+
+Strings are escaped with the
+[[Escaping and filtering rules_Javascript-string-escape|Javascript-string-escape]] rule
+so that they are used literally.
+
+
+#### ZUT.Url
+
+A Url is converted to a string and escaped like a string.  Specifically, when
+used in a regular expression slashes are escaped with a backslash.
+
+
+#### other types
+
+No other type makes sense in a Javascript string and results in a compilation
+error.
+
+
+### Javascript comment
+
+A Javascript comment can be a line comment or a block comment.
+
+<zimbu>
+TEMPLATE comments(string text) ZUT.Javascript
+  // [=text]
+  /* [=text]
+   */
+}
+</zimbu>
+
+Any type can be passed here, the
+[[Escaping and filtering rules_Javascript-comment-escape|Javascript-comment-escape]]
+rule will be used.
+
+
+Escaping and filtering rules
+----------
+
+### HTML-escape
+
+This makes sure that any text is displayed as-is.
+
+|* character   | replacement |
+| NUL          | &amp;#0;    | 0x00 |
+| &amp;        | &amp;amp;   |
+| "            | &amp;quot;  | double quote |
+| '            | &amp;#39;   | single quote |
+| &lt;         | &amp;lt;    |
+| &gt;         | &amp;gt;    |
+| \n           | &lt;br&gt;  | a line break |
+
+
+### HTML-data-escape
+
+This makes sure that any text is displayed as-is, but keeps &amp; characters
+and does not replace line breaks.
+
+|* character   | replacement |
+| NUL          | &amp;#0;    | 0x00 |
+| "            | &amp;quot;  | double quote |
+| '            | &amp;#39;   | single quote |
+| &lt;         | &amp;lt;    |
+| &gt;         | &amp;gt;    |
+
+This is used for title elements and HTML comments, when the contents
+comes from a ZUT.Html object.
+
+
+### HTML-tagname-escape
+
+This does not actually do escaping, but only lets through a valid tag name.
+Leading and trailing white space is removed.
+
+Valid characters are ASCII letters, numbers, dashes, and underscores.
+
+An invalid tag name causes a ZUT.E_BadValue exception to be thrown.
+
+The names "script", "style" and "title" are rejected, because these
+require different escaping, which could not be setup at compile time.
+
+
+### HTML-attributes-escape
+
+Changes &amp; and control characters into the &amp;amp; form.
+
+
+### HTML-attr-value-escape
+
+This escapes &amp;, quotes an control characters into the &amp;amp form.
+For CSS values this is on top of the CSS-escape rule.
+For Javascript values this is on top of the Javascript-escape rule.
+
+
+### HTML-attr-nospace-escape
+
+Like HTML-attr-value-escape plus escaping spaces.
+
+
+### URL-escape
+
+In a URL escaping happens by replacing a byte with its hexadecimal value,
+preceded by %. Thus = is replaced with %3D and  % itself is replaced with %25.
+
+All characters are escaped, except: "-_.!~*", all
+ASCII letters and digits, and the characters that are listed under
+URL-param-escape.
+
+
+### URL-param-escape
+
+This is like URL-escape, but additionally these characters are escaped:
+";,/?:@&=+$#".
+
+
+### CSS-escape
+
+This does not actually escape, but throws an ZUT.E_BadValue exception in the
+following cases:
+-  an unterminated string
+-  an unterminated /* comment
+-  a trailing backslash
+-  a NUL character
+-  &lt;/ found (could be &lt;/style&gt;)
+
+
+### CSS-string-escape
+
+This inserts a backslash before a backslash.
+
+For a single quoted string single quotes are escaped with a backslash.
+
+For a double quoted string double quotes are escaped with a backslash.
+
+A line break is changed to "\a".
+
+NUL characters are dropped.
+
+
+### CSS-comment-escape
+
+This works the same as the 
+[[Escaping and filtering rules_Javascript-comment-escape|Javascript-comment-escape]]
+rule
+
+
+### Javascript-escape
+
+This does not actually escape, but throws an ZUT.E_BadValue exception in the
+following cases:
+-  an unterminated string or regexp
+-  an unterminated // comment
+-  an unterminated /* comment
+-  a trailing backslash
+-  a NUL character
+-  &lt;/ found (could be &lt;/script&gt;)
+
+
+### Javascript-string-escape
+
+This inserts a backslash before a backslash.
+
+For a single quoted string single quotes are escaped with a backslash.
+
+For a double quoted string double quotes are escaped with a backslash.
+
+For a regular expression slashes are escaped with a backslash.
+
+A line break is changed to "\n".
+
+NUL characters are dropped.
+
+
+### Javascript-comment-escape
+
+For a "//" comment after every line break "//" is inserted.
+
+For a "/*" comment every "*/" is changed to "* /" (inserting a space).
+
+NUL characters are dropped.
+
+
+
+Controllers
+=========
+
+To make it easier to write HTML that interacts with the user a controller can
+be used.  The name of the controller is put into the HTML with a "zcontroller"
+attribute.  The element it is in and all its children are then considered to be
+under control of this controller.
+
+Example:
+<zimbu>
+TEMPLATE okButton() ZUT.Html
+  <div zcontroller="OkController">
+    <button zaction="click: okClicked">OK</button>
+  </div>
+}
+</zimbu>
+
+Actions on elements are assigned to a controller with a "zaction" attribute.
+The ZUT system will intercept events, such as a mouse click, and find the
+matching "zaction".  The specified method will then be invoked on the nearest
+controller, found upwards in the element tree.
+
+When an action is recognized and the controller is indentified, the ZUT runtime
+code will instantiate a controller and invoke the specified action method.
+When a controller was previously created it will be re-used,
+
+The controller code is compiled into Javascript.  It is either included in the
+page, or loaded at a later time, latest when the controller is actually used.
+
+The compiler will verify the action handler actually exists.  Thus a missing
+action handler results in a compilation error.
+
+
+zcontroller attribute
+-------
+
+The zcontroller attribute specifies the name of a class.  That class must have
+been imported in the template.  E.g., when using 'zcontroller="MyController"'
+there should be an 'IMPORT "MyController.zu"' statement (possibly with a path).
+
+
+zaction attribute
+-------
+
+The zaction attribute is a comma separated list of items.  Each item specifies
+an action type and the method to call. They are separted by a colon.  For
+example, "mouseDown: down, mouseUp: up".
+
+The list of action types:
+| click |  a mouse click (triggers when the mouse button is released) |
+| doubleClick | two mouse clicks within a short time |
+| longClick | mouse click that takes long (about 2 seconds) |
+| mouseDown | pressing the mouse button |
+| mouseUp | releasing the mouse button |
+| mouseOver | when the mouse enters an element |
+| mouseOut | when the mouse leaves an element |
+| mouseMove | when the mouse moves inside an element |
+| key | key press and release (not for modifier keys) |
+| keyDown | a keyboard key press (also for modifier keys) |
+| keyUp | a keyboard key release (also for modifier keys) |
+| valueChange | the value of the element changed |
+
+Note: Most actions will work on most browsers, but there can be slight
+differences, especially with older browsers.
+
+
+action method
+---------
+
+The controller class must define the methods for the actions used.
+The method signature must be like this:
+<zimbu>
+  FUNC $clicked(ZUT.Event event) bool
+</zimbu>
+
+The ZUT.Event contains all the relevant information about the event.
+For example, event.element is the HTML element where the event was detected.
+
+The function must return TRUE if the event bubbles up.  That means it is passed
+on to action handlers up in the DOM tree.  If the function returns FALSE no
+other action handler will be invoked.
+
+Keep in mind that the action methods are always executed in the browser, they
+are produced as Javascript.
+
+The action method may in turn use a template to generate HTML and update the
+page to show it.  See the zutdemo program for examples.
+
+
+Passing data
+---------
+
+A controller can be instantiated many times, e.g. one for every button.  It
+must then be able to know what button in the page it's controlling.  A good
+practice is to use data attributes.  These have the form "data-name", where
+"name" can be freely chosen.
+
+Example ZUT template:
+<zimbu>
+  TEMPLATE demo(string text) ZUT.Html @public
+    [string helloId = ZUT.uid()]
+    <div zcontroller="MyController"
+         zaction="click: clicked"
+         data-id="[=helloId]">
+      [=text]
+    </div>
+    <div id="[=helloId]"></div>
+  }
+</zimbu>
+
+With this code in the action handler:
+<zimbu>
+    string id = ZUT.getAttribute(event.element, "data-id")
+    callback<ZUT.HtmlFunc, string> cb = NEW(MyTemplate.message, "Hello World!")
+    ZUT.fillElement(id, cb)
+</zimbu>
+
+In this example, a unique ID is created with ZUT.uid().  It is used as the id
+in the element that needs to be changed.  It is passed to the action handler
+with the "data-id" attribute on the element that is clicked on.
+
+
+Copyright
+========
+
+Copyright 2014 Bram Moolenaar  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+The License can be found it in the LICENSE file, or you may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+License for the specific language governing permissions and limitations
+under the License.
+
+vim: et tw=0 sw=2

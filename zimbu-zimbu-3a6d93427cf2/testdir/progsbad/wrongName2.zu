@@ -1,0 +1,11 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  RETURN 0
+}
+
+CLASS Test11
+  # proc name must start with lower case letter or '_'
+  PROC Proc()
+  }
+}

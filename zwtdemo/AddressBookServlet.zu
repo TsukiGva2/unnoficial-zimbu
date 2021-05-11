@@ -1,0 +1,48 @@
+# Demo for an RPC servlet.
+
+IMPORT.PROTO "addressbook.proto"
+IMPORT "$PLUGIN/proto/Message.zu"
+
+CLASS AddressBookServlet EXTENDS HTTP.RpcServlet
+
+  #= The servlet stores the data in |fileNameArg|
+  NEW(string fileNameArg)
+    $init()
+    fileName = fileNameArg
+
+    $addHandler(Tutorial.AddressService.handleGetAddressBook, getAddressBook)
+    $addHandler(Tutorial.AddressService.handleStorePerson, storePerson)
+  }
+
+  SHARED
+
+    string    fileName
+
+    FUNC getAddressBook(HTTP.Context context,
+                        Message request,
+                        Message reply
+                       ) status
+      Tutorial.GetOptions options = request
+      Tutorial.AddressBook book = reply
+
+      IO.File reader = IO.fileReader(fileName)
+      IF reader == NIL
+        IO.print("Cannot open file: " .. fileName)
+      ELSE
+        book.mergeFromBinary(reader)
+        reader.close()
+      }
+      RETURN OK
+    }
+
+    FUNC storePerson(HTTP.Context context,
+                     Message person,
+                     Message status
+                    ) status
+      # TODO: read AddressBook from |fileName| , add |person|
+      # and store the AddressBook.
+      RETURN OK
+    }
+  }
+
+}

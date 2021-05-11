@@ -1,0 +1,12 @@
+
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  # Wrong type
+  Ook ook = 44
+  RETURN 0
+}
+
+CLASS Ook
+  int $v
+}

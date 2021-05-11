@@ -1,0 +1,97 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# BitsType class.
+#
+# A Type used to specify a BITS.
+# A value of a BITS is BitsValueType.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "BitsValueType.zu"
+IMPORT "Declaration.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+IMPORT "ValueType.zu"
+
+CLASS BitsType EXTENDS ValueType @items=public
+  # Members are always ValueType and have .mask and .shift set.
+  dict<string, Declaration.C>  $members
+
+  # Type to store the value: byte, int16, int32 or int
+  Type.Enum                  $valueType
+
+  # Declaration marked as used when name of the bits is used.
+  Declaration.C              $usedBitsName
+
+  # Cached Value type
+  BitsValueType              $bitsValue
+
+  NEW(Type.Enum valueType, string name) @replace
+    PARENT.NEW(Type.Enum.bits, name)
+    $valueType = valueType
+    $members = NEW()
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    BitsType ret = NEW($valueType, $name)
+    $copyBitsValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyBitsValues(BitsType ret) @default
+    $copyValueValues(ret)
+    ret.members = $members
+    ret.valueType = $valueType
+  }
+
+  # Return TRUE for types that can have an instance: Class, Enum, Bits.
+  FUNC $needCopyValue() bool @replace
+    RETURN TRUE
+  }
+
+  # If this type is a Class, Enum, Bits or Method, return a reference to it.
+  # Otherwise return THIS.
+  FUNC $getValueType(SContext ctx) Type @replace
+    RETURN $getBitsValue()
+  }
+
+  # Return a bitsValue for this bits.
+  FUNC $getBitsValue() BitsValueType
+    IF $bitsValue == NIL
+      $bitsValue = NEW(Type.Enum.bitsValue, "instance of " .. $name)
+      $bitsValue.bitsType = THIS
+    }
+    RETURN $bitsValue
+  }
+
+  # Add |decl| to the members.
+  # Caller must check for duplicates.
+  PROC $addMember(Declaration.C decl)
+    $members.add(decl.name, decl)
+  }
+
+  # Find member with name |name|.
+  # When |symUse| is NIL don't check access rights.
+  FUNC $findMember(string name, SymUse symUse) Declaration @replace
+    # TODO: use symUse
+    RETURN $members.get(name, NIL)
+  }
+
+  # Return TRUE if all members are bool.
+  FUNC $isAllBool() bool
+    FOR m IN $members
+      IF m.type.ttype != Type.Enum.bool
+        RETURN FALSE
+      }
+    }
+    RETURN TRUE
+  }
+
+}

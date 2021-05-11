@@ -1,0 +1,92 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: text Dropdown field
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE DropdownModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Dropdown is a widget that allows selecting one item in a list.
+  CLASS Dropdown EXTENDS ZWT.Widget @public
+    list<string> $items = NEW() #!
+
+    #!
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('select');
+<<<
+    }
+
+    #= Create a new Dropdown.
+    NEW() @replace @public
+    }
+
+    #= Create a new Dropdown with |items| as the items.
+    NEW(list<string> items) @public
+      FOR item IN items
+        $addItem(item)
+      }
+    }
+
+    #= Add an item with |text|.
+    PROC $addItem(string text) @public
+>>>
+      var option = $doc.createElement('option');
+      option.text = %text%;
+      %$elem%.add(option, null);
+<<<
+      $items.add(text)
+    }
+
+    #= Add an item with |text| and make it the selected item.
+    PROC $addSelectedItem(string text) @public
+      int idx = $items.Size()
+>>>
+      var option = $doc.createElement('option');
+      option.text = %text%;
+      %$elem%.add(option, null);
+      %$elem%.selectedIndex = %idx%;
+<<<
+      $items.add(text)
+    }
+
+    #= Set the item at |index| to be the currently selected item.
+    PROC $setSelectedIndex(int index) @public
+      IF index >= 0 && index < $items.Size()
+>>>
+        %$elem%.selectedIndex = %index%;
+<<<
+      }
+    }
+
+    #= Return the text of the currently selected item.
+    FUNC $getSelectedItem() string @public
+      int idx
+>>>
+      %idx% = %$elem%.selectedIndex;
+<<<
+      RETURN $items[idx]
+    }
+
+    #= Return the index of the currently selected item.
+    FUNC $getSelectedIndex() int @public
+      int idx
+>>>
+      %idx% = %$elem%.selectedIndex;
+<<<
+      RETURN idx
+    }
+
+    #= Return "Dropdown(text)", where "text" is the Dropdown text.
+    FUNC $ToString() string @replace @public
+      RETURN "Dropdown(" .. $items.ToString() .. ")"
+    }
+
+  }
+ }
+}

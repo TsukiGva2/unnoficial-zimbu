@@ -1,0 +1,90 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# I module loader: Builtin Interfaces
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+
+MODULE ILoader @public @items=public
+  Declaration moduleDecl
+  Declaration iterableDecl
+  Declaration keyIterableDecl
+  Declaration iteratorDecl
+  Declaration keyIteratorDecl
+
+  # Prepare for using the builtin I module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "IModule"
+    b.fileName = "IModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the I module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("I", builtin)
+
+      IF LOG.errorCount == 0
+        # Find the iterator interfaces
+        iterableDecl = moduleDecl.type.findMember("Iterable", NIL)
+        IF iterableDecl == NIL || iterableDecl.type.ttype != Type.Enum.interface
+          LOG.internal("cannot find I.Iterable")
+          IF iterableDecl != NIL
+            IO.print("Did find: " .. iterableDecl.ToString())
+          }
+          EXIT 2
+        }
+
+        keyIterableDecl = moduleDecl.type.findMember("KeyIterable", NIL)
+        IF keyIterableDecl == NIL
+                          || keyIterableDecl.type.ttype != Type.Enum.interface
+          LOG.internal("cannot find I.KeyIterable")
+          IF keyIterableDecl != NIL
+            IO.print("Did find: " .. keyIterableDecl.ToString())
+          }
+          EXIT 2
+        }
+
+        iteratorDecl = moduleDecl.type.findMember("Iterator", NIL)
+        IF iteratorDecl == NIL || iteratorDecl.type.ttype != Type.Enum.interface
+          LOG.internal("cannot find I.Iterator")
+          EXIT 2
+        }
+
+        keyIteratorDecl = moduleDecl.type.findMember("KeyIterator", NIL)
+        IF keyIteratorDecl == NIL
+                          || keyIteratorDecl.type.ttype != Type.Enum.interface
+          LOG.internal("cannot find I.KeyIterator")
+          EXIT 2
+        }
+      }
+    }
+  }
+
+  FUNC getIterableDecl() Declaration
+    RETURN iterableDecl
+  }
+
+  FUNC getKeyIterableDecl() Declaration
+    RETURN keyIterableDecl
+  }
+
+  FUNC getIteratorDecl() Declaration
+    RETURN iteratorDecl
+  }
+
+  FUNC getKeyIteratorDecl() Declaration
+    RETURN keyIteratorDecl
+  }
+}

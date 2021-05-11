@@ -1,0 +1,268 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module LOG
+#
+
+#= Logging, messages and error reporting.
+#
+#- The log levels are defined in LOG.Leve.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE LOGModule @public @items=public
+
+  GENERATE_IF Z.lang != "JS"  # Javascript doesn't have arguments yet
+
+    ARG.Bool debugFlag = NEW("d", "debug", FALSE, "Debug mode")
+
+    ARG.Bool verboseFlag = NEW("v", "verbose", FALSE,
+                                "Verbose messages, repeat for more verbosity")
+
+    #= Return TRUE if the debug flag is on.
+    FUNC isDebug() bool
+      RETURN debugFlag.value()
+    }
+
+    #= Return TRUE if the verbose flag is on.
+    FUNC isVerbose() bool
+      RETURN verboseFlag.presentCount() > 0
+    }
+
+    #= Return the flags used by LOG.  Useful to pass on to another program.
+    #- Returns an empty string if no flags are set.  Otherwise includes a
+    #- leading space for easy concatenation.
+    FUNC getFlags() string
+      string cmd = ""
+      IF debugFlag.value()
+        cmd ..= " -d"
+      }
+      FOR i IN 1 TO verboseFlag.presentCount()
+        cmd ..= " -v"
+      }
+      RETURN cmd
+    }
+  }
+
+  ENUM Level
+    debug      #= Detailed info, only output with "-d"
+    verbose    #= Informational, only output with "-vv"
+    info       #= Informational, only output with "-v"
+    report     #= Message about normal operation
+    warning    #= Warning, something that might be wrong.
+    error      #= Error, something is wrong, but we can continue.
+    severe     #= Serious error, may cause further errors.
+    fatal      #= Can't continue, exit.
+  }
+
+  #= Optional flags for the message methods.
+  BITS Flags
+    bool $withBacktrace  #= Add a stack backtrace after the message.
+    bool $internal       #= Prepend "INTERNAL: " to the message.
+    bool $noNewline      #= Do not add a line break after the message.  Useful
+                         #= if more is following.
+  }
+
+  # How many times each message was given.
+  dict<Level, int> counts = [Level.debug: 0,
+                             Level.verbose: 0,
+                             Level.info: 0,
+                             Level.report: 0,
+                             Level.warning: 0,
+                             Level.error: 0,
+                             Level.severe: 0,
+                             Level.fatal: 0]
+
+  # How many times an error, severe or fatal message was given.
+  # Can be used to find out if an error was reported:
+  #% int oldCount = LOG.errorCount
+  #% doSomething()
+  #% IF oldCount == LOG.errorCount
+  #%   IO.print("No errors found")
+  #% }
+  int errorCount
+
+  #= Log a debug message, only output with "-d".
+  PROC debug(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.debug, msg, pos, flags)
+  }
+
+  #= Log a message about detailed info, only output with "-vv".
+  PROC verbose(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.verbose, msg, pos, flags)
+  }
+
+  #= Log an information message, only output with "-v".
+  PROC info(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.info, msg, pos, flags)
+  }
+
+  #= Log a message about normal operation.
+  PROC report(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.report, msg, pos, flags)
+  }
+
+  #= Log a warning message.
+  PROC warning(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.warning, msg, pos, flags)
+  }
+
+  #= Log an error message.
+  PROC error(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.error, msg, pos, flags)
+  }
+
+  #= Log an internal error message.
+  PROC internal(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.error, msg, pos, flags + internal)
+  }
+
+  #= Log a severe error message.
+  PROC severe(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.severe, msg, pos, flags)
+  }
+
+  #= Log a fatal error message, the program will exit.
+  PROC fatal(string msg, Z.Pos pos = NIL, Flags flags = 0) @backtrace=no
+    log(Level.fatal, msg, pos, flags)
+  }
+
+  string extraLead = ""  #!
+
+  #= Set a leader to be inserted before every message.
+  #- Returns the current extra lead.  It should be restored afterwards.
+  #% string savedLead = setExtraLead("in file \(fileName): ")
+  #% processFile()
+  #% setExtraLead(savedLead)
+  FUNC setExtraLead(string lead) string
+    string r = extraLead
+    extraLead = lead
+    RETURN r
+  }
+
+  #= Log a message at |level|.
+  PROC log(Level level, string msg, Z.Pos pos = NIL, Flags flags = 0)
+                                                              @backtrace=no
+    IF (level == Level.debug && !debugFlag.value())
+        || (level == Level.verbose && verboseFlag.presentCount() < 2)
+        || (level == Level.info && verboseFlag.presentCount() < 1)
+      RETURN
+    }
+    counts[level]++
+    IO.StringWriter w = NEW()
+    IF pos != NIL
+      w.write(pos.ToString())
+      w.write(": ")
+    }
+    IF flags.internal
+      w.write("INTERNAL ")
+    }
+    SWITCH level
+      CASE Level.warning
+        w.write("Warning: ")
+      CASE Level.error
+        w.write("ERROR: ")
+      CASE Level.severe
+        w.write("SEVERE ERROR: ")
+      CASE Level.fatal
+        w.write("FATAL ERROR: ")
+    }
+    w.write(extraLead)
+    w.write(msg)
+
+    IF flags.withBacktrace
+      reportStack(w)
+    }
+    IF !flags.noNewline
+      w.write("\n")
+    }
+
+    string wholeMsg = w.ToString()
+    IO.write(wholeMsg)
+
+    IF logFile != NIL
+      IF useTimeStamp
+        TIME.Values tv = NEW()
+        logFile.write("\(tv).\(06d tv.usec) ")
+      }
+      logFile.write(wholeMsg)
+    }
+
+    # Error messages are counted and cause a flush.
+    # Otherwise flush once in a while.
+    IF level.value() >= Level.error.value()
+      ++errorCount
+      flush()
+    ELSEIF TIME.current() - lastFlush > flushInterval
+      flush()
+    }
+
+    IF level == Level.fatal
+      EXIT 10
+    }
+  }
+
+  #= Report the current stack backtrace, if possible.
+  PROC reportStack(IO.I_Writer out = IO.stdout)
+    GENERATE_IF Z.have("backtrace")
+      # Include stack backtrace when asked for.
+      out.print("")
+      out.print("Backtrace:")
+      FOR p IN Z.backtrace()
+        out.print(p.ToString() .. ": " .. p.text)
+      }
+    }
+  }
+
+  int lastFlush                 #!
+  int flushInterval = 300'000   #! 300 msec
+
+  #= Flush any output streams for messages.
+  PROC flush()
+    IO.flush()
+    IF logFile != NIL
+      logFile.flush()
+    }
+    lastFlush = TIME.current()
+  }
+
+  #= Get the current flush interval.
+  #- This is used for messages below error level.
+  FUNC getFlushInterval() int
+    RETURN flushInterval
+  }
+
+  #= Set the flush interval.
+  #- This is used for messages below error level.
+  PROC  setFlushInterval(int interval)
+    flushInterval = interval
+  }
+
+  IO.File logFile          #!
+  bool useTimeStamp = TRUE #!
+
+  # Start writing the log messages to file |name|.
+  # Unless |trucate| is FALSE the file is first made empty.
+  FUNC writeToFile(string name, bool truncate = TRUE) status
+    IF logFile != NIL
+      logFile.close()
+      logFile = NIL
+    }
+
+    logFile = IO.fileWriter(name, truncate)
+    RETURN logFile == NIL ? FAIL : OK
+  }
+
+  FUNC getUseTimeStamp() bool
+    RETURN useTimeStamp
+  }
+
+  PROC setUseTimeStamp(bool on)
+    useTimeStamp = on
+  }
+
+}

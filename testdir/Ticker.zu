@@ -1,0 +1,85 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# A simplistic way to count time.  One thread sets the time and waits
+# until N other threads have read it before incrementing the time.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS Ticker @items=public
+  int       $currentTick
+  list<int> $readerTicks
+  int       $readerIndex
+  lock      $tickLock = NEW()
+
+  # |readers| is the number of readers.  Must be exact, otherwise we get stuck
+  # waiting for one that is never used.
+  NEW(int readers)
+    $currentTick = 1
+    $readerTicks = NEW()
+    FOR idx IN 0 TO readers - 1
+      $readerTicks.add(0)
+    }
+  }
+
+  # Get a new tick reader.
+  FUNC $getTickReader() Reader
+    $tickLock.begin()
+    IF $readerIndex >= $readerTicks.Size()
+      IO.print("ERROR: more tick readers than available.")
+    }
+    Reader r = NEW($readerIndex++, THIS)
+    $tickLock.end()
+    RETURN r
+  }
+
+  # Produce |ticks| number of ticks, waiting until all have been produced.
+  PROC $produceTicks(int ticks)
+    WHILE $currentTick < ticks
+      # We can only incrementing currentTick if all readers have seen it.
+      WHILE TRUE
+        bool done = TRUE
+        FOR r IN $readerTicks
+          IF r < $currentTick
+            # This reader has not seen currentTick yet, need to wait.
+            done = FALSE
+            BREAK
+          }
+        }
+        IF done
+          BREAK
+        }
+        TIME.sleep(222)
+      }
+      ++$currentTick
+    }
+  }
+
+  CLASS Reader
+    int    $index
+    Ticker $ticker
+
+    NEW(int index, Ticker ticker) @public
+      $index = index
+      $ticker = ticker
+    }
+
+    # Wait for tick number |tick|to have been produced.
+    PROC $waitForTick(int tick) @public
+      WHILE $ticker.currentTick < tick
+        # Let the Ticker know we have seen the currentTick.
+        $ticker.readerTicks[$index] = $ticker.currentTick
+        TIME.sleep(200)
+      }
+    }
+
+    # Call this when the thread will no longer wait, unblock the tick
+    # producer.
+    PROC $done() @public
+      $ticker.readerTicks[$index] = T.int.max
+    }
+  }
+}

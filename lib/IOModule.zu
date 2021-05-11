@@ -1,0 +1,2489 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module IO
+#
+
+#= Classes, Interfaces and methods for Input/Output.
+#= Operations on files and directories.
+#
+#- Stdin, stdout and stderr can be used for normal input and output.
+#- The most common methods on these are also available directly.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE IOModule @public @items=public
+
+  #= End Of File
+  #- Returned by readByte() and readChar() when there is no more to read.
+  int eof = -1   # should be EOF from stdio.h, but it's always -1 anyway
+
+  #= Standard input.
+  File stdin = newStdin()
+
+  #= Standard output.
+  File stdout = newStdout()
+
+  #= Standard error output.
+  File stderr = newStderr()
+
+  #!
+  FUNC newStdin() File @primitive
+    File file = NEW()
+    GENERATE_IF Z.lang == "C"
+>>>
+ %file.fd% = stdin;
+<<<
+    GENERATE_ELSE
+      file.name = "stdin"
+    }
+    RETURN file
+  }
+
+  #!
+  FUNC newStdout() File @primitive
+    File file = NEW()
+    GENERATE_IF Z.lang == "C"
+>>>
+ %file.fd% = stdout;
+<<<
+    GENERATE_ELSE
+      file.name = "stdout"
+    }
+    RETURN file
+  }
+
+  #!
+  FUNC newStderr() File @primitive
+    File file = NEW()
+    GENERATE_IF Z.lang == "C"
+>>>
+ %file.fd% = stderr;
+<<<
+    GENERATE_ELSE
+      file.name = "stderr"
+    }
+    RETURN file
+  }
+
+  #= An interface for any class that can write a byte.
+  #- Can be implemented to write one byte at a time to a file, to a string,
+  #- etc.
+  INTERFACE I_ByteWriter
+    #= Writes one byte |byte|.
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    #- Returns FAIL when the byte could not be written.
+    FUNC $writeByte(int byte) status
+    }
+  }
+
+  #= An interface for any class that can write a character.
+  #- Can be implemented to write one character at a time to a file, to a
+  #- string, etc.
+  INTERFACE I_CharWriter
+    #= Writes one UTF-8 character |char|.
+    #- Throws E.OutOfRange when |char| is < 0 or > 0x10ffff.
+    #- Returns FAIL when the character could not be written.
+    FUNC $writeChar(int char) status
+    }
+  }
+
+  #= An interface for any class that can write a string.
+  #- Can be implemented to write to a file, append to a string, etc.
+  #- Most implementations will want to extend the IO.Writer class.
+  INTERFACE I_Writer @public
+    #= Writes |text|.
+    #- Returns FAIL when the text could not be written.
+    FUNC $write(string text) status
+    }
+
+    #= Writes |text| and appends a newline.
+    #- Returns FAIL when the text could not be written.
+    FUNC $print(string text) status
+    }
+  }
+
+  #= Abstract class that implements I_Writer while only requiring subclasses
+  #= to implement write(string) by providing the
+  #= writeByte(), writeChar() and print() implementations.
+  #- Also provides methods to convert int/bool/status to string.
+  CLASS Writer IMPLEMENTS I_ByteWriter, I_CharWriter, I_Writer
+                                                       @abstract @items=public
+    #= Writes |text|.
+    #- Returns FAIL when the text could not be written.
+    FUNC $write(string text) status @abstract
+    }
+
+    #= Writes |text| converted to a string.
+    #- Returns FAIL when the text could not be written.
+    FUNC $write(byteString text) status @default
+      RETURN $write(text.ToString())
+    }
+
+    #= Writes |number| as a decimal number.
+    #- Returns FAIL when the number could not be written.
+    FUNC $write(int number) status
+      RETURN $write(number.ToString())
+    }
+
+    #= Writes |number| as a decimal number.
+    #- Returns FAIL when the number could not be written.
+    FUNC $write(nat number) status
+      RETURN $write(number.ToString())
+    }
+
+    #= Writes |number| as a decimal number.
+    #- Returns FAIL when the number could not be written.
+    FUNC $write(float number) status
+      RETURN $write(number.ToString())
+    }
+
+    #= Writes |flag| as "TRUE" or "FALSE".
+    #- Returns FAIL when the text could not be written.
+    FUNC $write(bool flag) status
+      RETURN $write(flag.ToString())
+    }
+
+    #= Writes |ok| as "FAIL" or "OK".
+    #- Returns FAIL when the text could not be written.
+    FUNC $write(status ok) status
+      RETURN $write(ok.ToString())
+    }
+
+    #= Writes |arg| depending on its actual type.
+    #= Returns FAIL or OK.
+    #- For a type that does not have a ToString() method the type name is
+    #- printed, as with arg.ToString().
+    FUNC $write(dyn arg) status
+      RETURN $write(arg.ToString())
+    }
+
+    #= Writes |byte| as-is
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    #- Returns FAIL when the byte could not be written.
+    FUNC $writeByte(int byte) status @default
+      RETURN $write(byte.asByteString())
+    }
+
+    #= Writes |char| as a UTF-8 byte sequence.
+    #- Throws E.OutOfRange when |char| is < 0 or > 0x10ffff.
+    #- Returns FAIL when the character could not be written.
+    FUNC $writeChar(int char) status
+      IF char < 0 || char > 0x10ffff
+        THROW E.OutOfRange.NEW("UTF-8 character must be in range 0 - 0x10ffff, got " .. char)
+      }
+      RETURN $write(char.asString())
+    }
+
+    #= Writes |text| and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(string text) status
+      IF $write(text) == OK && $write("\n") == OK
+        RETURN OK
+      }
+      RETURN FAIL
+    }
+
+    #= Writes |number| and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(int number) status
+      RETURN $print(number.ToString())
+    }
+
+    #= Writes |number| and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(nat number) status
+      RETURN $print(number.ToString())
+    }
+
+    #= Writes |number| and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(float number) status
+      RETURN $print(number.ToString())
+    }
+
+    #= Writes |flag| as "TRUE" or "FALSE" and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(bool flag) status
+      RETURN $print(flag.ToString())
+    }
+
+    #= Writes |ok| as "FAIL" or "OK" and appends a newline.
+    #= Returns FAIL or OK.
+    FUNC $print(status ok) status
+      RETURN $print(ok.ToString())
+    }
+
+    #= Writes |arg| depending on its actual type and appends a newline.
+    #= Returns FAIL or OK.
+    #- For a type that does not have a ToString() method the type name is
+    #- printed, as with arg.ToString().
+    FUNC $print(dyn arg) status
+      RETURN $print(arg.ToString())
+    }
+
+    #= Writes a newline and returns FAIL or OK.
+    FUNC $print() status
+      RETURN $write("\n")
+    }
+
+    #= Formats the string and writes it with a newline appended.
+    FUNC $format(string fmt, dyn ... arguments) status
+      RETURN $print(fmt.format(arguments = arguments))
+    }
+  }
+
+  #= File for reading and writing.
+  #- Use IO.fileWriter() and IO.fileReader() to create one.
+  #
+  #- NOTE: this is going to be split up in InputFile and OutputFile.
+  CLASS File EXTENDS Writer IMPLEMENTS I_ByteReader, I_CharReader @public
+    C(FILE *) $fd    #! a C FILE pointer
+                     @directory
+
+#    GENERATE_IF Z.lang == "JS"
+      string $name   #! "stdin" or "stderr" or "stdout"
+#    }
+
+    #= Reads and returns one byte.  When at end of file returns IO.eof.
+    FUNC $readByte() int @default @public
+      IF $fd == NIL
+        THROW E.IOError.NEW("File is not open")
+      }
+      int b
+      GENERATE_IF Z.lang == "C"
+>>>
+ %b% = fgetc(%$fd%);
+<<<
+      GENERATE_ELSE
+        # TODO: It's generated because File is instantiated and readByte()
+        # used on a child class object.
+        # GENERATE_ERROR "Cannot read from a file in Javascript"
+>>>
+  alert("Cannot read from a file in Javascript");
+<<<
+      }
+      RETURN b
+    }
+
+    #= Reads one UTF-8 character.
+    #- Throws E.IllegalByte when encountering an invalid UTF-8 byte.
+    FUNC $readChar() int @public
+      int c = $readByte()
+      IF c != IO.eof && c >= 0x80
+        int len
+        IF (c & 0xe0) == 0xc0
+          len = 2
+          c = c & 0x1f
+        ELSEIF (c & 0xf0) == 0xe0
+          len = 3
+          c = c & 0x0f
+        ELSEIF (c & 0xf8) == 0xf0
+          len = 4
+          c = c & 0x07
+        ELSE
+          THROW E.IllegalByte.NEW("first byte out of range: " .. c)
+        }
+        FOR nr IN 2 TO len
+          int c2 = $readByte()
+          IF c2 == IO.eof
+            THROW E.IllegalByte.NEW("found EOF when getting byte " .. nr)
+          ELSEIF (c2 & 0xc0) != 0x80
+            THROW E.IllegalByte.NEW("byte " .. nr .. " out of range")
+          }
+          c = (c << 6) + (c2 & 0x3f)
+        }
+        SWITCH len
+          CASE 2
+              IF c <= 0x7f
+                THROW E.IllegalByte.NEW("overlong sequence")
+              }
+          CASE 3
+              IF c <= 0x7ff
+                THROW E.IllegalByte.NEW("overlong sequence")
+              }
+          CASE 4
+              IF c <= 0xffff
+                THROW E.IllegalByte.NEW("overlong sequence")
+              }
+        }
+      }
+      RETURN c
+    }
+
+    #= Reads the whole file and returns it as a string.
+    #- This is done in binary mode, there are no checks for valid UTF-8
+    #- characters.
+    FUNC $readAll() string @public
+      IO.StringWriter w = NEW()
+      WHILE TRUE
+        int b = $readByte()
+        IF b == eof
+          BREAK
+        }
+        w.writeByte(b)
+      }
+      RETURN w.ToString()
+    }
+
+    #= Reads the whole file and returns it as a byteString.
+    #- This is done in binary mode, there are no checks for valid UTF-8
+    #- characters.
+    FUNC $readAllBytes() byteString @public
+      ByteWriter bw = NEW()
+      WHILE TRUE
+        int b = $readByte()
+        IF b == eof
+          BREAK
+        }
+        bw.writeByte(b)
+      }
+      RETURN bw.toByteString()
+    }
+
+    #= Reads the file up to |size| bytes and returns it as a string.
+    #- This is done in binary mode, there are no checks for valid UTF-8
+    #- characters.
+    FUNC $readAll(int size) string @public
+      IO.StringWriter w = NEW()
+      WHILE TRUE
+        int b = $readByte()
+        IF b == eof
+          BREAK
+        }
+        w.writeByte(b)
+        IF w.byteSize() >= size
+          BREAK
+        }
+      }
+      RETURN w.ToString()
+    }
+
+    #= Reads and returns one line, excluding the terminating NL.
+    #- Drops the CR characters that precede the NL but keeps CR characters
+    #- halfway the line.
+    #
+    #- When at end of file returns NIL.
+    #
+    #- This is done in binary mode, there are no checks for valid UTF-8
+    #- characters.
+    FUNC $readLine() string @public
+      int b = $readByte()
+      IF b == eof
+        RETURN NIL
+      }
+      StringWriter w = NEW()
+      int crCount
+      WHILE b != eof && b != '\n'
+        IF b == '\r'
+          # CR is only written when no CR or LF follows.
+          ++crCount
+        ELSE
+          WHILE crCount > 0
+            w.writeByte('\r')
+            --crCount
+          }
+          w.writeByte(b)
+        }
+        b = $readByte()
+      }
+      RETURN w.ToString()
+    }
+
+    #= Reads and returns one line, including the terminating NL.
+    #- When at end of file returns NIL.
+    #
+    #- This is done in binary mode, there are no checks for valid UTF-8
+    #- characters.
+    FUNC $readLineRaw() string @public
+      int b = $readByte()
+      IF b == eof
+        RETURN NIL
+      }
+      StringWriter w = NEW()
+      WHILE b != eof
+        w.writeByte(b)
+        IF b == '\n'
+          BREAK
+        }
+        b = $readByte()
+      }
+      RETURN w.ToString()
+    }
+
+    #= Reads the whole file and returns a list with all lines.
+    #- This is like calling readLine() until reaching end of file.
+    FUNC $readAllLines() list<string> @public
+      list<string> result = NEW()
+      WHILE TRUE
+        string line = $readLine()
+        IF line == NIL
+          BREAK
+        }
+        result.add(line)
+      }
+      RETURN result
+    }
+
+    #= Reads the whole file and returns a list with all lines.
+    #- This is like calling readLineRaw() until reaching end of file.
+    FUNC $readAllLinesRaw() list<string> @public
+      list<string> result = NEW()
+      WHILE TRUE
+        string line = $readLineRaw()
+        IF line == NIL
+          BREAK
+        }
+        result.add(line)
+      }
+      RETURN result
+    }
+
+    #= Reads the file and returns a list with up to |count| lines.
+    #- This is like calling readLine() until reaching end of file or reading
+    #- |count| lines.
+    FUNC $readAllLines(int count) list<string> @public
+      list<string> result = NEW()
+      WHILE TRUE
+        string line = $readLine()
+        IF line == NIL
+          BREAK
+        }
+        result.add(line)
+        IF result.Size() >= count
+          BREAK
+        }
+      }
+      RETURN result
+    }
+
+    #= Reads the file and returns a list with up to |count| lines.
+    #- This is like calling readLineRaw() until reaching end of file or reading
+    #- |count| lines.
+    FUNC $readAllLinesRaw(int count) list<string> @public
+      list<string> result = NEW()
+      WHILE TRUE
+        string line = $readLineRaw()
+        IF line == NIL
+          BREAK
+        }
+        result.add(line)
+        IF result.Size() >= count
+          BREAK
+        }
+      }
+      RETURN result
+    }
+
+    #= Writes |text| to the file.  Returns FAIL or OK.
+    FUNC $write(string text) status @define @default @public
+      status ret
+      GENERATE_IF Z.lang == "C"
+        IF $fd == NIL
+          THROW E.IOError.NEW("File is not open")
+        }
+>>> blockgc
+ {
+  Tc *p;
+  Ti len = ZstringSizePtr(%text%, &p);
+  if (len == 0 || fwrite(p, (size_t)len, (size_t)1, %$fd%) == 1)
+   %ret% = %OK%;
+  else
+   %ret% = %FAIL%;
+  }
+<<<
+      GENERATE_ELSE
+        IF $name == NIL
+          THROW E.IOError.NEW("File is not open")
+        }
+        # TODO: turn line break into <br>.
+>>>
+ var e = $doc.getElementById(%$name%);
+ if (e == null) {
+  e = $doc.createElement('div');
+  e.id = %$name%;
+  $doc.body.appendChild(e);
+ }
+ e.innerHTML += %text%;
+<<<
+      }
+      RETURN ret
+    }
+
+    #= Writes byte |byte| to the file.
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    #- Returns FAIL when the byte could not be written.
+    FUNC $writeByte(int byte) status @replace @default @public
+      IF $fd == NIL
+        THROW E.IOError.NEW("File is not open")
+      }
+      status ret
+      GENERATE_IF Z.lang == "C"
+>>> blockgc
+ if (fputc(%byte%, %$fd%) >= 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+      GENERATE_ELSE
+>>>
+ var e = $doc.getElementById(%$name%);
+ if (e == null) {
+  e = $doc.createElement('div');
+  e.id = %$name%;
+  $doc.body.appendChild(e);
+ }
+ if (%$name% == "stderr") {
+  e.innerHTML += "<b>" + %byte% + "</b>";
+ } else {
+  e.innerHTML += %byte%;
+ }
+<<<
+      }
+      RETURN ret
+    }
+
+    #= Writes |lines| to the file.
+    #- Puts a line break after each line.
+    #
+    #- Returns FAIL when not all the lines could be written.
+    FUNC $writeAllLines(list<string> lines) status @public
+      FOR line IN lines
+        IF $print(line) == FAIL
+          RETURN FAIL
+        }
+      }
+      RETURN OK
+    }
+
+    #= Flushes buffered output.  Returns FAIL or OK.
+    FUNC $flush() status @default @public
+      status ret = FAIL
+      IF $fd != NIL
+        GENERATE_IF Z.lang == "C"
+>>>
+ if (fflush(%$fd%) == 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+        }
+      }
+      RETURN ret
+    }
+
+    #= Closes the file, reading/writing will no longer be possible.
+    #= Returns FAIL when flushing output failed.
+    #- When called twice the second one will always return FAIL.
+    FUNC $close() status @default @public
+      status ret = FAIL
+      IF $fd != NIL
+        GENERATE_IF Z.lang == "C"
+          # fclose() is unsafe and may take an unknown amount of time.  First
+          # call fflush() to minimize the time during which GC is blocked.
+>>>
+ if (fflush(%$fd%) != 0) %ret% = %FAIL%;
+<<<
+>>> blockgc
+ if (fclose(%$fd%) != 0) %ret% = %FAIL%;
+<<<
+          $fd = NIL
+        }
+      }
+      RETURN ret
+    }
+
+    #= Destructor: closes the file if not closed already.
+    FUNC $Finish() status @default @notOnExit
+      $close()
+
+      # Always return OK, since it does not make sense to retry a failed
+      # close().
+      RETURN OK
+    }
+  }
+
+  #= Socket for reading and writing.
+  #- Use IO.clientSocket() to create one.
+  CLASS Socket EXTENDS File @public
+    int $sfd = -1  #! C socket fd
+
+    #! For Windows we need to use different functions:
+    # sckt_read(a, b, c) instead of read()
+    # sckt_write(a, b, c) instead of write()
+    # sckt_close(a) instead of close()
+
+    #= Reads and returns one byte.
+    #= When there is nothing to read returns IO.eof.
+    FUNC $readByte() int @replace @public
+      IF $sfd == -1
+        THROW E.IOError.NEW("Socket is not open")
+      }
+      int b
+      GENERATE_IF Z.lang == "C"
+>>>
+ {
+  Tc buf[1];
+  if (sckt_read(%$sfd%, buf, 1) == 1) %b% = buf[0];
+  else %b% = %eof%;
+ }
+<<<
+      GENERATE_ELSE
+        b = eof
+      }
+      RETURN b
+    }
+
+    #= Writes |text| to the socket.  Returns FAIL or OK.
+    FUNC $write(string text) status @replace @public
+      IF $sfd == -1
+        THROW E.IOError.NEW("Socket is not open")
+      }
+      status ret
+      GENERATE_IF Z.lang == "C"
+>>> blockgc
+ {
+  Tc *p;
+  Ti len = ZstringSizePtr(%text%, &p);
+  if (len == 0 || sckt_write(%$sfd%, p, (size_t)len) == len)
+   %ret% = %OK%;
+  else
+   %ret% = %FAIL%;
+  }
+<<<
+      }
+      RETURN ret
+    }
+
+    #= Writes byte |byte| to the socket.
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    #- Returns FAIL when the byte could not be written.
+    FUNC $writeByte(int byte) status @replace @public
+      IF $sfd == -1
+        THROW E.IOError.NEW("Socket is not open")
+      }
+      status ret
+      GENERATE_IF Z.lang == "C"
+>>>
+ {
+  Tc buf[1];
+  buf[0] = %byte%;
+  if (sckt_write(%$sfd%, buf, 1) == 1)
+   %ret% = %OK%;
+  else
+   %ret% = %FAIL%;
+ }
+<<<
+      }
+      RETURN ret
+    }
+
+    #= Flushes buffered output.
+    #= Sockets do not use buffering, always returns OK.
+    FUNC $flush() status @replace @public
+      RETURN OK
+    }
+
+    #= Closes the socket, reading/writing will no longer be possible.
+    #= Returns FAIL when closing failed.
+    #- When called twice the second one will always return FAIL.
+    FUNC $close() status @replace @public
+      status ret = FAIL
+      IF $sfd != -1
+        GENERATE_IF Z.lang == "C"
+>>>
+ if (sckt_close(%$sfd%) == 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+          $sfd = -1
+        }
+      }
+      RETURN ret
+    }
+  }
+
+  #= An interface for any class that can read a byte.
+  #- Can be implemented to read one byte at a time from a file, from a string,
+  #- etc.
+  INTERFACE I_ByteReader
+    #= Reads and returns one byte.
+    #- When there is nothing to read returns IO.eof.
+    FUNC $readByte() int
+    }
+  }
+
+  #= An interface for any class that can read a UTF-8 character.
+  #- Can be implemented to read one character at a time from a file, from a
+  #- string, etc.
+  INTERFACE I_CharReader
+    #= Reads a UTF-8 byte sequence and returns one character.
+    #- When there is nothing to read returns IO.eof.
+    FUNC $readChar() int
+    }
+  }
+
+  #= An interface for any class that can read a byte or a UTF-8 character.
+  #- Can be implemented to read one byte or character at a time from a file,
+  #- from a string, etc.
+  INTERFACE I_CharOrByteReader
+    #= Reads a UTF-8 byte sequence and returns one character.
+    #- When there is nothing to read returns IO.eof.
+    FUNC $readChar() int
+    }
+
+    #= Reads and returns one byte.
+    #- When there is nothing to read returns IO.eof.
+    FUNC $readByte() int
+    }
+  }
+
+  #= Read all bytes from |reader| and return a byteString with them.
+  FUNC readAllBytes(I_ByteReader reader) byteString
+    ByteWriter bw = NEW()
+    WHILE TRUE
+      int b = reader.readByte()
+      IF b == IO.eof
+        BREAK
+      }
+      bw.writeByte(b)
+    }
+    RETURN bw.toByteString()
+  }
+
+  #= Read all chars from |reader| and return a string with them.
+  FUNC readAllChars(I_CharReader reader) string
+    StringWriter sw = NEW()
+    WHILE TRUE
+      int b = reader.readChar()
+      IF b == IO.eof
+        BREAK
+      }
+      sw.writeChar(b)
+    }
+    RETURN sw.ToString()
+  }
+
+  #= A ByteReader that reads from a byteString.
+  #- Can also read characters.
+  CLASS BytesReader IMPLEMENTS I_ByteReader, I_CharReader
+    int    $idx       #! read position
+    int    $charIdx   #! read position in chars
+    int    $size      #! length of the data in "$data" in bytes
+    int    $charSize  #! length of the data in "$data" in chars
+    byteString  $data
+
+    #= Creates a ByteReader that reads from |data|.
+    NEW(byteString data) @public
+      GENERATE_IF Z.lang == "C"
+        CHECK.true(data != NIL)
+      }
+      $data = data
+      $size = data.Size()
+    }
+
+    #= Reads and returns one byte.
+    #- When at the end of the string returns IO.eof.
+    FUNC $readByte() int @public
+      IF $charIdx > 0
+        THROW "Sorry, using readByte() after readChar() doesn't work yet"
+      }
+      IF $idx >= $size
+        RETURN eof
+      }
+      RETURN $data[$idx++]
+    }
+
+    #= Reads and returns one char.
+    #- When at the end of the string returns IO.eof.
+    FUNC $readChar() int @public
+      IF $idx > 0
+        THROW "Sorry, using readChar() after readByte() doesn't work yet"
+      }
+      IF $charSize == 0
+        $charSize = $data.asString().Size()
+      }
+      IF $charIdx >= $charSize
+        RETURN eof
+      }
+      RETURN $data.asString()[$charIdx++]
+    }
+  }
+
+  #= A wrapper around a ByteReader that supports push().
+  CLASS ByteReaderStack IMPLEMENTS I_ByteReader
+    I_ByteReader $reader
+    list<int>    $stack
+
+    #= Creates a ByteReader that reads from |reader|.
+    NEW(I_ByteReader reader) @public
+      $reader = reader
+      $stack = NEW()
+    }
+
+    #= Reads and returns one byte.
+    #- Uses a pushed back byte when available.
+    #- When at the end of the string returns IO.eof.
+    FUNC $readByte() int @public
+      IF $stack.Size() > 0
+        RETURN $stack.remove()
+      }
+      RETURN $reader.readByte()
+    }
+
+    #= Push |c| back, a following readByte() will use it.
+    #- Can be used any number of times.
+    PROC $push(int c) @public
+      $stack.add(c)
+    }
+  }
+
+  #= A Reader that reads characters from a string.
+  #- It can also read bytes.
+  CLASS StringReader IMPLEMENTS I_CharReader, I_ByteReader
+    int    $byteIdx    #! read position
+    int    $byteSize   #! length of the data in "$data" in bytes
+    byteString  $data  #!
+
+    #= Creates a ByteReader that reads from |data|.
+    NEW(string data) @public
+      GENERATE_IF Z.lang == "C"
+        CHECK.true(data != NIL)
+      }
+      $data = data.asByteString()
+      $byteSize = $data.Size()
+    }
+
+    #= Reads and returns one character.
+    #- When at the end of the string returns IO.eof.
+    #- When encountering an illegal UTF-8 character returns -1 and skips over
+    #- it.
+    FUNC $readChar() int @public
+      IF $byteIdx >= $byteSize
+        RETURN eof
+      }
+      int c = $data.getChar($byteIdx)
+      IF c < 0
+        ++$byteIdx
+      ELSE
+        $byteIdx += $data.getCharSize($byteIdx)
+      }
+      RETURN c
+    }
+
+    #= Reads and returns one byte.
+    #- When at the end of the string returns IO.eof.
+    FUNC $readByte() int @public
+      IF $byteIdx >= $byteSize
+        RETURN eof
+      }
+      RETURN $data[$byteIdx++]
+    }
+  }
+
+  #= A wrapper around a CharReader that supports push().
+  CLASS CharReaderStack IMPLEMENTS I_CharReader
+    I_CharReader $reader
+    list<int>    $stack
+
+    #= Creates a CharReader that reads from |reader|.
+    NEW(I_CharReader reader) @public
+      $reader = reader
+      $stack = NEW()
+    }
+
+    #= Reads and returns one byte.
+    #- Uses a pushed back byte when available.
+    #- When at the end of the string returns IO.eof.
+    FUNC $readChar() int @public
+      IF $stack.Size() > 0
+        RETURN $stack.remove()
+      }
+      RETURN $reader.readChar()
+    }
+
+    #= Push |c| back, a following readChar() will use it.
+    #- Can be used any number of times.
+    PROC $push(int c) @public
+      $stack.add(c)
+    }
+  }
+
+  #: Methods for creating an IO.File object.
+
+  #= Opens file |fileName| for reading.
+  #- Returns NIL when the file could not be opened.
+  FUNC fileReader(string fileName) File
+    File file
+    GENERATE_IF Z.lang == "C"
+      # fopen() may block GC for an unkown time. Use open() and then fdopen(),
+      # because open() is safe and fdopen() is quick.
+>>> uses(getCstring)
+ {
+  int fnr = open(ZgetCstring(%fileName%), O_RDONLY);
+  if (fnr >= 0) {
+<<<
+   file = NEW()
+>>> blockgc
+   %file.fd% = fdopen(fnr, "r");
+  }
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot read from a file in Javascript"
+      }
+    }
+    RETURN file
+  }
+
+  #= Opens file |fileName| for writing.
+  #- Returns NIL when the file could not be opened.
+  #
+  #- If the file already exists it is truncated, unless |truncate| is FALSE.
+  #- If the file does not exist it is created with default permissions.
+  FUNC fileWriter(string fileName, bool truncate = TRUE) File
+    File file
+    GENERATE_IF Z.lang == "C"
+      # fopen() may block GC for an unkown time. Use open() and then fdopen(),
+      # because open() is safe and fdopen() is quick.
+      # TODO: how about the mode?
+>>> uses(getCstring, unistd)
+ {
+  int flags = O_WRONLY|O_CREAT;
+  if (%truncate%) flags |= O_TRUNC;
+  int fnr = open(ZgetCstring(%fileName%), flags, 0666);
+  if (fnr >= 0) {
+   if (!%truncate%) lseek(fnr, 0, SEEK_END);
+<<<
+   file = NEW()
+>>> blockgc
+   %file.fd% = fdopen(fnr, "w");
+  }
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot write to a file in Javascript"
+      }
+    }
+    RETURN file
+  }
+
+  #: Methods for creating an IO.Socket object.
+
+  #= Protocol to use for a socket.
+  ENUM SocketProtocol
+    tcp  #= TCP
+    udp  #= UDP
+  }
+
+  #= Open a client socket to |port| on |server|.
+  #- Returns NIL if the socket cannot be opened.
+  #- Error messages are written to stderr.
+  #- TODO: Add a similar method that returns an error message.
+  #
+  #- |protocol| specifies the protocol used.  The default is TCP.
+  #
+  #- Example:
+  #% IO.Socket socket = IO.clientSocket("freedb.org", 8880)
+  #% IF socket == NIL
+  #%   THROW "can't open socket"
+  #% }
+  #% IO.print(socket.readLine())
+  #% socket.print("cddb hello bram zimbu.org Zimbu 0.1")
+  #% IO.print(socket.readLine())
+  #% socket.close()
+  FUNC clientSocket(string server,
+                    int port,
+                    SocketProtocol protocol = SocketProtocol.tcp
+                   ) Socket @public
+    GENERATE_IF Z.lang == "C"
+      initSockets()
+      Socket ret
+      bool isTcp = protocol == SocketProtocol.tcp
+>>> uses(sys_types, socket, hostname, unistd, getCstring)
+    {
+      int fd;
+      struct hostent *host;
+      struct sockaddr_in addr;
+      fd = socket(AF_INET, %isTcp% ? SOCK_STREAM : SOCK_DGRAM, 0);
+      if (fd == -1) {
+        perror("HTTP.Server socket()");
+      } else {
+        host = gethostbyname(ZgetCstring(%server%));
+        if (host == NULL) {
+          switch (h_errno) {
+            case HOST_NOT_FOUND: fprintf(stderr, "Host not found\n"); break;
+            case NO_ADDRESS: fprintf(stderr, "Host has no IP address\n"); break;
+            case NO_RECOVERY: fprintf(stderr, "Name server permament error\n"); break;
+            case TRY_AGAIN: fprintf(stderr, "Name server temporary error\n"); break;
+          }
+        } else {
+          memset(&addr, 0, sizeof(addr));
+          addr.sin_family = AF_INET;
+          memmove(&(addr.sin_addr.s_addr), host->h_addr, host->h_length);
+          addr.sin_port = htons(%port%);
+          if (connect(fd, (const struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            perror("Cannot connect to socket");
+          } else {
+<<<
+            ret = NEW()
+>>>
+            %ret.sfd% = fd;
+          }
+        }
+      }
+    }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot create a socket in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #! Initialisation for sockets, loads a DLL on Windows.
+  FUNC initSockets() status @public
+    status ret = OK
+>>> uses(sys_types, socket, unistd)
+#if defined(__MINGW32__) || defined(_MSC_VER)
+      {
+        static int did_init = 0;
+        if (did_init == 0) {
+          WSADATA wsadata;
+          did_init = 1;
+          if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+            fprintf(stderr, "Error in WSAStartup()\n");
+            %ret% = %FAIL%;
+          }
+        }
+      }
+#endif
+<<<
+    RETURN ret
+  }
+
+  #: Methods for reading and writing stdin and stdout
+
+  #= Reads and returns one byte from stdin.
+  #- When there is nothing to read returns IO.eof.
+  #
+  #- Equal to IO.stdin.readByte().
+  FUNC readByte() int
+    int c
+    GENERATE_IF Z.lang == "C"
+>>>
+ %c% = fgetc(stdin);
+<<<
+    GENERATE_ELSE
+      c = eof
+    }
+    RETURN c
+  }
+
+  #= Reads and returns one UTF-8 character from stdin.
+  #- When there is nothing to read returns IO.eof.
+  #
+  #- Throws E.IllegalByte when encountering an invalid UTF-8 byte.
+  #
+  #- Equal to IO.stdin.readChar().
+  FUNC readChar() int
+    RETURN stdin.readChar()
+  }
+
+  #= Reads the contents file |fileName| and returns it as a string.
+  #- Throws an exception when the file can't be opened or read.
+  #- Do not use this method to check if a file exists and can be read, use
+  #- isReadable() instead.
+  FUNC readFile(string fileName) string
+    string res = ""
+    GENERATE_IF Z.lang == "C"
+>>> uses(sys_types, sys_stat, fcntl, unistd, getCstring)
+ {
+  off_t len, rlen, off;
+  int fd = open(ZgetCstring(%fileName%), O_RDONLY, 0);
+  Tc *resp;
+  if (fd < 0) {
+<<<
+   E.throwIOError("IO.readFile(): Cannot open " .. fileName)
+>>>
+  }
+  len = lseek(fd, 0, SEEK_END);
+  if (len < 0) {
+   close(fd);
+<<<
+   E.throwIOError("IO.readFile(): Seek error in " .. fileName)
+>>>
+  }
+  if (lseek(fd, 0, SEEK_SET) < 0) {
+   close(fd);
+<<<
+   E.throwIOError("IO.readFile() Rewind error in " .. fileName)
+>>>
+  }
+<<<
+>>> blockgc
+  resp = ZaNm(len + 1);
+  off = 0;
+  while (len > 0) {
+   rlen = read(fd, (char *)resp + off, len);
+   if (rlen <= 0) {
+    close(fd);
+<<<
+    E.throwIOError("IO.readFile() Read error in " .. fileName)
+>>>
+   }
+   len -= rlen;
+   off += rlen;
+  }
+  resp[off] = 0;
+  close(fd);
+<<<
+  res = NIL
+>>> blockgc
+  %res% = ZnewString(resp, (Ti)off);
+  free(resp);
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot read a file in Javascript"
+      }
+    }
+    RETURN res
+  }
+
+  #= Writes |text| to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(string text) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> blockgc
+ {
+  Tc *p;
+  Ti len = ZstringSizePtr(%text%, &p);
+  if (len == 0 || fwrite(p, (size_t)len, (size_t)1, stdout) == 1)
+   %ret% = %OK%;
+  else
+   %ret% = %FAIL%;
+ }
+<<<
+    GENERATE_ELSE
+      ret = stdout.write(text)
+    }
+    RETURN ret
+  }
+
+  #= Writes |number| to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(int number) status
+    RETURN write(number.ToString())
+  }
+
+  #= Writes |number| to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(nat number) status
+    RETURN write(number.ToString())
+  }
+
+  #= Writes |number| to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(float number) status
+    RETURN write(number.ToString())
+  }
+
+  #= Writes |flag| as "TRUE" or "FALSE" to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(bool flag) status
+    RETURN write(flag.ToString())
+  }
+
+  #= Writes |ok| as "FAIL" or "OK" to stdout and returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(status ok) status
+    RETURN write(ok.ToString())
+  }
+
+  #= Writes |arg| depending on its actual type to stdout.
+  #= Returns FAIL or OK.
+  #- Does the same as IO.stdout.write()
+  FUNC write(dyn arg) status
+    RETURN write(arg.ToString())
+  }
+
+  #= Writes |text| to stdout and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print()
+  FUNC print(string text) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+      int len = text.asByteString().Size()
+>>> uses(getCstring)
+ if ((%len% == 0 || fwrite(ZgetCstring(%text%), (size_t)%len%, 1, stdout) == 1) && fputc('\n', stdout) >= 0)
+  %ret% = 1;
+ else
+  %ret% = 0;
+<<<
+    GENERATE_ELSE
+      ret = stdout.write(text)
+>>>
+ $doc.getElementById("stdout").innerHTML += "<br>";
+<<<
+    }
+    RETURN ret
+  }
+
+  #= Writes |text| to stdout and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(text)
+  FUNC print(varString text) status
+    string s = text
+    RETURN print(s)
+  }
+
+  #= Writes |nr| to stdout and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(nr)
+  FUNC print(int nr) status
+    RETURN print(nr.ToString())
+  }
+
+  #= Writes |nr| to stdout and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(nr)
+  FUNC print(nat nr) status
+    RETURN print(nr.ToString())
+  }
+
+  #= Writes |nr| to stdout and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(nr)
+  FUNC print(float nr) status
+    RETURN print(nr.ToString())
+  }
+
+  #= Writes |flag| to stdout as "FALSE" or "TRUE" and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(flag)
+  FUNC print(bool flag) status
+    RETURN print(flag.ToString())
+  }
+
+  #= Writes |ok| to stdout as "FAIL" or "OK" and appends a newline.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(ok)
+  FUNC print(status ok) status
+    RETURN print(ok.ToString())
+  }
+
+  #= Writes |arg| to stdout depending on its actual type.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print(arg)
+  FUNC print(dyn arg) status
+    RETURN stdout.print(arg)
+  }
+
+  #= Writes a newline to stdout.
+  #- Returns FAIL or OK.
+  #- Does the same as IO.stdout.print()
+  FUNC print() status
+    RETURN print("")
+  }
+
+  #= Formats the string and writes it to stdout with a newline.
+  FUNC format(string fmt, dyn ... arguments) status
+    RETURN print(fmt.format(arguments = arguments))
+  }
+
+  #= Writes byte |byte| to stdout.
+  #- Does the same as IO.stdout.writeByte()
+  #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+  #- Returns FAIL when the byte could not be written.
+  FUNC writeByte(int byte) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>>
+ if (fputc(%byte%, stdout) >= 0)
+  %ret% = 1;
+ else
+  %ret% = 0;
+<<<
+    GENERATE_ELSE
+      ret = stdout.writeByte(byte)
+    }
+    RETURN ret
+  }
+
+  #= Writes character |char| to stdout as an UTF-8 byte sequence.
+  #- Does the same as IO.stdout.writeChar()
+  #- Throws E.OutOfRange when |char| is < 0 or > 0x10ffff.
+  #- Returns FAIL when the byte could not be written.
+  FUNC writeChar(int char) status
+    RETURN stdout.writeChar(char)
+  }
+
+  #= Flushes buffered output on stdout.
+  #- Returns FAIL or OK.
+  FUNC flush() status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>>
+ if (fflush(stdout) == 0)
+  %ret% = 1;
+ else
+  %ret% = 0;
+<<<
+    GENERATE_ELSE
+      ret = OK # no buffering, always works
+    }
+    RETURN ret
+  }
+
+
+  #= A Writer that stores the text in a string.
+  #= Use ToString() to get the result.
+  CLASS StringWriter EXTENDS Writer @public
+    int            $sLen   #! byte length of the text in $s
+    array<byte, 1> $s      #! the string buffer used for C
+    string         $x      #! the string buffer used for JS
+
+    #= Writes |text| and returns OK.
+    #  TODO: implement this much more efficiently.
+    FUNC $write(string text) status @define @public
+      int len = text.asByteString().Size()
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          $s = NEW(len + 30)
+          $s.set(0, text.asByteString())
+          $sLen = len
+        ELSE
+          IF $sLen + len + 1 >= $s.Size()
+            # Increase size by 12.5 %, the required length and a bit.
+            $s.resize($s.Size() + $s.Size() / 8 + len + 50)
+          }
+          $s.set($sLen, text.asByteString())
+          $sLen += len
+        }
+      GENERATE_ELSE
+>>>
+ if (%$x% == null) {
+  %$x% = %text%;
+ } else {
+  %$x% = %$x% + %text%;
+ }
+<<<
+      }
+      RETURN OK
+    }
+
+    #= Appends one byte |byte| and returns OK.
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    FUNC $writeByte(int byte) status @replace @public
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          $s = NEW(30)
+        ELSEIF $sLen + 2 >= $s.Size()
+          # Increase size by 12.5 % and a bit.
+          $s.resize($s.Size() + $s.Size() / 8 + 50)
+        }
+        $s[$sLen++] = byte
+        $s[$sLen] = 0
+      GENERATE_ELSE
+>>>
+ if (%$x% == null) {
+  %$x% = String.fromCharCode(%byte%);
+ } else {
+  %$x% = %$x% + String.fromCharCode(%byte%);
+ }
+<<<
+      }
+      RETURN OK
+    }
+
+    #= Returns the current string length in bytes.
+    FUNC $byteSize() int @public
+      RETURN $sLen
+    }
+
+    #= Returns the current string length in characters.
+    FUNC $Size() int @public
+      IF $sLen == 0
+        RETURN 0
+      }
+      # TODO: cache the value
+      RETURN $ToString().Size()
+    }
+
+    #!
+    FUNC $size() int @public
+      RETURN $Size()
+    }
+
+    #= Returns the current string.
+    #- Writing may continue after this.
+    FUNC $ToString() string @public
+      string r
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          r = ""
+        ELSE
+>>> blockgc
+  %r% = ZnewString(%$s%->ptr, %$sLen%);
+<<<
+        }
+      GENERATE_ELSE
+        IF $x == NIL
+          r = ""
+        ELSE
+          r = $x
+        }
+      }
+      RETURN r
+    }
+
+    #= Takes one character from the end of the string and returns it.
+    #- If the string is empty returns IO.eof.
+    FUNC $remove() int @public
+      IF $sLen == 0
+        RETURN eof
+      }
+      int c
+      GENERATE_IF Z.lang == "C"
+        c = $s[--$sLen]
+        $s[$sLen] = 0
+        IF (c & 0xc0) == 0x80 && $sLen > 0
+          int c2 = $s[--$sLen]
+          $s[$sLen] = 0
+          IF (c2 & 0xc0) == 0x80 && $sLen > 0
+            int c3 = $s[--$sLen]
+            $s[$sLen] = 0
+            IF (c3 & 0xc0) == 0x80 && $sLen > 0
+              # 4 byte sequence
+              int c4 = $s[--$sLen]
+              $s[$sLen] = 0
+              c = ((c4 & 0x07) << 18) + ((c3 & 0x3f) << 12)
+                                             + ((c2 & 0x3f) << 6) + (c & 0x3f)
+            ELSE
+              # 3 byte sequence
+              c = ((c3 & 0x0f) << 12) + ((c2 & 0x3f) << 6) + (c & 0x3f)
+            }
+          ELSE
+            # 2 byte sequence
+            c = ((c2 & 0x1f) << 6) + (c & 0x3f)
+          }
+        }
+      GENERATE_ELSE
+>>>
+ c = %$x%[%$x%.length - 1];
+ %$x% = %$x%.substr(%$x%.length - 1);
+<<<
+        --$sLen
+      }
+      RETURN c
+    }
+
+    #= Clear the contents of the writer, reset it to empty, free buffer.
+    #- When writing next a new buffer will be allocated.
+    PROC $clear() @public
+      $sLen = 0
+      GENERATE_IF Z.lang == "C"
+        $s = NIL
+      GENERATE_ELSE
+>>>
+  %$x% = null;
+<<<
+      }
+    }
+
+    #= Clear the contents of the writer, reset it to empty, keeping the buffer.
+    #- The buffer will remain being allocated, memory will not be freed.
+    PROC $truncate() @public
+      $sLen = 0
+    }
+  }
+
+
+  #= A Writer that stores a sequence of bytes.
+  #= Call toByteString() to get the result.
+  CLASS ByteWriter EXTENDS Writer IMPLEMENTS I_ByteWriter @public
+    int            $sLen   #! number of bytes in $s
+    array<byte, 1> $s      #! the bytes buffer used for C
+    string         $x      #! the bytes buffer used for JS
+
+    #= Writes |text| and returns OK.
+    FUNC $write(string text) status @define @public
+      RETURN $write(text.asByteString())
+    }
+
+    #= Writes |text| and returns OK.
+    FUNC $write(byteString text) status @replace @public
+      int len = text.Size()
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          $s = NEW(len + 30)
+          $s.set(0, text)
+          $sLen = len
+        ELSE
+          IF $sLen + len + 1 >= $s.Size()
+            # Increase size by 12.5 %, the required length and a bit.
+            $s.resize($s.Size() + $s.Size() / 8 + len + 50)
+          }
+          $s.set($sLen, text)
+          $sLen += len
+        }
+      GENERATE_ELSE
+>>>
+ if (%$x% == null) {
+  %$x% = %text%;
+ } else {
+  %$x% = %$x% + %text%;
+ }
+<<<
+      }
+      RETURN OK
+    }
+
+    #= Appends one byte |byte| and returns OK.
+    #- Only the lower 8 bits of |byte| are used, the rest is ignored.
+    FUNC $writeByte(int byte) status @replace @public
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          $s = NEW(30)
+        ELSEIF $sLen + 2 >= $s.Size()
+          # Increase size by 12.5 % and a bit.
+          $s.resize($s.Size() + $s.Size() / 8 + 50)
+        }
+        $s[$sLen++] = byte
+        $s[$sLen] = 0
+      GENERATE_ELSE
+>>>
+ if (%$x% == null) {
+  %$x% = String.fromCharCode(%byte%);
+ } else {
+  %$x% = %$x% + String.fromCharCode(%byte%);
+ }
+<<<
+      }
+      RETURN OK
+    }
+
+    #= Returns the current byte length.
+    FUNC $Size() int @public
+      RETURN $sLen
+    }
+
+    #!
+    FUNC $size() int @public
+      RETURN $Size()
+    }
+
+    #! For backwards compatibility.  TODO: remove
+    FUNC $toBytes() byteString @public
+      RETURN $toByteString()
+    }
+
+    #= Returns the current byteString.
+    #- Writing may continue after this.
+    FUNC $toByteString() byteString @public
+      byteString r
+      GENERATE_IF Z.lang == "C"
+        IF $s == NIL
+          r = ""
+        ELSE
+>>> blockgc
+  %r% = ZnewString(%$s%->ptr, %$sLen%);
+<<<
+        }
+      GENERATE_ELSE
+        IF $x == NIL
+          r = ""
+        ELSE
+          r = $x
+        }
+      }
+      RETURN r
+    }
+
+    #= Takes one byte from the end of the byteString and returns it.
+    #- If the string is empty returns IO.eof.
+    FUNC $remove() int @public
+      IF $sLen == 0
+        RETURN eof
+      }
+      int c
+      GENERATE_IF Z.lang == "C"
+        c = $s[--$sLen]
+        $s[$sLen] = 0
+      GENERATE_ELSE
+>>>
+ c = %$x%[%$x%.length - 1];
+ %$x% = %$x%.substr(%$x%.length - 1);
+<<<
+        --$sLen
+      }
+      RETURN c
+    }
+  }
+
+
+  #= Used for the return value of IO.fileInfo().
+  CLASS FileInfo @public @items=public
+    status  $status   #= OK when the object was properly filled in.
+    int     $size     #= File size in bytes.
+    int     $time     #= Last modified time in usec.
+                      #- Most implementations only support second accuracy.
+    bool    $isDir    #= TRUE when this is a directory.
+  }
+
+  #: Methods for file properties
+
+  #= Return statistics for |name|.
+  #- When |name| cannot be inspected (doesn't exist or no permissions)
+  #- the FileInfo.status field is FAIL.
+  FUNC fileInfo(string name) FileInfo
+    FileInfo st = NEW()
+    GENERATE_IF Z.lang == "C"
+>>> uses(sys_types, sys_stat, getCstring)
+ {
+  struct stat st;
+  if (stat(ZgetCstring(%name%), &st) == 0) {
+   %st.size% = st.st_size;
+   %st.time% = st.st_mtime * 1000000LL;
+   %st.status% = %OK%;
+   %st.isDir% = S_ISDIR(st.st_mode);
+  }
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot get file info in Javascript"
+      }
+    }
+    RETURN st
+  }
+
+  #= Returns TRUE if |name| exists and is a directory.
+  #- This is equal to using IO.fileInfo() and checking for an OK status and
+  #- the IO.FileInfo.isDir flag.
+  FUNC isDirectory(string name) bool
+    bool ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(sys_types, sys_stat, getCstring)
+ struct stat st;
+ if (stat(ZgetCstring(%name%), &st) == 0) {
+  %ret% = S_ISDIR(st.st_mode);
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot check for a directory in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #= Returns TRUE if the file |name| exists and is readable.
+  #- This uses the permissions for the current user.
+  FUNC isReadable(string name) bool
+    int v
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd, getCstring)
+ %v% = access(ZgetCstring(%name%), R_OK);
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot check file readability in Javascript"
+      }
+    }
+    RETURN v == 0
+  }
+
+  #= Returns TRUE if the file |name| exists and is writable.
+  #- This uses the permissions for the current user.
+  FUNC isWritable(string name) bool
+    int v
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd, getCstring)
+ %v% = access(ZgetCstring(%name%), W_OK);
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot check file writabiliy in Javascript"
+      }
+    }
+    RETURN v == 0
+  }
+
+  #= Returns TRUE if the file |name| exists and is executable.
+  #- This uses the permissions for the current user.
+  FUNC isExecutable(string name) bool
+    int v
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd, getCstring)
+ %v% = access(ZgetCstring(%name%), X_OK);
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot check file for being executable in Javascript"
+      }
+    }
+    RETURN v == 0
+  }
+
+  #: Operations involving directories.
+
+  #= Change the current directory to |dirName|.
+  #- Returns FAIL or OK.
+  FUNC chdir(string dirName) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd, getCstring)
+ if (chdir(ZgetCstring(%dirName%)) == 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot change directory in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #= Return the current directory.
+  #- In the unlikely case that this fails NIL is returned.
+  FUNC getdir() string
+    string res
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd) blockgc
+ char buf[5000];
+ if (getcwd(buf, 5000) != NULL) {
+  %res% = Zstr(buf);
+ }
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot get a directory in Javascript"
+      }
+    }
+    RETURN res
+  }
+
+  #= Create directory |dirName|.
+  #- Does not create any directory above |dirName|.
+  #- Returns FAIL or OK.
+  # TODO: optional argument to specify protection
+  # TODO: default to create directories recursively
+  FUNC mkdir(string dirName) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(sys_stat, sys_types, fcntl, getCstring)  # fcntl needed for MingW
+#if defined(__MINGW32__) || defined(_MSC_VER)
+ if (_mkdir(ZgetCstring(%dirName%)) == 0)
+#else
+ if (mkdir(ZgetCstring(%dirName%), 0777) == 0)
+#endif
+   %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot create a directory in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #= Delete directory |dirName|.  Only works when it is empty.
+  # TODO: option to delete contents of directory recursively.
+  FUNC rmdir(string dirName) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(unistd, getCstring)
+#if defined(__MINGW32__) || defined(_MSC_VER)
+ if (_rmdir(ZgetCstring(%dirName%)) == 0)
+#else
+ if (rmdir(ZgetCstring(%dirName%)) == 0)
+#endif
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot remove a directory in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #= Returns a list with all entries of directory |dirName|.
+  #- When |dirName| is empty the current directory "." is listed.
+  #
+  #- The entries "." and ".." are not included.  Other entries starting with
+  #- "." are included.
+  #
+  #- Returns NIL if |dirName| could not be opened.
+  FUNC dirList(string dirName) list<string>
+    GENERATE_IF Z.lang == "C"
+>>> uses(dirent, sys_types, getCstring)
+ char *n = ZgetCstring(%dirName%);
+ DIR *dirp = opendir(*n == 0 ? "." : n);
+ if (dirp == NULL) return NULL;
+<<<
+    string s
+    list<string> res = NEW()
+>>>
+ for (;;) {
+  struct dirent *dp = readdir(dirp);
+  if (dp == NULL) break;
+<<<
+  s = NIL # fix reference count
+>>> blockgc
+  %s% = Zstr(dp->d_name);
+<<<
+      IF s != "." && s != ".."
+        res.add(s)  # makes a copy
+      }
+>>>
+ }
+ closedir(dirp);
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot list a directory in Javascript"
+      }
+    }
+    RETURN res
+  }
+
+  #: Operations on files
+
+  #= Delete file |fileName|.
+  FUNC delete(string fileName) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(getCstring, unistd)
+ if (unlink(ZgetCstring(%fileName%)) == 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+    GENERATE_ELSE
+      GENERATE_IF !Z.have("keepunused")
+        GENERATE_ERROR "Cannot delete a file in Javascript"
+      }
+    }
+    RETURN ret
+  }
+
+  #= Rename file |fromName| to |toName|.
+  #- This only works if both are on the same file system.
+  FUNC rename(string fromName, string toName) status
+    status ret
+    GENERATE_IF Z.lang == "C"
+>>> uses(getCstring)
+ if (rename(ZgetCstring(%fromName%), ZgetCstring(%toName%)) == 0)
+  %ret% = %OK%;
+ else
+  %ret% = %FAIL%;
+<<<
+    GENERATE_ELSE
+>>>
+ alert("IO.rename(): Cannot rename a file");
+<<<
+    }
+    RETURN ret
+  }
+
+  #= Move file |fromName| to |toName| by making a copy and deleting
+  #= |fromName|.
+  #= Not implemented yet.
+  #- This also works over file systems.
+  FUNC move(string fromName, string toName) status
+    RETURN FAIL
+  }
+
+  #= Copy file |from| to |to|.
+  #= Not implemented yet.
+  #- Return FAIL or OK.
+  FUNC copy(string fromName, string toName) status
+    RETURN FAIL
+  }
+
+  #= Compare two files and return TRUE if both exist, can be read and contain
+  #= the same bytes.
+  FUNC equalFiles(string name1, string name2) bool
+    # Compare file sizes, return quickly when they differ.
+    VAR info1 = fileInfo(name1)
+    IF info1.status == FAIL
+      RETURN FALSE
+    }
+    VAR info2 = fileInfo(name2)
+    IF info2.status == FAIL
+      RETURN FALSE
+    }
+    IF info1.size != info2.size
+      RETURN FALSE
+    }
+
+    # File sizes are equal, need to compare the contents.
+    # TODO: This is not very efficient.
+    IO.File f1 = IO.fileReader(name1)
+    IF f1 == NIL
+      RETURN FALSE
+    }
+    IO.File f2 = IO.fileReader(name2)
+    IF f2 == NIL
+      f1.close()
+      RETURN FALSE
+    }
+
+    bool equal
+    WHILE TRUE
+      int c1 = f1.readByte()
+      int c2 = f2.readByte()
+      IF c1 != c2
+        BREAK
+      }
+      IF c1 == IO.eof
+        equal = TRUE
+        BREAK
+      }
+    }
+    f1.close()
+    f2.close()
+    RETURN equal
+  }
+
+  #: Operations on file names and paths.
+
+  #= Finds |exeName| in $PATH and returns the actual location.
+  #- When |exeName| is an absolute path, relative to the current directory or
+  #- can't be found in $PATH it is returned as-is.
+  #
+  #- Resolves symbolic links before returning the result.
+  #
+  #- On MS-Windows backslashes are replaced with forward slashes and ".exe" is
+  #- appened when appropriate.
+  FUNC findExe(string exeName) string
+    GENERATE_IF Z.lang != "C"
+      RETURN "unknown"
+    GENERATE_ELSE
+      string exe = exeName.replaceAll('\\', '/')
+      string fname
+      IF exe.startsWith("/")
+          || exe.startsWith("./")
+          || exe.startsWith("../")
+        fname = exe
+      ELSE
+        list<string> directories
+        string path = SYS.getEnv("PATH")
+        IF path != NIL
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+          directories = path.split(";")
+>>>
+#else
+<<<
+          directories = path.split(":")
+>>>
+#endif
+<<<
+        }
+        fname = findExeInDirList(exeName, directories)
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+        IF fname == NIL && !exeName.toLower().endsWith(".exe")
+          fname = findExeInDirList(exeName .. ".exe", directories)
+        }
+>>>
+#endif
+<<<
+        IF fname == NIL
+          fname = exe
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+          IF !isExecutable(fname) && isExecutable(fname .. ".exe")
+            fname ..= ".exe"
+          }
+>>>
+#endif
+<<<
+        ELSE
+          fname = fname.replaceAll('\\', '/')
+        }
+      }
+      RETURN resolve(fname)
+    }
+  }
+
+  #= Searches for |exeName| in each directory in |dirs| and returns the
+  #= first one that exists and is executable.
+  #- Does not resolve symbolic links.
+  #- Returns NIL when not found.
+  FUNC findExeInDirList(string exeName, list<string> dirs) string
+    FOR dir IN dirs
+      string fname = concatPath(dir, exeName)
+      IF isExecutable(fname)
+        RETURN fname
+      }
+    }
+    RETURN NIL
+  }
+
+  #= Given an executable name returns a different executable name in the same
+  #= directory.
+  #- This is useful to avoid different behavior on Unix and MS-Windows.
+  #
+  #- |exeName| is the full path or relative path of an existing executable.
+  #- Including ".exe" or ".com" for MS-Windows.
+  #
+  #- |newName| is the base of the new name, without a path or ".exe".
+  #
+  #- Example:
+  #% IO.shell(IO.modifyExeName(ARG.exeName, "zimbu2c"))
+  #- For Unix changes "path/zimbu" into "path/zimbu2c".
+  #- For MS-Windows changes "path/zimbu.exe" into "path/zimbu2c.exe"
+  FUNC modifyExeName(string exeName, string newName) string
+    int tailIdx = IO.tailIndex(exeName)
+    string result = tailIdx > 0 ? exeName.slice(0, tailIdx - 1) : ""
+    result ..= newName
+    int dotIndex = exeName.findLast('.')
+    IF dotIndex > tailIdx
+      result ..= exeName.slice(dotIndex)
+    }
+    RETURN result
+  }
+
+  #= Returns |first| and |second| concatenated as path parts.
+  #- Inserts a path separator when |first| doesn't end in one and |second|
+  #- doesn't start with one.
+  #- When |first| ends in a path separator and |second| starts with one only
+  #- one of these will remain.
+  FUNC concatPath(string first, string second) string
+    IF first.endsWith("/")
+      IF second.startsWith("/")
+        RETURN first .. second.slice(1)
+      }
+      RETURN first .. second
+    }
+    IF first == "" || second.startsWith("/")
+      RETURN first .. second
+    }
+    RETURN first .. "/" .. second
+  }
+
+  #= Returns the full path of |fname|.
+  #- |fname| can be a directory or a file name.  It does not have to exist,
+  #- but its directory must exist.
+  #- Returns NIL when failed.
+  FUNC fullPath(string fname) string
+   GENERATE_IF Z.lang != "C"
+     RETURN fname
+   GENERATE_ELSE
+    # Most of this code comes from Vim: src/os_unix.c:mch_FullName()
+>>>
+#if _BSD_SOURCE || _XOPEN_SOURCE >= 500
+# define HAVE_FCHDIR
+#endif
+#ifndef PATH_MAX
+# define PATH_MAX 1026
+#endif
+  int l;
+#ifdef HAVE_FCHDIR
+  int fd = -1;
+  static int dont_fchdir = 0; /* TRUE when fchdir() doesn't work */
+#endif
+  char olddir[PATH_MAX];
+  char newdir[PATH_MAX];
+  char *fp;
+#ifdef __CYGWIN__
+  char posix_fname[PATH_MAX];
+#endif
+<<<
+    status retval = OK
+    string dir
+    string newFname = fname
+>>> uses(string_h, sys_types, sys_stat, fcntl, unistd, getCstring)
+    char *fname = ZgetCstring(%fname%);
+
+#ifdef __CYGWIN__
+ /* This helps for when "/etc/hosts" is a symlink to "c:/something/hosts". */
+# if CYGWIN_VERSION_DLL_MAJOR >= 1007
+ cygwin_conv_path(CCP_WIN_A_TO_POSIX, fname, posix_fname, PATH_MAX);
+# else
+ cygwin_conv_to_posix_path(fname, posix_fname);
+# endif
+ fname = posix_fname;
+#endif
+
+ /* If the file name has a path, change to that directory for a moment, and
+ then do the getwd() (and get back to where we were).  This will get the
+ correct path name with "../" things. */
+ fp = strrchr(fname, '/');
+ if (fp == NULL) {
+   fp = strrchr(fname, '\\');
+ }
+ if (fp != NULL)
+ {
+#ifdef HAVE_FCHDIR
+  /* Use fchdir() if possible, it's said to be faster and more reliable.  But
+  on SunOS 4 it might not work.  Check this by doing a fchdir() right now. */
+  if (!dont_fchdir)
+  {
+   fd = open((char *)".", O_RDONLY, 0);
+   if (fd >= 0 && fchdir(fd) < 0)
+   {
+    close(fd);
+    fd = -1;
+    dont_fchdir = 1; /* don't try again */
+   }
+  }
+#endif
+
+<<<
+# getcwd() is not a signal safe function
+>>> blockgc
+  /* Only change directory when we are sure we can return to where we are now.
+  After doing "su" chdir(".") might not work. */
+  if (
+#ifdef HAVE_FCHDIR
+     fd < 0 &&
+#endif
+      (getcwd(olddir, PATH_MAX) == NULL || chdir(olddir) != 0))
+   {
+    fp = NULL;  /* can't get current dir: don't chdir */
+    %retval% = %FAIL%;
+   } else {
+    /* The directory is copied into newdir[], to be able to remove the file
+    name without changing it (could be a string in read-only memory) */
+    if (fp - fname >= PATH_MAX)
+     %retval% = %FAIL%;
+    else
+    {
+     strncpy(newdir, fname, fp - fname);
+     newdir[fp - fname] = 0;
+     if (chdir(newdir))
+      %retval% = %FAIL%;
+     else
+      fname = fp + 1;
+     *newdir = 0;
+    }
+   }
+  }
+  if (getcwd(newdir, PATH_MAX) == NULL)
+   %retval% = %FAIL%;
+<<<
+# end of blockgc
+>>>
+  if (fp != NULL)
+  {
+#ifdef HAVE_FCHDIR
+   if (fd >= 0)
+   {
+    l = fchdir(fd);
+    close(fd);
+   } else
+#endif
+   l = chdir(olddir);
+   if (l != 0) {
+<<<
+     E.throwIOError("IO.fullPath(): Unable to return to current directory")
+>>>
+   }
+  }
+<<<
+  newFname = NIL  # fix reference count.
+  # Change backslashes to slashes, works in more places.
+  # Change "c:" to "C:" for consistency.
+>>> uses(ctype_h) blockgc
+#ifdef __MINGW32__
+ while ((fp = strchr(newdir, '\\')) != NULL) *fp = '/';
+ if (isalpha(*newdir) && newdir[1] == ':') *newdir = toupper(*newdir);
+#endif
+ %newFname% = Zstr(fname);
+ %dir% = Zstr(newdir);
+<<<
+    IF retval == FAIL
+      RETURN NIL
+    }
+
+    # Do not append ".", "/dir/." is equal to "/dir".
+    IF newFname == "."
+      RETURN dir
+    }
+
+    IF dir.Size() > 0 && !dir.endsWith("/") && newFname.Size() > 0
+      RETURN dir .. "/" .. newFname
+    }
+    RETURN dir .. newFname
+   }
+  }
+
+
+  #= Returns |fname| with all symbolic links resolved.
+  #- When anything fails returns |fname| as-is.
+  FUNC resolve(string fname) string
+    string  result  # the result so far, link to be resolved
+
+    # These are declared here to avoid "used unititialized" warnings on
+    # Windows, where the #if takes effect.
+    string  link
+    string  remain  # what comes after |result|, to be appended
+
+    GENERATE_IF Z.lang == "C"
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+    result = fname
+>>>
+#else
+<<<
+    int       limit = 100
+
+    # whether |fname| starts with ./ or ../
+    bool isRelative = fname[0] == '.' && (isPathSep(fname[1])
+                                  || (fname[1] == '.' && isPathSep(fname[2])))
+    # whether |fname| ends with /
+    bool hasTrailingSep = fname.endsWith("/")
+
+    int i = nextPartIndex(fname, pastHeadIndex(fname))
+    IF i > 1
+      # Separate the first path component in "result", and keep the
+      # remainder (beginning with the path separator).
+      # "result" + "/remain" or "/result" + "/remain".
+      result = fname.slice(0, i - 2)
+      remain = fname.slice(i - 1)
+    ELSE
+      # There is no slash: "foobar" or "/foobar".
+      result = fname
+    }
+
+    WHILE TRUE  # loop over parts that are not symlinks, keep them
+      WHILE TRUE  # loop over parts that are symlinks, replace them
+>>> uses(unistd, limits, getCstring)  # limits.h defines Path_MAX
+   {
+    int   len;
+    char  buf[PATH_MAX + 1];
+    len = readlink(ZgetCstring(%result%), (char *)buf, PATH_MAX);
+    if (len <= 0) break;  /* can't read, use as-is */
+    buf[len] = 0;
+<<<
+     link = NIL  # take care of reference counting
+>>> blockgc
+    %link% = Zstr(buf);
+   }
+<<<
+        IF limit-- == 0
+          RETURN fname  # Error: too many symlinks
+        }
+
+        # Ensure that the result will have a trailing path separator
+        # if the argument has one.
+        IF remain == NIL && hasTrailingSep
+          link ..= "/"
+        }
+
+        # Separate the first path component in the link value and
+        # concatenate the remainders.
+        i = nextPartIndex(link, pastHeadIndex(link))
+        IF i > 1
+          IF remain == NIL
+            remain = link.slice(i - 1)
+          ELSE
+            remain = link.slice(i - 1) .. remain
+          }
+          link = link.slice(0, i - 2)
+        }
+
+        int t = tailIndex(result)
+        IF t > 0 && t == result.Size()
+          # remove trailing path separator
+          result = result.slice(0, -2)
+          t = tailIndex(result)
+        }
+        IF t > 0 && pastHeadIndex(link) == 0
+          # symlink is relative to directory of argument */
+          result = result.slice(0, t - 1) .. link
+        ELSE
+          # symlink is absolute, drop old result
+          result = link .. ""  # make sure it's allocated
+        }
+      }
+
+      IF remain == NIL
+        BREAK  # nothing more to append, done
+      }
+
+      # Append the first path component of "remain" to "result".
+      # Remove the component from |remain|.
+      i = nextPartIndex(remain, 1)
+      IF i > 1
+        result ..= remain.slice(0, i - 2)
+        remain = remain.slice(i - 1)
+      ELSE
+        result ..= remain
+        remain = NIL
+      }
+    }
+
+    # If the result is a relative path name, make it explicitly relative to
+    # the current directory if and only if the argument had this form.
+    IF isPathSep(result[0])
+      IF isRelative
+              && result.Size() > 0
+              && !(result[0] == '.'
+                  && (result.Size() == 1
+                      || isPathSep(result[1])
+                      || (result[1] == '.'
+                          && (result.Size() == 2
+                              || isPathSep(result[2])))))
+        # Prepend "./".
+        result = "./" .. result
+      ELSEIF !isRelative
+        # Strip leading "./", multiple times.
+        i = 0
+        WHILE result[i] == '.' && isPathSep(result[i + 1])
+          i += 2
+        }
+        IF i > 0
+          result = result.slice(i)
+        }
+      }
+    }
+
+    # Ensure that the result will have no trailing path separator
+    # if the argument had none.  But keep "/" or "//".
+    IF !hasTrailingSep
+      int m = pastHeadIndex(result)
+      WHILE result.endsWith("/") && result.Size() > m
+        result = result.slice(0, -2)
+      }
+    }
+
+>>>
+#endif
+<<<
+    }
+    RETURN result
+  }
+
+  #= Returns index of last path component in |fname|.
+  #- E.g.: for "dir/foo" returns 4.
+  #- Returns 0 when no "/" is found.
+  #- Returns |fname.Size()| when |fname| ends in "/".
+  #
+  #- On MS-Windows checks for '\' as well as '/'.
+  FUNC tailIndex(string fname) int
+    int i = fname.findLast('/')
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+    int j = fname.findLast('\\')
+    IF j > i
+      i = j
+    }
+>>>
+#endif
+<<<
+    IF i < 0
+      RETURN 0
+    }
+    RETURN i + 1
+  }
+
+  #= Returns the last path component in |fname|.
+  #- E.g.: for "dir/foo" returns "foo".
+  #- Returns |fname| when no "/" found.
+  #- Returns "" when |fname| ends in "/".
+  #
+  #- On MS-Windows checks for '\' as well as '/'.
+  FUNC tail(string fname) string
+    RETURN fname.slice(tailIndex(fname))
+  }
+
+  #= Returns the directory name of |fname|.
+  #- E.g.: for "dir/foo" returns "dir".
+  #- Returns an empty string when no "/" found.
+  #
+  #- On MS-Windows checks for '\' as well as '/'.
+  FUNC directory(string fname) string
+    int i = tailSepIndex(fname)
+    IF i == 0
+      RETURN ""
+    }
+    RETURN fname.slice(0, i - 1)
+  }
+
+  #= Returns index of last path component of |fname|, including separator(s)
+  #= before it that are not part of the head.
+  #- E.g.: for "dir/foo" returns 3.  For "/foo" returns 1.
+  #- Returns 0 when no "/" found.
+  FUNC tailSepIndex(string fname) int
+    int i = fname.findLast('/')
+    IF i < 0
+      RETURN 0
+    }
+    int j = pastHeadIndex(fname)
+    IF i < j
+      i = j
+    ELSE
+      WHILE i > j && isPathSep(fname[i - 1])
+        --i
+      }
+    }
+    RETURN i
+  }
+
+  #= Returns index of first char after leading "c:/", "/", etc.
+  #= Returns 0 when no head found.
+  FUNC pastHeadIndex(string fname) int
+    int i
+    GENERATE_IF Z.lang == "C"
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+<<<
+      IF fname[0].isAlpha() && fname[1] == ':'
+        i = 2
+      }
+>>>
+#endif
+<<<
+    }
+    WHILE i < fname.Size() && isPathSep(fname[i])
+      ++i
+    }
+    RETURN i
+  }
+
+  #= Returns TRUE if |c| is a path separator.
+  FUNC isPathSep(int c) bool
+    # TODO: handle '\' on MS-Windows?
+    RETURN c == '/'
+  }
+
+  #= Returns the index of the next path component, after the next separator.
+  #- Returns -1 when there is no further separator.
+  FUNC nextPartIndex(string fname, int idx) int
+    FOR i IN idx TO fname.Size() - 1
+      IF isPathSep(fname[i])
+        RETURN i + 1
+      }
+    }
+    RETURN -1
+  }
+
+}

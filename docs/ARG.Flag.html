@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ARG.Flag class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ARG.html'>up:&nbsp;ARG</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ARG.Flag
+<span class='attribute'><small> @abstract</small></span><span class='attribute'><small> @earlyInit</small></span><span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The abstract base class of all flags.
+</p>
+<p class='ptext'> All flags must be created in EarlyInit() or earlier.  Initializing them
+ in a declaration at the module level or SHARED section in a class will
+ work.
+<p class='ptext'> See the <A href="ARG.html">ARG module</a> for examples.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ARG.Flag.html#$setArgName'><b>$setArgName</b></a>(<small>argName</small>) <small><span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the text used in the --help output for the argument.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.Flag.html#$disableCompact'><b>$disableCompact</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Disable the compact form of flag values.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.Flag.html#$optionalArg'><b>$optionalArg</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Make the flag argument optional.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.Flag.html#$presentCount'><b>$presentCount</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of times the command line flag was encountered.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARG.Flag.html#$present'><b>$present</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if the command line flag was encountered.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table>Known subclasses:<br><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<div><A href='ARG.Bool.html'>ARG.Bool</A></div><div><A href='ARG.Int.html'>ARG.Int</A></div><div><A href='ARG.String.html'>ARG.String</A></div><div><A href='ARG.StringList.html'>ARG.StringList</A></div></td></tr></table>
+&nbsp;<br></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$disableCompact'><b>$disableCompact</b></A>() <span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Disable the compact form of flag values.
+</p>
+<p class='ptext'> Compact form is giving a value to a flag without an "=".  For example,
+ when "-n" is a Int flag, "-n123" uses value "123".
+<p class='ptext'> The compact form is allowed by default.  It can also be disabled for each
+ individual flag.
+<p class='ptext'> Returns the Flag, so that it can be used in a declaration like this:
+<pre class='example'> ARG.String name = NEW("n", "name", "", "the name").disableCompact()
+</pre>
+<p class='ptext'>
+ This must be invoked in EarlyInit() or earlier.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$optionalArg'><b>$optionalArg</b></A>() <span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Make the flag argument optional.
+</p>
+<p class='ptext'> Returns the Flag, so that it can be used in a declaration like this:
+<pre class='example'> ARG.String name = NEW("n", "name", "", "the name").optionalArg()
+</pre>
+<p class='ptext'>
+ Valid flags are then "-n" "-nfoobar", "-n=foobar", "--name=foobar".
+<p class='ptext'> This must be invoked in EarlyInit() or earlier.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$present'><b>$present</b></A>() <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if the command line flag was encountered.
+</p>
+<p class='ptext'> Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$presentCount'><b>$presentCount</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of times the command line flag was encountered.
+</p>
+<p class='ptext'> Can only be used after EarlyInit(), when ARG.Ready is TRUE.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$setArgName'><b>$setArgName</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> argName) <span class='type'><A class='typehref' href='ARG.Flag.html'>ARG.Flag</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the text used in the --help output for the argument.
+</p>
+<p class='ptext'> Not used for a <A href='ARG.Bool.html'><b>Bool</b></A> flag.
+<p class='ptext'> Returns the Flag, so that it can be used in a declaration like this:
+<pre class='example'> ARG.String name = NEW("n", "name", "", "the name").setArgName("name")
+</pre>
+<p class='ptext'>
+ This must be invoked in EarlyInit() or earlier.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

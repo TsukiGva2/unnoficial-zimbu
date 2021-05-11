@@ -1,0 +1,1706 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# C implementation for Dict
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "WriteC.zu"
+IMPORT "WriteListC.zu"
+IMPORT "../ContainerType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../DictStuff.zu"
+IMPORT "../ExprArg.zu"
+IMPORT "../Generate.zu"
+IMPORT "../ListStuff.zu"
+IMPORT "../ManageMemory.zu"
+IMPORT "../Output.zu"
+IMPORT "../Resolve.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+
+MODULE WriteDictC @items=public                   # TODO: restrict visibility
+
+  # Declarations used to keep track of used items.
+  Declaration dictFind = NEW("dictFind")
+  Declaration dictHas = NEW("dictHas")
+  Declaration dictIsOrdered = NEW("dictIsOrdered")
+  Declaration dictRemovePtr = NEW("dictRemovePtr")
+  Declaration dictRemoveInt = NEW("dictRemoveInt")
+  Declaration dictGetIobjP = NEW("dictGetIobjP")
+  Declaration dictGetIobj = NEW("dictGetIobj")
+  Declaration dictGetIobjDef = NEW("dictGetIobjDef")
+  Declaration dictGetDynP = NEW("dictGetDynP")
+  Declaration dictGetDyn = NEW("dictGetDyn")
+  Declaration dictGetDynDef = NEW("dictGetDynDef")
+  Declaration dictGetPtrP = NEW("dictGetPtrP")
+  Declaration dictGetPtr = NEW("dictGetPtr")
+  Declaration dictGetPtrDef = NEW("dictGetPtrDef")
+  Declaration dictGetInt = NEW("dictGetInt")
+  Declaration dictGetIntP = NEW("dictGetIntP")
+  Declaration dictGetIntDef = NEW("dictGetIntDef")
+  Declaration dictGetFloatP = NEW("dictGetFloatP")
+  Declaration dictGetFloat = NEW("dictGetFloat")
+  Declaration dictGetFloatDef = NEW("dictGetFloatDef")
+  Declaration dictKeys = NEW("dictKeys")
+  Declaration dictValues = NEW("dictValues")
+  Declaration dictMap = NEW("dictMap")
+  Declaration dictKeyMap = NEW("dictKeyMap")
+  Declaration dictClear = NEW("dictClear")
+  Declaration dictCopy = NEW("dictCopy")
+  Declaration dictSize = NEW("dictSize")
+  Declaration dictEqual = NEW("dictEqual")
+  Declaration dictCompare = NEW("dictCompare")
+
+  # [key1: value1, key2: value2] ->
+  #    ZDictAdd(0, ZDictAdd(0, ZnewDict(), key1, value1), key2,  value2)
+  # TODO: check for duplicate keys at compile time.
+  # Return type of dict in ret.
+  PROC generateNewDict(Zui.Expression expr, string noAllocName,
+                              SContext ctx, ContainerType type, Type destType)
+    IF expr.sizeDictItem() == 0
+      # empty dict: {}
+      IF destType == NIL || destType.getTtype() != Type.Enum.dict
+        ctx.error("Type of Dict unknown", expr.getPos())
+      ELSE
+        ContainerType ct = destType.getEffType()
+        IF ct.keyType == NIL
+          ctx.error("key type of Dict unknown", expr.getPos())
+        }
+        IF ct.itemType == NIL
+          ctx.error("item type of Dict unknown", expr.getPos())
+        }
+
+        writeDictAlloc(ct, noAllocName, NIL, expr.getOrderedDict(), ctx)
+      }
+    ELSE
+      # Type is based on the first pair.
+      Zui.ExprPair pair = expr.getDictItem(0)
+      Type keyType
+      Type valType
+      IF destType != NIL && destType.getTtype() == Type.Enum.dict
+        ContainerType containerType = destType.getEffType()
+        IF containerType.keyType != NIL
+          keyType = containerType.keyType
+        }
+        IF containerType.itemType != NIL
+          valType = containerType.itemType
+        }
+      }
+      type.keyType = Generate.genExpr(pair.getKey(), ctx.copyNoOut(), keyType)
+      IF type.keyType == NIL
+        Generate.genExpr(pair.getKey(), ctx)
+        RETURN
+      }
+      type.itemType = Generate.genExpr(
+                                    pair.getValue(), ctx.copyNoOut(), valType)
+      IF type.itemType == NIL
+        Generate.genExpr(pair.getValue(), ctx)
+        RETURN
+      }
+
+      # First generate all the add calls.
+      FOR item IN expr.getDictItemList()
+        writeDictAddCall(type, ctx.out)
+        ctx.out.write("0, ")
+      }
+
+      # Create the empty dict.
+      writeDictAlloc(type, noAllocName, NIL, expr.getOrderedDict(), ctx)
+
+      # Finish all the add calls.
+      FOR item IN expr.getDictItemList()
+        ctx.out.write(", ")
+        # write the key argument
+        WriteC.writeTzOrIobjArg(type.keyType, item.getKey(), ctx)
+        # write the value argument
+        ctx.out.write(", ")
+        WriteC.writeTzOrIobjArg(type.itemType, item.getValue(), ctx)
+        ctx.out.write(")")
+      }
+    }
+  }
+
+  # Write "ZDictAdd(" or a variant for an iobject argument.
+  PROC writeDictAddCall(ContainerType type, Output out)
+    Type.Enum keyTtype = type.keyType.getTtype()
+    string keyName
+    IF keyTtype == Type.Enum.iobject
+      keyName = "Iobj"
+    ELSEIF keyTtype == Type.Enum.dyn
+      keyName = "Dyn"
+    ELSE
+      keyName = ""
+    }
+    Type.Enum itemTtype = type.itemType.getTtype()
+    string itemName
+    IF itemTtype == Type.Enum.iobject
+      itemName = "Iobj"
+    ELSEIF itemTtype == Type.Enum.dyn
+      itemName = "Dyn"
+    ELSE
+      itemName = ""
+    }
+    IF keyName == "" && itemName != ""
+      keyName = "Tz"
+    ELSEIF keyName != "" && itemName == ""
+      itemName = "Tz"
+    }
+    out.write("ZDictAdd" .. keyName .. itemName .. "(")
+  }
+
+  PROC writeDictAlloc(ContainerType type, string noAllocName,
+                        Zui.MethodCall call, bool isOrderedDict, SContext ctx)
+    Output out = ctx.out
+    IF noAllocName != NIL
+      # %theDict = NEW()
+      out.write("ZDictInit(&")
+      out.write(noAllocName)
+      out.write(", ")
+    ELSE
+      out.write("ZnewDict(")
+    }
+    out.write(WriteC.getTname(type.keyType, ctx))
+    out.write(", ")
+    out.write(WriteC.getTname(type.itemType, ctx))
+    IF call != NIL && call.sizeArgument() == 1
+      # NEW(bool): evaluate argument
+      out.write(", ")
+      ctx.gen.genArg(call.getArgument(0), ctx, Type.aBool)
+    ELSEIF isOrderedDict
+      # O[key: value]
+      out.write(", 1")
+    ELSE
+      # [key: value]
+      out.write(", 0")
+    }
+    out.write(")")
+  }
+
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr, bool lvalue,
+                                                 SContext ctx, Type destType
+                        ) Type
+    RETURN generateGet(type, expr.getLeft(), expr.getRight(),
+                                                   NIL, lvalue, ctx, destType)
+  }
+
+  FUNC generateGet(ContainerType type, Zui.Expression dictExpr,
+                                                       Zui.Expression keyExpr,
+                         Zui.Expression defExpr, SContext ctx, Type destType
+                 ) Type
+    RETURN generateGet(type, dictExpr, keyExpr, defExpr, FALSE, ctx, destType)
+  }
+
+  FUNC generateGet(ContainerType type, Zui.Expression dictExpr,
+                               Zui.Expression keyExpr, Zui.Expression defExpr,
+                                      bool lvalue, SContext ctx, Type destType
+                 ) Type
+    string close = ")"
+    IF type.itemType.getTtype() == Type.Enum.iobject
+      IF lvalue
+        ctx.gen.setDeclUsed(dictGetIobjP)
+        ctx.out.write("*ZDictGetIobjP(")
+      ELSEIF defExpr == NIL
+        ctx.gen.setDeclUsed(dictGetIobj)
+        ctx.out.write("ZDictGetIobj(")
+      ELSE
+        ctx.gen.setDeclUsed(dictGetIobjDef)
+        ctx.out.write("ZDictGetIobjDef(")
+      }
+    ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+      IF lvalue
+        ctx.gen.setDeclUsed(dictGetDynP)
+        ctx.out.write("*ZDictGetDynP(")
+      ELSEIF defExpr == NIL
+        ctx.gen.setDeclUsed(dictGetDyn)
+        ctx.out.write("ZDictGetDyn(")
+      ELSE
+        ctx.gen.setDeclUsed(dictGetDynDef)
+        ctx.out.write("ZDictGetDynDef(")
+      }
+    ELSEIF !type.itemType.isValueType()
+      IF lvalue
+        ctx.out.write("*")
+        close ..= ctx.gen.typecast(type.itemType.getRefType(), ctx)
+        ctx.gen.setDeclUsed(dictGetPtrP)
+        ctx.out.write("ZDictGetPtrP(")
+      ELSE
+        close ..= ctx.gen.typecast(type.itemType, ctx)
+        IF defExpr == NIL
+          ctx.gen.setDeclUsed(dictGetPtr)
+          ctx.out.write("ZDictGetPtr(")
+        ELSE
+          ctx.gen.setDeclUsed(dictGetPtrDef)
+          ctx.out.write("ZDictGetPtrDef(")
+        }
+      }
+    ELSEIF type.itemType.isFloatType()
+      IF lvalue
+        ctx.gen.setDeclUsed(dictGetFloatP)
+        ctx.out.write("*ZDictGetFloatP(")
+      ELSEIF defExpr == NIL
+        ctx.gen.setDeclUsed(dictGetFloat)
+        ctx.out.write("ZDictGetFloat(")
+      ELSE
+        ctx.gen.setDeclUsed(dictGetFloatDef)
+        ctx.out.write("ZDictGetFloatDef(")
+      }
+    ELSE
+      IF lvalue
+        ctx.gen.setDeclUsed(dictGetIntP)
+        ctx.out.write("*ZDictGetIntP(")
+      ELSEIF defExpr == NIL
+        ctx.gen.setDeclUsed(dictGetInt)
+        ctx.out.write("ZDictGetInt(")
+      ELSE
+        ctx.gen.setDeclUsed(dictGetIntDef)
+        ctx.out.write("ZDictGetIntDef(")
+      }
+    }
+    ctx.gen.setDeclUsed(dictFind)
+    Generate.genExpr(dictExpr, ctx)
+    ctx.out.write(", ")
+    WriteC.genTzArg(type.keyType, keyExpr, ctx)
+    IF defExpr != NIL
+      ctx.out.write(", ")
+      Generate.genExprDoConv(defExpr, ctx, type.itemType)
+    }
+    ctx.out.write(close)
+    IF type.itemType != NIL
+      RETURN type.itemType
+    }
+    RETURN destType
+  }
+
+  FUNC generateMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+    bool dotnil = name.hasDotnil() && name.getDotnil()
+
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == OK
+        ctx.out.write("ZDictToString(")
+        Generate.generateVarname(object, ctx, type)
+        WriteC.oneToStringArgument(type.keyType, call, TRUE, ctx)
+        WriteC.oneToStringArgument(type.itemType, call, TRUE, ctx)
+        # TODO: format argument
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "Type"
+      ctx.out.write("(&")
+      ctx.out.write(type.typeUsed(ctx).pName)
+      ctx.out.write("__T)")
+      retType = Type.aType
+      ctx.gen.setDeclUsed(dictIsOrdered)
+    ELSEIF methodName == "isOrdered"
+      ctx.out.write("ZDictIsOrdered(")
+      Generate.genExpr(object, ctx, type)
+      ctx.out.write(")")
+      retType = Type.aBool
+    ELSEIF methodName == "get"
+      IF Generate.checkArgCount(call, 1, 2, ctx) == OK
+        retType = ctx.gen.dictGet(type, object, argList[0],
+                     call.sizeArgument() > 1 ? argList[1] : NIL,
+                                                                ctx, destType)
+      }
+    ELSEIF methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        ctx.gen.setDeclUsed(dictHas)
+        IF type.keyType.getTtype() == Type.Enum.iobject
+          ctx.out.write("ZDictHasIobj(")
+        ELSEIF type.keyType.getTtype() == Type.Enum.dyn
+          ctx.out.write("ZDictHasDyn(")
+        ELSE
+          ctx.out.write("ZDictHas(")
+        }
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(", ")
+        WriteC.writeTzOrIobjArg(type.keyType, argList[0], ctx)
+        ctx.out.write(")")
+        retType = Type.aBool
+      }
+    ELSEIF methodName == "add" || methodName == "set"
+      IF Generate.checkArgCount(call, 2, 2, ctx) == OK
+        writeDictAddCall(type, ctx.out)
+        ctx.out.write(methodName == "add" ? "0, " : "1, ")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(", ")
+        Zui.Expression arg0 = argList[0]
+        Zui.Expression arg1 = argList[1]
+        WriteC.writeTzOrIobjArg(type.keyType, arg0, ctx)
+        ctx.out.write(", ")
+        WriteC.writeTzOrIobjArg(type.itemType, arg1, ctx)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "remove"
+                       || (methodName == "clear" && call.sizeArgument() > 0)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        ctx.gen.setDeclUsed(dictFind)
+        Zui.Expression arg = argList[0]
+        bool removeTz
+        IF type.itemType != NIL && type.itemType.isValueType()
+                                                      && methodName != "clear"
+          # Only for remove() with value type item.
+          ctx.gen.setDeclUsed(dictRemoveInt)
+          ctx.out.write("ZDictRemoveTz(")
+          removeTz = TRUE
+        ELSE
+          ctx.gen.setDeclUsed(dictRemovePtr)
+          ctx.out.write("ZDictRemovePtr(")
+        }
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(", ")
+        WriteC.genTzArg(type.keyType, arg, ctx)
+        IF methodName == "clear"
+          ctx.out.write(", 0)")  # no exception
+          retType = DictStuff.newDict(type)
+        ELSE
+          IF removeTz
+            IF type.itemType.isFloatType()
+              ctx.out.write(").fval")
+            ELSE
+              ctx.out.write(").ival")
+            }
+          ELSE
+            ctx.out.write(", 1)")  # exception when key not found
+          }
+          retType = type.itemType
+        }
+      }
+    ELSEIF methodName == "clear"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.gen.setDeclUsed(dictClear)
+        ctx.out.write("ZDictClear(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "keys"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.gen.setDeclUsed(dictKeys)
+        ctx.out.write("ZDictKeys(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(dotnil ? ", 1)" : ", 0)")
+        ContainerType listType = NEW(Type.Enum.list, "list")
+        listType.itemType = type.keyType
+        retType = listType
+      }
+    ELSEIF methodName == "values"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.gen.setDeclUsed(dictValues)
+        ctx.out.write("ZDictValues(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(dotnil ? ", 1)" : ", 0)")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        IF methodName == "map"
+          ctx.gen.setDeclUsed(dictMap)
+          ctx.out.write("ZDictMap(")
+        ELSE
+          ctx.gen.setDeclUsed(dictKeyMap)
+          ctx.out.write("ZDictKeyMap(")
+        }
+        Generate.genExpr(object, ctx, type)
+
+        ctx.out.write(", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg,
+                 methodName == "map" ? NIL : type.keyType, type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.gen.setDeclUsed(dictCopy)
+        ctx.out.write("ZDictCopy(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(")")
+        retType = DictStuff.newDict(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == OK
+        ctx.gen.setDeclUsed(dictSize)
+        ctx.out.write("ZDictSize(")
+        Generate.genExpr(object, ctx, type)
+        ctx.out.write(")")
+      }
+      retType = Type.anInt
+    ELSEIF ctx.gen.writing
+      ctx.error("Method " .. methodName .. "() not supported for Dict",
+                                                                call.getPos())
+    }
+
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  PROC writeTypedefs(Resolve gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.dict)
+      fd.write(''"
+typedef unsigned long Zhashtype;
+typedef struct CDictItem__S CDictItem;
+typedef struct CDictHead__S Td;
+"'')
+    }
+  }
+
+  PROC writeDecl(WriteC gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.dict)
+      IF !gen.manageMemory()
+        gen.setDeclUsed(WriteC.zfree)
+      }
+
+      # Basic Dict definitions.
+      # dict with list:
+      #   Td.first points to first item
+      #   Td.last points to last item
+      #   CDictItem.lnext points to next item (last one is NULL)
+      #   CDictItem.lprev points to previous item (first one is NULL)
+      fd.write(''"
+#define HT_INIT_SIZE 16
+#define PERTURB_SHIFT 5
+
+#define DTYPE_ORDERED 1 /* dict with list to keep order of items */
+
+#define CDI_FLAG_USED 1
+#define CDI_FLAG_DEL 2
+struct CDictItem__S {
+ Zhashtype hash;
+ union {
+  Tz key;
+  Tr iokey;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  Tx dynkey;"'')
+      }
+      fd.write(''"
+ };
+ union {
+  Tz item;
+  Tr ioitem;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  Tx dynitem;"'')
+      }
+      fd.write(''"
+ };
+ CDictItem *lnext;
+ CDictItem *lprev;
+ int flags;
+};
+
+struct CDictHead__S {
+"'' .. gen.getStructHead() .. ''"
+ Zhashtype mask;
+ Zhashtype used;
+ Zhashtype extra;
+ Zhashtype filled;
+ int tosNr;
+ int type;
+ CDictItem *array;
+ CDictItem smallArray[HT_INIT_SIZE];"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        # let valgrind find the allocated memory
+        fd.write(''"
+ void *alloced;"'')
+      }
+      fd.write(''"
+ Tt *keyType;
+ Tt *itemType;
+ int (*eqfunc)(void *i, Tz *v);
+ CDictItem *first;
+ CDictItem *last;
+};"'')
+      IF gen.isDeclUsed(Declaration.itemToString)
+        fd.write(''"
+void ZDictToStringGa(Td *d, int keyUseq, int itemUseq, Tg *ga);"'')
+      }
+      IF gen.isDeclUsed(Declaration.itemEqual)
+        fd.write(''"
+Tb ZDictEqual(Td *ah, Td *bh);"'')
+      }
+      IF gen.isDeclUsed(Declaration.itemCompare)
+        fd.write(''"
+int ZDictCompare(Td *ah, Td *bh);"'')
+      }
+    }
+  }
+
+  # Set dependencies of used items.
+  PROC addDependencies(WriteC gen)
+    Declaration throwIntKeyNotFound =
+                         DeclStore.getDecl("MEModule", "FthrowIntKeyNotFound")
+    Declaration throwStringKeyNotFound =
+                      DeclStore.getDecl("MEModule", "FthrowStringKeyNotFound")
+    Declaration.dictIntKey.addDependsOn(throwIntKeyNotFound)
+    Declaration.dictStringKey.addDependsOn(throwStringKeyNotFound)
+
+    # Items that are always used.
+    # TODO: Only use when needed.
+    Declaration.dict.addDependsOn(
+                          DeclStore.getDecl("MEModule", "FthrowIntKeyExists"))
+    Declaration.dict.addDependsOn(
+                       DeclStore.getDecl("MEModule", "FthrowStringKeyExists"))
+    Declaration.dict.addDependsOn(
+                        DeclStore.getDecl("MEModule", "FthrowIntKeyNotFound"))
+    Declaration.dict.addDependsOn(
+                     DeclStore.getDecl("MEModule", "FthrowStringKeyNotFound"))
+    Declaration.dict.addDependsOn(Declaration.throwInternal)
+    Declaration.dict.addDependsOn(Declaration.throwCstringNil)
+
+    # ZdynEqual is used for dict when dyn is used.
+    Declaration.dict.addDependsOnCond(Declaration.dynEqual, Type.aDyn)
+
+    dictHas.addDependsOn(dictFind)
+    dictKeys.addDependsOn(WriteListC.listAdd)
+    dictValues.addDependsOn(WriteListC.listAdd)
+  }
+
+  PROC writeBody(WriteC gen, IO.File fd)
+    IF !gen.isDeclUsed(Declaration.dict)
+      RETURN
+    }
+
+    # Dict required functions.
+    # The implementation mostly comes from src/hashtab.c in Vim.  For
+    # comments on how it works see that file.
+    string intKey = DeclStore.getPName("MEModule", "FthrowIntKeyNotFound")
+    string stringKey = DeclStore.getPName("MEModule",
+                                                  "FthrowStringKeyNotFound")
+    string intKeyEx = DeclStore.getPName("MEModule", "FthrowIntKeyExists")
+    string stringKeyEx = DeclStore.getPName("MEModule",
+                                                    "FthrowStringKeyExists")
+
+    fd.write(''"
+int ZDeqNr(Tz *l, Tz *r) {
+ return l->ival == r->ival;
+}
+int ZDeqFloat(Tz *l, Tz *r) {
+ return l->fval == r->fval;
+}
+int ZDeqStr(Tz *l, Tz *r) {
+ Tc *p1;
+ Tc *p2;
+ Ti len1;
+ Ti len2;
+ if (r->ptr != NULL) {
+  len1 = ZstringSizePtr(l->ptr, &p1);
+  len2 = ZstringSizePtr(r->ptr, &p2);
+  if (len1 == len2) return memcmp(p1, p2, len1) == 0;
+ }
+ return 0;
+}
+int ZDeqRef(Tz *l, Tz *r) {
+ return l->ptr == r->ptr;
+}
+int ZDeqIobj(Tr *l, Tz *r) {
+ return l->ptr == ((Tr*)r->ptr)->ptr;
+}"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+int ZDeqDyn(Tx *l, Tz *r) {
+ return ZdynEqual(*l, *(Tx*)r->ptr);
+}"'')
+    }
+    fd.write(''"
+
+Td *ZDictHead(Td *d, Tt *keyType, Tt *itemType, Tb ordered) {
+ d->array = d->smallArray;
+ d->mask = HT_INIT_SIZE - 1;
+ d->keyType = keyType;
+ d->itemType = itemType;
+ if (itemType == NULL) ZthrowCstringNil("Creating dict without item type");
+ if (keyType == NULL) ZthrowCstringNil("Creating dict without key type");
+ if (ordered) d->type = DTYPE_ORDERED;
+ if (keyType->nr < 80) d->eqfunc = (int (*)(void*, Tz*))ZDeqNr;
+ else if (keyType->nr < 100) d->eqfunc = (int (*)(void*, Tz*))ZDeqFloat;
+ else if (keyType == &iobj__T) d->eqfunc = (int (*)(void*, Tz*))ZDeqIobj;"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+ else if (keyType == &dyn__T) d->eqfunc = (int (*)(void*, Tz*))ZDeqDyn;"'')
+    }
+    fd.write(''"
+ else if (keyType == &string__T || keyType == &byteString__T) d->eqfunc = (int (*)(void*, Tz*))ZDeqStr;"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+ else if (keyType == &dyn__T) d->eqfunc = (int (*)(void*, Tz*))ZDeqDyn;"'')
+    }
+    fd.write(''"
+ else d->eqfunc = (int (*)(void*, Tz*))ZDeqRef;
+ return d;
+}
+Td *ZDictInit(Td *d, Tt *keyType, Tt *itemType, Tb ordered) {
+ memset(d, 0, sizeof(Td));"'')
+    IF gen.hasNpField()
+      fd.write(''"
+ d->np = &Znoalloc;"'')
+    }
+    fd.write(''"
+ ZDictHead(d, keyType, itemType, ordered);
+ return d;
+}
+Td *ZnewDict(Tt *keyType, Tt *itemType, Tb ordered) {
+ return ZDictHead(Za(sizeof(Td)), keyType, itemType, ordered);
+}
+
+Zhashtype ZDictHash(Tt *keyType, Tz key) {
+ Zhashtype hash;
+ void *ptr;
+ if (keyType->nr < 80) return (Zhashtype)key.ival;
+ if (keyType->nr < 100) return (Zhashtype)key.fval;
+ if (keyType == &iobj__T) {
+  ptr = ((Tr*)key.ptr)->ptr;"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+ } else if (keyType == &dyn__T) {
+  return ZDictHash(((Tx*)key.ptr)->type, ((Tx*)key.ptr)->u);"'')
+    }
+    fd.write(''"
+ } else {
+  ptr = key.ptr;
+ }
+ if (ptr == NULL) ZthrowCstringNil("dict key is NIL");
+ if (keyType == &string__T || keyType == &byteString__T) {
+  Tc *p;
+  int l = ZstringSizePtr(key.ptr, &p);
+  if (l == 0) {
+   hash = 0;
+  } else {
+   hash = *p;
+   while (--l > 0) {
+    hash = hash * 101 + *++p;
+   }
+  }
+ } else {
+  Tip k = (Tip)ptr;
+  int l = sizeof(Tc*);
+  hash = k & 0xff;
+  while (--l > 0) {
+   k >>= 8;
+   hash = hash * 101 + (k & 0xff);
+  }
+ }
+ return hash;
+}
+"'')
+    IF gen.isDeclUsed(dictGetIobj)
+       || gen.isDeclUsed(dictGetPtr)
+       || gen.isDeclUsed(dictGetInt)
+       || gen.isDeclUsed(dictGetFloat)
+       || gen.isDeclUsed(dictRemovePtr)
+       || gen.isDeclUsed(dictRemoveInt)
+      fd.write(''"
+void ZthrowIntKeyNotFound(Tz key, Tc *msg) {
+  "'' .. intKey .. ''"(key.ival, msg);
+}
+"'')
+      fd.write(''"
+void ZthrowStringKeyNotFound(Tz key, Tc *msg) {
+  "'' .. stringKey .. ''"(key.ptr, msg);
+}
+"'')
+    }
+    fd.write(''"
+void ZthrowIntKeyExists(Tz key, Tc *msg) {
+  "'' .. intKeyEx .. ''"(key.ival, msg);
+}
+void ZthrowStringKeyExists(Tz key, Tc *msg) {
+  "'' .. stringKeyEx .. ''"(key.ptr, msg);
+}
+
+/* #define DICT_DEBUG 1 */
+
+CDictItem *ZDictLookup(Td *d, Tz key, Zhashtype hash)
+{
+ Zhashtype  perturb;
+ CDictItem  *freeitem;
+ int        idx = (int)(hash & d->mask);
+ CDictItem  *di = &d->array[idx];
+ if (di->flags == 0) return di;
+ if (di->flags == CDI_FLAG_DEL) freeitem = di;
+ else if (di->hash == hash && d->keyType == &iobj__T ? d->eqfunc(&di->iokey, &key)"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(" : d->keyType == &dyn__T ? d->eqfunc(&di->dynkey, &key)")
+    }
+    fd.write(''" : d->eqfunc(&di->key, &key)) {
+  return di;
+ } else {
+  freeitem = NULL;
+ }
+
+ for (perturb = hash; ; perturb >>= PERTURB_SHIFT)
+ {
+  idx = (int)((idx << 2) + idx + perturb + 1);
+  di = &d->array[idx & d->mask];
+  if (di->flags == 0) return freeitem == NULL ? di : freeitem;
+  if (di->hash == hash && di->flags != CDI_FLAG_DEL && d->keyType == &iobj__T ? d->eqfunc(&di->iokey, &key)"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(" : d->keyType == &dyn__T ? d->eqfunc(&di->dynkey, &key)")
+    }
+    fd.write(''" : d->eqfunc(&di->key, &key)) return di;
+  if (di->flags == CDI_FLAG_DEL && freeitem == NULL) freeitem = di;
+ }
+}
+
+void ZDictResize(Td *d, int minitems) {
+ CDictItem temparray[HT_INIT_SIZE];
+ CDictItem *oldarray, *newarray;
+ CDictItem *olditem, *newitem, *nextitem;
+ int newi;
+ int todo;
+ Zhashtype oldsize, newsize;
+ Zhashtype minsize;
+ Zhashtype newmask;
+ Zhashtype perturb;
+
+#ifdef DICT_DEBUG
+ printf("size: %lu, filled: %lu, used: %lu\n",
+           d->mask + 1, d->filled, d->used);
+#endif
+
+ if (minitems == 0) {
+  if (d->filled < HT_INIT_SIZE - 1 && d->array == d->smallArray) {
+#ifdef DICT_DEBUG
+   printf("small array not full\n");
+#endif
+   return;
+  }
+  oldsize = d->mask + 1;
+  if (d->filled * 3 < oldsize * 2 && d->used > oldsize / 5) {
+#ifdef DICT_DEBUG
+   printf("size OK\n");
+#endif
+   return;
+  }
+  if (d->used > 1000) minsize = d->used * 2;
+  else minsize = d->used * 4;
+ } else {
+  if ((Zhashtype)minitems < d->used) minitems = (int)d->used;
+  minsize = minitems * 3 / 2;
+ }
+
+ newsize = HT_INIT_SIZE;
+ while (newsize < minsize) {
+  newsize <<= 1;
+  if (newsize == 0) {
+   ZthrowInternal(Zstr("ZDictResize"));
+   return;
+  }
+ }
+
+#ifdef DICT_DEBUG
+ printf("resizing from %lu to %lu\n", d->mask + 1, newsize);
+#endif
+
+ if (newsize == HT_INIT_SIZE) {
+  newarray = d->smallArray;
+  if (d->array == newarray) {
+   memmove(temparray, newarray, sizeof(temparray));
+   oldarray = temparray;
+  } else
+   oldarray = d->array;
+  memset(newarray, 0, (size_t)(sizeof(CDictItem) * newsize));
+ } else {
+  newarray = (CDictItem *)ZaOff((sizeof(CDictItem) * newsize));"'')
+    IF gen.manageMemory() && ManageMemory.isExitclean()
+      fd.write(''"
+  d->alloced = (void *)newarray - ZOH_OFF;"'')
+    }
+    fd.write(''"
+  oldarray = d->array;
+ }
+
+ newmask = newsize - 1;
+ todo = (int)d->used;
+ for (olditem = oldarray; todo > 0; ++olditem)
+  if (olditem->flags & CDI_FLAG_USED) {
+   newi = (int)(olditem->hash & newmask);
+   newitem = &newarray[newi];
+   if (newitem->flags != 0)
+    for (perturb = olditem->hash; ; perturb >>= PERTURB_SHIFT) {
+     newi = (int)((newi << 2) + newi + perturb + 1);
+     newitem = &newarray[newi & newmask];
+     if (newitem->flags == 0) break;
+    }
+   *newitem = *olditem;
+   if (d->type & DTYPE_ORDERED) {
+    olditem->lprev = newitem;
+   }
+   --todo;
+  }
+ if ((d->type & DTYPE_ORDERED) && d->first) {
+  olditem = d->first;
+  newitem = olditem->lprev;
+  newitem->lprev = NULL;
+  d->first = newitem;
+  while (olditem->lnext) {
+   olditem = olditem->lnext;
+   nextitem = olditem->lprev;
+   newitem->lnext = nextitem;
+   newitem->lnext->lprev = newitem;
+   newitem = nextitem;
+  }
+  newitem->lnext = NULL;
+  d->last = newitem;
+ }
+"'')
+    IF !gen.manageMemory()
+      fd.write(''"
+ if (d->array != d->smallArray) Zfree((void*)d->array - ZOH_OFF);"'')
+    }
+    fd.write(''"
+ d->array = newarray;
+ d->mask = newmask;
+ d->filled = d->used;
+}
+
+/* "ow" is the overwrite flag.  When zero it's not allowed to overwrite an
+ * existing entry. */
+Td *ZDictAdd(int ow, Td *d, Tz key, Tz value) {
+ Zhashtype hash = ZDictHash(d->keyType, key);
+ CDictItem *di = ZDictLookup(d, key, hash);
+#ifdef DICT_DEBUG
+ if (d->keyType->nr >= 100)
+   printf("Adding item %s\n", (Tc*)key.ptr);
+ else
+   printf("Adding item %lld\n", key.ival);
+ if (key.ptr != NULL
+     && (strcmp(key.ptr, "ENUM") == 0
+         || strcmp(key.ptr, "Equal") == 0
+         || strcmp(key.ptr, "EXIT") == 0))
+   dumpdict(d);
+#endif
+ if (di->flags == 0 || di->flags == CDI_FLAG_DEL || ow) {
+  if (di->flags == 0 || di->flags == CDI_FLAG_DEL) {
+   ++d->used;
+   if (di->flags == 0)
+    ++d->filled;
+  }
+  di->hash = hash;
+  if (d->keyType->nr == 391) {
+   di->iokey = *(Tr*)key.ptr;"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+  } else if (d->keyType->nr == 360) {
+   di->dynkey = *(Tx*)key.ptr;"'')
+    }
+    fd.write(''"
+  } else if (d->keyType->nr >= 100) {
+   if (di->flags == 0 || di->flags == CDI_FLAG_DEL) {
+    di->key = key;
+   }
+  } else di->key = key;
+  if (d->itemType->nr == 391)
+   di->ioitem = *(Tr*)value.ptr;"'')
+    IF gen.isDeclUsed(Type.aDyn)
+      fd.write(''"
+  else if (d->itemType->nr == 360)
+   di->dynitem = *(Tx*)value.ptr;"'')
+    }
+    fd.write(''"
+  else
+   di->item = value;
+  di->flags = CDI_FLAG_USED;
+  if (d->type & DTYPE_ORDERED) {
+   di->lprev = d->last;
+   if (d->last) d->last->lnext = di;
+   else d->first = di;
+   d->last = di;
+   di->lnext = NULL;
+  }
+
+  ZDictResize(d, 0);
+ } else {
+  if (d->keyType->nr >= 100) ZthrowStringKeyExists(key, Zstr("dict.add(): "));
+  ZthrowIntKeyExists(key, Zstr("dict.add(): "));
+ }
+ return d;
+}"'')
+
+    # Passing "Tr" by value is a bit expensive, only do this when actually
+    # using a Tr type.  We can use a pointer internally, since we don't
+    # store the pointer.
+    fd.write(''"
+Td *ZDictAddIobjTz(int ow, Td *d, Tr key, Tz value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, value);
+}
+Td *ZDictAddTzIobj(int ow, Td *d, Tz key, Tr value) {
+ return ZDictAdd(ow, d, key, (Tz)(void*)&value);
+}
+Td *ZDictAddIobjIobj(int ow, Td *d, Tr key, Tr value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, (Tz)(void*)&value);
+}"'')
+
+    IF gen.isDeclUsed(Type.aDyn)
+      # Passing "Tx" by value is a bit expensive, just like "Tr".
+      # Need all the combinations...
+      fd.write(''"
+Td *ZDictAddDynTz(int ow, Td *d, Tx key, Tz value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, value);
+}
+Td *ZDictAddDynIobj(int ow, Td *d, Tx key, Tr value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, (Tz)(void*)&value);
+}
+Td *ZDictAddTzDyn(int ow, Td *d, Tz key, Tx value) {
+ return ZDictAdd(ow, d, key, (Tz)(void*)&value);
+}
+Td *ZDictAddIobjDyn(int ow, Td *d, Tr key, Tx value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, (Tz)(void*)&value);
+}
+Td *ZDictAddDynDyn(int ow, Td *d, Tx key, Tx value) {
+ return ZDictAdd(ow, d, (Tz)(void*)&key, (Tz)(void*)&value);
+}"'')
+    }
+
+    fd.write(''"
+
+#ifdef DICT_DEBUG
+dumpdict(Td *d)
+{
+ int        todo = (int)d->used;
+ CDictItem  *item;
+ int        idx = 0;
+
+ for (item = d->array; todo > 0; ++item) {
+  if (item->flags & CDI_FLAG_USED) {
+   printf("%2d: %s\n", idx, (Tc*)item->key.ptr);
+   --todo;
+  } else if (item->flags == 0) {
+   printf("%2d: unused\n", idx);
+  } else if (item->flags == CDI_FLAG_DEL) {
+   printf("%2d: deleted\n", idx);
+  } else {
+   printf("%2d: invalid flags: %d\n", idx, item->flags);
+  }
+  ++idx;
+ }
+}
+#endif
+
+"'')
+
+    IF gen.isDeclUsed(dictFind)
+      fd.write(''"
+CDictItem *ZDictFind(Td *d, Tz key) {
+ Zhashtype  hash = ZDictHash(d->keyType, key);
+ CDictItem  *di = ZDictLookup(d, key, hash);
+ if (di->flags & CDI_FLAG_USED) return di;
+ return NULL;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetIobjP)
+      fd.write(''"
+Tr *ZDictGetIobjP(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di == NULL) {
+  static Tr dummy = {0, 0, 0};
+  ZDictAdd(1, d, key, (Tz)(void*)&dummy);
+  di = ZDictFind(d, key);
+ }
+ return &di->ioitem;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetIobj)
+      fd.write(''"
+Tr ZDictGetIobj(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) {
+  return di->ioitem;
+ }
+ if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr(""));
+ ZthrowIntKeyNotFound(key, Zstr(""));
+ return trZero;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetIobjDef)
+      fd.write(''"
+Tr ZDictGetIobjDef(Td *d, Tz key, Tr def) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) return di->ioitem;
+ return def;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetDynP)
+      fd.write(''"
+Tx *ZDictGetDynP(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di == NULL) {
+  static Tx dummy = {0, 0};
+  ZDictAdd(1, d, key, (Tz)(void*)&dummy);
+  di = ZDictFind(d, key);
+ }
+ return &di->dynitem;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetDyn)
+      fd.write(''"
+Tx ZDictGetDyn(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) {
+  return di->dynitem;
+ }
+ if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr(""));
+ ZthrowIntKeyNotFound(key, Zstr(""));
+ return trZero;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetDynDef)
+      fd.write(''"
+Tx ZDictGetIobjDef(Td *d, Tz key, Tx def) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) return di->dynitem;
+ return def;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetPtrP)
+      fd.write(''"
+void *ZDictGetPtrP(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di == NULL) {
+  ZDictAdd(1, d, key, (Tz)(void*)0);
+  di = ZDictFind(d, key);
+ }
+ return &di->item.ptr;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetPtr)
+      fd.write(''"
+void *ZDictGetPtr(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) {
+  return di->item.ptr;
+ }
+ if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr(""));
+ ZthrowIntKeyNotFound(key, Zstr(""));
+ return NULL;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetPtrDef)
+      fd.write(''"
+void *ZDictGetPtrDef(Td *d, Tz key, void *def) {
+ void *r;
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) r = di->item.ptr;
+ else r = def;
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetIntP)
+      fd.write(''"
+Ti *ZDictGetIntP(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di == NULL) {
+  ZDictAdd(1, d, key, (Tz)(Ti)0);
+  di = ZDictFind(d, key);
+ }
+ return &di->item.ival;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetInt)
+      fd.write(''"
+Ti ZDictGetInt(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) {
+  return di->item.ival;
+ }
+ if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr(""));
+ ZthrowIntKeyNotFound(key, Zstr(""));
+ return 0;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetIntDef)
+      fd.write(''"
+Ti ZDictGetIntDef(Td *d, Tz key, Ti def) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) return di->item.ival;
+ return def;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictGetFloatP)
+      fd.write(''"
+Tf *ZDictGetFloatP(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di == NULL) {
+  ZDictAdd(1, d, key, (Tz)(Tf)0);
+  di = ZDictFind(d, key);
+ }
+ return &di->item.fval;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetFloat)
+      fd.write(''"
+Tf ZDictGetFloat(Td *d, Tz key) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) {
+  return di->item.fval;
+ }
+ if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr(""));
+ ZthrowIntKeyNotFound(key, Zstr(""));
+ return 0;
+}
+"'')
+    }
+    IF gen.isDeclUsed(dictGetFloatDef)
+      fd.write(''"
+Tf ZDictGetFloatDef(Td *d, Tz key, Tf def) {
+ CDictItem *di = ZDictFind(d, key);
+ if (di != NULL) return di->item.fval;
+ return def;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictHas)
+      fd.write(''"
+Tb ZDictHas(Td *d, Tz key) {
+ return (ZDictFind(d, key) != NULL);
+}
+Tb ZDictHasIobj(Td *d, Tr key) {
+ return (ZDictFind(d, (Tz)(void*)&key) != NULL);
+}"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+Tb ZDictHasDyn(Td *d, Tx key) {
+ return (ZDictFind(d, (Tz)(void*)&key) != NULL);
+}"'')
+      }
+    }
+
+    IF gen.isDeclUsed(dictIsOrdered)
+      fd.write(''"
+Tb ZDictIsOrdered(Td *d) {
+ if (d == NULL) ZthrowCstringNil("Invoking isOrdered() on NIL dict");
+ return (d->type & DTYPE_ORDERED) != 0;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictRemovePtr)
+      fd.write(''"
+void *ZDictRemovePtr(Td *d, Tz key, int remove) {
+ CDictItem *di;
+ void *r = NULL;
+ if (d == NULL) ZthrowCstringNil("Invoking remove() on NIL dict");
+ di = ZDictFind(d, key);
+ if (di != NULL) {
+  r = di->item.ptr;
+  di->flags = CDI_FLAG_DEL;
+  --d->used;
+  ZDictResize(d, 0);
+  if (d->type & DTYPE_ORDERED) {
+   if (di->lprev) di->lprev->lnext = di->lnext;
+   else d->first = di->lnext;
+   if (di->lnext) di->lnext->lprev = di->lprev;
+   else d->last = di->lprev;
+  }
+ } else if (remove) {
+  if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr("dict.remove(): "));
+  ZthrowIntKeyNotFound(key, Zstr("dict.remove(): "));
+ }
+ if (remove)
+   return r;
+ return d;
+}
+
+"'')
+    }
+
+    IF gen.isDeclUsed(dictRemoveInt)
+      fd.write(''"
+Tz ZDictRemoveTz(Td *d, Tz key) {
+ CDictItem *di;
+ Tz r;
+ if (d == NULL) ZthrowCstringNil("Invoking remove() on NIL dict");
+ di = ZDictFind(d, key);
+ if (di != NULL) {
+  di->flags = CDI_FLAG_DEL;
+  r = di->item;
+  --d->used;
+  ZDictResize(d, 0);
+  if (d->type & DTYPE_ORDERED) {
+   if (di->lprev) di->lprev->lnext = di->lnext;
+   else d->first = di->lnext;
+   if (di->lnext) di->lnext->lprev = di->lprev;
+   else d->last = di->lprev;
+  }
+ } else {
+  if (d->keyType->nr >= 100) ZthrowStringKeyNotFound(key, Zstr("dict.remove(): "));
+  ZthrowIntKeyNotFound(key, Zstr("dict.remove(): "));
+ }
+ return r;
+}
+
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.itemToString)
+      fd.write(''"
+void ZDiToString(Td *d, int keyUseq, int itemUseq, CDictItem *di, Tg *ga) {
+ if (d->keyType == &iobj__T)
+  ZitemToString((Tt*)(di->iokey.table[0]), keyUseq, (Tz)di->iokey.ptr, ga);"'')
+   IF gen.isDeclUsed(Type.aDyn)
+     fd.write(''"
+ else if (d->keyType == &dyn__T)
+  ZitemToString(di->dynkey.type, keyUseq, di->dynkey.u, ga);"'')
+   }
+   fd.write(''"
+ else
+  ZitemToString(d->keyType, keyUseq, di->key, ga);
+ ga_append(ga, ": ");
+ if (d->itemType == &iobj__T)
+  ZitemToString((Tt*)(di->ioitem.table[0]), keyUseq, (Tz)di->ioitem.ptr, ga);"'')
+   IF gen.isDeclUsed(Type.aDyn)
+     fd.write(''"
+ else if (d->itemType == &dyn__T)
+  ZitemToString(di->dynitem.type, itemUseq, di->dynitem.u, ga);"'')
+   }
+   fd.write(''"
+ else
+  ZitemToString(d->itemType, itemUseq, di->item, ga);
+}
+
+void ZDictToStringGa(Td *d, int keyUseq, int itemUseq, Tg *ga) {
+ int first = 1;
+ int todo = d->used;
+ Tn *e = "'' .. gen.getEnvCode() .. ''";
+ CDictItem *di;
+ ga_append(ga, "[");
+ if (todo == 0) {
+  ga_append(ga, ":");  /* empty dictionary: [:] */
+ } else if (e->tosNr == d->tosNr) {
+  ga_append(ga, "recursive-dict");
+ } else {
+  d->tosNr = e->tosNr;
+  if (d->type & DTYPE_ORDERED) {
+   for (di = d->first; di; di = di->lnext) {
+    if (first == 0) ga_append(ga, ", "); else first = 0;
+    ZDiToString(d, keyUseq, itemUseq, di, ga);
+   }
+  } else {
+   for (di = d->array; todo > 0; ++di) {
+    if (di->flags & CDI_FLAG_USED) {
+     --todo;
+     if (first == 0) ga_append(ga, ", "); else first = 0;
+     ZDiToString(d, keyUseq, itemUseq,di, ga);
+    }
+   }
+  }
+  d->tosNr = 0;
+ }
+ ga_append(ga, "]");
+}
+
+Tc *ZDictToString(Td *d, int keyUseq, int itemUseq) {
+ Tg ga;
+ Tc *r;
+ if (d == NULL) return (Tc*)&ZNilString;
+ ++"'' .. gen.getEnvCode() .. ''"->tosNr;
+ ga.data = NULL;
+ ga.used = 0;
+ ZDictToStringGa(d, keyUseq, itemUseq, &ga);
+ r = ZnewString(ga.data, ga.used);"'')
+        IF !gen.manageMemory()
+          fd.write(''"
+ Zfree((void*)ga.data - ZOH_OFF);"'')
+        }
+        fd.write(''"
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictKeys)
+      fd.write(''"
+Tl *ZDictKeys(Td *d, int dn) {
+ Tl *l;
+ int todo;
+ CDictItem *di;
+ if (d == NULL) {
+  if (dn) return NULL;
+  ZthrowCstringNil("Invoking keys() on NIL dict");
+ }
+ l = ZnewList(d->keyType, d->used);
+ if (d->type & DTYPE_ORDERED) {
+  if (d->keyType == &iobj__T)
+   for (di = d->first; di; di = di->lnext) {
+    ZLaIobj(l, -1, di->iokey);
+   }"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  else if (d->keyType == &dyn__T)
+   for (di = d->first; di; di = di->lnext) {
+    ZLaDyn(l, -1, di->dynkey);
+   }"'')
+      }
+      fd.write(''"
+  else
+   for (di = d->first; di; di = di->lnext) {
+    ZLa(l, -1, di->key);
+   }
+ } else {
+  todo = d->used;
+  for (di = d->array; todo > 0; ++di) {
+   if (di->flags & CDI_FLAG_USED) {
+    --todo;
+    if (d->keyType == &iobj__T)
+     ZLaIobj(l, -1, di->iokey);"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+    else if (d->keyType == &dyn__T)
+     ZLaDyn(l, -1, di->dynkey);"'')
+      }
+      fd.write(''"
+    else
+     ZLa(l, -1, di->key);
+   }
+  }
+ }
+ return l;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictValues)
+      fd.write(''"
+Tl *ZDictValues(Td *d, int dn) {
+ Tl *l;
+ int todo;
+ CDictItem *di;
+ if (d == NULL) {
+  if (dn) return NULL;
+  ZthrowCstringNil("Invoking values() on NIL dict");
+ }
+ l = ZnewList(d->itemType, d->used);
+ if (d->type & DTYPE_ORDERED) {
+  if (d->itemType == &iobj__T)
+   for (di = d->first; di; di = di->lnext) {
+    ZLaIobj(l, -1, di->ioitem);
+   }"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  else if (d->itemType == &dyn__T)
+   for (di = d->first; di; di = di->lnext) {
+    ZLaDyn(l, -1, di->dynitem);
+   }"'')
+      }
+      fd.write(''"
+  else
+   for (di = d->first; di; di = di->lnext) {
+    ZLa(l, -1, di->item);
+   }
+ } else {
+  todo = d->used;
+  for (di = d->array; todo > 0; ++di) {
+   if (di->flags & CDI_FLAG_USED) {
+    --todo;
+    if (d->itemType == &iobj__T)
+     ZLaIobj(l, -1, di->ioitem);"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+    else if (d->itemType == &dyn__T)
+     ZLaDyn(l, -1, di->dynitem);"'')
+      }
+      fd.write(''"
+    else
+     ZLa(l, -1, di->item);
+   }
+  }
+ }
+ return l;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forDict)
+      fd.write(''"
+void ZforDictGet(Tfd *tfd) {
+ Td *d = tfd->d;
+ CDictItem *di = tfd->di;
+ if (di) {
+  if (tfd->keyp) {
+   if (d->keyType == &iobj__T)
+    *(Tr*)tfd->keyp = di->iokey;"'')
+       IF gen.isDeclUsed(Type.aDyn)
+         fd.write(''"
+   else if (d->keyType == &dyn__T)
+    *(Tx*)tfd->keyp = di->dynkey;"'')
+       }
+       fd.write(''"
+   else if (d->keyType->nr < 80)
+    *(Ti*)tfd->keyp = di->key.ival;
+   else if (d->keyType->nr < 100)
+    *(Tf*)tfd->keyp = di->key.fval;
+   else
+    *(char**)tfd->keyp = di->key.ptr;
+  }
+  if (d->itemType == &iobj__T)
+   *(Tr*)tfd->valp = di->ioitem;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  else if (d->itemType == &dyn__T)
+   *(Tx*)tfd->valp = di->dynitem;"'')
+      }
+      fd.write(''"
+  else if (d->itemType->nr < 80)
+   *(Ti*)tfd->valp = di->item.ival;
+  else if (d->itemType->nr < 100)
+   *(Tf*)tfd->valp = di->item.fval;
+  else
+   *(char**)tfd->valp = di->item.ptr;
+ }
+}
+
+void ZforDictStart(Tfd *tfd) {
+ Td *d = tfd->d;
+ if (d != NULL && d->used) {
+  if (d->type & DTYPE_ORDERED) {
+   tfd->di = d->first;
+  } else {
+   CDictItem *di = d->array;
+   while ((di->flags & CDI_FLAG_USED) == 0) ++di;
+   tfd->di = di;
+   tfd->todo = d->used - 1;
+  }
+  ZforDictGet(tfd);
+ } else {
+  tfd->di = NULL;
+ }
+}
+
+int ZforDictCont(Tfd *tfd) {
+ return tfd->di != NULL;
+}
+
+void ZforDictNext(Tfd *tfd) {
+ Td *d = tfd->d;
+ if (d->type & DTYPE_ORDERED) {
+  tfd->di = tfd->di->lnext;
+ } else if (tfd->todo > 0) {
+  CDictItem *di = tfd->di + 1;
+  while ((di->flags & CDI_FLAG_USED) == 0) ++di;
+  tfd->di = di;
+  --tfd->todo;
+ } else {
+  tfd->di = NULL;
+ }
+ ZforDictGet(tfd);
+}
+
+"'')
+    }
+
+    IF gen.isDeclUsed(dictMap)
+      IF gen.manageMemory()
+        fd.write(''"
+Zfo ZDictMapfo[3] = {{0,&dict__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Td *ZDictMap(Td *d, Tcb *f) {
+ int todo;
+ CDictItem *di;"'')
+      IF gen.manageMemory()
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZDictMapfo[0].off = (void*)&sf - (void*)&d;
+  ZDictMapfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZDictMapfo", fd)
+      }
+      fd.write(''"
+ if (d == NULL) ZthrowCstringNil("Invoking map() on NIL dict");
+ todo = d->used;
+ for (di = d->array; todo > 0; ++di) {
+  if (di->flags & CDI_FLAG_USED) {
+   --todo;
+   if (d->itemType->nr >= 100) {
+    di->item.ptr = ((void *(*)(Tcb *, void *))f->cfunc)(f, di->item.ptr);
+   } else di->item.ival = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, di->item.ival);
+  }
+ }"'')
+      IF gen.manageMemory()
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return d;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictKeyMap)
+      IF gen.manageMemory()
+        fd.write(''"
+Zfo ZDictKeyMapfo[3] = {{0,&dict__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Td *ZDictKeyMap(Td *d, Tcb *f) {
+ int todo;
+ CDictItem *di;"'')
+      IF gen.manageMemory()
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZDictKeyMapfo[0].off = (void*)&sf - (void*)&d;
+  ZDictKeyMapfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZDictKeyMapfo", fd)
+      }
+      fd.write(''"
+ if (d == NULL) ZthrowCstringNil("Invoking keymap() on NIL dict");
+  todo = d->used;
+  for (di = d->array; todo > 0; ++di) {
+   if (di->flags & CDI_FLAG_USED) {
+    --todo;
+    if (d->keyType->nr >= 100) {
+     if (d->itemType->nr >= 100) {
+      di->item.ptr = ((void *(*)(Tcb *, void *, void *))f->cfunc)(f, di->key.ptr, di->item.ptr);
+     } else di->item.ival = ((Ti (*)(Tcb *, void *, Ti))f->cfunc)(f, di->key.ptr, di->item.ival);
+    } else {
+     if (d->itemType->nr >= 100) {
+      di->item.ptr = ((void *(*)(Tcb *, Ti, void *))f->cfunc)(f, di->key.ival, di->item.ptr);
+     } else di->item.ival = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, di->key.ival, di->item.ival);
+    }
+   }
+ }"'')
+      IF gen.manageMemory()
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return d;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictClear)
+      fd.write(''"
+Td *ZDictClear(Td *d) {
+ int todo;
+ CDictItem *item;
+ if (d == NULL) ZthrowCstringNil("Invoking clear() on NIL dict");"'')
+      IF !gen.manageMemory()
+        fd.write(''"
+ if (d->array != d->smallArray) Zfree((void*)d->array - ZOH_OFF);"'')
+      }
+      fd.write(''"
+ d->mask = HT_INIT_SIZE - 1;
+ d->used = 0;
+ d->filled = 0;
+ d->array = d->smallArray;
+ d->first = NULL;
+ d->last = NULL;
+ memset(d->smallArray, 0, (size_t)(sizeof(CDictItem) * HT_INIT_SIZE));
+ return d;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictCopy)
+      fd.write(''"
+Td *ZDictCopy(Td *d) {
+ Td *newd = Za(sizeof(Td));
+ CDictItem *item;
+ int todo = (int)d->used;
+ memcpy((char *)newd + ZOH_OFF, (char *)d + ZOH_OFF, sizeof(Td) - ZOH_OFF);
+ if (d->array == d->smallArray) newd->array = newd->smallArray;
+ else {
+  size_t len = (d->mask + 1) * sizeof(CDictItem);
+  newd->array = ZaOff(len);"'')
+    IF gen.manageMemory() && ManageMemory.isExitclean()
+      fd.write(''"
+  newd->alloced = (void *)newd->array - ZOH_OFF;"'')
+    }
+    fd.write(''"
+  memcpy(newd->array, d->array, len);
+ }
+ return newd;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictSize)
+      fd.write(''"
+Ti ZDictSize(Td *d) {
+ if (d == NULL) return 0;
+ return d->used;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(dictEqual) || gen.isDeclUsed(Declaration.itemEqual)
+      fd.write(''"
+Tb ZDictEqual(Td *ah, Td *bh) {
+ int todo;
+ CDictItem *itema;
+ CDictItem *itemb;
+ if (ah == NULL || bh == NULL) ZthrowCstringNil("Comparing with NIL dict");
+ if (ah->keyType != bh->keyType) return 0;
+ if (ah->used != bh->used) return 0;
+ if (ah->itemType->nr < 80) {
+  if (bh->itemType->nr >= 80) return 0;
+ } else if (ah->itemType->nr < 100) {
+  if (bh->itemType->nr < 80 || bh->itemType->nr >= 100) return 0;
+ } else if (bh->itemType->nr < 100) return 0;
+ todo = (int)ah->used;
+ for (itema = ah->array, itemb = bh->array; todo > 0; ++itema, ++itemb) {
+  if (itema->flags & CDI_FLAG_USED) {
+   if (!(itemb->flags & CDI_FLAG_USED)) return 0;
+   if (!ZitemEqual(ah->itemType, itema->item, bh->itemType, itemb->item)) return 0;
+   --todo;
+  }
+ }
+ return 1;
+}"'')
+    }
+
+    IF gen.isDeclUsed(dictCompare) || gen.isDeclUsed(Declaration.itemCompare)
+      # For now only take number of items into account.
+      # TODO: when is one dict really bigger than another?
+      fd.write(''"
+int ZDictCompare(Td *ah, Td *bh) {
+ if (ah == NULL || bh == NULL) ZthrowCstringNil("Comparing with NIL dict");
+ if (ah->keyType != bh->keyType) return 1;
+ if (ah->used == bh->used) return 0;
+ return ah->used > bh->used ? 1 : -1;
+}"'')
+    }
+  }
+
+}

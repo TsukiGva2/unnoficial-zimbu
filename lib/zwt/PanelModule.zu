@@ -1,0 +1,798 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Panels
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE PanelModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Widget that contains one or more other widgets.
+  #= How they are ordered is defined by subclasses.
+  CLASS Panel EXTENDS ZWT.Widget @abstract @public
+    #= The widgets inside this panel.
+    list<ZWT.Widget> $items @public
+
+    #! Controller for this view
+    ZWT.I_Controller   $controller
+
+    int                $highlighted @protected = -1
+                                                  #! -1 if no highlighted item
+    set<int>           $highlights  @protected = NEW()  #!
+    ZWT.Style          $highlightStyle #!
+
+    #= Create an empty Panel.
+    NEW() @replace @default @public
+    }
+
+    #= Detach the contents from Panel.  Allows for faster updates, if the
+    #= Panel supports it.
+    #- Call $attach() after the contents has been changed.
+    PROC $detach() @default @public
+    }
+
+    #= Re-attach the contents to Panel.  Only to be called after $detach().
+    PROC $attach() @default @public
+    }
+
+    #= Add |widget| to end of the Panel.
+    PROC $add(ZWT.Widget widget) @default @public
+      $addItem(widget)
+>>>
+      %$elem%.appendChild(%widget.elem%);
+<<<
+    }
+
+    #= Add |widget| to end of the panel and set the style.
+    PROC $add(ZWT.Widget widget, ZWT.Style style) @default @public
+      $add(widget)
+      widget.setStyle(style)
+    }
+
+    #= Add |widget| to the list of widgets without adding it to the Panel.
+    #- To be called by child classes that add the Widget to the Panel in a
+    #- different way.
+    PROC $addItem(ZWT.Widget widget) @default @public
+      IF $items == NIL
+        $items = NEW()
+      }
+      $items.add(widget)
+      widget.parent = THIS
+    }
+
+    #= Insert |widget| at the start of the panel.
+    PROC $insert(ZWT.Widget widget) @default @public
+      $insert(widget, 0)
+    }
+
+    #= Insert |widget| before position |index|.  When using zero it will
+    #= appear before the widgets already present.
+    #- When |index| is equal to or larger than the number of widgets already
+    #- present this works just like $add(widget).
+    PROC $insert(ZWT.Widget widget, int index) @default @public
+      IF index >= $items.Size()
+        $add(widget)
+        RETURN
+      }
+      ZWT.Widget before = $items[index]
+      $insertItem(widget, index)
+>>>
+      %$elem%.insertBefore(%widget.elem%, %before.elem%);
+<<<
+    }
+
+    #= Insert |widget| to the list of widgets without adding it to the Panel.
+    #- To be called by child classes that add the Widget to the Panel in a
+    #- different way.
+    PROC $insertItem(ZWT.Widget widget, int index) @default @public
+      IF $items == NIL
+        $items = NEW()
+      }
+      $items.insert(widget, index)
+      widget.parent = THIS
+    }
+
+    #= Set |widget| at |index| in the panel.
+    #- When |index| is out of range nothing happens.
+    PROC $set(ZWT.Widget widget, int index) @default @public
+      IF index >= 0 && index < $items.Size()
+        $insert(widget, index)
+        $remove(index + 1)
+        IF $highlights.has(index)
+          $setItemHighlight($items[index], $highlightStyle)
+        }
+      }
+    }
+
+    #= Remove |widget| from this Panel.
+    #- If |widget| is not in this Panel nothing happens.
+    PROC $remove(ZWT.Widget widget) @default @public
+      FOR i IN 0 UNTIL $items.Size()
+        IF $items[i] IS widget
+          $remove(i)
+          BREAK
+        }
+      }
+    }
+
+    #= Remove the widget at |index| from this Panel.
+    #- If the |index| is out of range nothing happens.
+    FUNC $remove(int index) ZWT.Widget @default @public
+      IF index >= 0 && index < $items.Size()
+        ZWT.Widget widget = $items.remove(index)
+        widget.removeFromParent()
+        IF index == $highlighted
+          $highlighted = -1
+        }
+        $highlights.clear(index)
+        RETURN widget
+      }
+      RETURN NIL
+    }
+
+    #= Remove all widgets from this Panel.
+    #- This is just like calling remove() on each Widget.
+    PROC $clear() @default @public
+      $highlighted = -1
+      $highlights.clear()
+      IF $items != NIL
+        WHILE $items.Size() > 0
+          $remove(0)
+        }
+      }
+    }
+
+    #= Set the Style for Widget |w|, which must be in this Panel.
+    #- Useful for alignment.
+    #
+    #- When |style| is NIL this clears the style.
+    PROC $setStyle(ZWT.Widget widget, ZWT.Style style) @public
+      IF $items == NIL
+        RETURN
+      }
+      FOR i IN 0 TO $items.Size() - 1
+        IF $items[i] IS widget
+          IF style == NIL
+>>>
+            %widget.elem%.parentNode.className = null;
+<<<
+          ELSE
+            style.activate()
+>>>
+            %widget.elem%.parentNode.className = %style.name%;
+<<<
+          }
+          RETURN
+        }
+      }
+    }
+
+    #= Set the controller for this Panel. Use NIL to detach the controller.
+    PROC $setController(ZWT.I_Controller controller) @public
+      $controller = controller
+    }
+
+    #= Get the controller for this Panel, as previously set with
+    #= setController.  Can be NIL.
+    FUNC $getController() ZWT.I_Controller @public
+      RETURN $controller
+    }
+
+    #= Return the first highlighted item. NIL if there is none.
+    FUNC $getHighlighted() ZWT.Widget @public
+      IF $highlighted < 0 || $highlighted >= $items.Size()
+        RETURN NIL
+      }
+      RETURN $items[$highlighted]
+    }
+
+    #= Return the index of the first highlighted item. -1 if there is none.
+    FUNC $getHighlightIndex() int @public
+      RETURN $highlighted
+    }
+
+    #= Return a set with indexes of all highlighted items.  Empty set if there
+    #= is none.
+    FUNC $getHightlightSet() set<int> @public
+      RETURN $highlights
+    }
+
+    #= Set the Style to be used for the highlighted item.
+    #- When not set a default grey background is used.
+    PROC $setHighlightStyle(ZWT.Style style) @public
+      FOR i IN $highlights.keys()
+        IF i < $items.Size()
+          $removeItemHighlight($items[i], $highlightStyle)
+        }
+      }
+      $highlightStyle = style
+      FOR i IN $highlights.keys()
+        IF i < $items.Size()
+          $setItemHighlight($items[i], $highlightStyle)
+        }
+      }
+    }
+
+    #= Set the highlight to |item|.  Remove highlight when |item| is NIL.
+    PROC $setHighlighted(ZWT.Widget item) @public
+      IF item == NIL
+        $setHighlighted(-1)
+      ELSE
+        FOR i IN 0 UNTIL $items.Size()
+          IF $items[i] IS item
+            $setHighlighted(i)
+            BREAK
+          }
+        }
+      }
+    }
+
+    #= Set the highlight to the item with index |index|.
+    #- Remove highlight from other items.
+    #
+    #- Remove all highlighting when |index| is < 0.
+    PROC $setHighlighted(int index) @public
+      IF index == $highlighted && $highlights.Size() == 1
+        RETURN  # nothing changed
+      }
+      $removeHighlight()
+      IF index >= 0 && index < $items.Size()
+        IF $highlightStyle == NIL
+          # Default style has a grey background.
+          $highlightStyle = NEW().setBGColor(NEW(230, 230, 230))
+        }
+        $highlighted = index
+        $highlights.set(index)
+        $setItemHighlight($items[$highlighted], $highlightStyle)
+      }
+    }
+
+    #= Highlight an item without removing any existing highlight.
+    PROC $addHighlighted(int index) @public
+      IF index >= 0 && index < $items.Size()
+        IF $highlightStyle == NIL
+          # Default style has a grey background.
+          $highlightStyle = NEW().setBGColor(NEW(230, 230, 230))
+        }
+        IF $highlighted < 0
+          $highlighted = index
+        }
+        $highlights.set(index)
+        $setItemHighlight($items[index], $highlightStyle)
+      }
+    }
+
+    #! Set the highlight style for |item|.  Child classes may overrule this
+    #! method to apply the highlight in another way.
+    PROC $setItemHighlight(ZWT.Widget item, ZWT.Style style) @default
+      item.addStyle(style)
+    }
+
+    #= Remove highlighting from items, if there is any.
+    PROC $removeHighlight() @public
+      FOR i IN $highlights.keys()
+        IF i < $items.Size()
+          $removeItemHighlight($items[i], $highlightStyle)
+        }
+      }
+      $highlighted = -1
+      $highlights.clear()
+    }
+
+    #! Remove the highlight style for |item|.  Child classes may overrule this
+    #! method to apply the highlight in another way.
+    PROC $removeItemHighlight(ZWT.Widget item, ZWT.Style style) @default
+      item.removeStyle(style)
+    }
+
+  }
+
+  #=? A panel that has its children in the cells of a table.
+  CLASS CellPanel EXTENDS Panel @public
+    ZWT.Element $body  #!
+
+    #= Create an empty CellPanel.
+    NEW() @replace @default @public
+    }
+
+    #! Initialize the panel empty.
+    PROC $Init()
+      # Create an empty table, assign the body element to "body".
+      # Remove borders.
+>>>
+      %$elem% = $doc.createElement('table');
+      %$elem%.border = 0;
+      %$elem%.cellPadding = 0;
+      %$elem%.cellSpacing = 0;
+      %$body% = $doc.createElement('tbody');
+      %$elem%.appendChild(%$body%);
+<<<
+    }
+
+    #= Detach the contents from Panel.  Allows for faster updates.
+    #- Call $attach() after the contents has been changed.
+    PROC $detach() @replace @public
+>>>
+      %$elem%.removeChild(%$body%);
+<<<
+    }
+
+    #= Re-attach the contents to Panel.  Only to be called after $detach().
+    PROC $attach() @replace @public
+>>>
+      %$elem%.appendChild(%$body%);
+<<<
+    }
+
+    #! Update styles for the item parent.
+    PROC $updateParentStyles(ZWT.Widget item)
+      ZWT.Element el
+>>>
+      %el% = %item.elem%.parentNode;
+<<<
+      ZWT.setElementStyle(el, item.parentStyles)
+    }
+
+    #= Set the style for the item in the Panel.
+    #- This sets the style of the table cell TD. Especially useful for setting
+    #- width or hight restrictions.
+    PROC $addItemStyle(ZWT.Widget item, ZWT.Style style) @public
+      IF item.parentStyles == NIL
+        item.parentStyles = NEW()
+      ELSE
+        FOR st IN item.parentStyles
+          IF st IS style
+            RETURN
+          }
+        }
+      }
+      item.parentStyles.add(style)
+      $updateParentStyles(item)
+    }
+
+    #= Remove a style from an item in the Panel.
+    #- Opposite of $addItemStyle()
+    #- width or hight restrictions.
+    PROC $removeItemStyle(ZWT.Widget item, ZWT.Style style) @public
+      IF item.parentStyles == NIL
+        RETURN
+      }
+      FOR i IN 0 UNTIL item.parentStyles.Size()
+        IF item.parentStyles[i] IS style
+          item.parentStyles.remove(i)
+          $updateParentStyles(item)
+          RETURN
+        }
+      }
+    }
+
+    #! Set the highlight style for |item|.  Apply it to the TD so that it
+    #! spans the whole cell.
+    PROC $setItemHighlight(ZWT.Widget item, ZWT.Style style) @replace
+      $addItemStyle(item, style)
+    }
+
+    #! Remove the highlight style for |item|.
+    PROC $removeItemHighlight(ZWT.Widget item, ZWT.Style style) @replace
+      $removeItemStyle(item, style)
+    }
+  }
+
+  #=? A panel that places its children with an absolute position.
+  #=  The root panel is an AbsolutePanel.
+  #- When no position is set, the natural HTML order is used: block items stack
+  #- below each other, other items go left to right until they wrap.
+  #
+  #- NOTE: not implemented yet.
+  CLASS AbsolutePanel EXTENDS Panel @public
+    #= Create an empty AbsolutePanel.
+    NEW() @replace @public
+    }
+  }
+
+  #= A panel that stacks its children vertically: a column of Widgets.
+  CLASS VerticalPanel EXTENDS CellPanel @public
+
+    #= Create an empty VerticalPanel.
+    NEW() @replace @public
+    }
+
+    #= Add |widget| to end of the panel.  It will appear below the widgets
+    #= already present.
+    #- When the list is sorted then the widget will be put in the right
+    #- position.
+    PROC $add(ZWT.Widget widget) @replace @public
+      $addItem(widget)
+>>>
+      var tr = $doc.createElement('tr');
+      var td = $doc.createElement('td');
+      td.appendChild(%widget.elem%);
+      tr.appendChild(td);
+      %$body%.appendChild(tr);
+<<<
+    }
+
+    #= Insert |widget| at the start of the panel.  It will appear above the
+    #= widgets already present.
+    #- When the list is sorted then the widget will be put in the right
+    #- position.
+    PROC $insert(ZWT.Widget widget) @replace @public
+      $insert(widget, 0)
+    }
+
+    #= Insert |widget| before position |index|.  When using zero it will
+    #= appear above the widgets already present.
+    #- When |index| is equal to or larger than the number of widgets already
+    #- present |widget| will be added to the end of the panel.
+    #
+    #- When the list is sorted then the widget will be put in the right
+    #- position.
+    PROC $insert(ZWT.Widget widget, int index) @replace @public
+      IF index >= $items.Size()
+        $add(widget)
+        RETURN
+      }
+
+      # When inserting before the highlighted item the highlight index
+      # increases.
+      IF $highlighted >= 0 && index <= $highlighted
+        ++$highlighted
+      }
+
+      ZWT.Widget where = $items[index]
+      PARENT.insertItem(widget, index)
+>>>
+      var tr = $doc.createElement('tr');
+      var td = $doc.createElement('td');
+      td.appendChild(%widget.elem%);
+      tr.appendChild(td);
+      %$body%.insertBefore(tr, %where.elem%.parentNode.parentNode);
+<<<
+    }
+
+    #= Remove |widget| from the panel.
+    FUNC $remove(int index) ZWT.Widget @replace @public
+      IF index >= 0 && index < $items.Size()
+        IF $highlighted == index
+          $highlighted = -1
+        }
+        ZWT.Widget widget = $items.remove(index)
+        IF widget.parent IS THIS
+          # The element is in <tr><td>elem</td></tr>
+>>>
+          %$body%.removeChild(%widget.elem%.parentNode.parentNode);
+<<<
+          widget.parent = NIL
+        }
+        RETURN widget
+      }
+      RETURN NIL
+    }
+
+
+    #= Return "VerticalPanel(contents...)".
+    FUNC $ToString() string @replace @public
+      list<string> ls = NEW()
+      FOR item IN $items
+        ls.add(item.ToString())
+      }
+      RETURN "VerticalPanel(" .. ls.ToString() .. ")"
+    }
+  }
+
+  #= A panel that stacks its children horizontally: a row of Widgets.
+  CLASS HorizontalPanel EXTENDS CellPanel @public
+    ZWT.Element $row #!
+
+    #= Create an empty HorizontalPanel.
+    NEW() @replace @public
+    }
+
+    #!
+    PROC $Init()
+>>>
+      %$row% = $doc.createElement('tr');
+      %$body%.appendChild(%$row%)
+<<<
+    }
+
+    #= Add |widget| to the panel.  It appears at the far right.
+    PROC $add(ZWT.Widget widget) @replace @public
+      $addItem(widget)
+>>>
+      var td = $doc.createElement('td');
+      td.appendChild(%widget.elem%);
+      %$row%.appendChild(td);
+<<<
+    }
+
+    #= Remove |widget| from the panel.
+    FUNC $remove(int index) ZWT.Widget @replace @public
+      IF index >= 0 && index < $items.Size()
+        ZWT.Widget widget = $items.remove(index)
+        IF widget.parent IS THIS
+          # The element is in <td>elem</td>
+>>>
+          %$row%.removeChild(%widget.elem%.parentNode);
+<<<
+          widget.parent = NIL
+        }
+        RETURN widget
+      }
+      RETURN NIL
+    }
+
+    #= Return "HorizontalPanel(contents...)".
+    FUNC $ToString() string @replace @public
+      list<string> ls = NEW()
+      FOR item IN $items
+        ls.add(item.ToString())
+      }
+      RETURN "HorizontalPanel(" .. ls.ToString() .. ")"
+    }
+  }
+
+  #! not implemented yet
+  CLASS DockPanel EXTENDS CellPanel @public
+  }
+
+  #= A panel that goes on top of other panels.
+  CLASS PopupPanel EXTENDS Panel @public
+    ZWT.Panel   $parent      #!
+    ZWT.Panel   $usedParent  #!
+    int         $x @protected = -1  #!
+    int         $y @protected = -1  #!
+    int         $width       #!
+    int         $height      #!
+
+    #! Initialize the panel empty.
+    PROC $Init()
+      # Create a DIV.
+>>>
+      %$elem% = $doc.createElement('div');
+      %$elem%.style.position = 'absolute';
+<<<
+      ZWT.Style style = NEW().setBGColorName(ZWT.ColorName.white)
+                 .setBorder(2, ZWT.BorderStyle.solid, NEW(ZWT.ColorName.gray))
+      $setStyle(style)
+    }
+
+    #= Create an empty PopupPanel.
+    NEW() @replace @public
+    }
+
+    #= Set the parent panel to attach this Panel to.
+    #- This matters for z-index and positioning.
+    #- When not set the root it used.
+    #- Use NIL to reset.
+    #
+    #- Returns THIS.
+    FUNC $setParent(ZWT.Panel parent) PopupPanel @public
+      $parent = parent
+      RETURN THIS
+    }
+
+    #= Set the horizontal position in pixels.  Use -1 to center on the page.
+    #
+    #- Returns THIS.
+    FUNC $setHorizontalPosition(int x) PopupPanel @public
+      $x = x
+      RETURN THIS
+    }
+
+    #= Set the vertical position in pixels.  Use -1 to center on the page.
+    #
+    #- Returns THIS.
+    FUNC $setVerticalPosition(int y) PopupPanel @public
+      $y = y
+      RETURN THIS
+    }
+
+    #= Set the width of the panel.
+    #- Use zero to fit to the contents.
+    #- It may get bigger if the contents does not fit.
+    #
+    #- Returns THIS.
+    FUNC $setWidth(int width) PopupPanel @public
+      $width = width
+      RETURN THIS
+    }
+
+    #= Set the height of the panel.
+    #- Use zero to fit to the contents.
+    #- It may get bigger if the contents does not fit.
+    #
+    #- Returns THIS.
+    FUNC $setHeight(int height) PopupPanel @public
+      $height = height
+      RETURN THIS
+    }
+
+    #= Show the panel.  When no parent was set it will be attached to the
+    #= Root.
+    PROC $show() @default @public
+      IF $width > 0
+>>>
+        %$elem%.style.width = %$width% + 'px';
+<<<
+      }
+      IF $height > 0
+>>>
+        %$elem%.style.height = %$height% + 'px';
+<<<
+      }
+
+      IF $usedParent == NIL
+        IF $parent == NIL
+          $usedParent = ZWT.root()
+        ELSE
+          $usedParent = $parent
+        }
+        $usedParent.add(THIS)
+      }
+
+      # Position after showing, when the size is known.
+      int x
+      IF $x < 0
+>>>
+        %x% = (%$usedParent.elem%.offsetWidth - %$elem%.offsetWidth) / 2;
+<<<
+      ELSE
+        x = $x
+      }
+      int y
+      IF $y < 0
+>>>
+        %y% = (%$usedParent.elem%.offsetHeight - %$elem%.offsetHeight) / 2;
+<<<
+      ELSE
+        y = $y
+      }
+>>>
+      %$elem%.style.left = %x% + 'px';
+      %$elem%.style.top = %y% + 'px';
+<<<
+    }
+
+    #= Hide the panel.
+    #- Returns THIS
+    FUNC $hide() PopupPanel @public
+      IF $usedParent != NIL
+        $usedParent.remove(THIS)
+        $usedParent = NIL
+      }
+      RETURN THIS
+    }
+  }
+
+  #= A panel that provides control over scrollbars.
+  #- By default scollbars appear when needed. This can be changed with
+  #- setAlwaysShowScrollbars()
+  CLASS ScrollPanel EXTENDS Panel @public
+
+    #= Create a ScrollPanel containing |item|
+    NEW(ZWT.Widget item) @public
+      $add(item)
+    }
+
+    #!
+    PROC $Init()
+      # Set the position to "relative" to be able to measure the position of
+      # items inside.
+>>>
+      %$elem% = $doc.createElement('div');
+      %$elem%.style.overflow = 'auto';
+      %$elem%.style.position = 'relative';
+<<<
+    }
+
+    #= Set whether to always show the scrollbars.
+    #- Unfortunately this is not separate for vertical and horizontal.  If
+    #- you need this, create a ScrollPanel inside another one.
+    PROC $setAlwaysShowScrollbars(bool always) @public
+>>>
+      %$elem%.style.overflow = %always% ? 'scroll' : 'auto';
+<<<
+    }
+
+    #= Scroll horizontally to pixel offset |px|.
+    #- Use 0 to scroll to the far left.
+    PROC $scrollHorizontal(int px) @public
+>>>
+      %$elem%.scrollLeft = %px%;
+<<<
+    }
+
+    #= Scroll horizontally to the far right.
+    PROC $scrollRight() @public
+>>>
+      %$elem%.scrollLeft = %$elem%.scrollWidth;
+<<<
+    }
+
+    #= Scroll horizontally to the far left.
+    PROC $scrollLeft() @public
+>>>
+      %$elem%.scrollLeft = 0;
+<<<
+    }
+
+    #= Get the current vertical scroll position in pixels.
+    FUNC $getHorizontalScroll() int @public
+      int r
+>>>
+      %r% = %$elem%.scrollLeft;
+<<<
+      RETURN r
+    }
+
+    #= Scroll vertically to pixel offset |px|.
+    #- Use 0 to scroll to the top.
+    PROC $scrollVertical(int px) @public
+>>>
+      %$elem%.scrollTop = %px%;
+<<<
+    }
+
+    #= Scroll vertically to the top.
+    PROC $scrollTop() @public
+>>>
+      %$elem%.scrollTop = 0;
+<<<
+    }
+
+    #= Scroll vertically to the bottom.
+    PROC $scrollBottom() @public
+>>>
+      %$elem%.scrollTop = %$elem%.scrollHeight;
+<<<
+    }
+
+    #= Get the current vertical scroll position in pixels.
+    FUNC $getVerticalScroll() int @public
+      int r
+>>>
+      %r% = %$elem%.scrollTop;
+<<<
+      RETURN r
+    }
+
+    #= Ensure that |w| is visible by scrolling horizontally and/or
+    #= vertically.
+    #- If possible, |w| is centered in the viewable space.
+    PROC $ensureVisible(ZWT.UIObject w) @public
+      $ensureVisibleVertical(w)
+      $ensureVisibleHorizontal(w)
+    }
+
+    #= Ensure that |w| is visible by scrolling vertically only.
+    #- If possible, |w| is centered in the viewable space vertically.
+    PROC $ensureVisibleVertical(ZWT.UIObject w) @public
+      int top = w.getTop(THIS)
+      # Center the item.
+>>>
+      var s = %$elem%.clientHeight - %w.elem%.offsetHeight;
+      s = s < 0 ? 0 : s / 2;
+      %$elem%.scrollTop = %top% - s;
+<<<
+    }
+
+    #= Ensure that |w| is visible by scrolling horizontally only.
+    #- If possible, |w| is centered in the viewable space horizontally.
+    PROC $ensureVisibleHorizontal(ZWT.UIObject w) @public
+      int left = w.getLeft(THIS)
+      # Center the item.
+>>>
+      var s = %$elem%.clientWidth - %w.elem%.offsetWidth;
+      s = s < 0 ? 0 : s / 2;
+      %$elem%.scrollLeft = %left% - s;
+<<<
+    }
+  }
+
+ }
+}

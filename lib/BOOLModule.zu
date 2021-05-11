@@ -1,0 +1,69 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module BOOL - bool support
+#
+
+#= Methods for the builtin bool type.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE BOOLModule @public
+
+  #= The builtin type bool. It has either the value TRUE or FALSE.
+  #- The object methods can be used on an bool variable or value:
+  #% IO.print("It's " .. FALSE.ToString())
+  CLASS STARTbool @public
+    # For Zudocu: start of bool class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return either "FALSE" or "TRUE".
+  FUNC ToString(bool this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= When |format| is "1b" output "0" and "1" instead of "FALSE" and "TRUE"..
+  #- |format| must either be "b", in which case it works just like ToString(),
+  #- or "1b", in which case it returns "0" for FALSE and "1" for TRUE.
+  FUNC ToString(bool this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number of byteString in a bool.
+  #- Always returns 1.
+  FUNC Size(bool this) int @public
+    ###### Only for generating documentation.
+    RETURN 1
+  }
+
+  #= Return the type of the bool.
+  FUNC Type(bool this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 when |other| is OK and this bool is FALSE, zero when |other| is
+  #= equal to this bool, and 1 when |other| is FALSE and this bool is TRUE.
+  FUNC Compare(bool this, bool other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this bool.
+  FUNC Equal(bool this, bool other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #! For Zudocu: end of the bool class.
+  CLASS ENDbool
+  }
+
+}

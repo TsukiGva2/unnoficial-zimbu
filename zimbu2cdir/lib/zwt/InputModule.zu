@@ -1,0 +1,128 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: text Input field
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE InputModule @public
+ GENERATE_IF Z.lang == "JS"
+
+  #= A Input is a widget that contains one line of editable text.
+  CLASS Input EXTENDS ZWT.Widget @public
+
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('input');
+<<<
+    }
+
+    #= Create a new Input with |text| as the text.
+    NEW(string text) @public
+      $setText(text)
+    }
+
+    #= Create a new Input with |text| as the text.
+    #- |size| is the number of characters are visible (approximately)
+    #- Use 0 or smaller for default size.
+    #
+    #- |maxLength| is the maximum number of characters that can be entered.
+    #- Use 0 or smaller for unlimited length.
+    NEW(string text, int size, int maxLength) @public
+      IF size > 0
+>>>
+        %$elem%.size = %size%;
+<<<
+      }
+      IF maxLength > 0
+>>>
+        %$elem%.maxLength = %maxLength%;
+<<<
+      }
+      $setText(text)
+    }
+
+    #= Replace the text of the Input with |text|.
+    PROC $setText(string text) @public
+>>>
+      %$elem%.value = %text%;
+<<<
+    }
+
+    #= Set the number of characters that are visible (approximately) to
+    #= |size|.
+    PROC $setSize(int size) @public
+>>>
+      %$elem%.size = %size%;
+<<<
+    }
+
+    #= Set the maximum number of characters that can be entered to |maxLength|.
+    PROC $setMaxLength(int maxLength) @public
+>>>
+      %$elem%.maxLength = %maxLength%;
+<<<
+    }
+
+    #= Return the text of the Input.
+    FUNC $getText() string @replace @public
+      string s
+>>>
+      %s% = %$elem%.value;
+<<<
+      RETURN s
+    }
+
+    #= Return "Input(text)", where "text" is the Input text.
+    FUNC $ToString() string @replace @public
+      RETURN "Input(" .. $getText() .. ")"
+    }
+  }
+
+  #= A Checkbox is a widget that has two states: Checked or not.
+  CLASS Checkbox EXTENDS ZWT.Widget @public
+
+    #!
+    PROC $Init()
+>>>
+      %$elem% = $doc.createElement('input');
+      %$elem%.type = 'checkbox';
+<<<
+    }
+
+    #= Create a new Checkbox, not checked.
+    NEW() @replace @public
+    }
+
+    #= Create a new Checkbox, checked if |checked| is TRUE.
+    NEW(bool checked) @public
+      $setChecked(checked)
+    }
+
+    #= Replace the text of the Input with |text|.
+    PROC $setChecked(bool checked) @public
+>>>
+      %$elem%.checked = %checked%;
+<<<
+    }
+
+    #= Return TRUE if the checkbox is checked.
+    FUNC $getChecked() bool @public
+      bool b
+>>>
+      %b% = %$elem%.checked;
+<<<
+      RETURN b
+    }
+
+    #= Return "Checkbox(checked)", where "checked" is the value.
+    FUNC $ToString() string @replace @public
+      RETURN "Checkbox(" .. $getChecked() .. ")"
+    }
+  }
+
+ }
+}

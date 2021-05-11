@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>HTTP.FunctionServlet class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='HTTP.html'>up:&nbsp;HTTP</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> HTTP.FunctionServlet
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A Servlet that generates the page body with a function.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='HTTP.FunctionServlet.html#NEW'><b>NEW</b></a>(<small>func</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new FunctionServlet that calls <b>func</b> to create a response.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.FunctionServlet.html#$setProc'><b>$setProc</b></a>(<small>func</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the function to call to <b>func</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.FunctionServlet.html#$serve'><b>$serve</b></a>(<small>context</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Handle a request by invoking the function and putting its result in the
+ response.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='HTTP.Servlet.html'>HTTP.Servlet</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Servlet.html#$addPath'><b>$addPath</b></a>(<small>path</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a path that this servlet will serve for.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Servlet.html#$handle'><b>$handle</b></a>(<small>context</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Check if this servlet wants to serve the <b>req</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Servlet.html#$setMimeType'><b>$setMimeType</b></a>(<small>type</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the MIME type to be used in the response for this Servlet.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='HTTP.ServletFunc.html'>HTTP.ServletFunc</A></span> func)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new FunctionServlet that calls <b>func</b> to create a response.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$serve'><b>$serve</b></A>(<span class='type'><A class='typehref' href='HTTP.Context.html'>HTTP.Context</A></span> context) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Handle a request by invoking the function and putting its result in the
+ response.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setProc'><b>$setProc</b></A>(<span class='type'><A class='typehref' href='HTTP.ServletFunc.html'>HTTP.ServletFunc</A></span> func)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the function to call to <b>func</b>.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

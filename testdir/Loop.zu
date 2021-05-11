@@ -1,0 +1,105 @@
+# Testing loops.
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE Loop @public
+
+  PROC test() @public
+    IO.print("testdir/Loop.zu")
+    test1()
+    testMult()
+  }
+
+  PROC test1()
+    #  12345
+    FOR i IN 1 TO 5
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  123456
+    int x = 8
+    FOR USE x IN 1 TO 5
+      IO.write(x)
+    }
+    IO.write(x .. "\n")
+
+    #  12344
+    FOR USE x IN 1 TO 100
+      IO.write(x)
+      IF x == 4
+        BREAK
+      }
+    }
+    IO.write(x .. "\n")
+
+    #  01234
+    FOR i IN 0 UNTIL 5
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  135
+    FOR i IN 1 TO 5 STEP 2
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  13
+    FOR i IN 1 UNTIL 5 STEP 2
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  135
+    FOR i IN 1 UNTIL 6 STEP 2
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  531
+    FOR i IN 5 TO 1 STEP -2
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  53
+    FOR i IN 5 UNTIL 1 STEP -2
+      IO.write(i)
+    }
+    IO.write("\n")
+
+    #  531
+    FOR i IN 5 UNTIL 0 STEP -2
+      IO.write(i)
+    }
+    IO.write("\n")
+  }
+
+  PROC testMult()
+    list<int> il = [1, 2, 3, 4, 5]
+    list<string> sl = ["one", "two", "three"]
+    FOR i, s IN il, sl
+      IO.print("int list: " .. i .. ", string list: " .. s)
+    }
+
+    dict<string, int> names = ["Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4]
+    FOR n, i IN names.keys(), il
+      IO.print("dict: " .. n .. ", list: " .. i)
+    }
+    FOR i, n IN il, names.keys()
+      IO.print("dict: " .. n .. ", list: " .. i)
+    }
+
+    list<string> week_en = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    list<string> week_nl = ["ma", "di", "wo", "do", "fr"]
+    list<string> week_de = ["Mo", "Di", "Mi", "Do", "Fr"]
+    FOR en, nl, de IN week_en, week_nl, week_de
+      IO.print("English: " .. en .. ", Dutch: " .. nl .. ", German: " .. de)
+    }
+  }
+
+}

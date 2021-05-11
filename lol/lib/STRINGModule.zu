@@ -1,0 +1,888 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module STRING - string support
+#
+
+#= Methods for the string type.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE STRINGModule @public
+
+  #= The builtin type string.
+  #- The string can be any sequence of Unicode characters, including NUL.
+  #
+  #- The characters are UTF-8 encoded.
+  #- Illegal byte sequences may appear but cause an exception for some
+  #- operations.  Finding a character by index requires going over the string
+  #- from the start, since UTF-8 is a variable width encoding.  It might be
+  #- faster to use indexes on the result of toArray().
+  #
+  #- The object methods can be used on a string literal:
+  #% string s = "foobar".slice(3)
+  #% # s == "bar"
+  #- Besides the methods there is the concatenation operator:
+  #% string s = "left" .. " and " .. "right"
+  #% # s == "left and right"
+  CLASS STARTstring @public
+    # For Zudocu: start of string class.
+    # This is not an actual class to make generating code easier.
+
+    #= Create a string from the characters in |array|.
+    #- The array item type can be any int or nat number.
+    NEW(array<int> array)
+      ###### Only for generating documentation.
+    }
+
+    #= Create a string from the characters in |array| starting at index |start|.
+    #- The array item type can be any int or nat number.
+    NEW(array<int> array, int start)
+      ###### Only for generating documentation.
+    }
+
+    #= Create a string from the characters in |array| starting at index |start|
+    #= and ending at index |end| (inclusive).
+    #- The array item type can be any int or nat number.
+    NEW(array<int> array, int start, int end)
+      ###### Only for generating documentation.
+    }
+  }
+
+  #= Return the size of the string in characters.
+  #- Note that this is different from the number of bytes if there are
+  #- multi-byte characters.
+  #
+  #- The method has to go over the text to count the characters, this may be
+  #- slow for a very long string.
+  #
+  #- The empty string returns zero.
+  #- A NIL string also returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC Size(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the string itself, a no-op.  Also works on a NIL.
+  FUNC ToString(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a formatted version of the string.
+  #- The format must end in "s".  The minimum and maximum width of the result
+  #- can be specified and optionally ellipses can indicate truncated text.
+  #
+  #- Use "{min}s" to specify a minimum width.  {min} is the width in decimal
+  #- form.  When the string is longer than the minimum it is returned
+  #- unchanged.  When the string is shorter spaces are inserted on the left:
+  #% "some".ToString("6s")   # "  some"
+  #- Use a minus sign to align the text on the left, added spaces are put
+  #- after the text:
+  #% "some".ToString("-6s")   # "some  "
+  #
+  #- Use ".{max}s" to specify a maximum width.  {max} is the width in decimal
+  #- form. When the text is longer it is truncated:
+  #% "something".ToString(".4s")  # "some"
+  #- Use a minus sign to keep the rightmost part of the text:
+  #% "something".ToString(".-4s")  # "hing"
+  #
+  #- The minimum and maximum can be combined as "{min}.{max}s".  This only
+  #- makes sense when the minimum is larger than the maximum.  The text will
+  #- first be truncated to the maximum size, then filled with spaces to the
+  #- minimum size:
+  #% "something".ToString("5.4s")  # " some"
+  #% "something".ToString("-5.4s")  # "some "
+  #% "something".ToString("-5.-4s")  # "hing "
+  #
+  #- When the string must be truncated ellipses can be added.  Use two or
+  #- three dots instead of one for the maximum width.  These dots will be put
+  #- where the string was truncated. Use a plus sign to put
+  #- ellipses at the right, no sign to put ellipses in the middle, and a minus
+  #- sign to put ellipses at the left. The ellipses are included in the
+  #- maximum width, thus the width must be at least 3 or 4 to make sense.
+  #% "something great".ToString("...+8s")  # "somet..."
+  #% "something great".ToString("..10s")  # "some..reat"
+  #% "something great".ToString("...-8s")  # "...great"
+  FUNC ToString(string this, string formatSpec) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 when |other| sorts after this string, zero when |other| is
+  #= equal to this string, and 1 when |other| sorts before this string.
+  #
+  #- When using ?.Compare() on a NIL string and |other| is NIL it returns
+  #- zero.  When |other| is not NIL it returns -1.
+  FUNC Compare(string this, string other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this string, FALSE otherwise.
+  #
+  #- When using ?.Equal() on a NIL string and |other| is NIL it returns
+  #- TRUE.  Otherwise when |other| is NIL returns FALSE.
+  FUNC Equal(string this, string other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the string as a byteString.
+  #- This does not do any conversion, it only changes the type of the object.
+  #- Also works on a NIL.
+  #
+  #- Example: get the number of bytes in a string:
+  #% int byteSize = text.asByteString().Size()
+  FUNC asByteString(string this) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the string as a byteString.
+  #- Equivalent to $asByteString()
+  FUNC toByteString(string this) byteString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the string converted to a varString.
+  #- Returns NIL when the string is NIL.
+  FUNC toVarString(string this) varString @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return an array with the characters of the string.
+  #- Looking up characters by index will be much faster in the array.
+  #
+  #- Throws an E.IllegalByte exception if a character uses more than 4 bytes.
+  FUNC toArray(string this) array<nat32> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Replace placeholders in the string with argument values.
+  #- A placeholder starts with a { and ends with a }.  To get a literal { use
+  #- {{.  A trailing { is also passed on as-is.
+  #
+  #- Placeholders can use a number, which is the index in |arguments|: {0}
+  #- refers to the first argument, {1} to the second, etc.
+  #
+  #- Placeholders can use a name, in which case the arguments must be passed
+  #- by name: {xyz} refers to argument xyz in format(xyz = value).
+  #
+  #- Without further specification ToString() is invoked on the argment before
+  #- it replaces the placeholder.  Optionally a format can be specified right
+  #- after the {, e.g. {04x nr} (the integer argument "nr" formatted as four
+  #- hex digits).  The format and the argument number/name must be separated
+  #- by exactly one space.
+  #
+  #- Errors are reported in the resulting string.  To throw an exception
+  #- instead insert {THROW} before any placeholders.
+  FUNC format(string this, dyn ... arguments) string
+    IO.StringWriter w = NEW()
+    # Convert the string to an array, lookup by character index works much
+    # faster.
+    array<nat32> fmt = this.toArray()
+    bool throw
+
+    int i
+    WHILE i < fmt.Size()
+      int c = fmt[i]
+      IF c == '{' && i + 1 < fmt.Size()
+        ++i
+        c = fmt[i]
+        IF c == '{'
+          # "{{" results in "{"
+          w.writeChar(c)
+          ++i
+        ELSE
+          string valueFormat
+          int e = i
+          WHILE TRUE
+            IF c == '}'
+              string name = NEW(fmt, i, e - 1)
+              i = e + 1
+              IF name == "THROW"
+                throw = TRUE
+              ELSE
+                dyn value
+                IF name[0].isDigit()
+                  int nr = name.toInt()
+                  IF nr < arguments.values.Size()
+                    value = arguments.values[nr]
+                  }
+                ELSE
+                  int argIdx = arguments.names.find(name)
+                  IF argIdx >= 0
+                    value = arguments.values[argIdx]
+                  }
+                }
+                IF value == NIL
+                  IF throw
+                    THROW E.BadValue.NEW("Invalid argument name: \(name)")
+                  }
+                  value = "INVALID"
+                }
+                IF valueFormat == NIL
+                  w.write(value.ToString())
+                ELSE
+                  w.write(value.ToString(valueFormat))
+                }
+              }
+              BREAK
+            ELSEIF c == ' '
+              IF valueFormat != NIL
+                IF throw
+                  THROW E.BadValue.NEW("Two spaces inside {}")
+                }
+                w.write("TWO SPACES IN {}")
+                i = e + 1
+                BREAK
+              }
+              valueFormat = NEW(fmt, i, e - 1)
+              i = e + 1
+            }
+            ++e
+            IF e == fmt.Size()
+              IF throw
+                THROW E.BadValue.NEW("Missing }")
+              }
+              w.write("MISSING }")
+              i = e
+              BREAK
+            }
+            c = fmt[e]
+          }
+        }
+      ELSE
+        w.writeChar(c)
+        ++i
+      }
+    }
+
+    RETURN w.ToString()
+  }
+
+  #= Return the digits at the start of the string converted to a number.
+  #- For example, `"1234".toInt()` returns 1234.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a
+  #- digit or a minus sign.
+  #
+  #- When using ?.toInt() on a NIL string the result is zero.
+  FUNC toInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the string converted to a number.
+  #- For example, `"1234".toInt()` returns 1234.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a digit or a minus
+  #- sign.
+  #- Also returns |default| when the string is NIL and ?.toInt() was
+  #- used.
+  FUNC toInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the string converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"100'000".quotedToInt()` returns 100000.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a
+  #- digit or a minus sign.
+  #
+  #- When using ?.quotedToInt() on a NIL string the result is zero.
+  FUNC quotedToInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the digits at the start of the string converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"100'000".quotedToInt()` returns 100000.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a digit or a minus
+  #- sign.  When using ?.quotedToInt() also when the string is NIL.
+  FUNC quotedToInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the string converted to a number.
+  #- For example, `"a2b4".hexToInt()` returns 0xa2b4.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a hex
+  #- digit.  Also when it starts with "-".
+  #
+  #- When using ?.hexToInt() on a NIL string the result is zero.
+  FUNC hexToInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the string converted to a number.
+  #- For example, `"a2b4".hexToInt()` returns 0xa2b4.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a hex digit.  That
+  #- includes "-".
+  #- Also returns |default| when the string is NIL and ?.hexToInt() was
+  #- used.
+  FUNC hexToInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the string converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"ffff'ffff".quotedHexToInt()` returns 16777215.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a hex
+  #- digit.  That includes "-".
+  #
+  #- When using ?.quotedHexToInt() on a NIL string the result is zero.
+  FUNC quotedHexToInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hex digits at the start of the string converted to a number,
+  #= ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"ffff'ffff".quotedHexToInt()` returns 16777215.
+  #
+  #- A leading "0x" or "0X" is ignored.
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a hex digit.  That
+  #- includes "-".
+  #- Also returns |default| when the string is NIL and ?.quotedHexToInt() was
+  #- used.
+  FUNC quotedHexToInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the string converted to a
+  #= number.
+  #- For example, `"010101".binToInt()` returns 21.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a 0 or
+  #- 1.
+  #
+  #- When using ?.binToInt() on a NIL string the result is zero.
+  FUNC binToInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the string converted to a
+  #= number.
+  #- For example, `"010101".binToInt()` returns 21.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a 0 or 1.
+  #- Also returns |default| when the string is NIL and ?.binToInt() was
+  #- used.
+  FUNC binToInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the string converted to a
+  #= number, ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"1001'0101".quotedBinToInt()` returns 149.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a 0 or
+  #- 1.
+  #
+  #- When using ?.quotedBinToInt() on a NIL string the result is zero.
+  FUNC quotedBinToInt(string this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the binary digits at the start of the string converted to a
+  #= number, ignoring quotes.
+  #- Ignores single quotes and underscores, these can be used to make the
+  #- number easier to read.
+  #- For example, `"1001'0101".quotedBinToInt()` returns 149.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Returns |default| when the string does not start with a 0 or 1 and
+  #- when using ?.quotedBinToInt() on a NIL string.
+  FUNC quotedBinToInt(string this, int default) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the number at the start of the string converted to a float.
+  #- For example, `"1.234".toFloat()` returns 1.234.
+  #
+  #- Ignores anything after the number.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a
+  #- digit or a minus sign.
+  #
+  #- Using toFloat() on a NIL string throws an E.NilAccess exception.
+  FUNC toFloat(string this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the number at the start of the string converted to a float.
+  #- Sets the |length| argument to the number of characters used.
+  #
+  #- Throws an E.BadValue exception when the string does not start with a
+  #- digit or a minus sign.
+  #
+  #- Using toFloat() on a NIL string throws an E.NilAccess exception.
+  FUNC toFloat(string this, int &length) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where string |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #- When not found returns -1.
+  #- When |s| is longer than this string it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?.find() and the string is NIL returns -1.
+  FUNC find(string this, string s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC find(string this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index where the string |s| appears at or after |start|.
+  #- When |start| is zero this works the same as find(s).
+  #- When not found returns -1.
+  #- When found returns |start| or more.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC find(string this, string s, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the lowest index of the character |c| at or after |start|.
+  #- When |start| is zero this works the same as find(c).
+  #
+  #- When |c| is found returns |start| or more.
+  #
+  #- When |c| is not found returns -1.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC find(string this, int c, int start) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index where string |s| appears.
+  #- When |s| matches at the start 0 is returned.
+  #
+  #- When not found returns -1.
+  #- When |s| is longer than this string it will not be found, thus -1 is
+  #- returned.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC findLast(string this, string s) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the highest index of the character |c|.
+  #- When |c| is the first character 0 is returned.
+  #- When not found returns -1.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC findLast(string this, int c) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when the string starts with |s|.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC startsWith(string this, string s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE when the string ends with |s|.
+  #
+  #- When using ?. and the string is NIL returns -1.
+  FUNC endsWith(string this, string s) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return a number that is a hash value of the string.
+  #- A string value always results in the same hash value.
+  #- Two different strings can result in the same hash value, but the chance
+  #- of this happening is small.
+  #
+  #- The hash method is fast and has a reasonable distribution.
+  FUNC hash(string this) nat @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the string with padding added on the left.
+  #- The resulting string is at least |minSize| characters long.  If the
+  #- current string is shorter the |pad| character is added as many times as
+  #- needed.
+  #
+  #- Example: `"foo".padLeft(5, '-')` returns "--foo".
+  #
+  #- When using ?.padLeft() on a NIL string the result is NIL.
+  FUNC padLeft(string this, int minSize, int pad) string @public
+    IFNIL
+      RETURN NIL
+    }
+    IF this.Size() >= minSize
+      RETURN this
+    }
+    IO.StringWriter w = NEW()
+    FOR i IN this.Size() + 1 TO minSize
+      # TODO: using a byte index would be more efficient.
+      w.writeChar(pad)
+    }
+    w.write(this)
+    RETURN w.ToString()
+  }
+
+  #= Return the string with padding added on the right.
+  #- The resulting string is at least |minSize| characters long.  If the
+  #- current string is shorter the |pad| character is added as many times as
+  #- needed.
+  #
+  #- Example: `"foo".padRight(5, '-')` returns "foo--".
+  #
+  #- When using ?.padRight() on a NIL string the result is NIL.
+  FUNC padRight(string this, int minSize, int pad) string @public
+    IFNIL
+      RETURN NIL
+    }
+    IF this.Size() >= minSize
+      RETURN this
+    }
+    IO.StringWriter w = NEW()
+    w.write(this)
+    FOR i IN this.Size() + 1 TO minSize
+      # TODO: using a byte index would be more efficient.
+      w.writeChar(pad)
+    }
+    RETURN w.ToString()
+  }
+
+  #= Return the string with all characters in reverse order.
+  #- Example: `"foobar".reverse()` returns "raboof".
+  #
+  #- When using ?.reverse() on a NIL string the result is NIL.
+  FUNC reverse(string this) string @public
+    IFNIL
+      RETURN NIL
+    }
+    IO.StringWriter w = NEW()
+    FOR i IN this.Size() - 1 TO 0 STEP -1
+      # TODO: using a byte index would be more efficient.
+      w.writeChar(this[i])
+    }
+    RETURN w.ToString()
+  }
+
+  #= Replace the first occurrence of the |from| character with |to|.
+  #- When |from| is not found returns the string unmodified.
+  #
+  #- When using ?.replace() on a NIL string the result is NIL.
+  FUNC replace(string this, int from, int to) string @public
+    IFNIL
+      RETURN NIL
+    }
+    int i = this.find(from)
+    IF i == 0
+      RETURN to.asString() .. this.slice(i + 1)
+    }
+    IF i > 0
+      RETURN this.slice(0, i - 1) .. to.asString() .. this.slice(i + 1)
+    }
+    RETURN this
+  }
+
+  #= Replace all occurrences of the |from| character with |to|.
+  #- When |from| is not found returns the string unmodified.
+  #
+  #- When using ?.replaceAll() on a NIL string the result is NIL.
+  FUNC replaceAll(string this, int from, int to) string @public
+    IFNIL
+      RETURN NIL
+    }
+    int i = this.find(from)
+    IF i >= 0
+      int nextChar
+      IO.StringWriter w = NEW()
+      WHILE i >= 0
+        IF i > nextChar
+          w.write(this.slice(nextChar, i - 1))
+        }
+        w.writeChar(to)
+        nextChar = i + 1
+        i = this.find(from, nextChar)
+      }
+      w.write(this.slice(nextChar))
+      RETURN w.ToString()
+    }
+    RETURN this
+  }
+
+  #= Double all backslashes and put a backslash before a double quote.
+  #- This turns an arbitrary string into a string that can be put in double
+  #- quotes.
+  #
+  #- When no escaping is done returns the string unmodified.
+  #
+  #- When using ?.escape() on a NIL string the result is NIL.
+  FUNC escape(string this) string @public
+    IFNIL
+      RETURN NIL
+    }
+    int i = this.find('\\')
+    IF i < 0
+      i = this.find('"')
+    }
+    IF i >= 0
+      IO.StringWriter w = NEW()
+      FOR c IN this
+        IF c == '\\' || c == '"'
+          w.write('\\'.asString())
+        }
+        w.writeChar(c)
+      }
+      RETURN w.ToString()
+    }
+    RETURN this
+  }
+
+  #= Return a copy of the string with all characters lower-cased.
+  #- TODO: Currently only works for latin1 characters
+  #
+  #- When using toLower() on a NIL string the result is NIL.
+  FUNC toLower(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the string with all ASCII characters lower-cased.
+  #- This only handles ASCII letters and leaves all other characters
+  #- unchanged.
+  #
+  #- When using toLowerAscii() on a NIL string the result is NIL.
+  FUNC toLowerAscii(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the string with all characters upper-cased.
+  #- TODO: Currently only works for latin1 characters
+  #
+  #- When using toUpper() on a NIL string the result is NIL.
+  FUNC toUpper(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the string with all ASCII characters upper-cased.
+  #- This only handles ASCII letters and leaves all other characters
+  #- unchanged.
+  #
+  #- When using toUpperAscii() on a NIL string the result is NIL.
+  FUNC toUpperAscii(string this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the string, starting at index |start|.
+  #- A negative index is relative to the end of the string, `slice(-1)`
+  #- returns a string with only the last character.
+  #
+  #- This counts characters, not bytes.  To count bytes first use
+  #- $asByteString().
+  #
+  #- If |start| is equal to or larger than the size of the string an empty
+  #- string is returned.
+  #- If |start| is negative and the absolute value is larger than the string
+  #- size the whole string is returned.
+  #
+  #- When using ?.slice() on a NIL string the result is NIL.
+  FUNC slice(string this, int start) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a copy of the string, starting at index |start| and ending at
+  #= |end|, inclusive.
+  #- A negative index is relative to the end of the string. `slice(0, -1)`
+  #- returns the whole string. `slice(-1, -1)` only the last character.
+  #
+  #- If |start| is equal to or larger than the size of the string an empty
+  #- string is returned.
+  #- If |start| is negative and the absolute value is larger than the returned
+  #- string starts at index zero.
+  #- If the |start| character is after the |end| character an empty string is
+  #- returned.
+  #
+  #- When using ?.slice() on a NIL string the result is NIL.
+  FUNC slice(string this, int start, int end) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the string split at white space.
+  #- Empty strings are omitted.
+  #
+  #- Example: `"foo  bar ".split()` returns ["foo", "bar"].
+  #
+  #- When using ?.split() on a NIL string the result is NIL.
+  FUNC split(string this) list<string> @public
+    IFNIL
+      RETURN NIL
+    }
+    list<string> res = NEW()
+    int i
+    WHILE i < this.Size()
+      WHILE this[i].isWhite()
+        IF ++i == this.Size()
+          RETURN res
+        }
+      }
+      int j = i + 1
+      WHILE j < this.Size() && !this[j].isWhite()
+        ++j
+      }
+      res.add(this.slice(i, j - 1))
+      i = j
+    }
+    RETURN res
+  }
+
+  #= Return a list with the string split into pieces, split at |sep|.
+  #- The matches with the |sep| string are omitted.
+  #
+  #- |sep| must match exactly.
+  #
+  #- When there are no characters between two |sep| matches, or at the end or
+  #- start of the string, the list will contain an empty string item.
+  #% "one, two,three".split(", ")
+  #% # result: ["one", "two,three"]
+  #
+  #- When using ?.split() on a NIL string the result is NIL.
+  FUNC split(string this, string sep) list<string> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a list with the string split at the characters in |charSet|.
+  #- Empty strings are omitted.
+  #
+  #- Example: `"foo/bar: yes ".split("/: ")` returns ["foo", "bar", "yes"].
+  #
+  #- When using ?.split() on a NIL string the result is NIL.
+  FUNC splitAnyOf(string this, string charSet) list<string> @public
+    IFNIL
+      RETURN NIL
+    }
+    list<string> res = NEW()
+    int i
+    WHILE i < this.Size()
+      WHILE charSet.find(this[i]) >= 0
+        IF ++i == this.Size()
+          RETURN res
+        }
+      }
+      int j = i + 1
+      WHILE j < this.Size() && charSet.find(this[j]) < 0
+        ++j
+      }
+      res.add(this.slice(i, j - 1))
+      i = j
+    }
+    RETURN res
+  }
+
+  #= Return the string with leading and trailing white space removed.
+  #- Returns an empty string if the string contains only white space.
+  #- Example: `"  foo bar ".trim()` returns "foo bar".
+  #
+  #- When using ?.trim() on a NIL string the result is NIL.
+  FUNC trim(string this) string @public
+    IFNIL
+      RETURN NIL
+    }
+    int start = 0
+    int end = this.Size() - 1
+    WHILE start <= end && this[start].isWhite()
+      ++start
+    }
+    WHILE end > start && this[end].isWhite()
+      --end
+    }
+    RETURN this.slice(start, end)
+  }
+
+  #! For Zudocu: end of string class.
+  CLASS ENDstring
+  }
+
+}

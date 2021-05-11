@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZWT.Dropdown class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ZWT.html'>up:&nbsp;ZWT</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> ZWT.Dropdown
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A Dropdown is a widget that allows selecting one item in a list.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new Dropdown.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#NEW'><b>NEW</b></a>(<small>items</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new Dropdown with <b>items</b> as the items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$addItem'><b>$addItem</b></a>(<small>text</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item with <b>text</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$addSelectedItem'><b>$addSelectedItem</b></a>(<small>text</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add an item with <b>text</b> and make it the selected item.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$setSelectedIndex'><b>$setSelectedIndex</b></a>(<small>index</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item at <b>index</b> to be the currently selected item.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$getSelectedItem'><b>$getSelectedItem</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the text of the currently selected item.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$getSelectedIndex'><b>$getSelectedIndex</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the index of the currently selected item.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Dropdown.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return "Dropdown(text)", where "text" is the Dropdown text.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='ZWT.Widget.html'>ZWT.Widget</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getParent'><b>$getParent</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='UIObject.html'>UIObject</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the parent of this Widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getText'><b>$getText</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the text of the Widget.  NIL if there is none.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setHoverText'><b>$setHoverText</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='ZWT.Widget.html'>ZWT.Widget</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the text to be displayed on hover-over.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$getHoverText'><b>$getHoverText</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the text to be displayed on hover-over.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$addToParent'><b>$addToParent</b></a>(<small>parent</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add this widget to <b>parent</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$removeFromParent'><b>$removeFromParent</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove this Widget from its parent.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setHandler'><b>$setHandler</b></a>(<small>eventType, handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the only method to be invoked for <b>eventType</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$addHandler'><b>$addHandler</b></a>(<small>eventType, handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>handler</b> as a method to be invoked for <b>eventType</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setClickHandler'><b>$setClickHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked for a click event on this
+ widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setMouseOverHandler'><b>$setMouseOverHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked when the mouse enters the
+ area of this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setMouseOutHandler'><b>$setMouseOutHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> as the method to be invoked when the mouse leaves the
+ area of this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyHandler'><b>$setKeyHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is typed in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyDownHandler'><b>$setKeyDownHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is pressed in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setKeyUpHandler'><b>$setKeyUpHandler</b></a>(<small>handler</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set <b>handler</b> to be invoked when a key is released in this widget.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setActive'><b>$setActive</b></a>(<small>active</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set whether the Widget handles click events.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$isActive'><b>$isActive</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return whether the Widget was set to be active.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.Widget.html#$setInactiveStyle'><b>$setInactiveStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the style to be used when the Widget is inactive.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='ZWT.UIObject.html'>ZWT.UIObject</A>:</td></tr>
+
+<tr><td align='right'><small><span class='type'><A class='typehref' href='ZWT.Element.html'>ZWT.Element</A></span></small>&nbsp;</td><td class='nowrap'><A href='ZWT.UIObject.html#$elem'><b>$elem</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The HTML element for this Item.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyle'><b>$setStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the main Style for this UIObject to <b>style</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setStyleList'><b>$setStyleList</b></a>(<small>styles</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the list of Styles for this UIObject to <b>styles</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$addStyle'><b>$addStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add <b>style</b> to this UIObject, keeping previously set ones.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$removeStyle'><b>$removeStyle</b></a>(<small>style</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Remove <b>style</b> from this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyle'><b>$getStyle</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='ZWT.Style.html'>ZWT.Style</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the main Style for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getStyleList'><b>$getStyleList</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='ZWT.Style.html'>ZWT.Style</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the list of Styles for this UIObject.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getWidth'><b>$getWidth</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the width of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getHeight'><b>$getHeight</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the height of the Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getTop'><b>$getTop</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the vertical position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element in the page
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$getLeft'><b>$getLeft</b></a>(<small>container</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the horizontal position of the Element within <b>container</b>
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZWT.UIObject.html#$setHidden'><b>$setHidden</b></a>(<small>hidden</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the item to be hidden or displayed.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @replace</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new Dropdown.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span> items)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new Dropdown with <b>items</b> as the items.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @replace</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return "Dropdown(text)", where "text" is the Dropdown text.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addItem'><b>$addItem</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item with <b>text</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addSelectedItem'><b>$addSelectedItem</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add an item with <b>text</b> and make it the selected item.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getSelectedIndex'><b>$getSelectedIndex</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the index of the currently selected item.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getSelectedItem'><b>$getSelectedItem</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the text of the currently selected item.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setSelectedIndex'><b>$setSelectedIndex</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the item at <b>index</b> to be the currently selected item.
+</p>
+</td></tr></table></td></tr></table><h2>credits
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> The Class hierarchy, generated Javascript and a few other things
+ are based on the Google Web Toolkit.
+ http://code.google.com/webtoolkit/overview.html
+<p class='ptext'></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

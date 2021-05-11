@@ -1,0 +1,10 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  TYPE int Weight
+  TYPE int Size
+  Weight w = 4
+  Size s = w
+
+  RETURN 0
+}

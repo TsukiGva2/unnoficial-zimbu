@@ -1,0 +1,972 @@
+# The Zimbu compiler written in Zimbu
+#
+# Write Zimbu code for the protocol buffer plugin.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "EnumItem.zu"
+IMPORT "I_ProtoItem.zu"
+IMPORT "MessageItem.zu"
+IMPORT "Proto.zu"
+IMPORT "FieldItem.zu"
+IMPORT "ProtoFile.zu"
+IMPORT "ServiceItem.zu"
+
+MODULE WriteZimbu @items=directory
+
+  # Write the Zimbu code for proto buffer |inFileName| to |outFileName|.
+  # Using the information in |pfile|, parsed from |inFileName|.
+  PROC write(ProtoFile pfile, string inFileName, string outFileName)
+    # Open the output file.
+    IO.File out = IO.fileWriter(outFileName)
+    IF out == NIL
+      IO.print("Cannot open for writing: " .. outFileName)
+      EXIT 1
+    }
+    out.print("# Generated from " .. inFileName)
+    out.print()
+    out.print("IMPORT \"$PLUGIN/proto/Proto.zu\"")
+    out.print("IMPORT \"$PLUGIN/proto/Message.zu\"")
+    out.print()
+
+    # Figure out the module name.
+    string mname
+    IF pfile.package == NIL
+      mname = inFileName
+      int i = mname.findLast('/')
+      IF i >= 0
+        mname = mname.slice(i + 1)  # remove path
+      }
+    ELSE
+      mname = pfile.package
+    }
+    int i = mname.findLast('.')
+    IF i >= 0
+      mname = mname.slice(0, i - 1)  # remove ".proto"
+    }
+    i = mname.findLast('.')
+    IF i >= 0
+      mname = mname.slice(i + 1)  # remove "package." from "package.name"
+    }
+    # Make first letter uppercase.
+    mname = mname.slice(0, 0).toUpper() .. mname.slice(1)
+    out.print("MODULE " .. mname .. " @public @items=public")
+
+    # Write all the items in the proto file.
+    FOR item IN pfile.itemList
+      IF item ISA MessageItem
+        MessageItem msg = item
+        writeClass(msg, out, "  ")
+      ELSEIF item ISA EnumItem
+        EnumItem enum = item
+        writeEnum(enum, out, "  ")
+      ELSEIF item ISA ServiceItem
+        ServiceItem service = item
+        writeService(service, out, "  ")
+      ELSE
+        LOG.internal("unknown item type")
+      }
+    }
+
+    out.print("}")
+
+    out.close()
+  }
+
+  # Write the class for message item |msg| to |out|.
+  PROC writeClass(MessageItem msg, IO.File out, string indent)
+    out.print(indent .. "CLASS " .. msg.name
+                                  .. " EXTENDS Message @public @items=public")
+    IF msg.optionList.Size() > 0
+      # Check for the "extensible" option.
+      bool extensible
+      FOR o IN msg.optionList
+        IF o.name == "extensible"
+          extensible = TRUE
+        }
+      }
+      IF extensible
+        out.print(indent .. "  dyn $extension")
+      }
+      out.print()
+    }
+    
+    # Empty NEW() method so that we can use it as a method reference.
+    out.print(indent .. "  NEW()")
+    out.print(indent .. "  }")
+
+    out.print(indent .. "  FUNC $name() string @replace @primitive")
+    out.print(indent .. "    RETURN \"" .. msg.name .. "\"")
+    out.print(indent .. "  }")
+
+    list<string> hasNames = NEW()
+    list<string> clearLines = NEW()
+    list<string> validItems = NEW()
+    list<FieldItem> msgFields = NEW()
+    list<FieldItem> enumFields = NEW()
+    list<FieldItem> intFields = NEW()
+    list<FieldItem> int32Fields = NEW()
+    list<FieldItem> floatFields = NEW()
+    list<FieldItem> doubleFields = NEW()
+    list<FieldItem> boolFields = NEW()
+    list<FieldItem> stringFields = NEW()
+    list<FieldItem> repeatedFields = NEW()
+    list<FieldItem> notRepeatedFields = NEW()
+
+    string indent2 = indent .. "  "
+    string indent4 = indent2 .. "  "
+    string indent6 = indent4 .. "  "
+
+    # TODO: it shouldn't matter if this comes before or after fields, but
+    # currently it only works if it comes first.
+    FOR item IN msg.items
+      IF item ISA MessageItem
+        MessageItem nmsg = item
+        writeClass(nmsg, out, indent .. "  ")
+      ELSEIF item ISA EnumItem
+        # Enums are written in the SHARED section.
+      ELSE
+        LOG.internal("unknown item type")
+      }
+    }
+
+    FOR f IN msg.fields
+      string typeName
+      string varTypeName
+      string initVal
+      string defaultVal
+      SWITCH f.type
+        CASE Proto.Type.unknown
+          # message or enum, search in scopes
+          typeName = f.typeName
+          I_ProtoItem item = msg.findItem(f.typeName)
+          IF item == NIL
+            LOG.error("Unknown type: \(f.typeName)", f.pos)
+            initVal = ""
+            defaultVal = ""
+          ELSEIF item ISA MessageItem
+            f.type = Proto.Type.message
+            initVal = "NIL"
+            defaultVal = f.default
+            msgFields.add(f)
+          ELSE  # EnumItem
+            f.type = Proto.Type.enum
+            initVal = f.typeName .. ".unknown"
+            IF f.default != NIL
+              defaultVal = f.typeName .. ".e" .. f.default
+            }
+            enumFields.add(f)
+          }
+        CASE Proto.Type.string
+          typeName = "string"
+          initVal = "NIL"
+          defaultVal = f.default
+          stringFields.add(f)
+        CASE Proto.Type.int
+        CASE Proto.Type.int64
+          typeName = "int"
+          initVal = "0"
+          defaultVal = f.default
+          intFields.add(f)
+        CASE Proto.Type.int32
+          typeName = "int32"
+          initVal = "0"
+          defaultVal = f.default
+          int32Fields.add(f)
+        CASE Proto.Type.uint32
+          typeName = "nat32"
+          initVal = "0"
+          defaultVal = f.default
+          intFields.add(f)
+        CASE Proto.Type.uint64
+          typeName = "nat"
+          initVal = "0"
+          defaultVal = f.default
+          intFields.add(f)
+        CASE Proto.Type.float
+          typeName = "float32"
+          initVal = "0"
+          defaultVal = f.default
+          floatFields.add(f)
+        CASE Proto.Type.double
+          typeName = "float"
+          initVal = "0"
+          defaultVal = f.default
+          doubleFields.add(f)
+        CASE Proto.Type.bool
+          typeName = "bool"
+          varTypeName = f.repeated ? "bool" : "int"
+          initVal = "0"
+          defaultVal = f.default
+          boolFields.add(f)
+        DEFAULT
+          LOG.error("SORRY, type not supported yet: \(f.type.ToString())")
+      }
+      IF varTypeName == NIL
+        varTypeName = typeName
+      }
+
+      IF f.repeated
+        repeatedFields.add(f)
+        # Write the class member for this repeated field
+        out.print(indent2 .. "list<" .. varTypeName .. "> "
+                                                            .. f.memberName())
+
+        initVal = "NIL"
+        writeAddGetHas(msg.name, f, typeName, defaultVal, indent2, out)
+      ELSE
+        notRepeatedFields.add(f)
+        # Write the class member for this field
+        out.print(indent2 .. varTypeName .. " " .. f.memberName())
+
+        # We need a "has" boolean for numbers
+        string hasName = f.hasMemberName()
+        IF hasName != NIL
+          hasNames.add(hasName)
+          out.print(indent2 .. "bool " .. hasName)
+        }
+
+        writeSetGetHas(msg.name, f, typeName, initVal, defaultVal, indent2, out)
+      }
+      # line for clear()
+      clearLines.add(f.memberName() .. " = " .. initVal)
+
+      # line for valid()
+      IF f.required
+        validItems.add("$has" .. f.funcName() .. "()")
+      }
+    }
+    
+    # clear() method
+    out.print(indent2 .. "PROC $clear() @primitive")
+    FOR l IN clearLines
+      out.print(indent4 .. l)
+    }
+    FOR h IN hasNames
+      out.print(indent4 .. h .. " = FALSE")
+    }
+    out.print(indent2 .. "}")
+    
+    # valid() method
+    out.print(indent2 .. "FUNC $valid() bool @primitive")
+    out.write(indent4 .. "RETURN ")
+    IF validItems.Size() == 0
+      out.write("TRUE")
+    ELSE
+      string sep = ""
+      FOR i IN validItems
+        out.write(sep .. i)
+        sep = " && "
+      }
+    }
+    out.print()
+    out.print(indent2 .. "}")
+    
+    # Set and Get called from writeBinary() and mergeFromBinary()
+    IF enumFields.Size() > 0
+      writeGetSet("enum", "int", enumFields, "0", indent2, out)
+    }
+    IF intFields.Size() > 0
+      writeGetSet("int", "int", intFields, "0", indent2, out)
+    }
+    IF int32Fields.Size() > 0
+      writeGetSet("int32", "int32", int32Fields, "0", indent2, out)
+    }
+    IF floatFields.Size() > 0
+      writeGetSet("float", "float32", floatFields, "0", indent2, out)
+    }
+    IF doubleFields.Size() > 0
+      writeGetSet("double", "float", doubleFields, "0", indent2, out)
+    }
+    IF boolFields.Size() > 0
+      writeGetSet("bool", "bool", boolFields, "FALSE", indent2, out)
+    }
+    IF stringFields.Size() > 0
+      writeGetSet("string", "string", stringFields, "\"\"", indent2, out)
+    }
+    # For messages we have recursive write/merge methods.
+    writeWriteMerge(msgFields, indent2, out)
+
+    # Write the hasField() method if there non-repeated fields.
+    IF notRepeatedFields.Size() > 0
+      writeHasField(notRepeatedFields, indent2, out)
+    }
+    # For repeated fields we have size methods.
+    IF repeatedFields.Size() > 0
+      writeSize(repeatedFields, indent2, out)
+    }
+
+    # $copy()
+    writeCopy(msg, indent2, out)
+
+    # fieldSpecs()
+    out.print(indent2
+             .. "FUNC $fieldSpecs() list<Proto.FieldSpec> @define @primitive")
+    out.print(indent4 .. "RETURN fieldSpecs")
+    out.print(indent2 .. "}")
+
+    # mergeFromReader()
+    out.print(indent2 .. "FUNC $mergeFromReader(Proto.FileFormat format, Proto.I_Reader reader) " .. msg.name)
+    out.print(indent4 .. "Proto.mergeFromFields(THIS, format, fieldSpecs, reader)")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+
+    # mergeFromBinary()
+    out.print(indent2 .. "FUNC $mergeFromBinary(Proto.I_Reader reader) " .. msg.name)
+    out.print(indent4 .. "Proto.mergeFromBinaryFields(THIS, fieldSpecs, reader)")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+    out.print(indent2 .. "FUNC $mergeFromBinary(IO.I_ByteReader reader) " .. msg.name)
+    out.print(indent4 .. "$mergeFromBinary(Proto.Reader.NEW(reader, FALSE))")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+    out.print(indent2 .. "FUNC $mergeFromBinaryDeref(IO.I_ByteReader reader) " .. msg.name)
+    out.print(indent4 .. "$mergeFromBinary(Proto.Reader.NEW(reader, TRUE))")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+    # mergeFromText()
+    out.print(indent2 .. "FUNC $mergeFromText(Proto.I_Reader reader) " .. msg.name)
+    out.print(indent4 .. "Proto.mergeFromTextFields(THIS, fieldSpecs, reader)")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+
+    # mergeFromJson()
+    out.print(indent2 .. "FUNC $mergeFromJson(Proto.I_Reader reader) " .. msg.name)
+    out.print(indent4 .. "Proto.mergeFromJsonFields(THIS, fieldSpecs, reader)")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+    out.print(indent2 .. "FUNC $mergeFromJson(IO.I_CharReader reader) " .. msg.name)
+    out.print(indent4 .. "Proto.mergeFromJsonFields(THIS, fieldSpecs, Proto.Reader.NEW(reader, FALSE))")
+    out.print(indent4 .. "RETURN THIS")
+    out.print(indent2 .. "}")
+
+    # SHARED section
+    out.print(indent2 .. "SHARED")
+
+    # Write the field table, used by writeBinary()
+    writeFieldTable(msg.fields, indent4, out)
+
+    # Write a method that creates a Message iobject.
+    # TODO: it should be possible to use NEW() directly.
+    out.print(indent4 .. "FUNC newMessage() Message")
+    out.print(indent6 .. "RETURN " .. msg.name .. ".NEW()")
+    out.print(indent4 .. "}")
+
+    # createFrom{Type}()
+    FOR type IN ["Binary", "Text", "Json"]
+      out.write(indent4 .. "FUNC createFrom" .. type)
+      string reader
+      IF type == "Binary"
+        reader = "IO.I_ByteReader"
+      ELSE
+        reader = "IO.I_CharReader"
+      }
+      out.print("(" .. reader .. " reader) " .. msg.name)
+      out.write(indent6 .. "RETURN " .. msg.name .. ".NEW().mergeFrom" .. type)
+      IF type != "Json"
+        out.print("(Proto.Reader.NEW(reader, FALSE))")
+      ELSE
+        out.print("(reader)")
+      }
+      out.print(indent4 .. "}")
+      out.print(indent4 .. "FUNC createMessageFrom"
+          .. type .. "(" .. reader .. " reader) Message")
+      out.print(indent6 .. "RETURN createFrom" .. type .. "(reader)")
+      out.print(indent4 .. "}")
+      IF type != "Text"
+        out.print(indent4 .. "FUNC createMessageFrom"
+            .. type .. "Deref(" .. reader .. " reader) Message")
+        out.print(indent6 .. "RETURN createFrom" .. type .. "Deref(reader)")
+        out.print(indent4 .. "}")
+      }
+    }
+    # CreateFromBinaryDeref()
+    out.print(indent4 .. "FUNC createFromBinaryDeref(IO.I_ByteReader reader) " .. msg.name)
+    out.print(indent6 .. "RETURN " .. msg.name
+                               .. ".NEW().mergeFromBinary(Proto.Reader.NEW(reader, TRUE))")
+    out.print(indent4 .. "}")
+    # CreateFromJsonDeref()
+    out.print(indent4 .. "FUNC createFromJsonDeref(IO.I_CharReader reader) " .. msg.name)
+    out.print(indent6 .. "RETURN " .. msg.name
+                               .. ".NEW().mergeFromJson(Proto.Reader.NEW(reader, TRUE))")
+    out.print(indent4 .. "}")
+
+    FOR item IN msg.items
+      IF item ISA EnumItem
+        writeEnum(item.<EnumItem>, out, indent4)
+      }
+    }
+
+    # end of SHARED section
+    out.print(indent2 .. "}")
+
+    # end of the class
+    out.print(indent .. "}")
+  }
+
+  # Write methods to get and set all fields in |fields|, which are of the
+  # type |type|.
+  PROC writeGetSet(string type, string retType,
+                   list<FieldItem> fields, string default,
+                   string indent, IO.File out)
+    bool hasRep = hasRepeated(fields)
+    bool hasNotRep = hasNotRepeated(fields)
+    bool didSet
+
+    # Write code for non-repeated and for repeated messages.
+    FOR repeated IN [FALSE, TRUE]
+      IF (!repeated && hasNotRep) || (repeated && hasRep)
+        # Get methods to be called back from writeBinary()
+        out.write(indent .. "FUNC $" .. type .. "Get(int fieldNr")
+        IF repeated
+          out.write(", int idx")
+        }
+        out.print(") " .. retType .. " @replace @primitive")
+        out.print(indent .. "  SWITCH fieldNr")
+        FOR f IN fields
+          IF f.repeated == repeated
+            out.write(indent .. "    CASE " .. f.nr .. "; RETURN ")
+            string memberName = f.memberName()
+            IF repeated
+              memberName ..= "[idx]"
+            }
+            IF type == "enum"
+              out.print("from" .. f.typeName
+                                              .. "2int[" .. memberName .. "]")
+            ELSEIF type == "bool" && !f.repeated
+              out.print(memberName .. " == 2")
+            ELSE
+              out.print(memberName)
+            }
+          }
+        }
+        out.print(indent .. "  }")
+        out.print(indent .. "  RETURN " .. default)  # should not happen
+        out.print(indent .. "}")
+
+        # enumNameGet() method to be called back from writeBinary()
+        IF type == "enum"
+          out.write(indent .. "FUNC $enumNameGet(int fieldNr")
+          IF repeated
+            out.write(", int idx")
+          }
+          out.print(") string @replace @primitive")
+          out.print(indent .. "  string s")
+          out.print(indent .. "  SWITCH fieldNr")
+          FOR f IN fields
+            IF f.repeated == repeated
+              string memberName = f.memberName()
+              IF repeated
+                memberName ..= "[idx]"
+              }
+              out.write(indent .. "    CASE " .. f.nr .. "; s = ")
+              out.print(memberName .. ".ToString(); RETURN s == \"unknown\" ? s : s.slice(1)")
+            }
+          }
+          out.print(indent .. "  }")
+          out.print(indent .. "  RETURN \"\"")  # should not happen
+          out.print(indent .. "}")
+        }
+
+        # Set methods to be called back from mergeFromBinary()
+        # We do both repeated and not repeated fields with a $typeSet method.
+        IF !didSet
+          didSet = TRUE
+          out.write(indent .. "PROC $" .. type .. "Set(int fieldNr, ")
+          out.print(retType .. " value) @replace @primitive")
+          out.print(indent .. "  SWITCH fieldNr")
+          FOR f IN fields
+            string memberName = f.memberName()
+            out.write(indent .. "    CASE " .. f.nr .. "; ")
+            IF f.repeated
+              out.write("$add" .. f.funcName() .. "(")
+            ELSE
+              out.write(memberName .. " = ")
+            }
+            IF type == "enum"
+              out.write("int2" .. f.typeName .. ".has(value) ? "
+                  .. "int2" .. f.typeName .. "[value] : "
+                  .. f.typeName .. ".unknown")
+            ELSEIF f.repeated
+              out.write("value")
+            ELSEIF type == "bool"
+              out.write("(value ? 2 : 1)")
+            ELSE
+              string hasName = f.hasMemberName()
+              IF hasName != NIL
+                out.write("value; " .. hasName .. " = TRUE")
+              ELSE
+                out.write("value")
+              }
+            }
+            out.print(f.repeated ? ")" : "")
+          }
+          out.print(indent .. "  }")
+          out.print(indent .. "}")
+
+          # enumNameSet() method to be called back from mergeFromText()
+          IF type == "enum"
+            out.write(indent)
+            out.print("PROC $enumNameSet(int fieldNr, string name) @replace @primitive")
+            out.write(indent)
+            out.print("  SWITCH fieldNr")
+            FOR f IN fields
+              string memberName = f.memberName()
+              out.write(indent)
+              out.write("    CASE " .. f.nr .. "; ")
+              IF f.repeated
+                out.write("$add" .. f.funcName() .. "(")
+              ELSE
+                out.write(memberName .. " = ")
+              }
+              out.print(f.typeName .. ".FromString(\"e\" .. name)")
+              out.print(f.repeated ? ")" : "")
+            }
+            out.print(indent .. "  }")
+            out.print(indent .. "}")
+          }
+        }
+      }
+    }
+  }
+
+  FUNC hasRepeated(list<FieldItem> fields) bool
+    FOR f IN fields
+      IF f.repeated
+        RETURN TRUE
+      }
+    }
+    RETURN FALSE
+  }
+
+  FUNC hasNotRepeated(list<FieldItem> fields) bool
+    FOR f IN fields
+      IF !f.repeated
+        RETURN TRUE
+      }
+    }
+    RETURN FALSE
+  }
+
+
+  # Write methods to write and merge for message fields.
+  PROC writeWriteMerge(list<FieldItem> fields, string indent, IO.File out)
+    # Find out if we have repeated and/or not-repeated messages.
+    bool hasRep = hasRepeated(fields)
+    bool hasNotRep = hasNotRepeated(fields)
+    bool didMerge
+
+    # Write code for non-repeated and for repeated messages.
+    FOR repeated IN [FALSE, TRUE]
+      IF (!repeated && hasNotRep) || (repeated && hasRep)
+        out.write(indent .. "FUNC $messageGet(int fieldNr")
+        IF repeated
+          out.write(", int idx")
+        }
+        out.print(") Message @replace @primitive")
+        out.print(indent .. "  SWITCH fieldNr")
+        FOR f IN fields
+          IF f.repeated == repeated
+            out.write(indent .. "    CASE " .. f.nr
+                                             .. "; RETURN " .. f.memberName())
+            IF repeated
+              out.write("[idx]")
+            }
+            out.print()
+          }
+        }
+        out.print(indent .. "  }")
+        out.print(indent .. "  RETURN NIL")
+        out.print(indent .. "}")
+
+        IF repeated
+          out.print(indent .. "PROC $messageAdd(int fieldNr, Message m) @replace @primitive")
+        ELSE
+          out.print(indent .. "PROC $messageSet(int fieldNr, Message m) @replace @primitive")
+        }
+        out.print(indent .. "  SWITCH fieldNr")
+        FOR f IN fields
+          IF f.repeated == repeated
+            out.write(indent .. "    CASE " .. f.nr .. "; ")
+            IF repeated
+              out.write("IF " .. f.memberName() .. " == NIL; ")
+              out.print(f.memberName() .. " = NEW(); }")
+              out.print(indent .. "            "
+                                               .. f.memberName() .. ".add(m)")
+            ELSE
+              out.print(f.memberName() .. " = m")
+            }
+          }
+        }
+        out.print(indent .. "  }")
+        out.print(indent .. "}")
+
+        # We can merge from Binary, Text and Json.
+        IF !didMerge
+          didMerge = TRUE
+          out.write(indent .. "FUNC $mergeMessageFromReader(int fieldNr, Proto.FileFormat format, ")
+          out.print("Proto.I_Reader reader) bool @replace")
+          out.print(indent .. "  SWITCH fieldNr")
+          string indent6 = indent .. "      "
+          FOR f IN fields
+            out.print(indent .. "    CASE " .. f.nr)
+            out.print(indent6 .. "IF " .. f.memberName() .. " == NIL")
+            out.print(indent6 .. "  " .. f.memberName() .. " = NEW()")
+            out.print(indent6 .. "}")
+            IF f.repeated
+              out.print(indent6 .. f.typeName .. " m = NEW()")
+              out.print(indent6 .. f.memberName() .. ".add(m)")
+              out.print(indent6 .. "reader.addRef(m)")
+              out.print(indent6 .. "m.mergeFromReader(format, reader)")
+            ELSE
+              out.print(indent6 .. "reader.addRef("
+                                                     .. f.memberName() .. ")")
+              out.print(indent6 .. f.memberName()
+                                     .. ".mergeFromReader(format, reader)")
+            }
+            out.print(indent6 .. "RETURN TRUE")
+          }
+          out.print(indent .. "  }")
+          out.print(indent .. "  RETURN FALSE")
+          out.print(indent .. "}")
+        }
+      }
+    }
+  }
+
+  # Write hasField() method.  Writes a line for every item in |fields|.
+  PROC writeHasField(list<FieldItem> fields, string indent, IO.File out)
+    out.print(indent .. "FUNC $hasField(int fieldNr) bool @replace @primitive")
+    out.print(indent .. "  SWITCH fieldNr")
+    FOR f IN fields
+      out.print(indent .. "    CASE " .. f.nr .. "; RETURN $has"
+                                                      .. f.funcName() .. "()")
+    }
+    out.print(indent .. "  }")
+    out.print(indent .. "  RETURN FALSE")
+    out.print(indent .. "}")
+  }
+
+  PROC writeCopy(MessageItem msg, string indent, IO.File out)
+    out.print(indent .. "FUNC $copy(bool deep) " .. msg.name)
+    string indent2 = indent .. "  "
+    out.print(indent2 .. msg.name .. " ret = NEW()")
+    FOR f IN msg.fields
+      string memberName = f.memberName().slice(1)
+      string hasName = f.hasMemberName()
+      string indentX = indent2
+      IF hasName != NIL
+        indentX ..= "  "
+        out.print(indent2 .. "IF " .. hasName)
+        out.print(indentX .. "ret." .. hasName.slice(1) .. " = TRUE")
+      }
+      IF f.repeated
+        out.print(indentX .. "IF deep")
+        out.print(indentX .. "  IF " .. f.memberName() .. " != NIL")
+        out.print(indentX .. "    ret." .. memberName .. " = NEW()")
+        out.print(indentX .. "    FOR i IN " .. f.memberName())
+        IF f.type == Proto.Type.message
+          out.print(indentX .. "      ret." .. memberName
+                                                      .. ".add(i.copy(deep))")
+        ELSE
+          out.print(indentX .. "      ret." .. memberName .. ".add(i)")
+        }
+        out.print(indentX .. "    }")
+        out.print(indentX .. "  }")
+        out.print(indentX .. "ELSE")
+        out.print(indentX .. "  ret." .. memberName
+                                                  .. " = " .. f.memberName())
+        out.print(indentX .. "}")
+      ELSE
+        IF f.type == Proto.Type.message
+          out.print(indentX .. "IF " .. f.memberName() .. " != NIL")
+          out.print(indentX .. "  ret." .. memberName
+                                         .. " = deep ? " .. f.memberName() ..
+                                           ".copy(deep) : " .. f.memberName())
+          out.print(indentX .. "}")
+        ELSE
+          out.print(indentX .. "ret." .. memberName
+                                                  .. " = " .. f.memberName())
+        }
+      }
+      IF hasName != NIL
+        out.print(indent2 .. "}")
+      }
+    }
+    out.print(indent2 .. "RETURN ret")
+    out.print(indent .. "}")
+  }
+
+  # Write method to get size of repeated fields in |fields|.
+  PROC writeSize(list<FieldItem> fields, string indent, IO.File out)
+    # Get methods to be called back from writeBinary()
+    out.print(indent .. "FUNC $size(int fieldNr) int @replace @primitive")
+    out.print(indent .. "  SWITCH fieldNr")
+    FOR f IN fields
+      out.print(indent .. "    CASE " .. f.nr .. "; RETURN "
+                                         .. f.memberName() .. " == NIL ? 0 : "
+                                               .. f.memberName() .. ".Size()")
+    }
+    out.print(indent .. "  }")
+    out.print(indent .. "  RETURN 0")  # should not happen
+    out.print(indent .. "}")
+  }
+
+  # Write the field table, used by writeBinary()
+  PROC writeFieldTable(list<FieldItem> fields, string indent, IO.File out)
+    out.print(indent .. "list<Proto.FieldSpec> fieldSpecs = [")
+    FOR field IN fields
+      out.print(indent .. "  NEW(\""
+          .. field.name .. "\", "
+          .. field.nr .. ", Proto.Type."
+          .. field.type.ToString() .. ", "
+          .. field.repeated .. "),")
+    }
+    out.print(indent .. "]")
+  }
+
+  # Write the get/set/has/clear methods for non-repeated field |field|.
+  PROC writeSetGetHas(string class, FieldItem field,
+                               string type, string initVal, string defaultVal,
+                                                   string indent, IO.File out)
+    string memberName = field.memberName()
+    string funcName = field.funcName()
+    string hasName = field.hasMemberName()
+
+    # setFoo(v)
+    out.print(indent .. "FUNC $set" .. funcName
+                           .. "(" .. type .. " v) " .. class .. " @primitive")
+    IF type == "bool"
+      # bool values are 0 (not set), 1 (FALSE), 2 (TRUE)
+      out.print(indent .. "  " .. memberName .. " = v ? 2 : 1")
+    ELSE
+      out.print(indent .. "  " .. memberName .. " = v")
+    }
+    IF hasName != NIL
+      out.print(indent .. "  " .. hasName .. " = TRUE")
+    }
+    out.print(indent .. "  RETURN THIS")
+    out.print(indent .. "}")
+
+    # newFoo()
+    IF field.type == Proto.Type.message
+      out.print(indent .. "FUNC $new" .. funcName .. "() " .. type)
+      out.print(indent .. "  " .. memberName .. " = NEW()")
+      out.print(indent .. "  RETURN " .. memberName)
+      out.print(indent .. "}")
+    }
+
+    # getFoo()
+    out.print(indent .. "FUNC $get" .. funcName .. "() "
+                                                     .. type .. " @primitive")
+    IF hasName != NIL
+      out.print(indent .. "  IF !" .. hasName)
+    ELSE
+      out.print(indent .. "  IF " .. memberName .. " == " .. initVal)
+    }
+    IF field.default != NIL
+      out.print(indent .. "    RETURN " .. defaultVal)
+    ELSEIF type == "bool"
+      out.print(indent .. "    RETURN FALSE")
+    ELSEIF type == "string"
+      out.print(indent .. "    RETURN \"\"")
+    ELSEIF type == "int" || type == "int32" || type == "nat" || type == "nat32"
+      out.print(indent .. "    RETURN 0")
+    ELSE
+      out.print(indent .. "    THROW \"" .. field.name .. " was not set\"")
+    }
+    out.print(indent .. "  }")
+
+    IF type == "bool"
+      out.print(indent .. "  RETURN " .. memberName .. " == 2")
+    ELSE
+      out.print(indent .. "  RETURN " .. memberName)
+    }
+    out.print(indent .. "}")
+
+    # hasFoo()
+    out.print(indent .. "FUNC $has" .. funcName .. "() bool @primitive")
+    IF hasName != NIL
+      out.print(indent .. "  RETURN " .. hasName)
+    ELSE
+      out.print(indent .. "  RETURN " .. memberName .. " != " .. initVal)
+    }
+    out.print(indent .. "}")
+
+    # clearFoo()
+    out.print(indent .. "FUNC $clear" .. funcName .. "() "
+                                                    .. class .. " @primitive")
+    out.print(indent .. "  " .. memberName .. " = " .. initVal)
+    IF hasName != NIL
+      out.print(indent .. "  " .. hasName .. " = FALSE")
+    }
+    out.print(indent .. "  RETURN THIS")
+    out.print(indent .. "}")
+  }
+
+  # Write the add/set/has/clear methods for repeated field |field|.
+  PROC writeAddGetHas(string class, FieldItem field, string type,
+                                string defaultVal, string indent, IO.File out)
+    string memberName = field.memberName()
+    string funcName = field.funcName()
+
+    # addFoo(v)
+    out.print(indent .. "FUNC $add" .. funcName
+                                           .. "(" .. type .. " v) " .. class)
+    out.print(indent .. "  IF " .. memberName .. " == NIL")
+    out.print(indent .. "    " .. memberName .. " = NEW()")
+    out.print(indent .. "  }")
+    out.print(indent .. "  " .. memberName .. ".add(v)")
+    out.print(indent .. "  RETURN THIS")
+    out.print(indent .. "}")
+
+    IF field.type == Proto.Type.message
+      # addNewFoo()
+      out.print(indent .. "FUNC $addNew" .. funcName .. "() " .. type)
+      out.print(indent .. "  " .. type .. " v = NEW()")
+      out.print(indent .. "  $add" .. funcName .. "(v)")
+      out.print(indent .. "  RETURN v")
+      out.print(indent .. "}")
+    }
+
+    # getFoo(i)
+    out.print(indent .. "FUNC $get" .. funcName .. "(int i) "
+                                                     .. type .. " @primitive")
+    out.print(indent .. "  IF i < 0 || "
+                                           .. memberName .. " == NIL || i >= "
+                                               .. memberName .. ".Size()")
+
+    out.print(indent .. "    THROW \"list index out of range for "
+                                                 .. field.name .. ": \" .. i")
+    out.print(indent .. "  }")
+    out.print(indent .. "  RETURN " .. memberName .. "[i]")
+    out.print(indent .. "}")
+
+    # getFooList()
+    out.print(indent .. "FUNC $get" .. funcName
+                                  .. "List() list<" .. type .. "> @primitive")
+    out.print(indent .. "  RETURN " .. memberName)
+    out.print(indent .. "}")
+
+    # setFooList()
+    out.print(indent .. "FUNC $set" .. funcName
+                 .. "List(list<" .. type .. "> l) " .. class .. " @primitive")
+    out.print(indent .. "  " .. memberName .. " = l")
+    out.print(indent .. "  RETURN THIS")
+    out.print(indent .. "}")
+
+    # sizeFoo(i)
+    out.print(indent .. "FUNC $size" .. funcName .. "() int @primitive")
+    out.print(indent .. "  RETURN " .. memberName .. " == NIL ? 0 : "
+                                                    .. memberName .. ".Size()")
+    out.print(indent .. "}")
+
+    # hasFoo()
+    out.print(indent .. "FUNC $has" .. funcName .. "() bool @primitive")
+    out.print(indent .. "  RETURN " .. memberName .. " != NIL && "
+                                               .. memberName .. ".Size() > 0")
+    out.print(indent .. "}")
+
+    # hasFoo(i)
+    out.print(indent .. "FUNC $has" .. funcName .. "(int i) bool @primitive")
+    out.print(indent .. "  RETURN i >= 0 && "
+                                            .. memberName .. " != NIL && i < "
+                                               .. memberName .. ".Size()")
+    out.print(indent .. "}")
+
+    # clearFoo()
+    out.print(indent .. "FUNC $clear" .. funcName .. "() "
+                                                    .. class .. " @primitive")
+    out.print(indent .. "  " .. memberName .. " = NIL")
+    out.print(indent .. "  RETURN THIS")
+    out.print(indent .. "}")
+  }
+
+  # Write code for a service.
+  PROC writeService(ServiceItem service, IO.File out, string indent)
+    out.print("  MODULE " .. service.name.slice(0, 0).toUpper()
+                         .. service.name.slice(1) .. " @public @items=public")
+    string indent4 = indent .. "    "
+    FOR rpc IN service.rpcs
+      # Client side.
+      out.print(indent .. "  # rpc " .. rpc.name .. "(" .. rpc.requestName
+                                          .. ") returns " .. rpc.responseName)
+      out.print(indent .. "  FUNC call"
+                           .. rpc.name .. "("
+                           .. rpc.requestName .. " request, "
+                           .. "proc<RPC.Control, Message> done) "
+                           .. "RPC.Control")
+      out.print(indent4 .. "IF !request.valid()")
+      out.print(indent4 .. "  RETURN NIL")
+      out.print(indent4 .. "}")
+
+      string dotName = service.name .. "." .. rpc.name
+      string call = "  RETURN Proto.rpc(\"" ..  dotName .. "\", request, "
+      out.print(indent4 .. "GENERATE_IF Z.lang == \"JS\"")
+      out.print(indent4 .. call .. rpc.responseName
+                                 .. ".createMessageFromJsonDeref, NIL, done)")
+      out.print(indent4 .. "GENERATE_ELSEIF Z.lang == \"C\"")
+      out.print(indent4 .. call .. "NIL, " .. rpc.responseName
+                                    .. ".createMessageFromBinaryDeref, done)")
+      out.print(indent4 .. "GENERATE_ELSE")
+      out.print(indent4 .. "  RETURN NIL")
+      out.print(indent4 .. "}")
+
+      out.print(indent .. "  }")
+
+      # Server side.
+      out.print(indent .. "  GENERATE_IF Z.lang == \"C\"")
+      out.print(indent4 .. "Proto.RpcInfo handle"
+                           .. rpc.name .. " = NEW(\""
+                           .. dotName .. "\", "
+                           .. rpc.requestName .. ".createMessageFromJsonDeref, "
+                           .. rpc.responseName .. ".newMessage)")
+      out.print(indent .. "  }")
+    }
+    out.print("  }")
+  }
+
+  # Write an enum for proto buffer item |enum| to |out|.
+  PROC writeEnum(EnumItem enum, IO.File out, string indent)
+    out.print(indent .. "ENUM " .. enum.name .. " @public")
+    out.print(indent .. "  unknown")
+    FOR m IN enum.members
+      # Prepend "e" to avoid all-upper name.
+      out.print(indent .. "  e" .. m.id)
+    }
+    out.print(indent .. "}")
+
+    # Write enum lookup tables for proto buffer item |enum| to |out|.
+    out.print(indent .. "dict<" .. enum.name .. ", int> from"
+                                                   .. enum.name .. "2int = [")
+    out.print(indent .. "  " .. enum.name .. ".unknown: -1,")
+    FOR m IN enum.members
+      out.print(indent .. "  " .. enum.name .. ".e" .. m.id
+                                                       .. ": " .. m.nr .. ",")
+    }
+    out.print(indent .. "]")
+
+    out.print(indent .. "dict<int, " .. enum.name .. "> int2"
+                                                   .. enum.name .. " = [")
+    FOR m IN enum.members
+      out.print(indent .. "  " .. m.nr .. ": "
+                                          .. enum.name .. ".e" .. m.id .. ",")
+    }
+    out.print(indent .. "]")
+  }
+
+  # Write an error for proto buffer |inFileName| to |outFileName|.
+  PROC writeError(string inFileName, string outFileName)
+    # Open the output file.
+    IO.File out = IO.fileWriter(outFileName)
+    IF out == NIL
+      IO.print("Cannot open for writing: " .. outFileName)
+      EXIT 1
+    }
+    out.print("Error handling " .. inFileName)
+    out.close()
+  }
+}

@@ -1,0 +1,60 @@
+#
+# ZUT (Zimbu Templates) demo: general controller
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT HelloMessage.zut
+IMPORT.ZUT MyControllerTemplate.zut
+
+CLASS MyController
+
+  FUNC $clicked(ZUT.Event event) bool
+    # Let the user know the click was recognized.
+    STATIC bool done
+    IF !done
+      done = TRUE
+      IO.print()
+      IO.print("--- stdout --")
+    }
+    IO.print("You clicked!")
+
+    # Find the "data-id" attribute of the element that's clicked on.
+    # It was added by Decorator.decorate(), see below.
+    # Use the value to identify the element to put the Hello message on.
+    # It was added by Decorator.holder(), see below.
+    string id = event.element.getAttribute("data-id")
+    callback<ZUT.HtmlFunc, string> cb =
+                           NEW(HelloMessage.show, "Hello World! (hover here)")
+    ZUT.getElementById(id).fill(cb)
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  #= Use MyController.Decorator to decorate an HTML element with the
+  #= functionality of MyController:
+  #% [MyController.Decorator decorator = NEW()
+  #% <div [=decorator.decorate()]> Body </div>
+  #% <div [=decorator.holder()]> </div>
+  CLASS Decorator @public
+    string $id
+
+    NEW() @public
+      $id = ZUT.uid()
+    }
+
+    #= Return attributes for an element to add a MyController.
+    FUNC $decorate() ZUT.Attributes @public
+      RETURN MyControllerTemplate.decorateAttributes($id)
+    }
+
+    #= Return attributes for an element to be updated by MyController.
+    FUNC $holder() ZUT.Attributes @public
+      RETURN ZUT.Attributes.fromSafeString("id='\($id)'")
+    }
+  }
+
+}

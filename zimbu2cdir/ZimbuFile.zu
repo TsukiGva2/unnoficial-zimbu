@@ -1,0 +1,276 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ZimbuFile class: A Zimbu file that can be (or has been) parsed.
+#                  Does not contain info about where it was imported, see
+#                  UsedFile for that.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Builtin.zu"
+IMPORT "Config.zu"
+IMPORT "Declaration.zu"
+IMPORT "FileScope.zu"
+IMPORT "MethodScope.zu"
+IMPORT "Output.zu"
+IMPORT "Parse.zu"
+IMPORT "Resolve.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiFile.zu"
+
+CLASS ZimbuFile @items=public   # TODO: restrict visibility
+  string $filename     # file name relative to build directory
+  string $fullname     # file name with full path
+  string $rootName     # |filename| with directory and ".zu"/".zwt" removed
+  string $dirName      # directory relative to build directory
+
+  string $outDir       # where to write the output
+  string $initFunc     # name of function that inits global vars
+
+  int    $startedPass  # pass number that started (and may have ended)
+  bool   $didInitFunc  # set when generated call to initFunc
+
+  bool   $isMainFile    # TRUE for main file; should contain Main()
+  bool   $topZwtFile    # was used in IMPORT.ZWT
+  bool   $usedAsZwt     # was used in IMPORT.ZWT or imported through it
+  bool   $usedAsZimbu   # was used in IMPORT
+  bool   $isProto       # converted from a .proto file
+
+  # Scope for the file level, contains the list of statements.
+  FileScope  $fileScope
+
+  # Scope used for the initialization function.  Stores temp variables used in
+  # initialization expressions.
+  MethodScope $initScope
+
+  Declaration $item    # The one item that this file exports.
+                       # NIL when there is not exactly one item.
+
+  # Keep track of which Token.Type.id keywords have been used in this file.
+  # Set just after parsing.
+  # This is for loading a built-in library only when it is used.
+  set<string> $usedIdKeywords
+
+  CodeSpecific    $c     # C specific values
+  CodeSpecific    $js    # JS specific values
+
+  # When the ZimbuFile was loaded from a .zui file then $zuiFile contains the
+  # relevant information.  When not then it will be filled after resolving.
+  ZuiFile         $zuiFile
+  bool            $didReadZuiFile   # TRUE if zuiFile was read OK
+
+  NEW(string filename, bool isMainFile)
+    $filename = filename
+    IF $filename.startsWith("./")
+      $filename = $filename.slice(2)
+    }
+    $fullname = IO.fullPath(filename)
+    $isMainFile = isMainFile
+
+    IF $filename.slice(-3) == ".zu"
+      $rootName = $filename.slice(0, -4)  # without ".zu"
+    ELSE
+      LOG.error("File not ending in .zu: \($filename)")
+    }
+    int slash = $rootName.findLast('/')
+    IF slash >= 0
+      $dirName = $rootName.slice(0, slash - 1)
+      $rootName = $rootName.slice(slash + 1)
+    ELSE
+      $dirName = ""
+    }
+
+    # Set the directory to store the produced files.
+    IF $dirName != ""
+      $outDir = $dirName .. "/" .. Config.zudirName
+      IF $outDir.startsWith("./")
+        $outDir = $outDir.slice(2)
+      }
+    ELSE
+      $outDir = Config.zudirName
+    }
+
+    # TODO: use varString?
+    string root = "INC_"
+    # Include directory name, replace every "/" with "__"
+    int idx
+    WHILE idx < $dirName.Size()
+      slash = $dirName.find('/', idx)
+      IF slash < 0
+        root ..= $dirName.slice(idx) .. "__"
+        BREAK
+      }
+      IF slash == 0
+        root ..= "__"
+      ELSE
+        # TODO: including ".." as "dd__" causes trouble when compiling
+        # different binaries that use the proto plugin.
+        string s = $dirName.slice(idx, slash - 1)
+        IF s != ".."
+          root ..= s .. "__"
+        }
+      }
+      idx = slash + 1
+    }
+    root ..= $rootName
+
+    # Identifiers start with "I", use "J" to be unique.
+    $initFunc = "J" .. $rootName
+    $startedPass = -1  # didn't start any pass yet (parsing is 0)
+    $c = NEW()
+    $js = NEW()
+  }
+
+
+  #= Return the name of the .zui file.
+  FUNC $zuiName() string
+    RETURN $outDir .. "/" .. $rootName .. ".zui"
+  }
+
+  # Parse the file, unless done already.
+  # Return FAIL if the file could not be read.
+  FUNC $parse(string indent, UsedFile usedFile) status
+    IF $startedPass == -1
+      $zuiFile = NEW($filename, $outDir, $zuiName())
+      IF writeZuiFlag.get()
+        # Attempt reading the .zui file for this .zu file.
+        # This only works when it exists and the header has information
+        # matching the .zu file.
+        $didReadZuiFile = $zuiFile.read(indent) == OK
+
+        # TODO: If reading worked then return here, no need to parse.
+        #       Do need to add object references.
+      }
+
+      $startedPass = 0
+      $fileScope = FileScope.parseFile($filename, indent, usedFile)
+    }
+    RETURN $fileScope == NIL ? FAIL : OK
+  }
+
+  # Write the .zui file for this ZimbuFile, if appropriate.
+  PROC $writeZui()
+    IF $zuiFile != NIL
+      IF !$didReadZuiFile
+        # Add the list of builtin modules to the ZuiFile.
+        FOR key IN $usedIdKeywords.keys()
+          IF Builtin.isBuiltin(key)
+            $zuiFile.contents.addBuiltin(key)
+          }
+        }
+
+        $zuiFile.write()
+      ELSE
+        LOG.info(".zui file was read: \($zuiName())")
+      }
+    }
+  }
+
+  # Return the name of the top module in this file.
+  # If not found returns NIL.
+  FUNC $getModuleName() string
+    Zui.Statement stmt = $getModuleStatement()
+    IF stmt == NIL
+      RETURN NIL
+    }
+    RETURN stmt.getDeclaration().getName()
+  }
+
+  # Find the node in this file that is the top module.
+  # If not found gives an error and returns NIL.
+  FUNC $getModuleStatement() Zui.Statement
+    RETURN $getDeclarationStatement(TRUE)
+  }
+
+  # Find the node in this file that is the top module or class.
+  # If not found gives an error and returns NIL.
+  FUNC $getDeclarationStatement(bool moduleOnly) Zui.Statement
+    # Find the module after IMPORT statements.
+    FOR stmt IN $fileScope.statements ?: []
+      IF stmt.getType() == Zui.StatementType.eMODULE_DECL
+           || (!moduleOnly && stmt.getType() == Zui.StatementType.eCLASS_DECL)
+        RETURN stmt
+      }
+    }
+    LOG.error("No Module found in import")
+    RETURN NIL
+  }
+
+  FUNC $hasUsedItem(Resolve gen, string indent) bool
+    bool typeUsed
+    FOR stmt IN $fileScope.statements ?: []
+      IF stmt.getType() == Zui.StatementType.eMODULE_DECL
+          || stmt.getType() == Zui.StatementType.eCLASS_DECL
+          || stmt.getType() == Zui.StatementType.eBITS_DECL
+          || stmt.getType() == Zui.StatementType.eENUM_DECL
+          || stmt.getType() == Zui.StatementType.eMETHOD_DECL
+        Zui.Declaration zuiDecl = stmt.getDeclaration()
+        VAR declExt = ZuiDeclarationExt.get(zuiDecl)
+        # A PIECE does not have a declaration, since it's copied to where it
+        # is used.
+        IF declExt.decl != NIL
+          IF gen.isDeclUsed(declExt.decl)
+            RETURN TRUE
+          }
+          IF declExt.decl.typeUsed
+            typeUsed = TRUE
+          }
+        }
+      }
+    }
+    IF typeUsed
+      LOG.info("\(indent)\($filename): Only type is used")
+    ELSE
+      LOG.info("\(indent)\($filename): No used items")
+    }
+
+    # When the type was used do go into the item anyway.
+    RETURN typeUsed
+  }
+
+  SHARED
+
+    ARG.Bool writeZuiFlag = NEW(NIL, "zui", FALSE, "Write .zui files")
+
+    CLASS CodeSpecific @directory @items=directory
+      string        $startedWrite  # name of code that writing has started for
+      Output.Group  $outputs
+
+      NEW()
+        $clear()
+      }
+
+      PROC $clear()
+        $outputs = NEW()
+      }
+    }
+
+    # The languages to produce code in.
+    # For a zwt file we always produce JS, for a zimbu file it can be both C
+    # and JS.
+    BITS WriteLang
+      bool $c
+      bool $js
+    }
+
+    # Find |name| in |importList|.
+    FUNC find(list<ZimbuFile> importList, string name) ZimbuFile
+      IF importList != NIL
+        string fullname = IO.fullPath(name)
+        FOR import IN importList
+          IF import.fullname == fullname
+            RETURN import
+          }
+        }
+      }
+      RETURN NIL
+    }
+
+  }
+}

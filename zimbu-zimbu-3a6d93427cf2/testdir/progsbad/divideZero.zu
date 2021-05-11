@@ -1,0 +1,6 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  IO.print(3 / 0)
+  RETURN 0
+}

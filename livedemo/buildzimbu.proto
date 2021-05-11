@@ -1,0 +1,21 @@
+// Protocol buffer for sending Zimbu code to a server and returning the result
+// of building and running it.
+
+package livedemo;
+
+// The request only contains the code to be compiled and run.
+message BuildRequest {
+  required string code = 1;
+}
+
+// The result is compiler output and, if compilation worked, output of running
+// the program.
+message BuildResult {
+  required string compilerMessages = 1;
+  optional string runOutput = 2;
+}
+
+// The RPC to be used by the UI and implemented by the server.
+service BuildService {
+  rpc BuildAndRun(BuildRequest) returns BuildResult;
+}

@@ -1,0 +1,328 @@
+Zimbu Templates Specification
+============================
+
+Last Change: 2014 Nov 17
+
+<img src="underconstruction.png">&nbsp;UNDER CONSTRUCTION
+
+This page contains both an informal explanation and a formal specification of
+Zimbu Templates or ZUT.<br>
+
+Zimbu Templates are used to generate Html pages.  Zimbu Templates can be used
+both on the server and on the client (in the browser).  On the server they are
+compiled into efficient binary code.  For the client they are compiled into
+Javascript.
+
+
+Contents
+-------
+
+
+ZUT File
+==========
+
+A Zimbu Template is specified in a ZUT file.
+
+A ZUT file is always UTF-8 encoded.
+
+The file name must end in ".zut".
+
+The file name up to ".zut" must match the module in the file.
+
+
+Preprocessing
+-------------
+
+This is the same as for a Zimbu file, see zimbu.html.
+Note that Tab characters are not allowed.
+
+
+File Level
+----------
+
+The ZUT file toplevel is equal to a Zimbu file for a module.
+
+Inside the module there are two special items that do not appear in a Zimbu
+file: CSS and HTML.
+
+Example:
+<zimbu>
+# Description of what this template is for.
+# Copyright, license.
+
+# A template often uses a controller, which is written in Zimbu.
+IMPORT "MyController.zu"
+
+MODULE MyTemplate
+
+  # Methods and declarations go here.
+  string color = "blue"
+
+  CSS
+    # CSS specifications that apply to the HTML below.
+    .hello {
+      color: [=color];
+    }
+  }
+
+  HTML message(string text)
+    <div class="hello">
+      [=text]
+    </div>
+  }
+}
+</zimbu>
+
+
+Comments
+-------
+
+The Zimbu-style comment, starting with # and continuing until the end of the
+line, can be used anywhere.  They are stripped out before producing the
+generated CSS and HTML.
+
+To avoid # to be recognized as the start of a comment accidentally, it is
+required to have two spaces before it, or have the # appear as the first
+non-white character in the line.
+
+To insert a literal # in the html where it would be recognized as a comment use
+[#].
+
+CSS and HTML comments can also be used, these are kept in the generated CSS and HTML.
+
+
+CSS
+========
+
+A CSS block defines the Cascading Style Sheets used for the templates in this
+module. It ends at the matching }.
+
+The syntax is just like CSS, with the addition of the ZUT items in square
+brackets, and the Zimbu style comments. 
+
+When a template is used the CSS is automatically added to the page.  On the
+server all the CSS of all the used templates is concatenated and results in one
+"script" element.  On the client every CSS block is added as a separate
+"script" element.  Each CSS block is added only once.
+
+
+HTML
+========
+
+A HTML block defines a template.  The syntax is similar to a Zimbu method, with
+a name and arguments inside parenthesis, followed by optional attributes.
+It ends at the matching }.
+
+Example:
+<zimbu>
+  HTML show(string text) @public
+    <div class="hello">
+      [=text]
+    </div>
+  }
+</zimbu>
+
+The syntax of the contents is just like Html, with the addition of the ZUT
+items in square brackets, the Zimbu style comments, and the special meaning of
+"zcontroller" and "zaction" attributes. 
+
+The name of the template must start with a lower case letter, just like a Zimbu
+method.
+
+The arguments are specified with their type. Optional arguments are allowed,
+again just like with Zimbu methods.
+
+Unlike Zimbu methods, no return type is specified.  However, the generated
+method will actually return a string with the produced Html.  This matters for
+where a template is called.
+
+The generated code will have an extra argument prepended:
+"ZUT.Context context".  The context is passed down all templates. On the server
+it provides information about the Http request.  On the client it provides
+information about the browser.
+
+
+ZUT items
+=========
+
+ZUT statements
+----------
+
+In CSS and HTML blocks Zimbu statements can be used in square brackets.  For example, to get a unique ID to use:
+<zimbu>
+  HTML message()
+    [string helloId = ZUT.uid()]
+  }
+</zimbu>
+
+An IF statement can be used to select what Html to produce:
+<zimbu>
+  HTML message(bool useDiv)
+    [IF useDiv]
+      <div>Hello</div>
+    [ELSE]
+      <span>Hello</span>
+    [}]
+  }
+</zimbu>
+
+Although there are no restrictions on what statements you can use here, avoid
+putting to much functionality into the template.  It is best restricted to
+method calls which are implemented in a Zimbu file.
+
+
+ZUT expressions
+----------
+
+In CSS and HTML blocks a ZUT expression can be used to insert the result of
+that expression.  It has the form "[=expr]".  The type of the result must be a
+string.
+
+A typical form of such an expression is invoking a template.  Example:
+<zimbu>
+  HTML button(bool big, string text) @public
+    [IF big]
+      [=MyButtons.bigButton(context, text)]
+    [ELSE]
+      [=MyButtons.smallButton(context, text)]
+    [}]
+  }
+</zimbu>
+
+TODO: Escaping rules.
+
+
+ZUT controller
+=========
+
+To make it easier to write Html that interacts with the user a controller can
+be used.  The name of the controller is put into the HTML with a "zcontroller"
+attribute.  The element it is in and all its children are then considered to be
+under control of this controller.
+
+Example:
+<zimbu>
+  HTML okButton()
+    <div zcontroller="OkController">
+      <button zaction="click: okClicked">OK</button>
+    </div>
+  }
+</zimbu>
+
+Actions on elements are assigned to a controller with a "zaction" attribute.
+The ZUT system will intercept events, such as a mouse click, and find the
+matching "zaction".  The specified method will then be invoked on the nearest
+controller, found upwards in the element tree.
+
+When an action is recognized and the controller is indentified, the ZUT runtime
+code will instantiate a controller and invoke the specified action method.
+When a controller was previously created it will be re-used,
+
+The controller code is compiled into Javascript.  It is either included in the
+page, or loaded at a later time, latest when the controller is actually used.
+
+The compiler will verify the action handler actually exists.  Thus a missing
+action handler results in a compilation error.
+
+
+zcontroller attribute
+-------
+
+The zcontroller attribute specifies the name of a class.  That class must have
+been imported in the template.  E.g., when using 'zcontroller="MyController"'
+there should be an 'IMPORT "MyController.zu"' statement (possibly with a path).
+
+
+zaction attribute
+-------
+
+The zaction attribute is a comma separated list of items.  Each item specifies
+an action type and the method to call. They are separted by a colon.  For
+example, "mouseDown: down, mouseUp: up".
+
+The list of action types:
+-  click: a mouse click (triggers when the mouse button is released)
+-  mouseUp: pressing the mouse button
+-  mouseDown: releasing the mouse button
+-  keyDown: a keyboard key press
+-  keyUp: a keyboard key release
+
+TODO: more action types, explain what they mean.
+
+Note: Most actions will work on most browsers, but there can be slight
+differences, especially with older brosers.
+
+
+action method
+---------
+
+The controller class must define the methods for the actions used.
+The method signature must be like this:
+<zimbu>
+  FUNC $clicked(ZUT.Event event) bool
+</zimbu>
+
+The ZUT.Event contains all the relevant information about the event.
+For example, event.element is the Html element where the event was detected.
+
+The function must return TRUE if the event bubbles up.  That means it is passed
+on to action handlers up in the Html tree.  If the function returns FALSE no
+other action handler will be invoked.
+
+Keep in mind that the action methods are always executed in the client, they
+are produced as Javascript.
+
+The action method may in turn use a template to generate Html and update the
+page to show it.  See the zutdemo program for examples.
+
+
+Passing data
+---------
+
+A controller can be instantiated many times, e.g. one for every button.  It
+must then be able to know what button in the page it's controlling.  A good
+practice is to use data attributes.  These have the form "data-name", where
+"name" can be freely chosen.
+
+Example ZUT template:
+<zimbu>
+  HTML demo(string text) @public
+    [string helloId = ZUT.uid()]
+    <div zcontroller="MyController"
+         zaction="click: clicked"
+         data-id="[=helloId]">
+      [=text]
+    </div>
+    <div id="[=helloId]"></div>
+  }
+</zimbu>
+
+With this code in the action handler:
+<zimbu>
+    string id = ZUT.getAttribute(event.element, "data-id")
+    callback<ZUT.HtmlFunc, string> cb = NEW(MyTemplate.message, "Hello World!")
+    ZUT.fillElement(id, cb)
+</zimbu>
+
+In this example, a unique ID is created with ZUT.uid().  It is used as the id
+in the element that needs to be changed.  It is passed to the action handler
+with the "data-id" attribute on the element that is clicked on.
+
+
+Copyright
+========
+
+Copyright 2014 Bram Moolenaar  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+The License can be found it in the LICENSE file, or you may obtain a copy of
+the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+License for the specific language governing permissions and limitations
+under the License.
+
+vim: et tw=0 sw=2

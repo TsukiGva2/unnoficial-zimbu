@@ -1,0 +1,100 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# EnumType class.
+#
+# The Type used to specify an ENUM.
+# A value of an ENUM is EnumValueType.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Declaration.zu"
+IMPORT "EnumValueType.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+IMPORT "ValueType.zu"
+
+CLASS EnumType EXTENDS ValueType @items=public
+  list<Declaration.C>  $members
+
+  # Declaration marked as used when one of the enum member names is used.
+  Declaration.C        $usedValueName
+
+  # Declaration marked as used when name of the enum is used.
+  Declaration.C        $usedEnumName
+
+  # Cached ValueType.
+  EnumValueType      $valueType
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    EnumType ret = NEW($ttype, $name)
+    $copyEnumValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyEnumValues(EnumType ret) @default
+    $copyValueValues(ret)
+    ret.members = $members
+  }
+
+  FUNC $toString(string indent, bool recurse) string @replace
+    string ret = PARENT.toString(indent, recurse)
+    RETURN ret .. " " .. $name
+  }
+
+  # Return TRUE for types that can have an instance: Class, Enum, Bits.
+  FUNC $needCopyValue() bool @replace
+    RETURN TRUE
+  }
+
+  # If this type is a Class, Enum, Bits or Method, return a reference to it.
+  # Otherwise return THIS.
+  FUNC $getValueType(SContext ctx) Type @replace
+    RETURN $getEnumValue()
+  }
+
+  # Return an enumValue for this enum.
+  FUNC $getEnumValue() EnumValueType
+    IF $valueType == NIL
+      $valueType = NEW(Type.Enum.enumValue, "instance of " .. $name)
+      $valueType.enumType = THIS
+      $valueType.addDependsOn(THIS)
+    }
+    RETURN $valueType
+  }
+
+  # Find member |name| and return its declaration.
+  # Returns NIL when not found.
+  # TODO: use |symUse|
+  FUNC $findMember(string name, SymUse symUse) Declaration @replace
+    IF $members != NIL
+      FOR decl IN $members
+        IF decl.name == name
+          RETURN decl
+        }
+      }
+    }
+    RETURN NIL
+  }
+
+  # Add an enum member.  Caller must check for duplicates.
+  PROC $addMember(string name, int value)
+    Declaration.C decl = NEW(name)
+    EnumValueType vt = NEW(Type.Enum.enumValue, "member of " .. $name)
+    decl.type = vt
+    vt.enumType = THIS
+    vt.value = value
+#    vt.decl = decl
+    IF $members == NIL
+      $members = NEW()
+    }
+    $members.add(decl)
+  }
+
+}

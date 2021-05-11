@@ -1,0 +1,16 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  Top t = Child.NEW()
+  t.ref = Child.NEW()
+  t.ref.nr = 5
+  IO.print(t.ref.nr)
+  RETURN 0
+}
+
+CLASS Top @abstract
+  Top   $ref
+  int   $nr
+}
+
+CLASS Child EXTENDS Top
+}

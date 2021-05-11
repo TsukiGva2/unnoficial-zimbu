@@ -1,0 +1,305 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ARRAY.array class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='ARRAY.html'>up:&nbsp;ARRAY</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.array&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type array.
+ An array contains zero or more items of the type specified in the
+ declaration:
+</p>
+<p class='ptext'><pre class='example'> array&lt;Type&gt; myarray      # array with 1 dimension
+ array&lt;Type, 3&gt; myarray   # array with 3 dimensions
+</pre>
+ NOTE: Currently only one-dimensional arrays are implemented.
+<p class='ptext'> Arrays can be resized, but this is inefficient.
+<p class='ptext'> Besides the object methods, Zimbu has these syntax items for arrays:
+<pre class='example'> array&lt;int&gt; intArray = [1, 2, 3]  # initialize from a list
+ IO.print(intArray[1])            # get array item by index
+ intArray[0] = 99                 # set array item by index
+</pre>
+<p class='ptext'>
+ When getting an item by index with <span class='commentcode'>intArray[index]</span> and index is out of
+ range, it returns the default item value (NIL, zero, FALSE)
+<p class='ptext'> When setting an item by index with <span class='commentcode'>intArray[index] = value</span> and index is
+ out of range this throws an exception.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#NEW'><b>NEW</b></a>(<small>count</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new one-dimensional array with <b>count</b> items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the number of items a one-dimensional array can hold.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the array.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$ToString'><b>$ToString</b></a>(<small>format</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the array with specified formatting.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$Type'><b>$Type</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the type of the array.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$resize'><b>$resize</b></a>(<small>count</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Resize a one-dimensional array to contain <b>count</b> items.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$set'><b>$set</b></a>(<small>index, values</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the items starting at position <b>index</b> to the byteString <b>values</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$set'><b>$set</b></a>(<small>index, values</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the items starting at position <b>index</b> to the array <b>values</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$set'><b>$set</b></a>(<small>index, values</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the items starting at position <b>index</b> to the list <b>values</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$has'><b>$has</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE if there is an item that equals <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$find'><b>$find</b></a>(<small>item</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the index of the first item that equals <b>item</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$map'><b>$map</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$keyMap'><b>$keyMap</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$mapTo'><b>$mapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new array where each item is the result of executing function <b>f</b>
+ on each item of this array.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$keyMapTo'><b>$keyMapTo</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Tresult&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new array where each item is the result of executing function <b>f</b>
+ on each item of this array.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$forEach'><b>$forEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the array.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ARRAY.array.html#$forKeyEach'><b>$forKeyEach</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Call method <b>f</b> for every item in the array.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> count)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new one-dimensional array with <b>count</b> items.
+</p>
+<p class='ptext'> All items are set to their default value (NIL, FALSE, 0).
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the number of items a one-dimensional array can hold.
+</p>
+<p class='ptext'> It does not matter if some array entries were never set, they will have
+ the default value (NIL, FALSE, 0).
+<p class='ptext'> When used on NIL Size() returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the array.
+</p>
+<p class='ptext'> Starts with "[" and ends in "]".  Items are separated with ", ".
+<p class='ptext'> An empty array returns "[]".
+<pre class='example'> string s = ["a", "b"].ToString()
+ # s == "["a", "b"]".
+</pre>
+<p class='ptext'>
+ A NIL array returns "NIL"
+<p class='ptext'> Each item is converted to a string by calling its ToString() method, if
+ there is one.
+<p class='ptext'> If the list contains itself somehow, instead of recursing
+ "[recursive-array]" will be used.  However, if multiple threads are doing
+ this for the same array the effect is unpredictable.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> format) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a string representation of the array with specified formatting.
+</p>
+<p class='ptext'> Currently works like ToString() without a format argument.
+<p class='ptext'> TODO: limit depth, limit number of items (like string truncation,
+ optional ellipses), etc.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Type'><b>$Type</b></A>() <span class='type'><A class='typehref' href='TYPE.type.html'>type</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the type of the array.
+</p>
+<p class='ptext'> Invoking ToString() on the returned type results in something like
+ "array&lt;string&gt;".
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the index of the first item that equals <b>item</b>.
+</p>
+<p class='ptext'> When Titem is a value type, a string or a byteString then the value is
+ compared. Otherwise IS is used, the item at the index IS <b>item</b>.
+<p class='ptext'> Returns -1 if <b>item</b> is not found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forEach'><b>$forEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;Titem&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the array.
+</p>
+<p class='ptext'> The argument for <b>f</b> is the value.
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$forKeyEach'><b>$forKeyEach</b></A>(<span class='type'><span class='type'>proc</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Call method <b>f</b> for every item in the array.
+</p>
+<p class='ptext'> The first argument for f is the index in the array, the second argument is
+ the value.
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$has'><b>$has</b></A>(<span class='type'>Titem</span> item) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE if there is an item that equals <b>item</b>.
+</p>
+<p class='ptext'> This is equivalent to:
+<pre class='example'> $find(item) != -1
+</pre>
+<p class='ptext'>
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMap'><b>$keyMap</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has two arguments: The index in the array and the current value of the
+ item.  <b>f</b> must return the new value of the item.
+<p class='ptext'> Keep in mind that items have their default value when never set, which
+ an be NIL.
+<p class='ptext'><pre class='example'> array&lt;string&gt; a = ["a", "b", "c"]
+ a.keyMap({ i, s =&gt; i .. ":" .. s })
+ # a == ["0:a", "1:b", "2:c"]
+</pre>
+<p class='ptext'>
+ Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$keyMapTo'><b>$keyMapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;<A class='typehref' href='INT.int.html'>int</A>, Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new array where each item is the result of executing function <b>f</b>
+ on each item of this array.
+</p>
+<p class='ptext'> This is like keyMap() but with a different result type.
+<p class='ptext'> <b>f</b> has two arguments: The index in the array and the value of the item.
+ <b>f</b> must return the value for the new array.
+<pre class='example'> array&lt;int&gt; il = [11, 22, 33]
+ array&lt;string&gt; sl = il.keyMapTo({ i, n =&gt; i .. ": " .. n })
+ # sl == ["0: 11", "1: 22", "2: 33"]
+</pre>
+<p class='ptext'>
+ Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$map'><b>$map</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute function <b>f</b> on each item.  Each item is replaced by the result
+ of the function.
+</p>
+<p class='ptext'> <b>f</b> has one argument, which is the current value of the item, and must
+ return the new value of the item.
+<p class='ptext'> Keep in mind that items have their default value when never set, which
+ an be NIL.
+<p class='ptext'><pre class='example'> array&lt;string&gt; a = ["a", "b", "c"]
+ a.map({ s =&gt; s .. ":" })
+ # a == ["a:", "b:", "c:"]
+</pre>
+<p class='ptext'>
+ Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$mapTo'><b>$mapTo</b></A>(<span class='type'><span class='type'>func</span>&lt;Titem =&gt; Tresult&gt;</span> f) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Tresult&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new array where each item is the result of executing function <b>f</b>
+ on each item of this array.
+</p>
+<p class='ptext'> This is like map() but with a different result type.
+<p class='ptext'> <b>f</b> has one argument, which is the value of the item, and must return the
+ value for the new array.
+<pre class='example'> array&lt;int&gt; ia = [1, 2, 3]
+ array&lt;string&gt; sl = ia.mapTo({ n =&gt; n .. ":" })
+ # sl == ["1:", "2:", "3:"]
+</pre>
+<p class='ptext'>
+ Returns the new array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$resize'><b>$resize</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> count) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Resize a one-dimensional array to contain <b>count</b> items.
+</p>
+<p class='ptext'> If the array was larger before, the items at <b>count</b> and further are
+ discarded.
+<p class='ptext'> If the array was smaller before, the new item locations are set to the
+ default value (NIL, FALSE, 0).
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index, <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> values) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the items starting at position <b>index</b> to the byteString <b>values</b>.
+</p>
+<p class='ptext'> Titem must be a number type: int or byte.
+<p class='ptext'> If <b>values</b> contains more items that the array has space then the extra
+ items are not used.
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index, <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span> values) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the items starting at position <b>index</b> to the array <b>values</b>.
+</p>
+<p class='ptext'> If <b>values</b> contains more items that the array has space then the extra
+ items are not used.
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$set'><b>$set</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> index, <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;Titem&gt;</span> values) <span class='type'><A class='typehref' href='ARRAY.array.html'>array</A>&lt;Titem&gt;</span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the items starting at position <b>index</b> to the list <b>values</b>.
+</p>
+<p class='ptext'> If <b>values</b> contains more items that the array has space then the extra
+ items are not used.
+<p class='ptext'> Returns the array.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,473 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Stuff for List that is not target language specific.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ContainerStuff.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodType.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+
+IMPORT "lib/ILoader.zu"
+
+MODULE ListStuff @items=public        # TODO: restrict visibility
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    VAR objExprExt = ZuiExpressionExt.get(objExpr)
+    list<Zui.Expression> argList = call.getArgumentList()
+    VAR callExt = ZuiMethodCallExt.get(call)
+
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF type.itemType == NIL
+        callExt.undefined = 2
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        IF argList.Size() == 1
+          Generate.genExpr(argList[0], ctx, Type.aString)
+          callExt.undefined += ZuiExpressionExt.get(argList[0]).undefined
+        }
+
+        # argument for item type
+        WriteCommon.oneToStringArgument(type.itemType, call, TRUE, ctx)
+      }
+      retType = Type.aString
+    ELSEIF methodName == "Type"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF type.itemType != NIL
+        type.typeUsed(ctx)
+      }
+      retType = Type.aType
+    ELSEIF methodName == "get"
+      # list.get(idx) is the same as list[idx].
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Zui.Expression expr = NEW()
+        expr.setLeft(objExpr)
+        expr.setRight(argList[0])
+        retType = ctx.gen.subscript(expr, ctx, NIL)
+      }
+    ELSEIF methodName == "add" || methodName == "insert"
+      # For C:
+      # numberList.add(item)  ->  ZLa(numberList, -1, item, NULL)
+      # numberList.add(item, i)  ->  ZLa(numberList, i, item, NULL)
+      # pointerList.add(item)  ->  ZLa(pointerList, -1, 0, item)
+      # pointerList.add(item, i)  ->  ZLa(pointerList, i, 0, item)
+      # numberList.insert(item) -> ZListInsert(numberList, 0, item, NULL)
+      # numberList.insert(item, i) -> ZListInsert(numberList, i, item, NULL)
+      # pointerList.insert(item) -> ZListInsert(pointerList, 0, 0, item)
+      # pointerList.insert(item, i) -> ZListInsert(pointerList, i, 0, item)
+      #
+      # For JS there is no difference between number and pointer:
+      # list.add(item)       -> ZLa(list, -1, item)
+      # list.add(item, i)    -> ZLa(list, i, item)
+      # list.insert(item)    -> ZListInsert(list, 0, item)
+      # list.insert(item, i) -> ZListInsert(list, i, item)
+      IF Generate.checkArgCount(call, 1, 2, ctx) == FAIL
+        callExt.undefined = 7
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+
+        # generate the index argument
+        IF call.sizeArgument() > 1
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+          callExt.undefined += ZuiExpressionExt.get(arg1).undefined
+        }
+
+        # generate the pointer or integer value
+        IF type.itemType != NIL
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, type.itemType)
+          callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+          # TODO: when this is an i_object type, do we need to check it's
+          # the same as requested?
+        ELSE
+          callExt.undefined += 5
+        }
+      }
+      retType = newList(type)
+    ELSEIF methodName == "extend" || methodName == "concat"
+      # List.extend(list)
+      # List.concat(list)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        # type of both lists should be equal
+        Zui.Expression arg0 = call.getArgument(0)
+        Generate.genExpr(arg0, ctx, type)
+        callExt.undefined = objExprExt.undefined
+                                        + ZuiExpressionExt.get(arg0).undefined
+      }
+      retType = newList(type)
+    ELSEIF methodName == "clear" && call.sizeArgument() == 0
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        retType = newList(type)
+      }
+    ELSEIF methodName == "find" || methodName == "has"
+      # TODO: mylist.find(expr, startIdx)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        # mylist.find(expr)
+        # mylist.has(expr)
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        Zui.Expression arg = call.getArgument(0)
+        Generate.genExpr(arg, ctx, type.itemType)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+        retType = methodName == "has" ? Type.aBool : Type.anInt
+      }
+    ELSEIF methodName == "remove"
+           || (methodName == "clear" && call.sizeArgument() == 1)
+      IF Generate.checkArgCount(call, 0, 2, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        bool removeOne
+        bool hasArg
+
+        IF !call.hasArgument()
+          # mylist.remove()
+          removeOne = TRUE
+        ELSEIF call.sizeArgument() == 1
+          # mylist.remove(index)
+          removeOne = TRUE
+          hasArg = TRUE
+        }
+
+        IF removeOne
+          # mylist.remove() or mylist.remove(index) or mylist.clear(index)
+          Generate.generateVarname(objExpr, ctx, type)
+          callExt.undefined = objExprExt.undefined
+          IF hasArg
+            Zui.Expression arg0 = call.getArgument(0)
+            Generate.genExpr(arg0, ctx, Type.anInt)
+            callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+          }
+          IF methodName == "clear"
+            retType = type
+          ELSEIF type.itemType != NIL
+            retType = type.itemType
+          }
+        ELSE
+          # mylist.remove(start, end)
+          Generate.generateVarname(objExpr, ctx, type)
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+          retType = newList(type)
+          callExt.undefined = objExprExt.undefined
+                                + ZuiExpressionExt.get(arg0).undefined
+                                + ZuiExpressionExt.get(arg1).undefined
+        }
+      }
+    ELSEIF methodName == "slice"
+      IF Generate.checkArgCount(call, 1, 2, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        # mylist.slice(start, end)
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        Zui.Expression arg0 = call.getArgument(0)
+        IF call.sizeArgument() > 1
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+          callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+                                        + ZuiExpressionExt.get(arg1).undefined
+        ELSE
+          # slice(start) == slice(start, -1)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+        }
+        retType = newList(type)
+      }
+    ELSEIF methodName == "sort"
+      bool supportedType
+      IF type.itemType != NIL
+        SWITCH type.itemType.ttype
+          CASE Type.Enum.string
+          CASE Type.Enum.int
+          CASE Type.Enum.int8
+          CASE Type.Enum.int16
+          CASE Type.Enum.int32
+          CASE Type.Enum.nat
+          CASE Type.Enum.byte
+          CASE Type.Enum.nat16
+          CASE Type.Enum.nat32
+          CASE Type.Enum.float
+          CASE Type.Enum.float32
+          CASE Type.Enum.float80
+          CASE Type.Enum.float128
+            supportedType = TRUE
+
+          CASE Type.Enum.object
+          CASE Type.Enum.iobject
+            Declaration sortFunc = Generate.findCompare(type.itemType, ctx)
+            IF sortFunc != NIL
+              supportedType = TRUE
+              ctx.addUsedItem(sortFunc)
+              IF type.itemType.ttype == Type.Enum.iobject
+                                           && type.itemType.compareFunc != NIL
+                # sortFunc is a wrapper around compareFunc.  Need to mark all
+                # implementations of it as used.
+                int udef
+                Declaration.C arg = NEW("arg")
+                arg.type = type.itemType
+                ctx.gen.usingIobjectMethod(type.itemType.compareFunc,
+                                    [arg], type.itemType, &udef,
+                                    "Compare", name.getPos(),
+                                    sortFunc.pName, ctx)
+                callExt.undefined += udef
+              }
+            }
+        }
+      }
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF !supportedType
+        callExt.undefined = 2
+      ELSE
+        # mylist.sort()
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        IF call.hasArgument()
+          # sort(ascending)
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, Type.aBool)
+          callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+        }
+        retType = newList(type)
+      }
+    ELSEIF methodName == "join"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF type.itemType == NIL
+        callExt.undefined = 2
+      ELSE
+        # mylist.join()
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        IF call.hasArgument()
+          # join(separator)
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExprDoConv(arg0, ctx, Type.aString)
+          callExt.undefined += ZuiExpressionExt.get(arg0).undefined
+        }
+        WriteCommon.oneToStringArgument(type.itemType, call, FALSE, ctx)
+        retType = Type.aString
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+
+        retType = newList(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+        retType = newList(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.generateVarname(objExpr, ctx, type)
+        callExt.undefined = objExprExt.undefined
+      }
+      retType = Type.anInt
+    ELSE
+      callExt.undefined = 5
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  # List functions common to all languages.  These are defined in
+  # lib/LISTModule.zu
+  FUNC commonMethodCall(ContainerType type,
+                        Zui.MethodCall call,
+                        SContext ctx,
+                        Type destType,
+                        Type &retTypeRef
+                        ) status
+    Type retType
+
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+    VAR callExt = ZuiMethodCallExt.get(call)
+
+    IF methodName == "Iterator"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Declaration iteratorDecl = ILoader.getIteratorDecl()
+        IF iteratorDecl != NIL
+          retType = Generate.interfaceTemplate(iteratorDecl, type.itemType, ctx)
+          IF retType != NIL
+            retType = retType.getValueType(ctx)
+          }
+        }
+        Generate.genLibCall(call, "MLISTModule", "FIterator",
+                                              objExpr, type, [], retType, ctx)
+      }
+    ELSEIF methodName == "KeyIterator"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Declaration iteratorDecl = ILoader.getKeyIteratorDecl()
+        IF iteratorDecl != NIL
+          retType = Generate.interfaceTemplate(iteratorDecl, type.itemType, ctx)
+          IF retType != NIL
+            retType = retType.getValueType(ctx)
+          }
+        }
+        Generate.genLibCall(call, "MLISTModule", "FKeyIterator",
+                                              objExpr, type, [], retType, ctx)
+      }
+    ELSEIF methodName == "clearItem"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        list<Type> argTypes = [type.itemType]
+        retType = type
+        Generate.genLibCall(call, "MLISTModule", "FclearItem",
+                                        objExpr, type, argTypes, retType, ctx)
+      }
+    ELSEIF methodName == "removeItem"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        list<Type> argTypes = [type.itemType]
+        retType = type.itemType
+        Generate.genLibCall(call, "MLISTModule", "FremoveItem",
+                                        objExpr, type, argTypes, retType, ctx)
+      }
+    ELSEIF methodName == "set"
+      # list.set(idx, val)
+      IF Generate.checkArgCount(call, 2, 2, ctx) == FAIL
+        callExt.undefined = 5
+      ELSE
+        list<Type> argTypes = [Type.anInt, type.itemType]
+        retType = type
+        Generate.genLibCall(call, "MLISTModule", "Fset",
+                                        objExpr, type, argTypes, retType, ctx)
+      }
+    ELSEIF methodName == "reduce"
+      MethodType m = NEW(Type.Enum.func, "lambda")
+      m.returnType = type.itemType
+      m.arguments.add(NEW("a", type.itemType))
+      m.arguments.add(NEW("b", type.itemType))
+      Type ft = MethodRefType.NEW(Type.Enum.funcRef, m, "lambda")
+      retType = type.itemType
+      IF Generate.checkArgCount(call, 1, 2, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF call.sizeArgument() == 1
+        list<Type> argTypes = [ft]
+        Generate.genLibCall(call, "MLISTModule", "Freduce",
+                                        objExpr, type, argTypes, retType, ctx)
+      ELSE
+        list<Type> argTypes = [type.itemType, ft]
+        Generate.genLibCall(call, "MLISTModule", "Freduce",
+                                        objExpr, type, argTypes, retType, ctx)
+      }
+    ELSEIF methodName == "reduceTo"
+      MethodType m = NEW(Type.Enum.func, "lambda")
+      retType = destType
+      m.returnType = destType
+      m.arguments.add(NEW("a", destType))
+      m.arguments.add(NEW("b", type.itemType))
+      Type ft = MethodRefType.NEW(Type.Enum.funcRef, m, "lambda")
+      IF Generate.checkArgCount(call, 2, 2, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        list<Type> argTypes = [destType, ft]
+        Generate.genLibCall(call, "MLISTModule", "FreduceTo",
+                                        objExpr, type, argTypes, retType, ctx)
+      }
+    ELSEIF methodName == "filter"
+      retType = type
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        MethodType m = NEW(Type.Enum.func, "lambda")
+        m.returnType = Type.aBool
+        m.arguments.add(NEW("a", type.itemType))
+        Type ft = MethodRefType.NEW(Type.Enum.funcRef, m, "lambda")
+        Generate.genLibCall(call, "MLISTModule", "Ffilter",
+                                            objExpr, type, [ft], retType, ctx)
+      }
+    ELSEIF methodName == "mapTo" || methodName == "keyMapTo"
+      retType = ContainerStuff.generateMapCall(
+                         type, call, methodName, ctx, destType, "MLISTModule")
+    ELSEIF  methodName == "forEach" || methodName == "forKeyEach"
+      retType = ContainerStuff.generateForEachCall(
+                         type, call, methodName, ctx, destType, "MLISTModule")
+    ELSE
+      RETURN FAIL
+    }
+    IF retType == NIL
+      retType = Type.anUnknown
+    }
+    retTypeRef = retType
+    RETURN OK
+  }
+
+  # Return a new list Symbol with item type set from |type|.
+  FUNC newList(ContainerType type) Type
+    ContainerType ret = NEW(Type.Enum.list, "list")
+    ret.itemType = type.itemType
+    RETURN ret
+  }
+
+}

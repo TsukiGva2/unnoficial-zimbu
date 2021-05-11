@@ -1,0 +1,87 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Stuff for containers that is not target language specific.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ContainerType.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodType.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "ZuiMethodCallExt.zu"
+
+MODULE ContainerStuff @items=public        # TODO: restrict visibility
+
+  # mapTo(), keyMapTo()
+  FUNC generateMapCall(ContainerType type,
+                       Zui.MethodCall call,
+                       string methodName,
+                       SContext ctx,
+                       Type destType,
+                       string moduleName
+                      ) Type
+    generateRepeatCall(type, call,
+        methodName, methodName == "keyMapTo",
+        ctx, TRUE, destType, moduleName)
+    RETURN destType
+  }
+
+  # forEach(), forKeyEach().
+  FUNC generateForEachCall(ContainerType type,
+                       Zui.MethodCall call,
+                       string methodName,
+                       SContext ctx,
+                       Type destType,
+                       string moduleName
+                      ) Type
+    generateRepeatCall(type, call,
+        methodName, methodName == "forKeyEach",
+        ctx, FALSE, destType, moduleName)
+    RETURN type
+  }
+
+  # mapTo(), keyMapTo(), forEach(), forKeyEach().
+  PROC generateRepeatCall(ContainerType type,
+                          Zui.MethodCall call,
+                          string methodName,
+                          bool useKey,
+                          SContext ctx,
+                          bool isFunc,
+                          Type destType,
+                          string moduleName
+                         )
+    IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+      VAR ext = ZuiMethodCallExt.get(call)
+      ext.undefined = 3
+    ELSE
+      MethodType m = NEW(Type.Enum.func, "lambda")
+      IF !isFunc
+        # proc
+        m.returnType = NIL
+      ELSEIF destType?.getTtype() == type.ttype
+        # func
+        m.returnType = destType.getEffType().<ContainerType>.itemType
+      ELSE
+        # Assume there is a destination or an error was already given.
+        m.returnType = Type.anUnknown
+      }
+      IF useKey
+        m.arguments.add(NEW("i", type.getTtype() == Type.Enum.dict
+                                                 ? type.keyType : Type.anInt))
+      }
+      m.arguments.add(NEW("a", type.itemType))
+      Type ft = MethodRefType.NEW(Type.Enum.funcRef, m, "lambda")
+      Generate.genLibCall(call, moduleName, "F" .. methodName,
+                          call.getName().getLeft(), type, [ft], destType, ctx)
+    }
+  }
+
+}

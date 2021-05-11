@@ -1,0 +1,87 @@
+
+CLASSES, TYPES and OBJECTS
+
+In most language the class name stands for an object of that class or any
+child class:
+
+        CLASS Foo
+        }
+        CLASS FooChild EXTENDS Foo
+        }
+
+        Foo foo   # can be an object of Foo or FooChild
+
+At first Zimbu diverted from this, requiring that the object type is specified
+explicitly, and using ".I" for the interface of a class:
+
+        Foo   foo1  # can only only be an object of Foo
+        Foo.I foo2  # can be an object of Foo or FooChild 
+
+For performance the difference between "Foo" and "Foo.I" is significant,
+because if the compiler knows the object type exactly the generated code is
+much simpler.
+
+After using this for a while it turned out to be a hassle, mainly because a
+class can be sub-classed later and then all uses of it must be changed by
+adding ".I".
+
+Also, it goes against what programmers have learned in school and what they
+are used to.  Therefore the choice was changed:
+
+        Foo   foo1  # can be an object of Foo or FooChild  
+        Foo.I foo2  # idem, supported for consistency
+        Foo.C foo3  # can only only be an object of Foo
+
+Now the compiler can still optimize objects of Foo to use efficient code when
+Foo does not have any children, or when Foo= is used.  But just using Foo
+generally means an object of class Foo or any child class.
+
+
+TODO:
+
+When members have behavior attached to them (implicit get/set methods),
+these also need to be specified in the interface.
+Possible solution: define the members in a Group and use the Group in the
+Interface.
+
+
+
+INTERFACE CHANGES, step by step
+
+Interfaces are used so that multiple classes can be defined that implement the
+behavior defined by the interface.  The classes may change over time, so
+long as they implement the interface the behavior doesn't change.
+
+However, sometimes an interface does need to change.  Usually it is an
+extension, but it may also be a replacement.  In Zimbu this can be done
+gradually by folowing these steps:
+
+        1. Classes define interface Aa, clients use Aa
+
+        2. New interface Bb is defined, which is similar to Aa but adds a
+           method and has one method with different arguments.
+
+        3. One by one classes that implement Aa are changed to also implement
+           Bb.  Unchanged methods are used for both interfaces.
+
+        4. Clients are changed to switch from using Aa to using Bb.
+
+        5. Interface Aa is deprecated, clients still using Aa can be located
+           with a tool.
+
+        6. Once all clients have switched to Bb all code referencing Aa can be
+           removed.
+
+What does not work:
+
+        - Changing a method to return a different type.  These are considered
+          to be the same function.  Requires using another name.
+
+
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

@@ -1,0 +1,11 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  dontdothis(3)
+  RETURN 0
+}
+
+PROC dontdothis(int b)
+  # Can't assign to argument
+  b = 4
+}

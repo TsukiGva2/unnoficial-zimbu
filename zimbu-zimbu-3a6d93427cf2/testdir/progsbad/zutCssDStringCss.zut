@@ -1,0 +1,8 @@
+MODULE Testing
+  # CSS double string / Css
+  TEMPLATE inCssDStringCss(ZUT.Css text) ZUT.Css @public
+    p {
+     color: "[=text]";
+    }
+  }
+}

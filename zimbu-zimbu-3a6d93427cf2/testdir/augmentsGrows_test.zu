@@ -1,0 +1,86 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tests for AUGMENTS and GROWS
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS Parent
+  int   $nr
+}
+
+CLASS More AUGMENTS Parent
+  FUNC $getNr() int
+    RETURN $nr
+  }
+}
+
+CLASS Bigger GROWS Parent
+  string $name
+  FUNC $getNr() int
+    RETURN $nr + 10
+  }
+  FUNC $getName() string
+    RETURN $name
+  }
+}
+
+CLASS Larger GROWS Parent
+  string $name
+  FUNC $getNr() int
+    RETURN $nr + 20
+  }
+  FUNC $getName() string
+    RETURN "Larger " .. $name
+  }
+}
+
+FUNC test_augments() status
+  More m = NEW()
+  m.nr = 6
+  TEST.equal(6, m.getNr())
+
+  Parent p = NEW()
+  p.nr = 5
+  m = p
+  TEST.equal(5, m.getNr())
+
+  RETURN OK
+}
+
+FUNC test_grows() status
+  Bigger b = NEW()
+  b.nr = 8
+  b.name = "yes"
+  TEST.equal(18, b.getNr())
+  TEST.equal("yes", b.getName())
+
+  Parent p = NEW()
+  p.nr = 3
+  b = p
+  b.name = "foo"
+  TEST.equal(13, b.getNr())
+  TEST.equal("foo", b.getName())
+
+  p = b
+  b = p
+  TEST.equal(13, b.getNr())
+  TEST.equal("foo", b.getName())
+
+  Larger l = NEW()
+  l.nr = 5
+  l.name = "bar"
+  TEST.equal(25, l.getNr())
+  TEST.equal("Larger bar", l.getName())
+
+  b = l
+  TEST.equal(15, b.getNr())
+  TEST.equal(NIL, b.getName())
+
+  RETURN OK
+}

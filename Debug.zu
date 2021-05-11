@@ -1,0 +1,253 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Debug module: everything related to debugging Zimbu itself.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "SContext.zu"
+IMPORT "ClassType.zu"
+IMPORT "MethodType.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiStatementExt.zu"
+IMPORT "ZuiTypeExt.zu"
+
+MODULE Debug
+
+  # For debugging: list statements with undefined symbols.
+  # Return total of undefined.
+  FUNC listUndefined(list<Zui.Statement> statements, SContext ctx) int @public
+    int undefTotal
+    FOR stmt IN statements
+      VAR stmtExt = ZuiStatementExt.get(stmt)
+      IF stmtExt.undefined > 0
+        string msg = ""
+        int undef
+        SWITCH stmt.getType()
+          # Statements that don't nest.
+          CASE Zui.StatementType.eASSIGN
+            Zui.Assignment ass = stmt.getAssign()
+            undef += listUndefined(ass.getLhs(), ctx)
+            undef += listUndefined(ass.getRhs(), ctx)
+
+          CASE Zui.StatementType.eCALL
+          CASE Zui.StatementType.eNEWCALL
+            Zui.MethodCall call = stmt.getMethodCall()
+            Zui.Expression nameExpr = call.getName()
+            msg = " " .. nameExpr.getType().ToString()
+            SWITCH nameExpr.getType()
+              CASE Zui.ExprType.eID
+                undef += listUndefined(nameExpr, ctx)
+              CASE Zui.ExprType.eMEMBER
+                undef += listUndefined(nameExpr.getLeft(), ctx)
+              CASE Zui.ExprType.eEXPRMETHOD
+                undef += listUndefined(nameExpr.getLeft(), ctx)
+                undef += listUndefined(nameExpr.getRight(), ctx)
+              CASE Zui.ExprType.eLAMBDA
+                undef += listUndefined(nameExpr, ctx)
+            }
+            FOR arg IN call.getArgumentList()
+              undef += listUndefined(arg, ctx)
+            }
+
+          CASE Zui.StatementType.eVAR_DECL
+            Zui.Declaration zuiDecl = stmt.getDeclaration()
+            IF zuiDecl.hasInit()
+              undef += listUndefined(zuiDecl.getInit(), ctx)
+            }
+
+          CASE Zui.StatementType.eALIAS_DECL
+          CASE Zui.StatementType.eUNTIL
+          CASE Zui.StatementType.eRETURN
+          CASE Zui.StatementType.eEXIT
+          CASE Zui.StatementType.eTHROW
+          CASE Zui.StatementType.eBREAK
+          CASE Zui.StatementType.eCONTINUE
+          CASE Zui.StatementType.eINC
+          CASE Zui.StatementType.eDEC
+          CASE Zui.StatementType.eCBLOCK
+            BREAK  # handled as default
+
+          # Declarations with nested statements.
+          CASE Zui.StatementType.eMODULE_DECL
+          CASE Zui.StatementType.eCLASS_DECL
+          CASE Zui.StatementType.eBITS_DECL
+          CASE Zui.StatementType.eENUM_DECL
+          CASE Zui.StatementType.eMETHOD_DECL
+            Zui.Declaration zuiDecl = stmt.getDeclaration()
+            VAR declExt = ZuiDeclarationExt.get(zuiDecl)
+            IF declExt.undefined == 0
+              ctx.error(stmtExt.undefined
+                        .. " Undefined, but Declaration.undefined == 0", stmt)
+            }
+            IF stmt.getType() == Zui.StatementType.eMODULE_DECL
+              Zui.ModuleType module = zuiDecl.getType().getModuleDecl()
+              undef += listUndefined(module.getStatementList(), ctx)
+            ELSEIF stmt.getType() == Zui.StatementType.eCLASS_DECL
+              Zui.ClassType class = zuiDecl.getType().getClassDecl()
+              # A templated class itself is not generated.
+              IF class.hasTemplateTypeName()
+                ClassType classType = stmtExt.typeObj
+                FOR template IN classType.templateList
+                  Zui.ClassType tclass = template.stmt.getDeclaration()
+                                                     .getType().getClassDecl()
+                  undef += listUndefined(tclass.getMemberList(), ctx)
+                }
+              ELSE
+                undef += listUndefined(class.getMemberList(), ctx)
+              }
+            ELSEIF stmt.getType() == Zui.StatementType.eMETHOD_DECL
+              Zui.MethodType method = zuiDecl.getType().getMethodDecl()
+              IF method.hasTemplateTypeName()
+                MethodType methodType = declExt.decl.type
+                FOR template IN methodType.templateList
+                  Zui.MethodType tmethod = template.zuiDecl
+                                                    .getType().getMethodDecl()
+                  undef += listUndefined(tmethod, ctx)
+                }
+              ELSE
+                undef += listUndefined(method, ctx)
+              }
+            }
+
+          # Control flow with nested statements.
+          CASE Zui.StatementType.eBLOCK
+          CASE Zui.StatementType.eCASE
+          CASE Zui.StatementType.eDEFAULT
+          CASE Zui.StatementType.eDO
+            IF stmt.hasBlock()
+              undef += listUndefined(stmt.getBlock().getStatementList(), ctx)
+            }
+
+          CASE Zui.StatementType.eGENERATEIF
+          CASE Zui.StatementType.eIF
+          CASE Zui.StatementType.eIFNIL
+          CASE Zui.StatementType.eWHILE
+          CASE Zui.StatementType.eSWITCH
+            Zui.Condition cond = stmt.getCondition()
+            undef += listUndefined(cond.getCond(), ctx)
+            IF cond.getBlock().hasStatement()
+              undef += listUndefined(cond.getBlock().getStatementList(), ctx)
+            }
+            IF cond.hasElseif()
+              FOR c IN cond.getElseifList()
+                undef += listUndefined(c.getCond(), ctx)
+                IF c.getBlock().hasStatement()
+                  undef += listUndefined(c.getBlock().getStatementList(), ctx)
+                }
+              }
+            }
+            IF cond.hasElse()
+              undef += listUndefined(cond.getElse().getStatementList(), ctx)
+            }
+
+          CASE Zui.StatementType.eFOR
+            Zui.ForStatement for = stmt.getFor()
+            IF for.hasBody()
+              undef += listUndefined(for.getBody().getStatementList(), ctx)
+            }
+
+          CASE Zui.StatementType.eTRY
+          CASE Zui.StatementType.eTRYELSE
+            # TODO
+        }
+
+        IF undef != stmtExt.undefined
+          ctx.error(stmtExt.undefined .. " Undefined (counted "
+               .. undef .. ") for " .. stmt.getType().ToString() .. msg, stmt)
+        }
+        undefTotal += stmtExt.undefined
+      }
+    }
+    RETURN undefTotal
+  }
+
+  # For debugging: list method with undefined symbols.
+  # Return total of undefined.
+  FUNC listUndefined(Zui.MethodType method, SContext ctx) int
+    int undef
+    FOR arg IN method.getArgumentList()
+      undef += ZuiTypeExt.get(arg.getType()).undefined
+    }
+    FOR t IN method.getReturnTypeList()
+      undef += listUndefined(t.getName(), ctx)
+    }
+    IF method.hasBody()
+      undef += listUndefined(method.getBody().getStatementList(),
+                                                              ctx)
+    }
+    RETURN undef
+  }
+
+  # For debugging: list expressions with undefined symbols.
+  # Return total of undefined.
+  FUNC listUndefined(Zui.Expression expr, SContext ctx) int
+    int undef
+    VAR exprExt = ZuiExpressionExt.get(expr)
+
+    IF exprExt.undefined > 0
+      SWITCH expr.getType()
+        CASE Zui.ExprType.eNOT
+        CASE Zui.ExprType.eMINUS
+        CASE Zui.ExprType.eTILDE
+        CASE Zui.ExprType.ePRE_INC
+        CASE Zui.ExprType.ePRE_DEC
+        CASE Zui.ExprType.ePOST_INC
+        CASE Zui.ExprType.ePOST_DEC
+        CASE Zui.ExprType.ePARENS
+          # unary uses getRight()
+          undef += listUndefined(expr.getRight(), ctx)
+
+        CASE Zui.ExprType.eMEMBER
+        CASE Zui.ExprType.eSUBSCRIPT
+        CASE Zui.ExprType.eEQUAL
+        CASE Zui.ExprType.eNOTEQUAL
+        CASE Zui.ExprType.eIS
+        CASE Zui.ExprType.eISNOT
+        CASE Zui.ExprType.eISA
+        CASE Zui.ExprType.eISNOTA
+        CASE Zui.ExprType.eMATCH
+        CASE Zui.ExprType.eNOMATCH
+        CASE Zui.ExprType.eAND
+        CASE Zui.ExprType.eOR
+        CASE Zui.ExprType.eBIT_AND
+        CASE Zui.ExprType.eBIT_OR
+        CASE Zui.ExprType.eBIT_XOR
+        CASE Zui.ExprType.eMULTIPLY
+        CASE Zui.ExprType.eDIVIDE
+        CASE Zui.ExprType.eREMAINDER
+        CASE Zui.ExprType.eSHIFT_RIGHT
+        CASE Zui.ExprType.eSHIFT_LEFT
+        CASE Zui.ExprType.eSUBTRACT
+        CASE Zui.ExprType.eADD
+        CASE Zui.ExprType.eGREATER
+        CASE Zui.ExprType.eGREATER_EQUAL
+        CASE Zui.ExprType.eLESS
+        CASE Zui.ExprType.eLESS_EQUAL
+        CASE Zui.ExprType.eIFNIL
+        CASE Zui.ExprType.eCONCAT
+          undef += listUndefined(expr.getLeft(), ctx)
+          undef += listUndefined(expr.getRight(), ctx)
+
+        CASE Zui.ExprType.eTERNARY
+          undef += listUndefined(expr.getCond(), ctx)
+          undef += listUndefined(expr.getLeft(), ctx)
+          undef += listUndefined(expr.getRight(), ctx)
+      }
+
+      IF undef != exprExt.undefined
+        ctx.error(exprExt.undefined .. " Undefined (counted "
+                      .. undef .. ") for " .. expr.getType().ToString(), expr)
+      }
+    }
+
+    RETURN exprExt.undefined
+  }
+
+}

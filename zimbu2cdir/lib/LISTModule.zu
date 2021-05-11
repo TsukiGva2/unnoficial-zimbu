@@ -1,0 +1,561 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module LIST - list support
+#
+
+#= Methods for the builtin list type.
+#= A list contains zero or more items of the type specified in the
+#= declaration.
+#
+#*license
+#* Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE LISTModule @public
+
+  #= The builtin type list.
+  #- A list contains zero or more items of the type specified in the
+  #- declaration.  The items are accessed by index.  The first item has index
+  #- zero.
+  #
+  #- A list can be used both as a stack and as a queue.
+  #
+  #- To use a list as a stack use the add() and remove() methods.
+  #
+  #- To use a list as a queue use the add() and remove(0) methods.
+  #
+  #- Adding and removing items at the end is the most efficient.  Adding and
+  #- removing at the start takes some more time.  Adding and removing in the
+  #- middle is not very efficient.
+  #
+  #- Besides the object methods, Zimbu has these syntax items for lists:
+  #% list<int> intList = [1, 2, 3]  # list initializer
+  #% IO.print(intList[1])           # get list item by index
+  #% intList[0] = 99                # set list item by index
+  #
+  #- When getting an item by index with `intList[index]` and index is out of
+  #- range, it returns the default item value (NIL, zero, FALSE)
+  #
+  #- When setting an item by index with `intList[index] = value` and index is
+  #- out of range this throws an exception.
+  CLASS STARTlist<Titem> @public
+    # For Zudocu: start of list class.
+    # This is not an actual class to make generating code easier.
+
+    #= Create a new empty list.
+    NEW() @public
+      ###### Only for generating documentation.
+    }
+
+    #= Create a list with |len| items set to |value|.
+    #
+    #- If Titem is a reference type all items contain that reference, thus
+    #- refer to the same object.
+    #
+    #- Example:
+    #% list<string> entries = NEW(20, "empty")
+    NEW(int len, Titem value) @public
+      ###### Only for generating documentation.
+    }
+  }
+
+  #= Return the number of items in the list.
+  #- When the list is NIL this returns zero, it does not throw an E.NilAccess
+  #- exception.
+  FUNC size<Titem>(list<Titem> this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return a string representation of the list.
+  #- Starts with "[" and ends in "]". Items are separated with ", ". An empty
+  #- list returns "[]".
+  #% string s = [12, 34].ToString()
+  #% # s == "[12, 34]".
+  #
+  #- A NIL list returns "NIL"
+  #
+  #- Each item is converted to a string by calling its ToString() method, if
+  #- there is one.
+  #
+  #- If the list contains itself somehow, instead of recursing
+  #- "[recursive-list]" will be used.  However, if multiple threads are doing
+  #- this for the same list the effect is unpredictable.
+  FUNC ToString<Titem>(list<Titem> this) string @public
+    ###### Only for generating documentation.
+    RETURN ""
+  }
+
+  #= Return a string representation of the list with specified formatting.
+  #- Currently works like ToString() without a format argument.
+  #
+  #- TODO: limit depth, limit number of items (like string truncation,
+  #- optional ellipses), etc.
+  FUNC ToString<Titem>(list<Titem> this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN ""
+  }
+
+  #= Return the type of the list.
+  #- Invoking ToString() on the returned type results in something like
+  #- "list<string>".
+  FUNC Type<Titem>(list<Titem> this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return a shallow copy of the list.
+  #- The returned list is a new instance, the items are the same ones as in
+  #- the current list, not copies.
+  FUNC copy<Titem>(list<Titem> this) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Get the item at |index|.
+  #- Same as using list[index].
+  FUNC get<Titem>(list<Titem> this, int index) Titem @public
+    ###### Only for generating documentation.
+    RETURN this[index]
+  }
+
+  #= Set the item at |index|.
+  #- Same as assigning to list[index].  A negative index is relative to the
+  #- end, -1 refers to the last item.
+  #
+  #- Throws an E.OutOfRange exception when |index| does not refer to an
+  #- existing list item.
+  #
+  #- Returns the list.
+  FUNC set<Titem>(list<Titem> this, int index, Titem value) list<Titem> @public
+    this[index] = value
+    RETURN this
+  }
+
+  #= Return a BOX.ListIterator.
+  FUNC Iterator<Titem>(list<Titem> this) I.Iterator<Titem> @public
+    RETURN BOX.ListIterator<Titem>.NEW(this)
+  }
+
+  #= Return a BOX.ListKeyIterator.
+  FUNC KeyIterator<Titem>(list<Titem> this
+                              ) I.KeyIterator<int, Titem> @public
+    RETURN BOX.ListKeyIterator<int, Titem>.NEW(this)
+  }
+
+  #= Create a new list with all items starting at |index|.
+  #- |index| is used as with $add(): a negative index is relative to the end of
+  #- the list.
+  #
+  #- When |index| is before the first item zero is used.  When |index| is
+  #- beyond the last item an empty list is returned.
+  #
+  #- When Titem is a reference type both the original list and the slice point
+  #- to the same objects, as with a shallow copy.
+  #
+  #- When |index| is zero this is equivalent to $copy().
+  #
+  #- Returns the new list.
+  FUNC slice<Titem>(list<Titem> this, int index) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Create a new list with all items starting at |start| to |end| (inclusive).
+  #- |start| and |end| are used as with $add(): a negative index is relative
+  #- to the end of the list.
+  #
+  #- When |start| is before the first item zero is used.  When |end| is
+  #- beyond the last item the last item is used. When end is before start then
+  #- an empty list is returned.
+  #
+  #- When Titem is a reference type both the original list and the slice point
+  #- to the same objects, as with a shallow copy.
+  #
+  #- Returns the new list.
+  FUNC slice<Titem>(list<Titem> this, int start, int end) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Adds an item to the end of the list.
+  #- Returns the list.
+  FUNC add<Titem>(list<Titem> this, Titem item) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Adds an item after item |index| in the list.
+  #- When |index| is 0 the new item will be at position 1.  When |index| is
+  #- negative it is used relative to the end of the list. When |index| is -1
+  #- the item is added to the end of the list.  When |index| is -2 it is
+  #- inserted before the last item in the list.
+  #
+  #- When the index is higher than the list size the item is appended to the
+  #- list.  When the index is negative and the absolute value higher than the
+  #- list size the item is prepended to the list.
+  #
+  #- Returns the list.
+  FUNC add<Titem>(list<Titem> this, Titem item, int index) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Inserts an item before the start of the list.
+  #- Returns the list.
+  FUNC insert<Titem>(list<Titem> this, Titem item) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Inserts an item before item |index| in the list.
+  #- |index| is used as with $add(): a negative index is relative to the end of
+  #- the list.  For example, to insert an item just before the last item in
+  #- the list:
+  #% myList.insert(item, -1)
+  #
+  #- Returns the list.
+  FUNC insert<Titem>(list<Titem> this, Titem item, int index) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Removes all items from the list.
+  #- Returns the list.
+  FUNC clear<Titem>(list<Titem> this) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Removes item |index| from the list and returns the list.
+  #- |index| is used as with $add(): a negative index is relative to the end of
+  #- the list.
+  #
+  #- When |index| is out of range the list is unchanged.
+  #
+  #- $remove(index) does the same but returns the removed item.
+  #
+  #- Returns the list.
+  FUNC clear<Titem>(list<Titem> this, int index) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN THIS
+  }
+
+  #= Removes |item| from the list and returns the list.
+  #- When |item| is not in the list then nothing happens.
+  #
+  #- $remove(item) does the same but returns the removed item.
+  #
+  #- Returns the list.
+  FUNC clearItem<Titem>(list<Titem> this, Titem item) list<Titem> @public
+    int i = this.find(item)
+    IF i >= 0
+      this.clear(i)
+    }
+    RETURN this
+  }
+
+  #= Removes the last item from the list and returns it.
+  #- This does the same as remove(-1).
+  #
+  #- When using a list as a stack, it is most efficient to use add() to push
+  #- items and remove() to pop items.  Using insert() and remove(0) will also
+  #- work but is less efficient.
+  FUNC remove<Titem>(list<Titem> this) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Removes the item at |index| from the list and returns it.
+  #- |index| is used as with $add(): a negative index is relative to the end of
+  #- the list.
+  #
+  #- $clear(index) does the same but returns the list.
+  #
+  #- When |index| is out of range the list is unchanged and the default item
+  #- value returned (NIL, zero, FALSE).
+  FUNC remove<Titem>(list<Titem> this, int index) Titem @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Remove |item| from the list and return it.
+  #- Throws an E.KeyNotFound exception if the item is not present.
+  FUNC removeItem<Titem>(list<Titem> this, Titem item) Titem @public
+    int i = this.find(item)
+    IF i < 0
+      THROW E.KeyNotFound.NEW("item: " .. item.ToString())
+    }
+    this.remove(i)
+    RETURN item
+  }
+
+  #= Removes items |from| to |to| (inclusive) from the list and returns them
+  #= in a new list.
+  #- |from| and |to| are used as with $add(): a negative index is relative to
+  #- the end of the list.
+  #
+  #% list<string> myList = ["zero", "one", "two", "three", "four", "five"]
+  #% list<string> removed = myList.remove(1, 3)
+  #% # removed == ["one", "two", "three"]
+  #
+  #- When |from| or |to| is before the list then index zero is used. When
+  #- |from| or |to| is past the end of the list then the last item in the list
+  #- is used.  If the |from| item is beyond the |to| item the list is
+  #- unmodified and an empty list is returned.
+  FUNC remove<Titem>(list<Titem> this, int from, int to) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Appends all items of |other| to this list.
+  #- If |other| is NIL the list is unchanged.
+  #
+  #- Returns the list.
+  FUNC extend<Titem>(list<Titem> this, list<Titem> other) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Create a new list with all items of this list and |other|.
+  #- If |other| is NIL the list is unchanged.
+  #
+  #- This is equivalent to using copy().extend(other).
+  #
+  #- Returns the new list.
+  FUNC concat<Titem>(list<Titem> this, list<Titem> other) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return TRUE if there is an item that equals |item|.
+  #- This is equivalent to:
+  #% $find(item) != -1
+  FUNC has<Titem>(list<Titem> this, Titem item) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the index of the first item that equals |item|.
+  #- When Titem is a value type, a string or a byteString then the value is
+  #- compared. Otherwise IS is used, the item at the index IS |item|.
+  #
+  #- Returns -1 if |item| is not found.
+  FUNC find<Titem>(list<Titem> this, Titem item) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return all items converted to a string and concatenated, separated by a
+  #= single space.
+  #% IO.print([1, 2, 3].join())  # prints "1 2 3"
+  FUNC join<Titem>(list<Titem> this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return all items converted to a string and concatenated, separated by
+  #= |sep|, which is used as a character.
+  #% IO.print([1, 2, 3].join('+'))  # prints "1+2+3"
+  FUNC join<Titem>(list<Titem> this, int sep) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return all items converted to a string and concatenated, separated by
+  #= |sep|.
+  #% IO.print([1, 2, 3].join(', '))  # prints "1, 2, 3"
+  FUNC join<Titem>(list<Titem> this, string sep) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Sort all items. Supported for a list of string, int and objects.
+  #- When Titem is a class it must have the Compare() method:
+  #% FUNC Compare(Titem other) int
+  #- The method must return 0 when the value of |other| is equal to the value
+  #- of the current item, smaller than zero when |other| has a larger value
+  #- and larger than zero if |other| has a smaller value.
+  #
+  #- Returns the list.
+  FUNC sort<Titem>(list<Titem> this) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Execute function |f| on each item.  Each item is replaced by the result
+  #= of the function.
+  #- |f| has one argument, which is the current value of the item, and must
+  #- return the new value of the item.
+  #% list<string> l = ["a", "b", "c"]
+  #% l.map({ s => s .. ":" })
+  #% # l == ["a:", "b:", "c:"]
+  #
+  #- Returns the list.
+  FUNC map<Titem>(list<Titem> this, func<Titem => Titem> f) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Execute function |f| on each item.  Each item is replaced by the result
+  #= of the function.
+  #- |f| has two arguments: The index in the list and the current value of the
+  #- item.  |f| must return the new value of the item.
+  #% list<string> l = ["a", "b", "c"]
+  #% l.keyMap({ i, s => i .. ":" .. s })
+  #% # l == ["0:a", "1:b", "2:c"]
+  #
+  #- Returns the list.
+  FUNC keyMap<Titem>(list<Titem> this, func<int, Titem => Titem> f
+                    ) list<Titem> @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Create a new list where each item is the result of executing function |f|
+  #= on each item of this list.
+  #- This is like map() but with a different result type.
+  #
+  #- |f| has one argument, which is the value of the item, and must return the
+  #- value for the new list.
+  #% list<int> il = [1, 2, 3]
+  #% list<string> sl = il.mapTo({ n => n .. ":" })
+  #% # sl == ["1:", "2:", "3:"]
+  #
+  #- Returns the new list.
+  FUNC mapTo<Titem, Tresult>(list<Titem> this, func<Titem => Tresult> f
+                            ) list<Tresult> @public
+    list<Tresult> r = NEW()
+    FOR item IN this
+      r.add(f(item))
+    }
+    RETURN r
+  }
+
+  #= Create a new list where each item is the result of executing function |f|
+  #= on each item of this list.
+  #- This is like keyMap() but with a different result type.
+  #
+  #- |f| has two arguments: The index in the list and the value of the item.
+  #- |f| must return the value for the new list.
+  #% list<int> il = [11, 22, 33]
+  #% list<string> sl = il.keyMapTo({ i, n => i .. ": " .. n })
+  #% # sl == ["0: 11", "1: 22", "2: 33"]
+  #
+  #- Returns the new list.
+  FUNC keyMapTo<Titem, Tresult>(list<Titem> this, func<int, Titem => Tresult> f
+                               ) list<Tresult> @public
+    list<Tresult> r = NEW()
+    FOR i IN 0 UNTIL this.Size()
+      r.add(f(i, this[i]))
+    }
+    RETURN r
+  }
+
+  #= Call method |f| for every item in the list.
+  #- The argument for |f| is the value.
+  #
+  #- Returns the list.
+  FUNC forEach<Titem>(list<Titem> this, proc<Titem> f) list<Titem> @public
+    FOR item IN this
+      f(item)
+    }
+    RETURN this
+  }
+
+  #= Call method |f| for every item in the list.
+  #- The first argument for f is the index in the list, the second argument is
+  #- the value.
+  #
+  #- Returns the list.
+  FUNC forKeyEach<Titem>(list<Titem> this, proc<int, Titem> f
+                        ) list<Titem> @public
+    FOR idx IN 0 UNTIL this.Size()
+      f(idx, this[idx])
+    }
+    RETURN this
+  }
+
+  #= Execute function |f| on each item to collect a result value.
+  #- This first time |f| is called the first argument has the first item of
+  #- the list.
+  #
+  #- If the list is empty the default item value (zero, FALSE, NIL) is
+  #- returned.
+  #
+  #- If the list contains only one item that item is returned.
+  #% list<int> numberList = [1, 2, 3, 4]
+  #% int total = numberList.reduce({ a, b => a + b })
+  #% # total is 10.
+  FUNC reduce<Titem>(list<Titem> this, func<Titem, Titem => Titem> f
+                    ) Titem @public
+    bool first = TRUE
+    Titem r
+    FOR item IN this
+      IF first
+        r = item
+        first = FALSE
+      ELSE
+        r = f(r, item)
+      }
+    }
+    RETURN r
+  }
+
+  #= Execute function |f| on each item to collect a result value.
+  #- This first time |f| is called the first argument has the |init|value.
+  #
+  #- If the list is empty the |init| value is returned.
+  #% list<int> numberList = [1, -8, 3, 4]
+  #% int positiveMax = numberList.reduce(1, { a, b => b > a ? b : a })
+  #% # positiveMax is 4.
+  FUNC reduce<Titem>(list<Titem> this, Titem init, func<Titem, Titem => Titem> f
+                    ) Titem @public
+    Titem r = init
+    FOR item IN this
+      r = f(r, item)
+    }
+    RETURN r
+  }
+
+  #= Execute function |f| on each item to collect a result value.
+  #- This first time |f| is called the first argument has the |init| value.
+  #
+  #- If the list is empty the |init| value is returned.
+  #% list<int> numberList = [1, -8, 3, 4]
+  #% string values = numberList.reduceTo("values:", { r, v => r .. " " .. v })
+  #% # values is "values: 1 -8 3 4"
+  FUNC reduceTo<Titem, Tresult>(list<Titem> this,
+                                Tresult init,
+                                func<Tresult, Titem => Tresult> f
+                               ) Tresult @public
+    Tresult r = init
+    FOR item IN this
+      r = f(r, item)
+    }
+    RETURN r
+  }
+
+  #= Create a new list with those items where function |f| returns TRUE.
+  #% list<int> numberList = [1, -8, 3, 0]
+  #% VAR positives = numberList.filter({ a => a > 0 })
+  #% # positives is [1, 3].
+  FUNC filter<Titem>(list<Titem> this, func<Titem => bool> f
+                    ) list<Titem> @public
+    list<Titem> r = NEW()
+    FOR item IN this
+      IF f(item)
+        r.add(item)
+      }
+    }
+    RETURN r
+  }
+
+  #! For Zudocu: end of list class.
+  CLASS ENDlist
+  }
+
+}

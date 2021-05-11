@@ -1,0 +1,54 @@
+#
+# ZUT (Zimbu Templates) demo page: message
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "OverController.zu"
+
+MODULE HelloMessage
+
+  CSS
+    .hello {
+      color: blue;
+      margin: 10px 0;
+    }
+    .top {
+      position: relative;
+    }
+    .balloon {
+      position: absolute;
+      top: -10px;
+      left: 70px;
+      padding: 5px;
+      background: white;
+      border: 1px solid #cccccc;
+      box-shadow: 2px 3px 5px #999;
+    }
+  }
+
+  TEMPLATE show(string text) ZUT.Html
+    [OverController.Decorator decorator = NEW()]
+    <div class="top"
+         [=decorator.wrapperAttributes()]>
+      <div class="hello"
+           [=decorator.listenAttributes()]>
+        [=text]
+      </div>
+
+      <div class="balloon"
+           [=decorator.balloonAttributes()]>
+        Hoovering
+      </div>
+
+      # This is a comment
+      <div>This is not a
+      [#] comment.</div>
+      <div>This is also not a
+      #comment.</div>
+      <div>This # neither.</div>
+    </div>
+  }
+}

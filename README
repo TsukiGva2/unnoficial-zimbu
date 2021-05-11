@@ -1,0 +1,14 @@
+README for Zimbu - the programming language
+
+For overall info read usage.txt.
+
+To get going:
+1. Edit config.zu and set "libPath" to the path of the library files.
+2. "make bootstrap"
+
+To verify everything is working: "make test"
+
+To try it out: "make hello" and run "./hello"
+
+
+For copying: See the LICENSE file.

@@ -1,0 +1,72 @@
+# The Zimbu compiler written in Zimbu
+#
+# Part of the protocol buffer plugin
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Proto.zu"
+
+CLASS FieldItem @items=directory
+  string      $name      # as in the .proto file
+  Proto.Type  $type
+  string      $typeName  # when type is .unknown, message or enum
+  bool        $required
+  bool        $repeated
+  int         $nr        # the field nr, as specified in the .proto file.
+  string      $default
+  Z.Pos       $pos       # where the field was defined
+
+  # Return the name as used in the class.
+  # Prepend an "f_" to avoid name clashes and problems with all-upper names.
+  FUNC $memberName() string
+    RETURN "$f_" .. $name
+  }
+
+  # Return the name used for the member "has" flag
+  # Returns NIL for types that don't need one.
+  FUNC $hasMemberName() string
+    IF !$repeated
+      SWITCH $type
+        CASE Proto.Type.int
+        CASE Proto.Type.int32
+        CASE Proto.Type.uint32
+        CASE Proto.Type.int64
+        CASE Proto.Type.uint64
+        CASE Proto.Type.float
+        CASE Proto.Type.double
+          RETURN "$has_" .. $name
+      }
+    }
+    RETURN NIL
+  }
+
+  # Return the name as used for set...(), get...()
+  FUNC $funcName() string
+    RETURN $name.slice(0, 0).toUpper() .. $name.slice(1)
+  }
+
+  SHARED
+    # From type name to type enum
+    dict<string, Proto.Type> typeDict = [
+        "string": Proto.Type.string,
+        "int":    Proto.Type.int,
+        "int32":  Proto.Type.int32,
+        "uint32":  Proto.Type.uint32,
+        "int64":  Proto.Type.int64,
+        "uint64":  Proto.Type.uint64,
+        "float":  Proto.Type.float,
+        "double":  Proto.Type.double,
+        "bool":   Proto.Type.bool,
+    ]
+
+    FUNC getType(string typeName) Proto.Type
+      IF typeDict.has(typeName)
+        RETURN typeDict[typeName]
+      }
+      RETURN Proto.Type.unknown
+    }
+  }
+}

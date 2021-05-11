@@ -1,0 +1,172 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module CHECK
+#
+
+#= Methods for runtime checks.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE CHECKModule @items=public @public
+
+  #= Throw an exception when |b| is FALSE.
+  #- Examples:  CHECK.true(value > 0)
+  #-            CHECK.true(word == "yes")
+  PROC true(bool b) @backtrace=no
+    IF !b
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.true() failed")
+    }
+  }
+
+  #= Throw an exception when |b| is FALSE, using |msg| for the message.
+  #- Examples:  CHECK.true(value > 0, "value must be positive")
+  #-            CHECK.true(word == "yes", "word expected to be yes")
+  PROC true(bool b, string msg) @backtrace=no
+    IF !b
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.true() failed: " .. msg)
+    }
+  }
+
+  #= Throw an exception when |b| is TRUE.
+  #- Examples:  CHECK.false(value > 0)
+  #-            CHECK.false(word == "yes")
+  PROC false(bool b) @backtrace=no
+    IF b
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.false() failed")
+    }
+  }
+
+  #= Throw an exception when |b| is TRUE, using |msg| for the message.
+  #- Examples:  CHECK.false(value > 0, "value must not be positive")
+  #-            CHECK.false(word == "yes", "word can't be yes")
+  PROC false(bool b, string msg) @backtrace=no
+    IF b
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.false() failed: " .. msg)
+    }
+  }
+
+  #= Throw an exception when |p| is NIL
+  PROC notNil<Tp>(Tp p) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.notNil() failed")
+    }
+  }
+
+  #= Throw an exception when |p| is NIL, using |msg| for the message.
+  PROC notNil<Tp>(Tp p, string msg) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.notNil() failed: " .. msg)
+    }
+  }
+
+  #= Throw an exception when |p| is an empty string.
+  #- Also checks for a NIL value of |p|.
+  PROC notEmpty(string p) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.notEmpty() failed: NIL string")
+    }
+    IF p == ""
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.notEmpty() failed: empty string")
+    }
+  }
+
+  #= Throw an exception when |p| is an empty string, using |msg| for the
+  #= message.
+  #- Also checks for a NIL value of |p|.
+  PROC notEmpty(string p, string msg) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(),
+                               "CHECK.notEmpty() failed: NIL string: " .. msg)
+    }
+    IF p == ""
+      THROW E.Check.NEW(Z.callerPos(),
+                             "CHECK.notEmpty() failed: empty string: " .. msg)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  PROC equal(int a, int b) @backtrace=no
+    IF a != b
+      THROW E.Check.NEW(Z.callerPos(),
+                                 "CHECK.equal() failed: " .. a .. " != " .. b)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  PROC equal(nat a, nat b) @backtrace=no
+    IF a != b
+      THROW E.Check.NEW(Z.callerPos(),
+                                 "CHECK.equal() failed: " .. a .. " != " .. b)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  PROC equal(string a, string b) @backtrace=no
+    IF a != b
+      THROW E.Check.NEW(Z.callerPos(),
+                                 "CHECK.equal() failed: " .. a .. " != " .. b)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  PROC equal(bool a, bool b) @backtrace=no
+    IF a != b
+      THROW E.Check.NEW(Z.callerPos(),
+                                 "CHECK.equal() failed: " .. a .. " != " .. b)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  PROC equal(status a, status b) @backtrace=no
+    IF a != b
+      THROW E.Check.NEW(Z.callerPos(),
+                                 "CHECK.equal() failed: " .. a .. " != " .. b)
+    }
+  }
+
+  #= Throw an exception when |a| and |b| are not equal.
+  #- Both the types and the values must be equal.
+  PROC equal(dyn a, dyn b) @backtrace=no
+    IF a.Type() != b.Type()
+      THROW E.Check.NEW(Z.callerPos(), "CHECK.equal() failed: types differ")
+    }
+    # TODO: check value if possible
+    string as = a.ToString()
+    string bs = b.ToString()
+    IF as != bs
+      THROW E.Check.NEW(Z.callerPos(),
+                     "CHECK.equal() failed: '" .. as .. "' != '" .. bs .. "'")
+    }
+  }
+
+  #= Throw an exception when |n| < |min| and when |n| > |max|.
+  PROC inRange(int n, int min, int max) @backtrace=no
+    IF n < min
+      THROW E.Check.NEW(Z.callerPos(),
+                              "CHECK.inRange() failed: " .. n .. " < " .. min)
+    }
+    IF n > max
+      THROW E.Check.NEW(Z.callerPos(),
+                              "CHECK.inRange() failed: " .. n .. " > " .. max)
+    }
+  }
+
+  #= Throw an exception when |n| < |min| and when |n| > |max|, using |msg| for
+  #= the message.
+  PROC inRange(int n, int min, int max, string msg) @backtrace=no
+    IF n < min
+      THROW E.Check.NEW(Z.callerPos(),
+               "CHECK.inRange() failed: " .. n .. " < " .. min .. ": " .. msg)
+    }
+    IF n > max
+      THROW E.Check.NEW(Z.callerPos(),
+               "CHECK.inRange() failed: " .. n .. " > " .. max .. ": " .. msg)
+    }
+  }
+
+}

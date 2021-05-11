@@ -1,0 +1,528 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>VARSTRING.varString class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='VARSTRING.html'>up:&nbsp;VARSTRING</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.varString
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The builtin type varString.
+</p>
+<p class='ptext'> The varString can contain any sequence of Unicode characters, including
+ NUL.
+<p class='ptext'> VarString is mutable. The characters are stored in an optimal way,
+ depending on the mutations.  When possible a string is used. When
+ appending strings a list of strings is used to avoid reallocation and
+ copying.  When appending characters extra space is allocated to reduce
+ reallocations.
+<pre class='example'> varString s = "foo"  # initialize from a string constant
+ s.append("bar")      # "foobar"
+ s.makeUpper()        # "FOOBAR"
+</pre>
+<p class='ptext'>
+ The characters are UTF-8 encoded.  Illegal byte sequences may appear but
+ cause an exception for operations that work with characters.
+<p class='ptext'> The storage is identical to varByteString, a varString can be typecast to
+ varByteString and the other way around without conversion:
+<pre class='example'> varString vs = getString()
+ varByteString vb = vs.asVarBytes()   # quick, no conversion
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the size of the varString in characters.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varString as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toVarString'><b>$toVarString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varString as-is, this is a no-op.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$asVarbyteString'><b>$asVarbyteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varString as a varByteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toVarbyteString'><b>$toVarbyteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the varString as a varByteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toInt'><b>$toInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the varString converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toInt'><b>$toInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the varString converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedToInt'><b>$quotedToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the varString converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedToInt'><b>$quotedToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the digits at the start of the varString converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$hexToInt'><b>$hexToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the varString converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$hexToInt'><b>$hexToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the varString converted to a number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedHexToInt'><b>$quotedHexToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the varString converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedHexToInt'><b>$quotedHexToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the hex digits at the start of the varString converted to a number,
+ ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$binToInt'><b>$binToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the varString converted to a
+ number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$binToInt'><b>$binToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the varString converted to a
+ number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedBinToInt'><b>$quotedBinToInt</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the varString converted to a
+ number, ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$quotedBinToInt'><b>$quotedBinToInt</b></a>(<small>default</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the binary digits at the start of the varString converted to a
+ number, ignoring quotes.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toLower'><b>$toLower</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString with all characters lower-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toLowerAscii'><b>$toLowerAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString with all ASCII characters lower-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toUpper'><b>$toUpper</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString with all characters upper-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$toUpperAscii'><b>$toUpperAscii</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString with all ASCII characters upper-cased.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$find'><b>$find</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where varString <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$find'><b>$find</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$find'><b>$find</b></a>(<small>s, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index where the varString <b>s</b> appears at or after <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$find'><b>$find</b></a>(<small>c, start</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$findLast'><b>$findLast</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index where varString <b>s</b> appears.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$findLast'><b>$findLast</b></a>(<small>c</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the highest index of the character <b>c</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$startsWith'><b>$startsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the varString starts with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$endsWith'><b>$endsWith</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return TRUE when the varString ends with <b>s</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$hash'><b>$hash</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a number that is a hash value of the varString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$add'><b>$add</b></a>(<small>s</small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Append a string to the varString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$slice'><b>$slice</b></a>(<small>start</small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString, starting at index <b>start</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$slice'><b>$slice</b></a>(<small>start, end</small>) <small><span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a copy of the varString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$split'><b>$split</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the varString split at white space.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$split'><b>$split</b></a>(<small>sep</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the varString split into pieces, split at <b>sep</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='VARSTRING.varString.html#$splitAnyOf'><b>$splitAnyOf</b></a>(<small>charSet</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a list with the varString split at the characters in <b>charSet</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the size of the varString in characters.
+</p>
+<p class='ptext'> Note that this is different from the number of bytes if there are
+ multi-byte characters.
+<p class='ptext'> The size is stored thus this method is efficient.  It does not go over
+ the characters to find the end.
+<p class='ptext'> The empty varString returns zero.
+ When used on NIL Size() returns zero, it does not throw an E.NilAccess
+ exception.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$ToString'><b>$ToString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varString as a string.
+</p>
+<p class='ptext'> When the varString is NIL this returns NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$add'><b>$add</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> s) <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Append a string to the varString.
+</p>
+<p class='ptext'> Returns the modified varString.
+<p class='ptext'> When the varString is NIL throws a NilAccess exception, also when using
+ ?.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$asVarbyteString'><b>$asVarbyteString</b></A>() <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varString as a varByteString.
+</p>
+<p class='ptext'> This does not do any conversion, it only changes the type of the object.
+ Also works on a NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$binToInt'><b>$binToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the varString converted to a
+ number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"010101".binToInt()</span> returns 21.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a 0
+ or 1.
+<p class='ptext'> When using ?.binToInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$binToInt'><b>$binToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the varString converted to a
+ number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"010101".binToInt()</span> returns 21.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a 0 or 1.
+ Also returns <b>default</b> when the varString is NIL and ?.binToInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$endsWith'><b>$endsWith</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the varString ends with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where varString <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+ When not found returns -1.
+ When <b>s</b> is longer than this varString it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?.find() and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> s, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index where the varString <b>s</b> appears at or after <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(s).
+ When not found returns -1.
+ When found returns <b>start</b> or more.
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$find'><b>$find</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the lowest index of the character <b>c</b> at or after <b>start</b>.
+</p>
+<p class='ptext'> When <b>start</b> is zero this works the same as find(c).
+<p class='ptext'> When <b>c</b> is found returns <b>start</b> or more.
+<p class='ptext'> When <b>c</b> is not found returns -1.
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> s) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index where varString <b>s</b> appears.
+</p>
+<p class='ptext'> When <b>s</b> matches at the start 0 is returned.
+<p class='ptext'> When not found returns -1.
+ When <b>s</b> is longer than this varString it will not be found, thus -1 is
+ returned.
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$findLast'><b>$findLast</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> c) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the highest index of the character <b>c</b>.
+</p>
+<p class='ptext'> When <b>c</b> is the first character 0 is returned.
+ When not found returns -1.
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hash'><b>$hash</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a number that is a hash value of the varString.
+</p>
+<p class='ptext'> A varString value always results in the same hash value.
+ Two different varStrings can result in the same hash value, but the
+ chance of this happening is small.
+<p class='ptext'> The hash method is fast and has a reasonable distribution.
+<p class='ptext'> TODO: this should return a nat
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hexToInt'><b>$hexToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the varString converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"a2b4".hexToInt()</span> returns 0xa2b4.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a hex
+ digit.  Also when it starts with "-".
+<p class='ptext'> When using ?.hexToInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$hexToInt'><b>$hexToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the varString converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"a2b4".hexToInt()</span> returns 0xa2b4.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a hex digit.  That
+ includes "-".
+ Also returns <b>default</b> when the varString is NIL and ?.hexToInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedBinToInt'><b>$quotedBinToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the varString converted to a
+ number, ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"1001'0101".quotedBinToInt()</span> returns 149.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a 0
+ or 1.
+<p class='ptext'> When using ?.quotedBinToInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedBinToInt'><b>$quotedBinToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the binary digits at the start of the varString converted to a
+ number, ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"1001'0101".quotedBinToInt()</span> returns 149.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a 0 or 1 and
+ when using ?.quotedBinToInt() on a NIL varString.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedHexToInt'><b>$quotedHexToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the varString converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"ffff'ffff".quotedHexToInt()</span> returns 16777215.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a hex
+ digit.  That includes "-".
+<p class='ptext'> When using ?.quotedHexToInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedHexToInt'><b>$quotedHexToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the hex digits at the start of the varString converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"ffff'ffff".quotedHexToInt()</span> returns 16777215.
+<p class='ptext'> A leading "0x" or "0X" is ignored.
+ Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a hex digit.
+ That includes "-".
+ Also returns <b>default</b> when the varString is NIL and ?.quotedHexToInt()
+ was used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedToInt'><b>$quotedToInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the varString converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"100'000".quotedToInt()</span> returns 100000.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a
+ digit or a minus sign.
+<p class='ptext'> When using ?.quotedToInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$quotedToInt'><b>$quotedToInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the varString converted to a number,
+ ignoring quotes.
+</p>
+<p class='ptext'> Ignores single quotes and underscores, these can be used to make the
+ number easier to read.
+ For example, <span class='commentcode'>"100'000".quotedToInt()</span> returns 100000.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a digit or a minus
+ sign.  When using ?.quotedToInt() also when the varString is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start) <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString, starting at index <b>start</b>.
+</p>
+<p class='ptext'> A negative index is relative to the end of the varString, <span class='commentcode'>slice(-1)</span>
+ returns a varString with only the last character.
+<p class='ptext'> This counts characters, not bytes.  To count bytes first use
+ $asByteString().
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the varString an empty
+ varString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the varString
+ size the whole varString is returned.
+<p class='ptext'> When using ?.slice() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$slice'><b>$slice</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> start, <span class='type'><A class='typehref' href='INT.int.html'>int</A></span> end) <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString, starting at index <b>start</b> and ending at
+ <b>end</b>, inclusive.
+</p>
+<p class='ptext'> A negative index is relative to the end of the varString. <span class='commentcode'>slice(0, -1)</span>
+ returns the whole varString. <span class='commentcode'>slice(-1, -1)</span> only the last character.
+<p class='ptext'> If <b>start</b> is equal to or larger than the size of the varString an empty
+ varString is returned.
+ If <b>start</b> is negative and the absolute value is larger than the returned
+ varString starts at index zero.
+ If the <b>start</b> character is after the <b>end</b> character an empty varString is
+ returned.
+<p class='ptext'> When using ?.slice() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the varString split at white space.
+</p>
+<p class='ptext'> Empty parts are omitted.
+<p class='ptext'> Example:  "foo  bar ".split() returns ["foo", "bar"].
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$split'><b>$split</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> sep) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the varString split into pieces, split at <b>sep</b>.
+</p>
+<p class='ptext'> The matches with the <b>sep</b> string are omitted.
+<p class='ptext'> <b>sep</b> must match exactly.
+<p class='ptext'> When there are no characters between two <b>sep</b> matches, or at the end or
+ start of the varString, the list will contain an empty string item.
+<pre class='example'> "one, two,three".split(", ")
+ # result: ["one", "two,three"]
+</pre>
+<p class='ptext'>
+ When using ?.split() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$splitAnyOf'><b>$splitAnyOf</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> charSet) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a list with the varString split at the characters in <b>charSet</b>.
+</p>
+<p class='ptext'> Empty strings are omitted.
+<p class='ptext'> Example:  "foo/bar: yes ".split("/: ") returns ["foo", "bar", "yes"].
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$startsWith'><b>$startsWith</b></A>(<span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span> s) <span class='type'><A class='typehref' href='BOOL.bool.html'>bool</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return TRUE when the varString starts with <b>s</b>.
+</p>
+<p class='ptext'> When using ?. and the varString is NIL returns -1.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toInt'><b>$toInt</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the varString converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"1234".toInt()</span> returns 1234.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Throws an E.BadValue exception when the varString does not start with a
+ digit or a minus sign.
+<p class='ptext'> When using ?.toInt() on a NIL varString the result is zero.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toInt'><b>$toInt</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> default) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the digits at the start of the varString converted to a number.
+</p>
+<p class='ptext'> For example, <span class='commentcode'>"1234".toInt()</span> returns 1234.
+<p class='ptext'> Ignores anything after the number.
+<p class='ptext'> Returns <b>default</b> when the varString does not start with a digit or a minus
+ sign.
+ Also returns <b>default</b> when the varString is NIL and ?.toInt() was
+ used.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toLower'><b>$toLower</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString with all characters lower-cased.
+</p>
+<p class='ptext'> TODO: Currently only works for latin1 characters
+<p class='ptext'> When using toLower() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toLowerAscii'><b>$toLowerAscii</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString with all ASCII characters lower-cased.
+</p>
+<p class='ptext'> This only handles ASCII letters and leaves all other characters
+ unchanged.
+<p class='ptext'> When using toLowerAscii() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toUpper'><b>$toUpper</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString with all characters upper-cased.
+</p>
+<p class='ptext'> TODO: Currently only works for latin1 characters
+<p class='ptext'> When using toUpper() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toUpperAscii'><b>$toUpperAscii</b></A>() <span class='type'><A class='typehref' href='VARSTRING.varString.html'>varString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a copy of the varString with all ASCII characters upper-cased.
+</p>
+<p class='ptext'> This only handles ASCII letters and leaves all other characters
+ unchanged.
+<p class='ptext'> When using toUpperAscii() on a NIL varString the result is NIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarString'><b>$toVarString</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varString as-is, this is a no-op.
+</p>
+<p class='ptext'> Also works on NIL
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toVarbyteString'><b>$toVarbyteString</b></A>() <span class='type'><A class='typehref' href='VARBYTES.varByteString.html'>varByteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the varString as a varByteString.
+</p>
+<p class='ptext'> Equivalent to asVarbyteString()
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2012 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,108 @@
+#
+# This is a demo of splitting up a job in pieces, called joblets.
+# - One thread creates the joblets and writes them into the job pipe.
+# - N threads read from the job pipe, execute the joblet and write the result
+#   into the result pipe.
+# - One final thread reads from the result pipe and collects the final result.
+#
+# To execute this program you need to download the input, which is a list of
+# 2.8 million cities in the world: http://www.maxmind.com/app/worldcities
+# Store it uncompressed as worldcitiespop.txt
+#
+
+
+ARG.Int threadCount = NEW("t", "threadcount", 3,
+                                      "Number of threads used to do the work")
+ARG.Int blockSize = NEW("b", "blocksize", 500,
+                                         "Number of lines in a block of work")
+
+FUNC Main() int
+  pipe<list<string>> jobPipe = NEW()
+  pipe<int> resultPipe = NEW()
+
+  # Start the thread that reads the file and writes the joblets.
+  ReadThread.NEW(jobPipe, "worldcitiespop.txt").start()
+
+  # Start the worker threads.
+  FOR i IN 1 TO threadCount.get()
+    WorkThread worker = NEW(jobPipe, resultPipe, "Amsterdam")
+    worker.setName("worker " .. i)
+    worker.start()
+  }
+
+  # Accumulate counts from the result pipe.
+  int count
+  FOR i IN 1 TO threadCount.get()
+    count += resultPipe.read()
+  }
+
+  IO.print("Total match count: " .. count)
+  RETURN 0
+}
+
+CLASS ReadThread EXTENDS thread
+  IO.File             $file
+  pipe<list<string>>  $jobPipe
+
+  NEW(pipe<list<string>> jobPipe, string fileName)
+    $jobPipe = jobPipe
+    $file = IO.fileReader(fileName)
+    IF $file == NIL
+      THROW "Cannot open file for reading: " .. fileName
+    }
+  }
+
+  PROC $body() @replace
+    int blockCount
+    list<string> block = NEW()
+    WHILE TRUE
+      string line = $file.readLine()
+      IF line == NIL || block.Size() == blockSize.get()
+        $jobPipe.write(block)
+        block = NEW()
+        IF ++blockCount % 100 == 0
+          IO.print("Reading block " .. blockCount)
+        }
+      }
+      IF line == NIL
+        BREAK
+      }
+      block.add(line)
+    }
+    $jobPipe.close()
+  }
+}
+
+CLASS WorkThread EXTENDS thread
+  pipe<list<string>> $jobPipe
+  pipe<int>          $resultPipe
+  string             $pattern
+
+  NEW(pipe<list<string>> jobPipe, pipe<int> resultPipe, string pattern)
+    $jobPipe = jobPipe
+    $resultPipe = resultPipe
+    $pattern = pattern
+  }
+
+  PROC $body() @replace
+    int blockCount
+    int count
+    # TODO: should be possible to do FOR line IN $jobPipe
+    WHILE TRUE
+      list<string> block = $jobPipe.read()
+      IF block == NIL
+        BREAK
+      }
+      FOR line IN block
+        IF line.find($pattern) >= 0
+          ++count
+        }
+      }
+      IF ++blockCount % 100 == 0
+        IO.print($name .. " processed block " .. blockCount)
+      }
+    }
+    IO.print($name .. " result: " .. count)
+    $resultPipe.write(count)
+  }
+}

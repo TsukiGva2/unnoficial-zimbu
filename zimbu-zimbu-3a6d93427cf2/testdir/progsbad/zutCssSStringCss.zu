@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutCssSStringCss.zut
+
+FUNC Main() int
+  # CSS single string / Css
+  ZUT.Css css = NEW().add("xxx")
+  string fail = Testing.inCssSStringCss(css).ToString()
+  RETURN 0
+}

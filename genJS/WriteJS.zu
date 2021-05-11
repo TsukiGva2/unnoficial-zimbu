@@ -1,0 +1,3234 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# WriteJS class and module: Methods are invoked from Generate for each
+# statement and expression to generate JavaScript code.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "WriteArrayJS.zu"
+IMPORT "WriteDictJS.zu"
+IMPORT "WriteListJS.zu"
+
+IMPORT "../BitsType.zu"
+IMPORT "../CallbackType.zu"
+IMPORT "../ClassType.zu"
+IMPORT "../ContainerType.zu"
+IMPORT "../Conversion.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DictStuff.zu"
+IMPORT "../EnumType.zu"
+IMPORT "../EnumValueType.zu"
+IMPORT "../ExprArg.zu"
+IMPORT "../ExprEval.zu"
+IMPORT "../ForLoopInfo.zu"
+IMPORT "../Generate.zu"
+IMPORT "../MethodType.zu"
+IMPORT "../ModuleScope.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../Output.zu"
+IMPORT "../Resolve.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Scope.zu"
+IMPORT "../TargetLang.zu"
+IMPORT "../TopScope.zu"
+IMPORT "../TryScope.zu"
+IMPORT "../Type.zu"
+IMPORT "../TupleType.zu"
+IMPORT "../UsedFile.zu"
+IMPORT "../ValueType.zu"
+IMPORT "../WriteCommon.zu"
+IMPORT "../ZimbuFile.zu"
+IMPORT "../ZuiFile.zu"
+IMPORT "../ZuiExpressionExt.zu"
+
+# The methods that are implemented for the Resolve.I interface are commented
+# in resolve.zu.
+CLASS WriteJS EXTENDS WriteCommon IMPLEMENTS Resolve.I
+                           @public @items=public   # TODO: restrict visibility
+  TargetLang $targetLang
+
+  NEW()
+    $writing = TRUE
+    $targetLang.js = TRUE
+  }
+
+  FUNC $getLangName() string @replace
+    RETURN "JS"
+  }
+
+  FUNC $getTargetLang() TargetLang @replace
+    RETURN $targetLang
+  }
+
+  FUNC $thisName(bool insideNew) string
+    IF insideNew
+      # We create a new object with this name.
+      RETURN newThisName
+    }
+    # Use the Javascript mechanism to access the current object.
+    RETURN "this"
+  }
+
+  # Write statement and line end, usually ";\n".
+  PROC $statementLineEnd(Output out)
+    out.write(";\n")
+  }
+
+  # Write code for the end of a scope.
+  PROC $writeScopeEnd(bool writeLabel, bool willJump,
+               list<Zui.Statement> statements, Zui.Position pos, SContext ctx)
+  }
+
+  # Write code to jump to the end of the scope.
+  PROC $writeJumpToLabel(SContext ctx)
+  }
+
+  # Return TRUE if an abstract method method is not to be generated.
+  FUNC $skipAbstractMethod() bool
+    RETURN FALSE
+  }
+
+  # Return TRUE if a method from the parent is to be written in a child class.
+  FUNC $doWriteParentMethod(Declaration decl) bool
+    # This is only needed for NEW(), so that the new statement is done on the
+    # right class.
+    RETURN decl.type.ttype == Type.Enum.new
+  }
+
+  # Generate the interface member lookup table, when needed.
+  PROC $interfaceMemberTable(Declaration decl, Declaration itf, SContext ctx)
+  }
+
+  # Write interface member lookup tables for a class.
+  PROC $writeIMTTables(Declaration decl, set<string> imtDone, SContext ctx)
+  }
+
+  # Write object declaration table for a class.
+  PROC $writeToTable(Declaration decl, SContext ctx)
+  }
+
+  # End of writing declaration table for a class.
+  PROC $writeIMTend(SContext ctx)
+  }
+
+  FUNC $getCS(ZimbuFile zimbuFile) ZimbuFile.CodeSpecific
+    RETURN zimbuFile.js
+  }
+
+  PROC $mainHead(MethodType method, SContext ctx)
+    LOG.error("Can't use Main() in a ZWT file")
+  }
+
+  PROC $mainMiddle(SContext ctx)
+  }
+
+  PROC $mainEnd(SContext ctx)
+  }
+
+  PROC $writeVirtual(SContext ctx)
+  }
+
+  # Allocate a new object.
+  PROC $writeAlloc(string typeName, Declaration finishMethod,
+                                                     Output out, SContext ctx)
+    out.write("new " .. typeName .. "()")
+  }
+
+  PROC $writeObjectInit(Declaration initDecl, ClassType classType,
+                                               Declaration dest, SContext ctx)
+    ctx.out.write(initDecl.pName)
+    ctx.out.write("(null)")
+  }
+
+  # Write a call to clear an object that is not allocated.
+  PROC $writeNoAllocClear(string typeName, Declaration initMethod,
+                      Declaration finishMethod, string destName, SContext ctx)
+  }
+
+  PROC $writeNoAllocClear(string typeName, Declaration initMethod,
+                     Declaration finishMethod, Declaration dest, SContext ctx)
+  }
+
+  # Allocate a new string from an array.
+  PROC $writeNewString(Zui.MethodCall call, int &undef, SContext ctx)
+    IF ctx.doError()
+      ctx.error("NEW(array) not implemented yet", call.getPos())
+    }
+  }
+
+  # Allocate a new array for |type|.
+  PROC $writeArrayAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    IF ctx.doError()
+      ctx.error("Array.NEW() not implemented yet", call.getPos())
+    }
+  }
+
+  PROC $writeListAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    WriteListJS.writeListAlloc(type, noAllocName, call, undef, ctx)
+  }
+
+  # Write the code to declare a callback type.
+  PROC $writeCallbackDecl(CallbackType type, Zui.Position pos, SContext ctx)
+  }
+
+  # Allocate a new callback for |type|.
+  PROC $writeCallbackAlloc(CallbackType type,
+                           string noAllocName,
+                           Generate.CallbackInfo cbInfo,
+                           Zui.MethodCall call,
+                           int &undef,
+                           SContext ctx)
+    list<Zui.Expression> args = call.getArgumentList()
+    int argOffset = cbInfo != NIL ? 0 : 1
+    IF args.Size() != type.arguments.Size() + argOffset
+      ctx.error("Expected " .. (type.arguments.Size() + argOffset)
+                        .. " arguments, found " .. args.Size(), call.getPos())
+      RETURN
+    }
+    Zui.Expression methodExpr = cbInfo != NIL ? call.getName() : args[0]
+
+    Output out = ctx.out
+    string comma = ""
+
+    # Arguments from caller passed on to called function.
+    string passed = ""
+    int argName = 'a'
+    FOR arg IN type.methodType.arguments
+      passed ..= comma
+      passed ..= argName.asString()
+      comma = ", "
+      ++argName
+    }
+
+    out.write("function(")
+    out.write(passed)
+    out.write(") { return ")
+
+    # the function name
+    IF cbInfo == NIL
+      Generate.genExpr(methodExpr, ctx, type.calledMethodType.getMethodRef())
+    ELSE
+      out.write(cbInfo.methodType.pName)
+    }
+    out.write("(")
+    out.write(passed)
+
+    # extra arguments
+    FOR i IN argOffset UNTIL args.Size()
+      out.write(comma)
+      Generate.genExpr(args[i], ctx, type.arguments[i - 1].type)
+      comma = ", "
+    }
+    out.write("); }")
+  }
+
+  # Allocate a new closure for |type|.
+  PROC $writeClosureAlloc(CallbackType type,
+                          MethodType method,
+                          bool typeCast,
+                          int &undef,
+                          SContext ctx)
+    ctx.error("INTERNAL: writeClosureAlloc() not implemented", type.zuiPos)
+  }
+
+  # Write the code to declare a tuple type.
+  PROC $writeTupleDecl(TupleType type, Zui.Position pos, SContext ctx)
+    ctx.error("INTERNAL: writeTupleDecl() not implemented", pos)
+  }
+
+  PROC $writeTupleAlloc(TupleType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    ctx.error("INTERNAL: writeTupleAlloc() not implemented", call.getPos())
+  }
+
+  PROC $callTupleToString(Zui.MethodCall call,
+                                 Type type, Zui.Expression expr, SContext ctx)
+    ctx.error("INTERNAL: callTupleToString() not implemented", call.getPos())
+  }
+
+  PROC $callTypeToString(Zui.Expression expr, SContext ctx)
+    ctx.error("INTERNAL: type.ToString() not implemented", expr)
+  }
+
+  PROC $callTypeName(Zui.Expression expr, SContext ctx)
+    ctx.error("INTERNAL: type.name() not implemented", expr)
+  }
+
+  PROC $writeDerefLhs(Output out)
+  }
+
+  PROC $writeNewThis(MethodType method, Declaration initMethod,
+                     Declaration finishMethod, Zui.Position pos, SContext ctx)
+    ctx.out.writeIndent(1)
+    ctx.out.write("if (!" .. newThisName .. ") " .. newThisName .. " = ")
+    IF initMethod == NIL
+      $writeAlloc(method.getClassName(), NIL, ctx.out, ctx)
+    ELSE
+      ctx.out.write(initMethod.pName)
+      ctx.out.write("(null)")
+    }
+    ctx.out.write(";\n")
+  }
+
+  PROC $writeRefThis(SContext ctx)
+  }
+
+  PROC $writeNewArg(bool useThis, string className, Declaration dest,
+                    Declaration initMethod, Declaration finishMethod,
+                    bool hasArg, SContext ctx)
+    IF useThis
+      # calling NEW() inside NEW(): pass the already constructed object
+      ctx.out.write(ctx.scope.thisName)
+    ELSEIF className != NIL
+      # calling NEW() on a not allocated object: pass that object.
+      ctx.out.write(dest.pName)
+    ELSE
+      # calling NEW() elsewhere: pass null so that a new object is
+      # constructed.
+      ctx.out.write("null")
+    }
+    IF hasArg
+      ctx.out.write(", ")
+    }
+  }
+
+  PROC $writeNewReturn(Zui.Position pos, SContext ctx)
+    ctx.out.writeIndent(1)
+    ctx.out.write("return " .. newThisName .. ";\n")
+  }
+
+  # Write the name of this symbol, surrounding it with what is required to
+  # access it.
+  # When |read| is TRUE the symbol is read from, not assigned to or called.
+  PROC $writeSymName(Declaration decl, Type type, bool read, SContext ctx)
+    IF ctx.out.writing
+      IF type.ttype == Type.Enum.byRef
+        # TODO: This probabaly doesn't work.
+        ctx.out.write("(*")
+        ctx.out.write(decl.pName)
+        ctx.out.write(")")
+      ELSEIF decl.getClassName() != NIL
+        IF read && decl.type.isMethodOrRefType()
+          # Calling an object method requires binding "this":
+          #  $func -> bind(func, this)
+          #  $var -> bind(this.var, this)
+          ctx.out.write("Zbind(")
+          IF decl.type.isMethodType()
+            IF decl.jsFName == NIL || decl.jsFName == ""
+              ctx.error("INTERNAL: no jsFName for: " .. decl.ToString(),
+                                                                  decl.zuiPos)
+            }
+            ctx.out.write(decl.jsFName)
+          ELSE
+            ctx.out.write(ctx.scope.thisName .. "." .. decl.pName)
+          }
+          ctx.out.write(", " .. ctx.scope.thisName .. ")")
+          ctx.setDeclUsed(bind)
+        ELSE
+          #  $func -> this.func
+          ctx.out.write(ctx.scope.thisName .. "." .. decl.pName)
+        }
+      ELSE
+        ctx.out.write(decl.pName)
+      }
+    }
+  }
+
+  # Write the name of the variable |decl|.
+  PROC $writeVarName(Declaration decl, SContext ctx)
+    ctx.out.write(decl.pName)
+  }
+
+  PROC $namelessFuncUse(Declaration decl, SContext ctx)
+    ctx.out.write(decl.pName)
+  }
+
+  PROC $namelessFuncReference(Declaration decl, SContext ctx)
+    ctx.addUsedItem(decl)
+  }
+
+  # Generate the type cast for a proc_ref or func_ref.
+  PROC $refCast(Type type, Zui.Position pos, SContext ctx)
+    # Javascript doesn't need a type cast.
+    # (Vobj.Vmember)(arg1, arg2)
+    ctx.out.write("(")
+  }
+
+  # Generate a type cast for a reference.
+  PROC $refCast(SContext ctx)
+  }
+
+  # Generate an object initializer.
+  PROC $objectInit(Zui.Expression initExpr, Declaration dest, SContext ctx)
+    ctx.error("object initializer not yet supported for JS", initExpr.getPos())
+  }
+
+  FUNC $methodReturnType(Zui.Declaration decl, bool isNew, bool isInit,
+                                                          SContext ctx) Type
+    Type retType
+    Zui.TypeEnum type = decl.getType().getType()
+    IF isNew || isInit
+      retType = ctx.scope.classType
+    ELSEIF type == Zui.TypeEnum.eFUNC
+      Zui.MethodType method = decl.getType().getMethodDecl()
+      Zui.Expression expr = method.getReturnType(0).getName()
+      IF method.sizeReturnType() > 1
+        ctx.error("Sorry, multiple return types not supported yet", expr)
+      }
+      IF expr.getType() == Zui.ExprType.eTHIS
+        # Returning THIS, the object itself.
+        retType = ctx.scope.classType
+      ELSE
+        retType = Generate.generateDeclType(expr,
+                        ctx.copyNoOut(), isDecl + dotI + markUsed,
+                        NEW(expr.getPos(), ctx))
+      }
+    }
+    # The return type is not written.
+
+    RETURN retType
+  }
+
+  PROC $methodStart(Declaration decl, bool hasArguments, SContext ctx)
+    ctx.out.write("function " .. decl.pName .. "(")
+    IF ctx.scope.isClassScope()
+                  && (decl.type.ttype == Type.Enum.new || decl.name == "Init")
+      # NEW() and Init() use "thisO" as the first argument.
+      ctx.out.write(newThisName)
+      IF hasArguments
+        ctx.out.write(", ")
+      }
+    }
+  }
+
+  PROC $writeMethodCall(Declaration funcDecl, bool moreArgs, SContext ctx)
+    IF funcDecl.getClassName() != NIL
+      ctx.out.write(ctx.scope.thisName .. "." .. funcDecl.jsMName .. "(")
+    ELSE
+      ctx.out.write(funcDecl.pName .. "(")
+    }
+  }
+
+  # object.Type()
+  PROC $callObjectType(Zui.MethodCall call, ClassType class, Type object,
+                                            Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("INTERNAL: object.Type() not implemented", call.getPos())
+    }
+  }
+
+  # object.ToString()
+  PROC $callObjectToString(Zui.MethodCall call, ClassType class, Type object,
+                                            Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("INTERNAL: object.ToString() not implemented", call.getPos())
+    }
+  }
+
+  # Add a DEFER'ed function to the defer list
+  PROC $addDefer(Zui.MethodCall call, Generate.CallbackInfo cbInfo,
+                                                                 SContext ctx)
+  }
+
+  # Call to a function reference.
+  FUNC $functionRefCall(Zui.MethodCall call, Declaration decl,
+                                  string funcName, Type destType, SContext ctx
+                       ) Type
+    Type refType = decl.type
+    MethodType type = refType.getMethod()
+    $refCast(refType, call.getPos(), ctx)
+    # When funcName is NIL call the method directly:  { => "foo" }()
+    Type useType = funcName == NIL ? type : refType
+    $writeSymName(decl, useType, FALSE, ctx)
+    ctx.out.write(")(")
+    Generate.generateArgumentsCheck(call, funcName, ctx, type, destType)
+    ctx.out.write(")")
+    RETURN type.returnType
+  }
+
+  # Call to a method reference.
+  FUNC $methodRefCall(Zui.MethodCall call,
+                  Type mtype,
+                  Type object,
+                  Zui.Expression objExpr,
+                  string pName,
+                  Type destType,
+                  SContext ctx) Type
+    Output varnameOut = NEW()
+    varnameOut.writing = ctx.out.writing
+    SContext varnameCtx = ctx.copy(varnameOut)
+    $refCast(mtype, objExpr.getPos(), varnameCtx)
+    Declaration decl = Generate.generateVarname(objExpr, varnameCtx, object)
+    $member(varnameOut, objExpr.getPos(), decl == NIL ? NIL : decl.type,
+                                                       NIL, FALSE, pName, ctx)
+    # TODO: handle callback with extra arguments
+    ctx.out.write(")(")
+
+    MethodType mt = mtype.getMethod()
+    string methodName = call.getName().getRight().getId().getName()
+    Generate.generateArgumentsCheck(call, methodName, ctx, mt, destType)
+    ctx.out.write(")")
+
+    IF mt != NIL && mt.returnType != NIL
+      RETURN mt.returnType
+    }
+    RETURN NIL
+  }
+
+  FUNC $objectCall(Zui.MethodCall call,
+                   bool i_object_arg,
+                   list<Declaration.C> arglist,
+                   Declaration mdecl,
+                   Type object,
+                   Zui.Expression objExpr,
+                   string pName,
+                   Type destType,
+                   SContext ctx) Type
+    string methodName = call.getName().getRight().getId().getName()
+    Type mtype = mdecl.type
+    MethodType methodType = mtype
+
+    # Javascript is easy, it takes care of everything.
+    #      object.method(arg) -> object.method(arg)
+    # But for PARENT we need to do something else:
+    #      PARENT.method() -> parentMethod.call(this)
+    # TODO: PARENT.PARENT.method()
+    IF objExpr.getType() == Zui.ExprType.ePARENT
+      ctx.out.write(mdecl.jsFName .. ".call(this")
+      IF call.hasArgument()
+        ctx.out.write(", ")
+      }
+    ELSE
+      Generate.generateVarname(objExpr, ctx, object)
+      IF mdecl == NIL
+        ctx.error("INTERNAL: no decl: " .. mtype.typeToString(), objExpr)
+        ctx.out.write("." .. "MISSING" .. "(")
+      ELSE
+        ctx.out.write("." .. mdecl.jsMName .. "(")
+      }
+    }
+    Generate.generateArgumentsCheck(call, methodName, ctx, methodType, destType)
+    ctx.out.write(")")
+
+    RETURN methodType.returnType
+  }
+
+  PROC $usingIobjectMethod(Declaration mdecl,
+                   list<Declaration.C> arglist,
+                   Type objectType,
+                   int &udef,
+                   string methodName,
+                   Zui.Position pos,
+                   string baseFuncName,
+                   SContext ctx)
+  }
+
+
+  # Unused.
+  dict<string, Declaration.C> $virtualFuncMap
+
+  FUNC $generateVirtualFunc(string funcKey, Type varType,
+                            string methodName,
+                            Zui.Position pos,
+                            int &undef,
+                            list<Declaration.C> arglist, SContext ctx
+                            ) Declaration
+    RETURN NIL
+  }
+
+  # "object.member.(expr)(arg)"
+  FUNC $memberExpr(Zui.MethodCall method, Generate.CallbackInfo cbInfo,
+                                             SContext ctx, Type destType) Type
+    IF ctx.out.writing
+      ctx.error("INTERNAL: object.member.(expr)(arg) not implemented",
+                                                              method.getPos())
+    }
+    RETURN destType
+  }
+
+  PROC $argWithType(bool first, Type type, Zui.Position pos,
+                                                 string argName, SContext ctx)
+    IF !first
+      ctx.out.write(", ")
+    }
+    # In JS there is no type.
+    ctx.out.write(argName)
+  }
+
+  FUNC $writeVarargs(Zui.MethodCall call, Type type, TupleType tupleType,
+                  list<Zui.Expression> args, int startIndex, SContext ctx) int
+    IF ctx.out.writing
+      ctx.error("INTERNAL: varargs not implemented", call.getPos())
+    }
+    RETURN 0
+  }
+
+  # Return TRUE when forward declarations are to be written.
+  FUNC $doWriteDecl() bool
+    RETURN FALSE
+  }
+
+  FUNC $subscript(Zui.Expression expr, SContext ctx, Type destType) Type
+    # Get type of "expr".
+    # TODO: this is a hack, it should be possible to use expr.typeObj
+    Type type = genExpr(expr.getLeft(), ctx.copyNoOut())
+
+    Type ret
+    IF type != NIL
+      Type effType = type.getEffType()
+      IF effType.ttype == Type.Enum.list
+        ret = WriteListJS.generateSubscript(effType.<ContainerType>,
+                                                   expr, FALSE, ctx, destType)
+      ELSEIF effType.ttype == Type.Enum.dict
+        ret = WriteDictJS.generateSubscript(effType.<ContainerType>,
+                                                   expr, FALSE, ctx, destType)
+      ELSEIF effType.ttype == Type.Enum.array
+        genExpr(expr.getLeft(), ctx, Type.anArray)
+        ctx.out.write("[")
+        genExpr(expr.getRight(), ctx, Type.anInt)
+        ctx.out.write("]")
+        ret = effType.<ContainerType>.itemType
+        IF ret == NIL && ctx.out.writing
+          ctx.error("type of array item unknown", expr)
+        }
+      ELSEIF effType.ttype == Type.Enum.stringval
+          || effType.ttype == Type.Enum.string
+          || effType.ttype == Type.Enum.varString
+          || effType.ttype == Type.Enum.byteString
+          || effType.ttype == Type.Enum.varByteString
+        ctx.out.write("(")
+        genExpr(expr.getLeft(), ctx, effType)
+        ctx.out.write(").charCodeAt(")
+        genExpr(expr.getRight(), ctx, Type.anInt)
+        ctx.out.write(")")
+        ret = Type.anInt
+      # TODO: tuple
+      # TODO: multiple
+      ELSEIF ctx.out.writing
+        ctx.error("type does not (yet) allow subscript: "
+                                                     .. type.typeName(), expr)
+      }
+    ELSEIF ctx.out.writing
+      # Generate the error message for "expr"
+      genExpr(expr.getLeft(), ctx)
+    }
+    RETURN ret
+  }
+
+  FUNC $varnameSubscript(Type type, Zui.Expression expr, bool lvalue,
+                                             SContext ctx, Type destType) Type
+    IF type != NIL && type.ttype == Type.Enum.list
+      WriteListJS.generateSubscript(type.<ContainerType>,
+                                                  expr, lvalue, ctx, destType)
+    ELSEIF type != NIL && type.ttype == Type.Enum.dict
+      WriteDictJS.generateSubscript(type.<ContainerType>,
+                                                  expr, lvalue, ctx, destType)
+    ELSEIF type != NIL && type.ttype == Type.Enum.tuple
+      ctx.error("Sorry, tuple not implemented yet", expr)
+    ELSE
+      Generate.generateVarnamePart(expr.getLeft(), FALSE, ctx, destType)
+      ctx.out.write("[")
+      genExpr(expr.getRight(), ctx, Type.anInt)
+      ctx.out.write("]")
+    }
+    RETURN NIL
+  }
+
+  # Generate a tuple member by index.
+  FUNC $tupleItem(TupleType type, Zui.Expression left, int idx,
+                                                            SContext ctx) Type
+    IF ctx.out.writing
+      ctx.error("Sorry, tuple not implemented yet", left)
+    }
+    RETURN NIL
+  }
+
+  PROC $tupleItem(string tempName, int idx, Zui.Position pos, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("Sorry, tuple not implemented yet", pos)
+    }
+  }
+
+  PROC $multiReturnItem(Declaration tempDecl, int i,
+                                   Zui.Position pos, Output out, SContext ctx)
+    IF out.writing
+      ctx.error("Sorry, multiple return not implemented yet", pos)
+    }
+  }
+
+
+  FUNC $dictGet(ContainerType type, Zui.Expression dictExpr,
+                                                       Zui.Expression keyExpr,
+                         Zui.Expression defExpr, SContext ctx, Type destType
+                 ) Type
+    RETURN WriteDictJS.generateGet(
+                              type, dictExpr, keyExpr, defExpr, ctx, destType)
+  }
+
+  # Generate accessing an object member |objDecl| of an interface |itfType|.
+  PROC $iobjectMember(Declaration objDecl, Type itfType,
+                      Zui.Expression expr, bool dotnil,
+                      SContext ctx, Type destType, bool genVarname)
+    # some.member
+    string id
+    IF dotnil
+      # var?.member ->  ((var id = var) ? id.member : null)
+      id = getUid(ctx.scope.ToString())
+      ctx.outs.varOut.writeIndent(ctx.scope.depth)
+      ctx.outs.varOut.write("var " .. id .. ";\n")
+      ctx.out.write("((")
+      ctx.out.write(id)
+      ctx.out.write(" = ")
+    }
+    Zui.Expression left = expr.getLeft()
+    IF genVarname
+      Generate.generateVarnamePart(left, FALSE, ctx, destType)
+    ELSE
+      genExpr(left, ctx, destType)
+    }
+    IF dotnil
+      ctx.out.write(") ? ")
+      ctx.out.write(id)
+    }
+    ctx.out.write("." .. objDecl.pName)
+    IF dotnil
+      ctx.out.write(" : null)")
+    }
+  }
+
+  # Generate accessing an iobject member |objDecl| of an interface |itfType|.
+  PROC $iobjectCallbackMember(Declaration methodDecl,
+                       Declaration objDecl, Type itfType,
+                      Zui.Expression expr, bool dotnil,
+                      SContext ctx, Type destType, bool genVarname)
+    $iobjectMember(objDecl, itfType, expr, dotnil, ctx, destType, genVarname)
+  }
+
+  PROC $iobjectFuncUse(Declaration objDecl, Type itfType,
+                                            Zui.Expression expr, SContext ctx)
+  }
+
+  # Binary operator with int or bits values.
+  FUNC $numberOp(Zui.Expression expr, SContext ctx) Type
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF expr.getType() == Zui.ExprType.eDIVIDE
+               && (exprExt.leftExprType == NIL
+                               || exprExt.leftExprType.ttype == Type.Enum.int)
+      # Javascript always uses float but in Zimbu "/" truncates.
+      ctx.out.write("Math.floor")
+    }
+    RETURN numberOp(expr, ctx)
+  }
+
+  FUNC $stringConcat(Zui.Expression expr, string cast, SContext ctx) string
+    ctx.out.write(" += ")
+    RETURN ""
+  }
+
+  FUNC $varStringConcatAssign(Zui.Assignment assign, SContext ctx) int
+    IF ctx.out.writing
+      ctx.error("..= not implemented yet for varString", assign.getLhs())
+    }
+    RETURN 0
+  }
+
+  PROC $concatStringOp(Zui.Expression expr, SContext ctx, Type destType)
+    Generate.genExprDoConv(expr.getLeft(), ctx, destType)
+    ctx.out.write(" + ")
+    Generate.genExprDoConv(expr.getRight(), ctx, destType)
+  }
+
+  PROC $concatVarStringOp(Zui.Expression expr, SContext ctx, Type destType)
+    $concatStringOp(expr, ctx, destType)
+  }
+
+  # A sequence of string concatenation operators.
+  PROC $concatStringOp(list<Zui.Expression> concats,
+                                                  SContext ctx, Type destType)
+    string plus = ""
+    FOR expr IN concats
+      ctx.out.write(plus)
+      Generate.genExprDoConv(expr, ctx, destType)
+      plus = " + "
+    }
+  }
+
+  # Generate code for a literal number.
+  PROC $generateInt(Zui.Expression expr, SContext ctx)
+    ctx.out.write(expr.getNumber() .. "")
+  }
+
+  # Generate code for a literal float number.
+  PROC $generateFloat(Zui.Expression expr, SContext ctx)
+    ctx.out.write(expr.getFnumber().ToString())
+  }
+
+  # Generate code for a literal string.
+  PROC $stringValue(string value, SContext ctx)
+    Output out = ctx.out
+    out.write("'")
+
+    # Handle limited set of special characters.
+    int i = 0
+    byteString s = value.asByteString()
+    WHILE i < s.Size()
+      int c = s[i]
+      IF c == '\n'
+        out.write("\\n")
+      ELSEIF c == '\r'
+        out.write("\\r")
+      ELSEIF c == '\t'
+        out.write("\\t")
+      ELSEIF c == '\''
+        out.write("\\'")
+      ELSEIF c == '\\'
+        out.write("\\\\")
+      ELSE
+        out.write(c.asByteString().ToString())
+      }
+      i++
+    }
+    out.write("'")
+  }
+
+  # Generate C code for a byteString from a stringLiteral |expr|.
+  # Also handle a op_concat expr that concats strings.
+  PROC $byteStringValue(Zui.Expression expr, SContext ctx)
+    ctx.out.write("\"")
+    Generate.generateBytesExpr(expr, ctx.out)
+    ctx.out.write("\"")
+  }
+
+  # Generate code to set varByteString |dest| from a stringLiteral |expr|.
+  PROC $varByteStringSetString(Zui.Expression expr, Declaration dest, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("JS does not support varByteString.set() yet", expr)
+    }
+  }
+
+  FUNC $plusOp(Zui.Expression expr, SContext ctx, Type.Enum destType) Type
+    $numberOp(expr, ctx)
+    RETURN Type.anInt
+  }
+
+  PROC $incrdecrOp(Zui.Expression expr, SContext ctx)
+    incrdecrOp(expr, ctx)
+  }
+
+  # "expr ISA classType" and "expr ISNOTA classType"
+  PROC $isaOp(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      Type rightType = $isaOpType(expr, ctx)
+      IF $isDeclUsed(rightType)
+        IF expr.getType() == Zui.ExprType.eISNOTA
+          ctx.out.write("!(")
+        }
+        genExpr(expr.getLeft(), ctx)
+        ctx.out.write(" instanceof ")
+        ctx.out.write(rightType.pName)
+        IF expr.getType() == Zui.ExprType.eISNOTA
+          ctx.out.write(")")
+        }
+      ELSEIF expr.getType() == Zui.ExprType.eISNOTA
+        # The RHS type is not used, ISNOTA is always true.
+        ctx.out.write("1")
+      ELSE
+        # The RHS type is not used, ISA is always false.
+        ctx.out.write("0")
+      }
+    }
+  }
+
+  PROC $booleanOp(Zui.Expression expr, bool isCompare, SContext ctx)
+    IF !isCompare
+      # val == NAN and NAN == val need to use isNan().
+      IF expr.getLeft().getType() == Zui.ExprType.eNAN
+        IF expr.getType() == Zui.ExprType.eNOTEQUAL
+          ctx.out.write("!")
+        }
+        $isNan(expr.getRight(), ctx)
+        RETURN
+      }
+      IF expr.getRight().getType() == Zui.ExprType.eNAN
+        IF expr.getType() == Zui.ExprType.eNOTEQUAL
+          ctx.out.write("!")
+        }
+        $isNan(expr.getLeft(), ctx)
+        RETURN
+      }
+    }
+    string op = compareOp(expr)
+
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    ctx.out.write("(")
+    IF exprExt.leftExprType.ttype == Type.Enum.nilval
+        || exprExt.leftExprType.ttype == Type.Enum.iobject
+      genExpr(expr.getLeft(), ctx, Type.aNil)
+      ctx.out.write(op)
+      genExpr(expr.getRight(), ctx, Type.aNil)
+    ELSEIF exprExt.leftExprType.ttype == Type.Enum.string
+      Generate.genExprDoConv(expr.getLeft(), ctx, Type.aString)
+      ctx.out.write(op)
+      Generate.genExprDoConv(expr.getRight(), ctx, Type.aString)
+    ELSEIF exprExt.leftExprType != NIL
+      IF exprExt.leftExprType.ttype == Type.Enum.object
+        # Generate a call to left.Equal(right)
+        Generate.generateEqualCall(expr, isCompare, ctx)
+      ELSE
+        genExpr(expr.getLeft(), ctx, exprExt.leftExprType)
+        ctx.out.write(op)
+        genExpr(expr.getRight(), ctx, exprExt.leftExprType)
+      }
+    ELSE
+      bool err = genExpr(expr.getLeft(), ctx) == NIL
+      err = err || genExpr(expr.getRight(), ctx) == NIL
+      IF !err
+        ctx.error("INTERNAL: booleanOp()", expr)
+      }
+    }
+    ctx.out.write(")")
+  }
+
+  PROC $andorOp(Zui.Expression expr, SContext ctx)
+    andorOp(expr, ctx)
+  }
+
+  FUNC $parens(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    ctx.out.write("(")
+    Type ret = Generate.genExprConv(expr.getRight(), ctx, exprArg)
+    ctx.out.write(")")
+    RETURN ret
+  }
+
+  FUNC $altOp(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    RETURN altOp(expr, ctx, exprArg)
+  }
+
+  FUNC $ifnilOp(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    ctx.out.write("(")
+    Type typeL = Generate.genExprConv(expr.getLeft(), ctx, exprArg)
+    ctx.out.write(") || (")
+    Type typeR = Generate.genExprConv(expr.getRight(), ctx, exprArg)
+    ctx.out.write(")")
+
+    # TODO: if destType is NIL check typeL and typeR are the same type
+    IF typeR == NIL || !typeR.typeDefined()
+      typeR = typeL
+    }
+    IF typeR != NIL
+      IF typeR.isValueType()
+        ctx.error("Expected a reference", expr.getRight())
+      }
+      RETURN typeR
+    }
+
+    RETURN NIL
+  }
+
+  PROC $newVarByteString(string noAllocName, SContext ctx)
+    LOG.error("varByteString unsupported for JavaScript")
+  }
+
+  FUNC $listInitStart(Zui.Expression expr, Declaration dest,
+                                             SContext ctx, Type destType) Type
+    IF destType == NIL
+      RETURN NIL
+    }
+    MethodType newFromList = destType.findNewFromContainerMethod(
+                                            expr, Type.Enum.list, "list", ctx)
+    IF newFromList == NIL
+      RETURN NIL
+    }
+    $writeMethodCall(newFromList, FALSE, ctx)
+    RETURN newFromList.getArgList()[0].type
+  }
+
+  PROC $writeNoAllocInit(Declaration dest, SContext ctx)
+  }
+
+  PROC $listInitTail(SContext ctx)
+    ctx.out.write(")")
+  }
+
+  FUNC $dictInitStart(Zui.Expression expr, Declaration dest,
+                                    SContext ctx, Type destType) ContainerType
+    IF destType == NIL
+      RETURN NIL
+    }
+    MethodType newFromDict = destType.findNewFromContainerMethod(
+                                            expr, Type.Enum.dict, "dict", ctx)
+    IF newFromDict == NIL
+      RETURN NIL
+    }
+    $writeMethodCall(newFromDict, FALSE, ctx)
+    RETURN newFromDict.getArgList()[0].type
+  }
+
+  PROC $dictInitTail(SContext ctx)
+    ctx.out.write(")")
+  }
+
+  FUNC $newListInit(Zui.Expression expr, string noAllocName,
+                                             Type destType, SContext ctx) Type
+    RETURN WriteListJS.generateNewList(expr, destType, ctx)
+  }
+
+  FUNC $newArrayInit(Zui.Expression expr, string noAllocName,
+                                             Type destType, SContext ctx) Type
+    # It's just like a list.
+    RETURN WriteListJS.generateNewList(expr, destType, ctx)
+  }
+
+  # tuple = [item, item]
+  PROC $newTupleInit(Zui.Expression expr, string noAllocName,
+                                             TupleType destType, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("JS does not support tuple init yet", expr)
+    }
+  }
+
+  PROC $newDictInit(Zui.Expression expr, string noAllocName,
+                            SContext ctx, ContainerType type, Type destType)
+    WriteDictJS.generateNewDict(expr, ctx, type, destType)
+  }
+
+  PROC $writeDictAlloc(ContainerType type, string noAllocName,
+                                            Zui.MethodCall call, SContext ctx)
+    IF call != NIL && call.sizeArgument() > 1 && ctx.doError()
+      ctx.error("JS does not support list with dict yet", call.getPos())
+    }
+    WriteDictJS.writeDictAlloc(type, noAllocName, call, ctx)
+  }
+
+  FUNC $dictMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                      ) Type
+    RETURN WriteDictJS.generateMethodCall(type, call, ctx, destType)
+  }
+
+  FUNC $listMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                      ) Type
+    RETURN WriteListJS.generateMethodCall(type, call, ctx, destType)
+  }
+
+  FUNC $arrayMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                      ) Type
+    RETURN WriteArrayJS.generateMethodCall(type, call, ctx, destType)
+  }
+
+  # Bits assignment of |rhs| to |lhs|, of type |bitsMember|.
+  # Return the number of undefined symbols in |lhs|.
+  FUNC $bitsAssign(Zui.Expression lhs, Zui.Expression rhs,
+                                     ValueType bitsMember, SContext ctx) int
+    RETURN bitsAssign(lhs, rhs, bitsMember, ctx)
+  }
+
+  # A bool field in a BITS.
+  PROC $bitsMemberBool(Zui.Expression left, ValueType memberType,
+                                                                 SContext ctx)
+    bitsMemberBool(left, memberType, ctx)
+  }
+
+  # An int (or nat) member of a BITS
+  PROC $bitsMemberInt(Zui.Expression left, ValueType memberType,
+                                                                 SContext ctx)
+    bitsMemberInt(left, memberType, ctx)
+  }
+
+  FUNC $expr(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    # First write the expression to a temporary output, so that we can wrap
+    # the conversion around it when needed.
+    Output exprOut = NEW(NEW())
+    exprOut.writing = ctx.out.writing
+    SContext exprOutCtx = ctx.copy(exprOut)
+    Type type = Generate.genExprChecked(expr, exprOutCtx, exprArg)
+
+    RETURN $conversion(expr, type, exprOut, ctx, exprArg)
+  }
+
+  FUNC $conversion(Zui.Expression expr, Type type,
+                           Output exprOut, SContext ctx, ExprArg exprArg) Type
+    # Detect the required conversion again.  It may change when producing a
+    # method for multiple subclasses.
+    Type typeConverted = Resolve.exprConversion(expr, type, ctx, exprArg)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+
+    # An expression may be visited more than once, check that the destination
+    # type is specified.
+    string close = ""
+    IF exprArg.destType() != NIL
+                              && exprArg.destType().ttype != Type.Enum.unknown
+      SWITCH exprExt.conversion
+        CASE Conversion.none
+        CASE Conversion.string2varString
+        CASE Conversion.varString2string
+          BREAK
+        CASE Conversion.int2string
+        CASE Conversion.nat2string
+        CASE Conversion.float2string
+          ctx.out.write("\"\" + ")
+          typeConverted = Type.aString
+        CASE Conversion.int2varString
+          ctx.out.write("\"\" + ")
+          typeConverted = Type.aVarString
+        CASE Conversion.bool2string
+          ctx.setDeclUsed(bool2string)
+          ctx.out.write("Zbool2string(")
+          close = ")"
+          typeConverted = Type.aString
+        CASE Conversion.status2string
+          ctx.setDeclUsed(status2string)
+          ctx.out.write("Zstatus2string(")
+          close = ")"
+          typeConverted = Type.aString
+        CASE Conversion.object2iobject
+        CASE Conversion.iobject2object
+        CASE Conversion.iobject2iobject
+        CASE Conversion.iobject2noalloc
+          # Javascript takes care of this
+          # TODO: Need to check the types at runtime?
+          typeConverted = exprArg.destType()
+        CASE Conversion.callback2method
+          # no-op
+          typeConverted = type.getEffType().<CallbackType>.methodType
+        DEFAULT
+          IF ctx.out.writing
+            ctx.error("Unsupported conversion for JavaScript: "
+                                       .. exprExt.conversion.ToString(), expr)
+          }
+      }
+    }
+
+    ctx.out.append(exprOut)
+    ctx.out.write(close)
+
+    RETURN typeConverted == NIL ? type : typeConverted
+  }
+
+  FUNC $object2iobject(ClassType symClass, ClassType destClass,
+                  string destName, Zui.Position pos, Output out, SContext ctx
+                      ) string
+    RETURN ""
+  }
+
+  FUNC $iobjectType(Zui.Expression lhs, Type type, Type exprType,
+                                                             SContext ctx) int
+    RETURN 0
+  }
+
+  # Write the file for IMPORT.ZWT.  It is JavaScript inside a HTML file.
+  # Imported files are included in the current output.
+  FUNC $writeZwtImport(ZimbuFile zimbuFile, Output.Group myOuts) string
+    # Use the module name for file name.
+    string moduleName = zimbuFile.getModuleName()
+    IO.mkdir(zimbuFile.outDir)
+    string fname = $zwtFilename(zimbuFile)
+    IO.print("Writing file " .. fname .. "...")
+
+    IO.File fd = IO.fileWriter(fname)
+    IF fd == NIL
+      IO.print("ERROR: Cannot open file for writing: " .. fname)
+      EXIT 1
+    }
+
+    # The header gets the document in $doc.
+    fd.write(''"<html>
+  <head>
+    <script>
+      var $wnd = parent;
+      var $doc = $wnd.document;
+      var $sheetIndex = 0;
+      function $findSheetIndex() {
+        for (i = 0; i < $doc.styleSheets.length; ++i) {
+          if ($doc.styleSheets[i].title == 'zwt') {
+            $sheetIndex = i;
+            break;
+          }
+        }
+      }
+      $findSheetIndex();
+"'')
+    fd.write(''"
+    </script>
+  </head>
+  <body>
+    <script><!--
+"'')
+
+    $writeJsCode(myOuts, fd)
+
+    # The init() function is always invoked.
+    # TODO: should this also invoke inits of imported modules?
+    fd.write("\n" .. DeclStore.getPName("M" .. moduleName, "Finit") .. "();\n")
+
+    fd.write("    --></script>\n  </body>\n</html>\n")
+
+    fd.close()
+    IO.print("Done.")
+
+    RETURN fname
+  }
+
+  # Write the file for ZUT.  It is a JavaScript file.
+  PROC $writeJavascript(string outDir, string fileName, Output.Group myOuts)
+    IO.mkdir(outDir)
+    string fname = outDir .. "/" .. fileName
+    IO.print("Writing file " .. fname .. "...")
+
+    IO.File fd = IO.fileWriter(fname)
+    IF fd == NIL
+      IO.print("ERROR: Cannot open file for writing: " .. fname)
+      EXIT 1
+    }
+
+    # Header used for ZUT.
+    $writeZutHeader(fd)
+
+    $writeJsCode(myOuts, fd)
+
+    # TODO: Init functions?
+
+    # Footer used for ZUT.
+    $writeZutFooter(fd)
+
+    fd.close()
+    IO.print("Done.")
+  }
+
+  # Write the Javascript code.
+  PROC $writeJsCode(Output.Group myOuts, IO.File fd)
+    IF !myOuts.typeOut.head.empty()
+      fd.write("// typedefs\n")
+      myOuts.typeOut.head.write(fd)
+    }
+
+    fd.write("\n// structs\n")
+    myOuts.structOut.head.write(fd)
+
+    fd.write("\n// declarations\n")
+    # Write common functions.
+    FOR p IN funcWriters
+      p(THIS, fd)
+    }
+
+    myOuts.declOut.head.write(fd)
+
+    fd.write("\n// bodies\n")
+    writeBodies(THIS, fd)
+    myOuts.bodyOut.head.write(fd)
+
+  }
+
+  PROC $writeZutHeader(IO.File fd)
+    # zut.controllers is a map of controller name to class.
+    # zut.context is a ZUT.Context singleton.
+    # zut.eventConfig is an ZUT.EventConfig singleton.
+    fd.print(''"
+var $doc = window.document;
+var zut = {
+    controllers: {}
+  };
+"'')
+  }
+
+  PROC $writeZutFooter(IO.File fd)
+
+    # The event handler used by ZUT.EventConfig.listen().
+    fd.print(''"
+zut.eventHandler = function(e, eventName, pName) {
+  var event = e || window.event; // for old IE
+  var el = event.target || event.srcElement; // for old IE
+  if (el) {
+    var controller;
+    var action;
+    var actionEl;
+    while (el && el.getAttribute) {
+      if (!action && el.getAttribute('zaction')) {
+        var actions = el.getAttribute('zaction');
+        var parts = actions.split(',');
+        for (var i = 0; i < parts.length; ++i) {
+          if (parts[i].indexOf(eventName + ':') >= 0) {
+            var colIdx = parts[i].indexOf(':');
+            action = parts[i].substring(colIdx + 1).trim();
+            actionEl = el;
+            break;
+          }
+        }
+      }
+      if (action) {
+        controller = el.getAttribute('zcontroller');
+        if (controller) {
+          var inst = el.zcontrollerInst;
+          if (!inst) {
+            var ctrlClass = zut.controllers[controller];
+            if (!ctrlClass) {
+              alert('controller not registered: ' + controller);
+              return;
+            }
+            inst = new ctrlClass();
+            el.zcontrollerInst = inst;
+          }
+          if (inst[action]) {
+            var event = pName(el);
+            inst[action](event);
+          } else {
+            alert('action ' + action + ' does not exist on ' + controller);
+          }
+          return;
+        }
+      }
+      el = el.parentNode;
+    }
+  }
+};
+"'')
+
+    # TODO: only define handlers that are actually used.
+    string clickPName = DeclStore.getPName("MZUTModule__CEvent__X",
+                                                             "FnewClickEvent")
+    fd.print(''"
+zut.clickEventHandler = function(e) {
+ zut.eventHandler(e, 'click', "'' .. clickPName .. ''");
+}
+"'')
+
+    string mouseOverPName = DeclStore.getPName("MZUTModule__CEvent__X",
+                                                         "FnewMouseOverEvent")
+    fd.print(''"
+zut.mouseOverEventHandler = function(e) {
+ zut.eventHandler(e, 'mouseOver', "'' .. mouseOverPName .. ''");
+}
+"'')
+
+    string mouseOutPName = DeclStore.getPName("MZUTModule__CEvent__X",
+                                                          "FnewMouseOutEvent")
+    fd.print(''"
+zut.mouseOutEventHandler = function(e) {
+ zut.eventHandler(e, 'mouseOut', "'' .. mouseOutPName .. ''");
+}
+"'')
+
+    string newContextPName = DeclStore.getPName(
+                                            "MZUTModule__CContext", "MNEW__1")
+    string newEventConfigPName = DeclStore.getPName(
+                                           "MZUTModule__CEventConfig", "MNEW")
+    fd.print(''"
+zut.context = "'' .. newContextPName .. ''"(null);
+zut.eventConfig = "'' .. newEventConfigPName .. ''"(null);
+"'')
+  }
+
+  # Return the file name for ZWT output of |zimbuFile|.
+  FUNC $zwtFilename(ZimbuFile zimbuFile) string
+    RETURN "\(zimbuFile.outDir)/\(zimbuFile.getModuleName()).html"
+  }
+
+  # Write lines to "myOuts" to include the generated code for imported
+  # files.
+  # TODO: if the imported file is a .zwt file load the script file generated
+  # for it.
+  PROC $writeIncludeImport(ZimbuFile import, Scope scope, Output.Group myOuts)
+    # Include the imported files in the current file.
+    string pre = "// including " .. import.rootName
+
+    IF !myOuts.typeOut.head.empty()
+      myOuts.typeOut.write(pre .. " typedefs\n")
+      myOuts.typeOut.append(import.js.outputs.typeOut)
+    }
+
+    myOuts.structOut.write(pre .. " structs\n")
+    myOuts.structOut.append(import.js.outputs.structOut)
+
+    myOuts.declOut.write(pre .. " declarations\n")
+    myOuts.declOut.append(import.js.outputs.declOut)
+
+    myOuts.bodyOut.write(pre .. " bodies\n")
+    myOuts.bodyOut.append(import.js.outputs.bodyOut)
+  }
+
+  PROC $afterImports(Scope scope, Output.Group outs)
+  }
+
+  PROC $afterGenerate(UsedFile usedFile, Output.Group outs, SContext ctx)
+  }
+
+
+  FUNC $needWrite(ZimbuFile zimbuFile) bool
+    IF zimbuFile.js.startedWrite != NIL
+      RETURN FALSE
+    }
+    zimbuFile.js.startedWrite = "yes"
+    RETURN TRUE
+  }
+
+  # Write class type declaration.
+  PROC $writeClassDef(string name, string comment, Output typeOut)
+    # no forward declarations are needed.
+  }
+
+  # Write class declaration. |structOut| has the body.
+  PROC $writeClassDecl(ClassType classType, Output.Group outs,
+                                               Output structOut, SContext ctx)
+    # Only write when not already written.
+    IF classType.jsWritten
+      RETURN
+    }
+
+    # Parent classes need to be written before their children.
+    ClassType parent = classType.parent
+    WHILE parent != NIL
+      $writeClassDecl(parent, outs, structOut, ctx)
+      parent = parent.parent
+    }
+    classType.jsWritten = TRUE
+
+    # Causes problems for the IO module
+    # IF Generate.getFinishMethod(classType.scope) != NIL
+    #                                           && outs.structOut.writing
+    #  ctx.error("Finish not supported in Javascript",
+    #                     Declaration.find(classType.scope.getObjectDeclDict(),
+    #                                                         "Finish").zuiPos)
+    #}
+
+    string name = classType.pName
+    outs.structOut.write("function " .. name .. "(){ // "
+                                                    .. classType.name .. "\n")
+    outs.structOut.write("}\n")
+
+    outs.structOut.write("_ = " .. name .. ".prototype = ")
+    ClassType pc = classType.parent
+    IF pc != NIL
+      outs.structOut.write("new " .. pc.pName .. "();\n")
+    ELSE
+      outs.structOut.write("{};\n")
+    }
+
+    IF classType.getObjectDeclDict() != NIL
+      FOR l IN classType.getObjectDeclDict().values()
+        FOR decl IN l
+          IF decl.type.isMethodType()
+            IF decl.name != "NEW"
+                && decl.type.<MethodType>.parentLevel == 0
+                && !decl.type.isAbstract()
+              IF $isDeclUsed(decl)
+                outs.structOut.write("_." .. decl.jsMName .. " = ")
+                outs.structOut.write(decl.jsFName)
+                outs.structOut.write(";\n")
+              }
+            }
+          ELSE
+            outs.structOut.write("_." .. decl.pName .. " = ")
+            $defaultInit(decl.type, FALSE, outs.structOut)
+            outs.structOut.write(";\n")
+          }
+        }
+      }
+    }
+  }
+
+  # Write the default init value for |sym|.
+  PROC $defaultInit(Type type, bool noAlloc, Output out)
+    IF type.isValueType()
+      out.write("0")
+    ELSE
+      out.write("null")
+    }
+  }
+
+  PROC $nil(Declaration dest, SContext ctx)
+    ctx.out.write("null")
+  }
+
+  # Write the value used for INF.
+  PROC $inf(SContext ctx)
+    ctx.out.write("Number.POSITIVE_INFINITY")
+  }
+
+  # Write the value used for NINF.
+  PROC $ninf(SContext ctx)
+    ctx.out.write("Number.NEGATIVE_INFINITY")
+  }
+
+  # Write the value used for NAN.
+  PROC $nan(SContext ctx)
+    ctx.out.write("Number.NaN")
+  }
+
+  # Write an expression and wrap it, when needed, for reference counting.
+  FUNC $wrapExpr(Zui.Expression expr, SContext ctx, Type destType) Type
+    RETURN $wrapExprConv(expr, ctx, NEW(destType, FALSE))
+  }
+
+  # Write an expression and wrap it, when needed, for reference counting.
+  FUNC $wrapExprConv(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    RETURN Generate.genExprConv(expr, ctx, exprArg)
+  }
+
+  # Generate argument expression.
+  FUNC $genArg(Zui.Expression arg, SContext ctx, Type destType) Type
+    IF destType == NIL
+      RETURN Generate.genExpr(arg, ctx)
+    }
+    RETURN Generate.genExpr(arg, ctx, destType)
+  }
+
+  PROC $writeArgExpr(Zui.Expression arg, SContext ctx, Type destType)
+    Generate.genTopExprDoConv(arg, ctx, destType)
+  }
+
+  PROC $member(Output varnameOut, Zui.Position pos,
+           Type objType, Type retType, bool dotnil, string name, SContext ctx)
+    IF dotnil
+      # var?.member ->  ((var id = var) ? id.member : null)
+      string id = getUid(ctx.scope.ToString())
+      ctx.outs.varOut.writeIndent(ctx.scope.depth)
+      ctx.outs.varOut.write("var " .. id .. ";\n")
+      ctx.out.write("((")
+      ctx.out.write(id)
+      ctx.out.write(" = ")
+      ctx.out.append(varnameOut)
+      ctx.out.write(") ? ")
+      ctx.out.write(id)
+      ctx.out.write("." .. name)
+      ctx.out.write(" : null)")
+    ELSE
+      ctx.out.append(varnameOut)
+      ctx.out.write("." .. name)
+    }
+  }
+
+  PROC $toStringFuncCast(SContext ctx)
+  }
+
+  PROC $iobjectUseFunc(string what, Zui.Position pos, int &undef,
+                                    Type type, Declaration func, SContext ctx)
+    IF func != NIL
+      ctx.out.write(func.pName)
+    ELSE
+      $nil(type, ctx)
+    }
+  }
+
+  FUNC $varsInMethodScope() bool
+    RETURN FALSE
+  }
+
+  # Write the declaration and init of a variable.
+  PROC $declaration(Declaration.C decl,
+                    Type typeType,
+                    Zui.Statement stmt,
+                    bool isShared,
+                    Output exprOut,
+                    bool initIsConstant,
+                    SContext ctx)
+    Scope           scope = ctx.scope
+    Zui.Declaration zuiDecl = stmt.getDeclaration()
+    string          name = zuiDecl.getName()
+
+    # Inside a method we can write to "out".  At the module level we need
+    # to write the init directly.
+    # TODO: module inits should be done after defining everything in the
+    # module.
+    Output iOut = ctx.out
+    IF ctx.outs.origBodyOut == NIL
+      iOut = ctx.outs.varOut
+    }
+    IF isShared
+      # A variable in a SHARED section is written among the declarations.
+      iOut = ctx.outs.declOut
+    }
+    SContext iCtx = ctx.copy(iOut)
+
+    # 1. Write the declaration.
+    IF scope.outer != NIL && !isShared
+      iOut.writeIndent(scope.depth)
+    }
+    $vardecl(decl, iCtx)
+
+    # 2. Write the init or assignment. Arrays are not initialized by default.
+    IF scope.isInitVar()
+                      && (typeType.ttype != Type.Enum.array || exprOut != NIL)
+      iOut.write(" = ")
+
+      IF exprOut == NIL
+        # no assignment, default init: NIL, FALSE, zero
+        $defaultInit(typeType, FALSE, iOut)
+      ELSE
+        # Write the code for the expression, generated above.
+        iOut.append(exprOut)
+      }
+    }
+
+    iOut.write(";")
+    IF decl.pName[0] != 'V' && decl.pName[0] != 't'
+      $declComment(scope.scopeName, name, iOut)
+    }
+    iOut.write("\n")
+  }
+
+  PROC $vardecl(Declaration.C decl, SContext ctx)
+    Type type = decl.type
+    # TODO: byteString doesn't work as expected
+    IF type.ttype == Type.Enum.varByteString # || type.type == Type.Enum.byteString
+      ctx.error("Type not yet supported in Javascript: "
+                                              .. type.typeName(), decl.zuiPos)
+    }
+    IF ctx.scope.isClassScope() && !ctx.scope.hasStatements()
+      ctx.out.write(ctx.scope.thisName .. ".")
+    ELSE
+      ctx.out.write("var ")
+    }
+
+    # Output variable name.
+    ctx.out.write(decl.pName)
+  }
+
+  # JavaScript doesn't use types.
+  PROC $vartype(Type type, bool useSpace, Zui.Position pos, SContext ctx)
+  }
+
+  PROC $enum(Zui.Declaration zuiDecl, EnumType enumType, SContext ctx)
+    IF enumType.usedValueName != NIL && $isDeclUsed(enumType.usedValueName)
+      Output out = ctx.outs.structOut
+      out.write("var " .. enumType.pName .. " = [\n")
+      Zui.EnumType enum = zuiDecl.getType().getEnumDecl()
+      FOR item IN enum.getItemList()
+        ctx.outs.structOut.write("\"" .. item.getName() .. "\",\n")
+      }
+      out.write("];\n")
+    }
+  }
+
+  FUNC $enumName(EnumValueType type, SContext ctx) string
+    ctx.out.write(type.enumType.pName)
+    ctx.out.write("[")
+    RETURN "]"
+  }
+
+  FUNC $enumFromString(EnumType type, SContext ctx) string
+    ctx.out.write(type.pName)
+    ctx.out.write(".indexOf(")
+    RETURN ")"
+  }
+
+  # A bits declaration.
+  PROC $bits(Zui.Declaration zuiDecl, BitsType bitsType, SContext ctx)
+  }
+
+  PROC $intAsByteString(Zui.Expression expr, SContext ctx)
+    # TODO: is it possible to put a byte into a JavaScript string?
+    ctx.out.write("String.fromCharCode(")
+    IF expr.getType() == Zui.ExprType.eINT
+      ctx.out.write(expr.getNumber() .. "")
+    ELSE
+      genExpr(expr, ctx, Type.anInt)
+    }
+    ctx.out.write(")")
+  }
+
+  PROC $intAsString(Zui.Expression expr, SContext ctx)
+    ctx.out.write("String.fromCharCode(")
+    IF expr.getType() == Zui.ExprType.eINT
+      ctx.out.write(expr.getNumber() .. "")
+    ELSE
+      genExpr(expr, ctx, Type.anInt)
+    }
+    ctx.out.write(")")
+  }
+
+  PROC $stringFormat(Zui.Expression expr, Zui.Expression arg, SContext ctx)
+    ctx.error("ToString() argument not implemented yet for JS", arg)
+  }
+
+  PROC $intToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    # In Javascript all numbers are floats.
+    $floatToString(expr, format, type, ctx)
+  }
+
+  PROC $natToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    # In Javascript all numbers are floats.
+    $floatToString(expr, format, type, ctx)
+  }
+
+  PROC $floatSize(Zui.Expression expr, Type type, SContext ctx)
+    ctx.out.write("8")
+  }
+
+  PROC $floatToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    IF format != NIL && ctx.out.writing
+      string f
+      IF format.getType() == Zui.ExprType.eSTRING
+        f = format.getStringValue()
+      }
+      # Assume these formats are to get the maximum precision.  They are used
+      # in plugin/proto/Proto.zu.
+      IF f != ".9g" && f != ".17g"
+        ctx.error("ToString() argument not implemented yet for JS", format)
+      }
+    }
+    ctx.out.write("((")
+    IF expr.getType() == Zui.ExprType.eINT
+      ctx.out.write(expr.getNumber() .. "")
+    ELSE
+      genExpr(expr, ctx, type)
+    }
+    ctx.out.write(") + \"\")")
+  }
+
+  # float.isNan()
+  PROC $isNan(Zui.Expression expr, SContext ctx)
+    ctx.out.write("isNaN(")
+    genExpr(expr, ctx, Type.aFloat)
+    ctx.out.write(")")
+  }
+
+  # float.isInfinite()
+  PROC $isInfinite(Zui.Expression expr, SContext ctx)
+    $setDeclUsed(isInfinite)
+    ctx.out.write("ZisInfinite(")
+    genExpr(expr, ctx, Type.aFloat)
+    ctx.out.write(")")
+  }
+
+  # Float function.
+  PROC $floatMethod(string name, Zui.Expression expr, Zui.Expression arg,
+                                                                 SContext ctx)
+    # TODO: translate name?
+    ctx.out.write(name)
+    ctx.out.write("(")
+    genExpr(expr, ctx, Type.aFloat)
+    IF arg != NIL
+      ctx.out.write(", ")
+      $genArg(arg, ctx, Type.aFloat)
+    }
+    ctx.out.write(")")
+  }
+
+  # Function for int.Type()
+  PROC $callType(Type type, Zui.Position pos, SContext ctx)
+    IF ctx.out.writing
+      ctx.error(type.typeName() .. ".Type() not implemented yet for JS", pos)
+    }
+  }
+
+  # Function for enum.Type()
+  PROC $callEnumType(EnumType type, Zui.Position pos, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("enum.Type() not implemented yet for JS", pos)
+    }
+  }
+
+  # Function for bits.Type()
+  PROC $callBitsType(BitsType type, Zui.Position pos, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("bits.Type() not implemented yet for JS", pos)
+    }
+  }
+
+  # Function for tuple<>.Type()
+  PROC $callTupleType(TupleType type, Zui.Position pos, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("tuple.Type() not implemented yet for JS", pos)
+    }
+  }
+
+  # Function for dyn.Type()
+  PROC $callDynType(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("dyn.Type() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function for dyn.ToString()
+  PROC $callDynToString(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("dyn.ToString() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function for dyn.Size()
+  PROC $callDynSize(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("dyn.Size() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function for type.Size()
+  PROC $callTypeSize(Type type, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("type.Size() not implemented yet for JS", type.zuiPos)
+    }
+  }
+
+  # Function for Module.Type()
+  PROC $callModuleType(ModuleType mt, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("Module.Type() not implemented yet for JS", mt.zuiPos)
+    }
+  }
+
+  # Function for Class.Type()
+  PROC $callClassType(ClassType ct, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("Class.Type() not implemented yet for JS", ct.zuiPos)
+    }
+  }
+
+  # Function to turn a bool into a string.
+  PROC $boolToString(Zui.Expression expr,  list<Zui.Expression> args,
+                                                                 SContext ctx)
+    ctx.out.write("((")
+    genExpr(expr, ctx, Type.aBool)
+    IF args.Size() == 1
+      IF args[0].getType() == Zui.ExprType.eSTRING
+        IF args[0].getStringValue() == "1b"
+          ctx.out.write(") ? '1' : '0')")
+        ELSEIF args[0].getStringValue() == "b"
+          ctx.out.write(") ? 'TRUE' : 'FALSE')")
+        ELSEIF ctx.doError()
+          ctx.error("format must be \"b\" or \"1b\"", args[0])
+        }
+      ELSE
+        ctx.out.write(") ? (")
+        genExpr(args[0], ctx, Type.aString)
+        ctx.out.write(" == '1b' ? '1' : 'TRUE') : (")
+        genExpr(args[0], ctx, Type.aString)
+        ctx.out.write(" == '1b' ? '0' : 'FALSE'))")
+      }
+    ELSE
+      ctx.out.write(") ? 'TRUE' : 'FALSE')")
+    }
+  }
+
+  # Function to turn a bool into a string.
+  PROC $statusToString(Zui.Expression expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    ctx.out.write("((")
+    genExpr(expr, ctx, Type.aStatus)
+    IF args.Size() == 1
+      IF args[0].getType() == Zui.ExprType.eSTRING
+        IF args[0].getStringValue() == "1t"
+          ctx.out.write(") ? \"1\" : \"0\")")
+        ELSEIF args[0].getStringValue() == "t"
+          ctx.out.write(") ? 'OK' : 'FAIL')")
+        ELSEIF ctx.doError()
+          ctx.error("format must be \"t\" or \"1t\"", args[0])
+        }
+      ELSE
+        ctx.out.write(") ? (")
+        genExpr(args[0], ctx, Type.aString)
+        ctx.out.write(" == '1t' ? '1' : 'OK') : (")
+        genExpr(args[0], ctx, Type.aString)
+        ctx.out.write(" == '1t' ? '0' : 'FAIL'))")
+      }
+    ELSE
+      ctx.out.write(") ? 'OK' : 'FAIL')")
+    }
+  }
+
+  # Function to return the size of an int, int8, etc.
+  PROC $intSize(Type type, SContext ctx)
+    # All ints are actually floating point numbers in JS.
+    ctx.out.write("8")  # arbitrary
+  }
+
+  # Function to return the size of a bool.
+  PROC $boolSize(SContext ctx)
+    ctx.out.write("1")
+  }
+
+  # Function to return the size of a status.
+  PROC $statusSize(SContext ctx)
+    ctx.out.write("1")
+  }
+
+  # Function to check if a number is a digit character.
+  PROC $isDigit(Zui.Expression expr, SContext ctx)
+    $setDeclUsed(isdigit)
+    ctx.out.write("Zisdigit(")
+    $genArg(expr, ctx, Type.anInt)
+    ctx.out.write(")")
+  }
+
+  # Function to check if a number is a hex digit character.
+  PROC $isHexDigit(Zui.Expression expr, SContext ctx)
+    $setDeclUsed(isXdigit)
+    ctx.out.write("isXdigit(")
+    $genArg(expr, ctx, Type.anInt)
+    ctx.out.write(")")
+  }
+
+  # Function to check if a number is an alphabetic character.
+  PROC $isAlpha(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("isAlpha() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function to check if a number is a lower case character.
+  PROC $isLower(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("isLower() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function to check if a number is an upper case character.
+  PROC $isUpper(Zui.Expression expr, SContext ctx)
+    IF ctx.out.writing
+      ctx.error("isUpper() not implemented yet for JS", expr)
+    }
+  }
+
+  # Function to turn a number into a lower case character.
+  PROC $intToLowerAscii(Zui.Expression expr, SContext ctx)
+    string pname = getUid(ctx.scope.ToString())
+    ctx.outs.varOut.writeIndent(ctx.scope.depth)
+    ctx.outs.varOut.write("var " .. pname .. ";\n")
+    ctx.out.write("((" .. pname .. " = ")
+    genExpr(expr, ctx, Type.anInt)
+    ctx.out.write("), " .. pname .. " >= 65 && " .. pname
+                .. " <= 90 ? " .. pname .. " + 97 - 65 : " .. pname .. ")")
+  }
+
+  # Function to turn a number into an upper case character.
+  PROC $intToUpperAscii(Zui.Expression expr, SContext ctx)
+    string pname = getUid(ctx.scope.ToString())
+    ctx.outs.varOut.writeIndent(ctx.scope.depth)
+    ctx.outs.varOut.write("var " .. pname .. ";\n")
+    ctx.out.write("((" .. pname .. " = ")
+    genExpr(expr, ctx, Type.anInt)
+    ctx.out.write("), " .. pname .. " >= 97 && " .. pname
+                .. " <= 122 ? " .. pname .. " + 65 - 97 : " .. pname .. ")")
+  }
+
+  # Function make a number positive.
+  PROC $intAbs(Zui.Expression expr, SContext ctx)
+    ctx.out.write("Math.abs(")
+    genExpr(expr, ctx, Type.anInt)
+    ctx.out.write(")")
+  }
+
+  PROC $writeCompare(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                      Type type, SContext ctx)
+    IF ctx.out.writing
+         && (type.ttype == Type.Enum.dyn
+          || type.ttype == Type.Enum.type)
+      ctx.error("Unsupported Compare() for JavaScript", var_expr)
+    }
+    ctx.out.write("Math.max(-1, Math.min(1, ")
+    genExpr(var_expr, ctx, type)
+    ctx.out.write(" - ")
+    genExpr(args[0], ctx, type)
+    ctx.out.write("))")
+  }
+
+  PROC $writeEqual(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                      Type type, SContext ctx)
+    IF ctx.out.writing
+         && (type.ttype == Type.Enum.dyn
+          || type.ttype == Type.Enum.type)
+      ctx.error("Unsupported Equal() for JavaScript", var_expr)
+    }
+    ctx.out.write("(")
+    genExpr(var_expr, ctx, type)
+    ctx.out.write(" == ")
+    genExpr(args[0], ctx, type)
+    ctx.out.write(")")
+  }
+
+  PROC $someStringToInt(Zui.Expression expr, bool dotnil,
+                list<Zui.Expression> args, SContext ctx, Type type, int radix)
+    ctx.setDeclUsed(parseInt)
+    ctx.out.write("ZparseInt(")
+    genExpr(expr, ctx, type)
+    ctx.out.write(", " .. radix)
+    int flags = 0
+    IF args.Size() == 0
+      flags = 1
+    }
+    IF dotnil
+      flags += 2
+    }
+    ctx.out.write(", ")
+    ctx.out.write((flags + '0').asString())
+    ctx.out.write(", ")
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anInt)
+    ELSE
+      ctx.out.write("0")
+    }
+    ctx.out.write(")")
+  }
+
+  PROC $stringToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    $someStringToInt(expr, dotnil, args, ctx, Type.aString, radix)
+  }
+  PROC $varStringToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    $someStringToInt(expr, dotnil, args, ctx, Type.aVarString, radix)
+  }
+
+  PROC $someStringQuotedToInt(Zui.Expression expr,
+                           list<Zui.Expression> args, SContext ctx,
+                                                       Type type, int radix)
+    ctx.setDeclUsed(parseInt)
+    ctx.out.write("ZparseInt(replace(")
+    genExpr(expr, ctx, type)
+    ctx.out.write(", \"['_]\", \"\"), " .. radix)
+    IF args.Size() > 0
+      ctx.out.write(", 0, ")
+      genExpr(args[0], ctx, Type.anInt)
+    ELSE
+      ctx.out.write(", 1, 0")
+    }
+    ctx.out.write(")")
+  }
+  PROC $stringQuotedToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    $someStringQuotedToInt(expr, args, ctx, Type.aString, radix)
+  }
+  PROC $varStringQuotedToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    $someStringQuotedToInt(expr, args, ctx, Type.aVarString, radix)
+  }
+
+  PROC $stringToFloat(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                      list<Zui.Expression> args, SContext ctx)
+    IF args.Size() != 0 && ctx.out.writing
+      ctx.error("Unsupported toFloat() argument for JavaScript", expr)
+    }
+    ctx.out.write("((")
+    $genArg(expr, ctx, Type.aString)
+    ctx.out.write(")+'')")
+  }
+
+  PROC $someStringToLower(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    # TODO: throw exception when |dotnil| is FALSE and |expr| evaluates to
+    # NIL.  And return NIL instead of '' when |dotnil| is TRUE.
+    ctx.out.write("(")
+    genExpr(expr, ctx, type)
+    ctx.out.write(" || '').toLowerCase()")
+  }
+
+  PROC $someStringToUpper(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    # TODO: throw exception when |dotnil| is FALSE and |expr| evaluates to
+    # NIL.  And return NIL instead of '' when |dotnil| is TRUE.
+    ctx.out.write("(")
+    genExpr(expr, ctx, type)
+    ctx.out.write(" || '').toUpperCase()")
+  }
+
+  PROC $stringToLowerAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToLower(expr, dotnil, ctx, type)
+  }
+
+  PROC $stringToUpperAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToUpper(expr, dotnil, ctx, type)
+  }
+
+  PROC $stringToLower(Zui.Expression expr, bool dotnil, SContext ctx, Type type)
+    $someStringToLower(expr, dotnil, ctx, type)
+  }
+
+  PROC $stringToUpper(Zui.Expression expr, bool dotnil, SContext ctx, Type type)
+    $someStringToUpper(expr, dotnil, ctx, type)
+  }
+
+  PROC $varStringToLowerAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToLower(expr, dotnil, ctx, type)
+  }
+
+  PROC $varStringToUpperAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToUpper(expr, dotnil, ctx, type)
+  }
+
+  PROC $varStringToLower(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToLower(expr, dotnil, ctx, type)
+  }
+
+  PROC $varStringToUpper(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    $someStringToUpper(expr, dotnil, ctx, type)
+  }
+
+  PROC $stringFindCharF(Zui.Expression var_expr, bool dotnil,
+          list<Zui.Expression> args, SContext ctx, string funcname, Type dest)
+    # TODO: throw exception when |dotnil| is FALSE and |expr| evaluates to
+    # NIL.  And return NIL instead of '' when |dotnil| is TRUE.
+    IF args.Size() == 2
+      ctx.out.write("(")
+      genExpr(var_expr, ctx, dest)
+      ctx.out.write(" || '')." .. funcname .. "(String.fromCharCode(")
+      genExpr(args[0], ctx, Type.anInt)
+      ctx.out.write("), ")
+      genExpr(args[1], ctx, Type.anInt)
+      ctx.out.write(")")
+    ELSE                                      # s.find(int c)
+      ctx.out.write("(")
+      genExpr(var_expr, ctx, dest)
+      ctx.out.write(" || '')." .. funcname .. "(String.fromCharCode(")
+      genExpr(args[0], ctx, Type.anInt)
+      ctx.out.write("))")
+    }
+  }
+
+  PROC $stringFindChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "indexOf", Type.aString)
+  }
+
+  PROC $varStringFindChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "indexOf", Type.aVarString)
+  }
+
+  PROC $byteStringGetByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    # There are no byteString in Javascript.
+    $byteStringGetChar(var_expr, dotnil, args, ctx)
+  }
+
+  PROC $byteStringGetChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.out.write("(")
+    $genArg(var_expr, ctx, Type.aByteString)
+    IF dotnil
+      ctx.out.write(" || ''")
+    }
+    ctx.out.write(").charCodeAt(")
+    $genArg(args[0], ctx, Type.anInt)
+    ctx.out.write(")")
+  }
+
+  PROC $byteStringGetCharSize(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    # A byte is a character...
+    ctx.out.write("1")
+  }
+
+  PROC $byteStringFindByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "indexOf", Type.aByteString)
+  }
+
+  PROC $varByteStringFindByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "indexOf", Type.aVarByteString)
+  }
+
+  PROC $stringFindLastChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aString)
+  }
+
+  PROC $varStringFindLastChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aVarString)
+  }
+
+  PROC $byteStringFindLastByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aByteString)
+  }
+
+  PROC $varByteStringFindLastByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindCharF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aVarByteString)
+  }
+
+  PROC $stringFindF(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx,
+                                                 string funcname, Type dest)
+    # TODO: throw exception when |dotnil| is FALSE and |expr| evaluates to
+    # NIL.  And return NIL instead of '' when |dotnil| is TRUE.
+    ctx.out.write("(")
+    genExpr(var_expr, ctx, dest)
+    ctx.out.write(" || '')." .. funcname .. "(")
+    genExpr(args[0], ctx, dest)
+    ctx.out.write(")")
+  }
+
+  PROC $twoArgs(Zui.Expression var_expr, bool dotnil,
+                           list<Zui.Expression> args, Type type, SContext ctx)
+    genExpr(var_expr, ctx, type)
+    ctx.out.write(", ")
+    genExpr(args[0], ctx, type)
+    IF dotnil
+      ctx.out.write(", 1)")
+    ELSE
+      ctx.out.write(", 0)")
+    }
+  }
+
+  PROC $stringCompare(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.setDeclUsed(stringCompare)
+    ctx.out.write("ZstringCompare(")
+    $twoArgs(var_expr, dotnil, args, Type.aString, ctx)
+  }
+
+  PROC $stringEqual(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.setDeclUsed(stringEqual)
+    ctx.out.write("ZstringEqual(")
+    $twoArgs(var_expr, dotnil, args, Type.aString, ctx)
+  }
+
+  PROC $byteStringCompare(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.setDeclUsed(stringCompare)
+    ctx.out.write("ZstringCompare(")
+    $twoArgs(var_expr, dotnil, args, Type.aByteString, ctx)
+  }
+
+  PROC $byteStringEqual(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.setDeclUsed(stringEqual)
+    ctx.out.write("ZstringEqual(")
+    $twoArgs(var_expr, dotnil, args, Type.aByteString, ctx)
+  }
+
+  PROC $stringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "indexOf", Type.aString)
+  }
+
+  PROC $stringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aString)
+  }
+
+  PROC $varStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "indexOf", Type.aVarString)
+  }
+
+  PROC $varStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aVarString)
+  }
+
+  PROC $byteStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "indexOf", Type.aByteString)
+  }
+
+  PROC $byteStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aByteString)
+  }
+
+  PROC $varByteStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "indexOf", Type.aVarByteString)
+  }
+
+  PROC $varByteStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindF(var_expr, dotnil, args, ctx, "lastIndexOf", Type.aVarByteString)
+  }
+
+  PROC $stringStartsWith(Zui.Expression var_expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, Type dest)
+    ctx.setDeclUsed(startsWith)
+    ctx.out.write("ZstartsWith(")
+    genExpr(var_expr, ctx, dest)
+    ctx.out.write(", ")
+    genExpr(args[0], ctx, dest)
+    IF dotnil
+      ctx.out.write(", 1)")
+    ELSE
+      ctx.out.write(", 0)")
+    }
+  }
+
+  PROC $stringEndsWith(Zui.Expression var_expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, Type dest)
+    ctx.setDeclUsed(endsWith)
+    ctx.out.write("ZendsWith(")
+    genExpr(var_expr, ctx, dest)
+    ctx.out.write(", ")
+    genExpr(args[0], ctx, dest)
+    IF dotnil
+      ctx.out.write(", 1)")
+    ELSE
+      ctx.out.write(", 0)")
+    }
+  }
+
+  PROC $stringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringStartsWith(var_expr, dotnil, args, ctx, Type.aString)
+  }
+
+  PROC $stringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringEndsWith(var_expr, dotnil, args, ctx, Type.aString)
+  }
+
+  PROC $varStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringStartsWith(var_expr, dotnil, args, ctx, Type.aVarString)
+  }
+
+  PROC $varStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringEndsWith(var_expr, dotnil, args, ctx, Type.aVarString)
+  }
+
+  PROC $byteStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringStartsWith(var_expr, dotnil, args, ctx, Type.aByteString)
+  }
+
+  PROC $byteStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringEndsWith(var_expr, dotnil, args, ctx, Type.aByteString)
+  }
+
+  PROC $varByteStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringStartsWith(var_expr, dotnil, args, ctx,  Type.aVarByteString)
+  }
+
+  PROC $varByteStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringEndsWith(var_expr, dotnil, args, ctx, Type.aVarByteString)
+  }
+
+  PROC $stringSlice(Zui.Expression var_expr, bool dotnil,
+                               Zui.MethodCall call, SContext ctx, Type dest)
+    ctx.setDeclUsed(slice)
+    ctx.out.write("ZSlice(")
+    genExpr(var_expr, ctx, dest)
+    ctx.out.write(", ")
+    Generate.generateSliceArgs(call, dotnil, ctx)
+    ctx.out.write(")")
+  }
+
+  PROC $stringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aString)
+  }
+
+  PROC $varStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aVarString)
+  }
+
+  PROC $byteStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aByteString)
+  }
+
+  PROC $varByteStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aVarByteString)
+  }
+
+  PROC $varAdd(Zui.Expression var_expr, list<Zui.Expression> args,
+                                       SContext ctx, Type valsym, Type varsym)
+    # TODO
+  }
+
+  PROC $varStringAdd(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    $varAdd(var_expr, args, ctx, Type.aString, Type.aVarString)
+  }
+
+  PROC $varByteStringAdd(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    $varAdd(var_expr, args, ctx, Type.aByteString, Type.aVarByteString)
+  }
+
+  PROC $stringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    # TODO: is this right?
+    ctx.out.write("(")
+    genExpr(var_expr, ctx, Type.aString)
+    ctx.out.write(").split(")
+    genExpr(args[0], ctx, Type.aString)
+    ctx.out.write(")")
+  }
+
+  PROC $varStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringSplit(var_expr, dotnil, args, ctx)
+  }
+
+  PROC $byteStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringSplit(var_expr, dotnil, args, ctx)
+  }
+
+  PROC $varByteStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringSplit(var_expr, dotnil, args, ctx)
+  }
+
+  PROC $stringSize(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    ctx.out.write("(")
+    genExpr(expr, ctx, type)
+    ctx.out.write(").length")
+  }
+
+  PROC $varStringSize(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    $stringSize(expr, ctx, type)
+  }
+
+  PROC $byteStringSize(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    $stringSize(expr, ctx, type)
+  }
+
+  PROC $varByteStringSize(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    $stringSize(expr, ctx, type)
+  }
+
+  # Get the hash value of a byteString or string.
+  PROC $byteStringHash(Zui.Expression expr, SContext ctx, Type type)
+    IF ctx.doError()
+      ctx.error("hash() not implemented yet", expr)
+    }
+    ctx.out.write("ZstringHash(")
+    $genArg(expr, ctx, type)
+    ctx.out.write(")")
+  }
+
+  # Get the hash value of a varByteString or varString.
+  PROC $varByteStringHash(Zui.Expression expr, SContext ctx, Type type)
+    $byteStringHash(expr, ctx, type)
+  }
+
+
+  PROC $string2varString(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    genExpr(expr, ctx, type)
+  }
+
+  PROC $byteString2string(Zui.Expression expr, SContext ctx)
+    # All string types are equal
+    genExpr(expr, ctx, Type.aByteString)
+  }
+
+  PROC $byteString2varString(Zui.Expression expr, SContext ctx)
+    # All string types are equal
+    genExpr(expr, ctx, Type.aByteString)
+  }
+
+  PROC $varString2string(Zui.Expression expr, SContext ctx, Type type)
+    # All string types are equal
+    genExpr(expr, ctx, type)
+  }
+
+  PROC $varByteString2string(Zui.Expression expr, SContext ctx)
+    # All string types are equal
+    genExpr(expr, ctx, Type.aVarByteString)
+  }
+
+  PROC $varByteString2varString(Zui.Expression expr, SContext ctx)
+    # All string types are equal
+    genExpr(expr, ctx, Type.aVarByteString)
+  }
+
+  # Turn a string into an array.
+  PROC $stringToArray(Zui.Expression expr, SContext ctx)
+    IF ctx.doError()
+      ctx.error("toArray() not implemented yet", expr)
+    }
+  }
+
+  # Generate a switch() and return the type of the expression.
+  FUNC $switch(Zui.Expression expr, Zui.CodeBlock block, SContext ctx) Type
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("switch (")
+    Type switchType = genExpr(expr, ctx)
+    ctx.out.write(")\n")
+    RETURN switchType
+  }
+
+  FUNC $caseString(Zui.Expression expr, bool caseFollows, SContext ctx) string
+    Output out = ctx.out
+    IF !out.writing
+      RETURN ""
+    }
+    out.writeIndent(ctx.scope.depth - 1)
+    out.write("case ")
+
+    # First write the output to caseOut, so that we can check for
+    # duplicate values and add a type cast when needed.
+    Output caseOut = NEW()
+    caseOut.writing = TRUE
+    genExpr(expr, ctx.copy(caseOut), ctx.scope.switchType)
+    IF ctx.scope.switchType.getTtype() == Type.Enum.type
+      # Switch on var.Type()
+      ctx.error("Sorry, case on Type not implemented yet", expr)
+    }
+    out.append(caseOut)
+    out.write(":\n")
+    RETURN caseOut.ToString()
+  }
+
+  PROC $writeProceed(Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $default(SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth - 1)
+    ctx.out.write("default:\n")
+  }
+
+  PROC $writeTtype(string name, Zui.Position pos, SContext ctx)
+    ctx.error("Sorry, Type() not implemented yet", pos)
+  }
+
+  PROC $startBlock(SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("{\n")
+  }
+
+  PROC $forBlockStart(Zui.Position pos, SContext ctx)
+    $startBlock(ctx)
+  }
+
+  FUNC $forStart(ForLoopInfo info,
+                 Type toType, Type untilType, Type stepType,
+                 SContext ctx
+                ) list<Type>
+    ForLoopInfo.Iter iter = info.iters[0]
+    Type iterType = iter.varDecl.type
+    string iterVarName = iter.varDecl.pName
+    Zui.ForStatement stmt = info.forStmt
+    Zui.Expression expr = stmt.getIter(0)
+    Type itemType
+
+    IF iter.iteratorMethod != NIL
+      ctx.error("Sorry, iterator not implemented yet", expr)
+    }
+
+    SWITCH iterType.ttype
+      CASE Type.Enum.dict
+        ctx.error("Sorry, FOR over dict not implemented yet", expr)
+      CASE Type.Enum.array
+        ctx.error("Sorry, FOR over array not implemented yet", expr)
+      CASE Type.Enum.list
+        # Use a separate set of items for List, so that a FOR loop over other
+        # things doesn't drag in the list stuff.
+        ctx.setDeclUsed(forList)
+        ctx.out.writeIndent(ctx.scope.depth + 1)
+        ctx.out.write("var " .. iterVarName .. " = ZforListNew(")
+        genExpr(expr, ctx)
+        ctx.out.write(");\n")
+        IF iterType.<ContainerType>.itemType != NIL
+          itemType = iterType.<ContainerType>.itemType
+        ELSE
+          itemType = Type.anUnknown
+        }
+      CASE Type.Enum.byteString
+      CASE Type.Enum.string
+        # TODO: byteString is different
+        ctx.setDeclUsed(forString)
+        ctx.out.writeIndent(ctx.scope.depth + 1)
+        ctx.out.write("var " .. iterVarName .. " = ZforStringNew(")
+        genExpr(expr, ctx)
+        ctx.out.write(");\n")
+        itemType = Type.anInt
+      CASE Type.Enum.int
+      CASE Type.Enum.int8
+      CASE Type.Enum.int16
+      CASE Type.Enum.int32
+      CASE Type.Enum.nat
+      CASE Type.Enum.byte
+      CASE Type.Enum.nat16
+      CASE Type.Enum.nat32
+      CASE Type.Enum.natval
+      CASE Type.Enum.intval
+        IF toType == NIL && untilType == NIL
+          RETURN NIL
+        }
+        ctx.setDeclUsed(forRange)
+        IF !simpleForLoop(stmt, ctx)
+          ctx.out.writeIndent(ctx.scope.depth + 1)
+          ctx.out.write("var " .. iterVarName .. " = ZforRangeNew(")
+          genExpr(expr, ctx, Type.anInt)
+          ctx.out.write(", ")
+          IF toType != NIL
+            genExpr(stmt.getTo(), ctx, Type.anInt)
+            ctx.out.write(", 0, ")
+          ELSE
+            genExpr(stmt.getUntil(), ctx, Type.anInt)
+            ctx.out.write(", 1, ")
+          }
+          IF stmt.hasStep()
+            genExpr(stmt.getStep(), ctx, Type.anInt)
+          ELSE
+            ctx.out.write("1")
+          }
+          ctx.out.write(");\n")
+        }
+        itemType = Type.anInt
+      CASE Type.Enum.enum
+      CASE Type.Enum.enumValue
+        ctx.setDeclUsed(forEnum)
+        ctx.out.writeIndent(ctx.scope.depth + 1)
+        ctx.out.write("var " .. iterVarName .. " = ZforEnumNew(")
+        EnumType et = iterType.<EnumType>
+        IF et.members == NIL
+          ctx.out.write(0 .. "")
+        ELSE
+          ctx.out.write(et.members.Size() .. "")
+        }
+        ctx.out.write(");\n")
+        IF iterType ISA EnumType
+          itemType = iterType.<EnumType>.getEnumValue()
+        ELSE
+          itemType = iterType
+        }
+    }
+    RETURN [itemType]
+  }
+
+  PROC $forLoop(ForLoopInfo info, list<Declaration> varList, SContext ctx)
+    Zui.ForStatement for = info.forStmt
+    Zui.Expression expr = for.getIter(0)
+    ForLoopInfo.Iter iter = info.iters[0]
+    IF iter.iteratorMethod != NIL
+      ctx.error("Sorry, iterator not implemented yet", expr)
+    }
+    IF varList.Size() > 1
+      ctx.error("Sorry, only accept one iterator variable", expr)
+    }
+
+    Declaration.C varDecl = varList[0]
+    string type = ""
+    string pName = varDecl.pName
+    string iterVarName = iter.varDecl.pName
+    SWITCH iter.varDecl.type.ttype
+      CASE Type.Enum.list
+        type = "List"
+      CASE Type.Enum.string
+      CASE Type.Enum.byteString
+        type = "String"
+      CASE Type.Enum.int
+      CASE Type.Enum.int8
+      CASE Type.Enum.int16
+      CASE Type.Enum.int32
+      CASE Type.Enum.nat
+      CASE Type.Enum.byte
+      CASE Type.Enum.nat16
+      CASE Type.Enum.nat32
+      CASE Type.Enum.natval
+      CASE Type.Enum.intval
+        IF simpleForLoop(for, ctx)
+          ctx.out.write("for (" .. pName .. " = ")
+          genExpr(expr, ctx, Type.anInt)
+          bool isContextFree = TRUE
+          IF !for.hasStep() || ExprEval.evalInt(for.getStep(), ctx,
+                                                     TRUE, &isContextFree) > 0
+            ctx.out.write("; " .. pName .. " <= ")
+          ELSE
+            ctx.out.write("; " .. pName .. " >= ")
+          }
+          genExpr(for.getTo(), ctx, Type.anInt)
+          IF !for.hasStep()
+            ctx.out.write("; ++" .. pName)
+          ELSE
+            ctx.out.write("; " .. pName .. " += ")
+            genExpr(for.getStep(), ctx, Type.anInt)
+          }
+          ctx.out.write(") {\n")
+          RETURN
+        }
+        type = "Range"
+      CASE Type.Enum.enum
+      CASE Type.Enum.enumValue
+        type = "Enum"
+      DEFAULT
+        ctx.error("Type not supported: " .. iter.varDecl.type.typeName(), expr)
+    }
+
+    ctx.out.write("for (")
+    ctx.out.write(pName .. " = Zfor" .. type .. "Get(" .. iterVarName .. "); ")
+    ctx.out.write("Zfor" .. type .. "Cont(" .. iterVarName .. "); ")
+    ctx.out.write(pName .. " = Zfor" .. type .. "Next(" .. iterVarName .. ")")
+    ctx.out.write(") {\n")
+  }
+
+  PROC $forEnd(Zui.Statement stmt, SContext ctx)
+  }
+
+  # A BREAK statement that jumps to a FINALLY.
+  PROC $writeBreakGotoFinally(Scope s, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("did_goto_finally = " .. scopeBreak)
+    ctx.out.write("; goto " .. s.<TryScope>.finallyLabelName)
+    $statementLineEnd(ctx.out)
+  }
+
+  # A BREAK statement that finishes a loop.
+  PROC $writeBreak(SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("break;\n")
+  }
+
+  # A CONTINUE statement that jumps to a FINALLY.
+  PROC $writeContinueGotoFinally(Scope s, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("did_goto_finally = " .. scopeContinue)
+    ctx.out.write("; goto " .. s.<TryScope>.finallyLabelName)
+    $statementLineEnd(ctx.out)
+  }
+
+  # A CONTINUE statement that finishes a loop.
+  PROC $writeContinue(SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("continue;\n")
+  }
+
+  # UNITL of a DO block.
+  FUNC $until(Zui.Condition cond, SContext ctx) int
+    RETURN until(cond, ctx)
+  }
+
+  FUNC $typecast(Type type, SContext ctx) string
+    RETURN ""
+  }
+
+  FUNC $ptrTypecast(Type type, bool ptr, SContext ctx) string
+    RETURN ""
+  }
+
+
+  PROC $throw(Zui.Statement stmt, bool hasNextStmt, Type type, SContext ctx)
+    Output out = ctx.out
+    out.writeIndent(ctx.scope.depth)
+    out.write("alert(\"Exception in "
+                         .. ctx.zcPos(stmt.getPos()).ToString() .. ": \" + ")
+    genExpr(stmt.getExpr(), ctx)
+    IF type != NIL && type.ttype == Type.Enum.string
+      out.write(");\n")
+    ELSE
+      out.write(".Vmessage);\n")
+    }
+    out.writeIndent(ctx.scope.depth)
+    out.write("return;\n")
+  }
+
+  PROC $try_block(Zui.Statement stmt, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("try {\n")
+  }
+
+  PROC $try_block_end(Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $try_catch(Zui.Catch catch, list<Type> symList, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    # TODO
+    ctx.out.write("catch\n")
+  }
+
+  PROC $topException(Declaration.C destDecl, Zui.Position pos,
+                                              SContext ctx, SContext blockCtx)
+  }
+
+  PROC $try_else(Zui.Statement stmt, SContext ctx)
+    # TODO
+  }
+
+  PROC $try_finally(Zui.Statement stmt, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("finally\n")
+  }
+
+  PROC $try_end(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Write the stack frame offset table.
+  PROC $methodLeader(MethodType method, Output out, SContext ctx)
+  }
+
+  PROC $methodBodyStart(MethodType method, bool isNew, bool isInit,
+                                               Zui.Position pos, SContext ctx)
+    IF isInit
+      ctx.out.writeIndent(1)
+      ctx.out.write("if (!")
+      ctx.out.write(newThisName)
+      ctx.out.write(") ")
+      ctx.out.write(newThisName)
+      ctx.out.write(" = ")
+      $writeAlloc(method.getClassName(), NIL, ctx.out, ctx)
+      ctx.out.write(";\n")
+    }
+  }
+
+  # The expression that evaluates to TRUE when THIS is NIL.
+  PROC $ifnilExpr(SContext ctx)
+    ctx.out.write("!")
+    ctx.out.write(ctx.scope.thisName)
+  }
+
+  PROC $beforeStatement(Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $beforeStatement(Zui.Position pos, Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $beforeStatement(Zui.Position pos, bool beforeCall, SContext ctx)
+  }
+
+  PROC $beforeCallStatement(Zui.Position pos, SContext ctx)
+  }
+
+  PROC $afterStatement(Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $afterCall(SContext ctx)
+  }
+
+  # Write a call statement, possibly dereferencing the return value.
+  PROC $callStatement(Type retType, Output callOut, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.append(callOut)
+    $statementLineEnd(ctx.out)
+  }
+
+  PROC $returnBefore(bool proc, bool multi, SContext ctx)
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("return ")
+  }
+
+  PROC $returnAfter(Type returnType, bool writeScopeEnd,
+                                               Zui.Position pos, SContext ctx)
+  }
+
+  PROC $jumpToReturn(SContext ctx)
+    # No need to take care of memory or exceptions.
+    ctx.out.writeIndent(ctx.scope.depth)
+    ctx.out.write("return;\n")
+  }
+
+  # Extra argument for RETURN.
+  # expr.undefined will be set.
+  PROC $extraReturn(Zui.Expression expr, int idx, SContext ctx, Type destType)
+    # TODO
+  }
+
+  PROC $jumpToOuterScope(SContext ctx)
+    # No need to take care of memory or exceptions.
+    IF ctx.scope.returnType == NIL
+      $jumpToReturn(ctx)
+    }
+  }
+
+  # Write code to exit, before evaluating the argument.
+  PROC $exitBefore(Zui.Statement stmt, SContext ctx)
+    ctx.out.write("Zexit(")
+    ctx.out.write(newPosString(stmt.getPos(), ctx))
+    ctx.out.write(", ")
+  }
+
+  # Write code to exit, after evaluating the argument.
+  PROC $exitAfter(bool lastStatement, SContext ctx)
+    ctx.out.write(");\n")
+  }
+
+  PROC $writeBacktrace(Zui.MethodCall call, SContext ctx)
+    ctx.out.write("null")
+  }
+
+  PROC $writeCallerPos(SContext ctx)
+    ctx.out.write("null")
+  }
+
+  # Write a comment about declaring |name| in |scopeName|.
+  PROC $declComment(string scopeName, string name, Output out)
+    out.write(" // " .. scopeName.slice(1) .. "." .. name)
+  }
+
+  # Return TRUE when a module needs to be generated.
+  FUNC $doGenerateModule(SContext ctx) bool
+    RETURN ctx.scope.usedAsZwt()
+  }
+
+  PROC $moduleType(ModuleType mt, SContext ctx)
+  }
+
+  # Set dependencies between items.
+  PROC $addDependencies()
+  }
+
+  # Set used flags for dependencies of used items.
+  PROC $markUsed()
+  }
+
+  SHARED
+
+    string newThisName = "thisO"  # Name of "THIS" inside NEW()
+
+    list<proc<WriteJS, IO.File>> funcWriters = NEW()
+
+    # Declarations to keep track of used items.
+    Declaration.C bind = NEW("bind")
+    Declaration.C forList = NEW("forList")
+    Declaration.C forString = NEW("forString")
+    Declaration.C forRange = NEW("forRange")
+    Declaration.C forEnum = NEW("forEnum")
+    Declaration.C bool2string = NEW("bool2string")
+    Declaration.C status2string = NEW("status2string")
+    Declaration.C slice = NEW("slice")
+    Declaration.C startsWith = NEW("startsWith")
+    Declaration.C isdigit = NEW("isdigit")
+    Declaration.C isInfinite = NEW("isInfinite")
+    Declaration.C isXdigit = NEW("isXdigit")
+    Declaration.C endsWith = NEW("endsWith")
+    Declaration.C stringCompare = NEW("stringCompare")
+    Declaration.C stringEqual = NEW("stringEqual")
+    Declaration.C parseInt = NEW("parseInt")
+
+    # Write function bodies to |fd|.
+    PROC writeBodies(WriteJS gen, IO.File fd)
+      IF gen.isDeclUsed(bind)
+        fd.write(''"
+function Zbind(fn, o) {
+  return function() { return fn.apply(o, arguments); };
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(forList)
+        fd.write(''"
+function ZforListNew(p) {
+ var f = {};
+ f['list'] = p;
+ f['idx'] = 0;
+ return f;
+}
+function ZforListGet(f) {
+ if (f.list != null && f.idx < f.list.length)
+  return f.list[f.idx];
+ return null;
+}
+function ZforListCont(f) {
+  return f.list != null && f.idx < f.list.length;
+}
+function ZforListNext(f) {
+ ++f.idx;
+ if (f.list != null && f.idx < f.list.length)
+  return f.list[f.idx];
+ return null;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(forString)
+        fd.write(''"
+function ZforStringNew(p) {
+  var f = {};
+  f['string'] = p;
+  f['idx'] = 0;
+  return f;
+}
+function ZforStringGet(f) {
+  if (f.string != null && f.idx < f.string.length)
+    return f.string.charCodeAt(f.idx);
+  return null;
+}
+function ZforStringCont(f) {
+  return f.string != null && f.idx < f.string.length;
+}
+function ZforStringNext(f) {
+  ++f.idx;
+  if (f.string != null && f.idx < f.string.length)
+    return f.string.charCodeAt(f.idx);
+  return null;
+}
+"'')
+      }
+      # FOR x IN start TO end [STEP step]
+      IF gen.isDeclUsed(forRange)
+        fd.write(''"
+function ZforRangeNew(start, last, until, step) {
+  var f = {};
+  f['idx'] = start;
+  if (until)
+    f['last'] = last - (step > 0 ? 1 : -1);
+  else
+    f['last'] = last;
+  f['step'] = step;
+  return f;
+}
+function ZforRangeGet(f) {
+  return f.idx;
+}
+function ZforRangeCont(f) {
+  return f.step > 0 ? (f.idx <= f.last) : (f.idx >= f.last);
+}
+function ZforRangeNext(f) {
+  f.idx += f.step;
+  return f.idx;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(forEnum)
+        fd.write(''"
+function ZforEnumNew(count) {
+  var f = {};
+  f['count'] = count;
+  f['idx'] = 0;
+  return f;
+}
+function ZforEnumGet(f) {
+  return f.idx;
+}
+function ZforEnumCont(f) {
+  return f.idx < f.count;
+}
+function ZforEnumNext(f) {
+  ++f.idx;
+  return f.idx;
+}
+"'')
+      }
+      # TODO: More specific dependency.
+      IF gen.isDeclUsed(Declaration.list) || gen.isDeclUsed(Declaration.dict)
+        fd.write(''"
+function Zthrow(msg) {
+  alert("Exception: " + msg);
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(bool2string)
+        fd.write(''"
+function Zbool2string(n) {
+  return n == 0 ? "FALSE" : "TRUE";
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(status2string)
+        fd.write(''"
+function Zstatus2string(n) {
+  return n == 0 ? "FAIL" : "OK";
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(slice)
+        fd.write(''"
+function ZSlice(str, start, end, dn) {
+ if (str == null) return null;
+ var l = str.length;
+ var is = start < 0 ? l + start : start;
+ var ie = end < 0 ? l + end : end;
+ if (is < 0) is = 0;
+ if (is > l) is = l;
+ if (ie < is - 1) ie = is - 1;
+ if (ie >= l) ie = l - 1;
+ return str.slice(is, ie + 1);
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(Declaration.byteStringHash)
+                              || gen.isDeclUsed(Declaration.varByteStringHash)
+        fd.write(''"
+function ZstringHash(one) {
+ return 1234;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(stringCompare)
+        # TODO: implement dotnil
+        fd.write(''"
+function ZstringCompare(one, two, dotnil) {
+ if (one == null || two == null) return 0;
+ if (one == two) return 0;
+ return one > two ? 1 : -1;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(stringEqual)
+        # TODO: implement dotnil
+        fd.write(''"
+function ZstringEqual(one, two, dotnil) {
+ if (one == null || two == null) return 0;
+ return one == two;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(parseInt)
+        fd.write(''"
+function ZparseInt(val, r, t, def) {
+ if (val == null) {
+  if (t >= 2) return 0;
+  Zthrow('NIL string');
+ }
+ var c = val.charAt(0);
+ if (r == 2 && c != '0' && c != '1') Zthrow('badvalue');
+ if (r == 16 && c == '-') Zthrow('badvalue');
+ var res = parseInt(val, r);
+ if (isNaN(res)) {
+  if (t) Zthrow('badvalue');
+  return def;
+ }
+ return res;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(isdigit)
+        fd.write(''"
+function Zisdigit(val) {
+ switch (val) {
+  case "0": case "1": case "2": case "3": case "4":
+  case "5": case "6": case "7": case "8": case "9":
+   return true;
+  default:
+   return false;
+ }
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(isInfinite)
+        fd.write(''"
+function ZisInfinite(val) {
+ return val == Number.POSITIVE_INFINITY || val == Number.NEGATIVE_INFINITY;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(isXdigit)
+        fd.write(''"
+function isXdigit(val) {
+  switch (val) {
+    case "0": case "1": case "2": case "3": case "4":
+    case "5": case "6": case "7": case "8": case "9":
+    case "a": case "b": case "c": case "d": case "e": case "f":
+    case "A": case "B": case "C": case "D": case "E": case "F":
+      return true;
+    default:
+      return false;
+  }
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(startsWith)
+        # TODO: throw exception when big is null and !dn.
+        fd.write(''"
+function ZstartsWith(big, small, dn) {
+  if (big == null || small == null) return null;
+  if (big.length < small.length) return 0;
+  return big.substring(0, small.length) == small;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(endsWith)
+        # TODO: throw exception when big is null and !dn.
+        fd.write(''"
+function ZendsWith(big, small, dn) {
+  if (big == null || small == null) return null;
+  if (big.length < small.length) return 0;
+  return big.substring(big.length - small.length) == small;
+}
+"'')
+      }
+
+      IF gen.isDeclUsed(Declaration.itemToString)
+        # This code uses TYPE_NUMBERS, keep in sync!
+        fd.write(''"
+function ZitemToString(val, type, useq) {
+  switch (type) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 80:
+    case 81:
+    case 82:
+    case 83:
+      return val + '';
+    case 21: return val ? 'TRUE' : 'FALSE';
+    case 22: return val ? 'OK' : 'FAIL';
+    case 23: return 'TODO';
+    case 200:
+    case 201: return val == null ? 'NIL' : val;
+    case 200 + 1024:
+    case 201 + 1024: return val == null ? 'NIL' : '"' + val + '"';
+    case 300: return val == null ? 'NIL' : '-array-';
+    case 301: return val == null ? 'NIL' : '-list-';
+    case 302: return val == null ? 'NIL' : '-dict-';
+    case 310: return val == null ? 'NIL' : '-varString-';
+    case 311: return val == null ? 'NIL' : '-varByteString-';
+    case 320: return val == null ? 'NIL' : '-tuple-';
+    case 330: return val == null ? 'NIL' : '-proc-';
+    case 360: return val == null ? 'NIL' : '-any-';
+    case 390: return val == null ? 'NIL' : val.ToString ? val.ToString(val) : '-object-';
+    case 391: return val == null ? 'NIL' : val.ToString ? val.ToString(val) : '-iobject-';
+  }
+  return "unknown";
+}
+"'')
+      }
+
+      # Array type
+      WriteArrayJS.writeBody(gen, fd)
+
+      # List type
+      WriteListJS.writeBody(gen, fd)
+
+      # Dict type
+      WriteDictJS.writeBody(gen, fd)
+    }
+
+    FUNC genExpr(Zui.Expression expr, SContext ctx) Type
+      RETURN Generate.genExpr(expr, ctx)
+    }
+    FUNC genExpr(Zui.Expression expr, SContext ctx, Type destType) Type
+      RETURN Generate.genExpr(expr, ctx, destType)
+    }
+
+    Declaration %xhr = NEW("xhr")  # XmlHttpRequest
+
+    # Return the list of items that can be used in >>> uses().
+    FUNC getUsesDeclarations() list<Declaration>
+      RETURN [%xhr]
+    }
+  }
+}

@@ -1,0 +1,283 @@
+# Test file for IO module
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE IOtests @public
+
+  PROC test() @public
+    IO.print("testdir/IOtests.zu")
+    testFileInfo()
+    testStringIO()
+    testFileIO()
+    testDirList()
+    testPathOps()
+    testFullPath()
+    testResolve()
+    testFindExe()
+  }
+
+  ###############################################################
+
+  PROC testFileInfo()
+    IO.FileInfo info = IO.fileInfo("nofile")
+    IO.print("status: " .. info.status .. ", size: " .. info.size .. ", time: " .. info.time)
+  }
+
+  ###############################################################
+
+  PROC testStringIO()
+    # Test BytesReader and StringWriter.
+    IO.BytesReader sreader = NEW("one".asByteString())
+    IO.StringWriter swriter = NEW()
+    int idx
+    string res = ""
+    WHILE idx < 5
+      swriter.write(idx .. "/")
+      res ..= sreader.readByte() .. "/"
+      ++idx
+    }
+    IO.print("read string: " .. res)
+    IO.print("write string: " .. swriter.ToString())
+
+    FOR vi IN 1 TO 5
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+    FOR vi IN 1 TO 1
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+    FOR vi IN 1 TO 0
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+
+    FOR vi IN 5 TO 1 STEP -1
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+    FOR vi IN 5 TO 5 STEP -1
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+    FOR vi IN 5 TO 6 STEP -1
+      IO.write(vi .. "  ")
+    }
+    IO.write("\n")
+  }
+
+  ###############################################################
+
+  PROC testFileIO()
+    # test writing a file
+    IO.File wfd = IO.fileWriter("tmp_ttest")
+    wfd.write("hello ")
+    int i = 49
+    WHILE i <= 57
+      wfd.writeByte(i)
+      i = i + 1
+    }
+    wfd.writeByte(10)
+    wfd.close()
+
+    IO.File iofd = IO.fileReader("tmp_ttest")
+    int ioc = iofd.readByte()
+    iofd.close()
+    IO.File iowfd = IO.fileWriter("tmp_tttest")
+    iowfd.writeByte(1234)
+    iowfd.write("hello" .. "there")
+    iowfd.close()
+
+    # test reading a file
+    IO.File fd = IO.fileReader("tmp_ttest")
+    i = 6
+    string s = ""
+    WHILE i > 0
+      int c = fd.readByte()
+      s = s .. c.asString()
+      i = i - 1
+    }
+    IO.write(s)
+    i = 10
+    WHILE i > 0
+      int c = fd.readByte()
+      IO.write(c .. " ")
+      i = i - 1
+    }
+    fd.close()
+    IO.write("\n")
+    IO.delete("tmp_ttest")
+    IO.delete("tmp_tttest")
+  }
+
+  ###############################################################
+
+  PROC testDirList()
+    string testDirName = "tmp_ZimbuTestDir"
+
+    # Check the directory doesn't exist yet
+    IO.FileInfo info = IO.fileInfo(testDirName)
+    IF info.status != FAIL
+      IO.print(testDirName .. " already exists, test aborted")
+      RETURN
+    }
+
+    # test directory creation
+    IO.mkdir(testDirName)
+
+    IO.print("empty dir list: " .. IO.dirList(testDirName).ToString())
+
+    IO.fileWriter(testDirName .. "/One").close()
+    IO.fileWriter(testDirName .. "/Two").close()
+
+    IO.print("full dir list: " .. IO.dirList(testDirName).sort().ToString())
+
+    IO.delete(testDirName .. "/One")
+    IO.delete(testDirName .. "/Two")
+
+    IO.print("empty dir list: " .. IO.dirList(testDirName).ToString())
+
+    IO.rmdir(testDirName)
+    IO.FileInfo finfo = IO.fileInfo(testDirName)
+    IO.print("deleted directory: " .. (finfo.status == FAIL))
+  }
+
+  ###############################################################
+
+  PROC testPathOps()
+    IO.print("isPathSep(): " ..
+                 IO.isPathSep("a/b"[0]) .. ", " ..
+                 IO.isPathSep("a/b"[1]) .. ", " ..
+                 IO.isPathSep("a/b"[2]))
+
+    FOR n IN ["foo", "foo/bar", "/foo/", "//foo/bar", "/", "///"]
+      IO.print("pastHeadIndex(" .. n .. ") = " .. IO.pastHeadIndex(n))
+    }
+
+    FOR n IN ["foo", "foo/bar", "foo/", "//foo/bar", "/"]
+      IO.print("tailIndex(" .. n .. ") = " .. IO.tailIndex(n))
+    }
+
+    FOR n IN ["foo", "foo/bar", "foo/", "/foo", "//foo/bar", "/"]
+      IO.print("tailSepIndex(" .. n .. ") = " .. IO.tailSepIndex(n))
+    }
+
+    FOR l IN [
+              ["bar/foo", "0"],
+              ["foo/bar", "4"],
+              ["/bar/bar/foo/", "1"],
+              ["/bar/bar/foo/", "5"],
+              ["/foo", "0"],
+              ["/", "0"],
+             ]
+      IO.print("nextPartIndex(" .. l[0] .. ", " .. l[1] .. ") = "
+                                  .. IO.nextPartIndex(l[0], l[1].toInt()))
+    }
+
+    FOR l IN [
+              ["bar", "foo"],
+              ["bar/", "foo"],
+              ["bar", "/foo"],
+              ["bar/", "/foo"],
+             ]
+      IO.print("concatPath(" .. l[0] .. ", " .. l[1] .. ") = "
+                                  .. IO.concatPath(l[0], l[1]))
+    }
+
+    IO.print("Unix exe: \(IO.modifyExeName("pa.th/zimbu", "zimbu2c"))")
+    IO.print("MS-Windows exe: \(IO.modifyExeName("pa.th/zimbu.exe", "zimbu2c"))")
+    IO.print("MS-Windows exe: \(IO.modifyExeName("demo.exe", "other"))")
+  }
+
+  ###############################################################
+
+  PROC testFullPath()
+    string curdir = IO.fullPath(".")
+    IF curdir.Size() == 0
+      IO.print("Current directory empty?!")
+    ELSEIF !curdir.startsWith("/") && curdir.slice(1, 1) != ":"
+      IO.print("Current directory not full path: " .. curdir)
+    ELSE
+      FOR name IN ["plugin", "lib/ioloader.zu", "", "plugin/xyz", "zxcf"]
+        string s = IO.fullPath(name)
+        IF s.startsWith(curdir)
+          IO.print(name .. ": ." .. s.slice(curdir.Size()))
+        ELSE
+          # Wrong!
+          IO.print(name .. ": " .. s)
+        }
+      }
+    }
+  }
+
+  ###############################################################
+
+  PROC testResolve()
+    # First a few tests on normal files and directories.
+    FOR n IN ["zimbu.zu", "plugin/proto", "plugin/proto/", "./plugin/proto",
+                                                 "burp", "testdir/iotests.zu"]
+      GENERATE_IF Z.have("resolve")
+        IO.print("resolve(" .. n .. ") = " .. IO.resolve(n))
+      GENERATE_ELSE
+        IO.print("resolve(" .. n .. ") = " .. n)
+      }
+    }
+
+    # TODO: Move variables inside GENERATE_IF when the bug with dereferencing
+    # vars nog actually generated is fixed.
+    string testDirName = "/tmp/ZimbuTestDir"
+    string testLink = testDirName .. "/foobar"
+    string testLink2 = testDirName .. "/barbar"
+    IO.FileInfo info
+
+    GENERATE_IF Z.have("resolve")
+
+      # Check the directory doesn't exist yet
+      info = IO.fileInfo(testDirName)
+      IF info.status != FAIL
+        IO.print(testDirName .. " already exists, test aborted")
+        RETURN
+      }
+      IO.mkdir(testDirName)
+
+      # one link
+      SYS.shell("ln -s /foo/bar " .. testLink)
+      IO.print("resolve(" .. testLink .. ") = " .. IO.resolve(testLink))
+      IO.print("resolve(" .. testLink .. "/boo) = "
+                                            .. IO.resolve(testLink .. "/boo"))
+
+      # double link
+      SYS.shell("ln -s " .. testLink .. " " .. testLink2)
+      IO.print("resolve(" .. testLink2 .. ") = " .. IO.resolve(testLink2))
+      IO.print("resolve(" .. testLink2 .. "/boo) = "
+                                           .. IO.resolve(testLink2 .. "/boo"))
+      # recursive link
+      IO.delete(testLink2)
+      SYS.shell("ln -s " .. testLink2 .. " " .. testLink2)
+      IO.print("resolve(" .. testLink2 .. ") = " .. IO.resolve(testLink2))
+
+      # cleanup
+      IO.delete(testLink)
+      IO.delete(testLink2)
+      IO.rmdir(testDirName)
+    GENERATE_ELSE
+      # Symbolic links are not supported, produce the expected output.
+      IO.print("resolve(/tmp/ZimbuTestDir/foobar) = /foo/bar")
+      IO.print("resolve(/tmp/ZimbuTestDir/foobar/boo) = /foo/bar/boo")
+      IO.print("resolve(/tmp/ZimbuTestDir/barbar) = /foo/bar")
+      IO.print("resolve(/tmp/ZimbuTestDir/barbar/boo) = /foo/bar/boo")
+      IO.print("resolve(/tmp/ZimbuTestDir/barbar) = /tmp/ZimbuTestDir/barbar")
+    }
+  }
+
+  ###############################################################
+
+  PROC testFindExe()
+    IO.print("Exe location: " .. IO.findExe("./zimbu"))
+  }
+
+}
+

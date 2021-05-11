@@ -1,0 +1,325 @@
+# Test file for TRY, CATCH and Exceptions
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "Util.zu"
+
+MODULE TryCatch @public
+
+  PROC test() @public
+    IO.print("testdir/TryCatch.zu")
+    test1()
+    test2()
+    test3()
+    test4a()
+    test4b()
+    test4c()
+    test4d()
+    test5()
+    test6()
+  }
+
+  ##############################3
+
+  CLASS Class4
+    PROC $neverCalled()
+      THROW "should not be called"
+    }
+    PROC $showStack()
+      E.reportStack(IO.stdout)
+    }
+  }
+  
+  PROC test1()
+    Class4 c44 = NEW()
+    c44.showStack()
+  }
+
+  PROC test2()
+    TRY
+      IO.print("TRY 1 start")
+      Class4 c44 = NEW()
+      c44.neverCalled()
+      IO.print("TRY 1 after exception")
+    CATCH E.Exception te
+      IO.print("TRY 1 caught: " .. te.getMessage())
+    ELSE
+      IO.print("TRY 1 else")
+    FINALLY
+      IO.print("TRY 1 clean up")
+    }
+
+    TRY
+      IO.print("TRY 2 start")
+      Class4 c44 = NEW()
+      c44.neverCalled()
+      IO.print("TRY 2 after exception")
+    CATCH E.Exception te
+      IO.print("TRY 2 caught: " .. te.getMessage())
+    }
+
+    TRY
+      IO.print("TRY 3 start")
+      Class4 c44 = NEW()
+    CATCH E.Exception te
+      IO.print("TRY 3 caught: " .. te.getMessage())
+    ELSE
+      IO.print("TRY 3 else")
+    }
+
+    TRY
+      IO.print("TRY 4 start")
+      Class4 c44 = NEW()
+    CATCH E.Exception te
+      IO.print("TRY 4 caught: " .. te.getMessage())
+    ELSE
+      IO.print("TRY 4 else")
+    FINALLY
+      IO.print("TRY 4 clean up")
+    }
+
+    TRY
+      IO.print("TRY 5 start")
+      Class4 c44 = NEW()
+    ELSE
+      IO.print("TRY 5 else")
+    }
+
+    TRY
+      IO.print("TRY 6 outer start")
+      TRY
+        IO.print("TRY 6 start")
+        Class4 c44 = NEW()
+        c44.neverCalled()
+        IO.print("TRY 6 after exception")
+      ELSE
+        IO.print("TRY 6 else")
+      FINALLY
+        IO.print("TRY 6 clean up")
+      }
+    CATCH E.Exception te
+      IO.print("TRY 6 outer caught: " .. te.getMessage())
+    }
+
+    TRY
+      TRY
+        IO.print("TRY 7 start")
+        Class4 c44 = NEW()
+        c44.neverCalled()
+        IO.print("TRY 7 after exception")
+      CATCH E.Exception te
+        IO.print("TRY 7 caught: " .. te.getMessage())
+        THROW "catch this"
+      FINALLY
+        IO.print("TRY 7 finally")
+      }
+      IO.print("TRY 7 not reached")
+    CATCH E.Exception te
+      IO.print("TRY 7 outer caught: " .. te.getMessage())
+    }
+
+    TRY
+      TRY
+        IO.print("TRY 8 start")
+        Class4 c44 = NEW()
+        c44.neverCalled()
+        IO.print("TRY 8 after exception")
+      CATCH E.Exception te
+        IO.print("TRY 8 caught: " .. te.getMessage())
+        THROW "catch this"
+      }
+      IO.print("TRY 8 not reached")
+    CATCH E.Exception te
+      IO.print("TRY 8 outer caught: " .. te.getMessage())
+    }
+
+    IO.File fd
+    TRY
+      fd = IO.fileReader("testprog.zu")
+    CATCH E.Exception e1
+      IO.print("Cannot open testfile: " .. Util.stripLine(e1.ToString()))
+    ELSE
+      string text
+      TRY
+        text = fd.readLineRaw()
+        # If we would do IO.print() here an execption thrown by it would
+        # get caught and reported as a read error.
+      CATCH E.Exception e2
+        IO.print("Cannot read testfile: " .. Util.stripLine(e2.ToString()))
+      ELSE
+        # If this causes an exception the FINALLY block is executed and
+        # the exception is not caught.
+        IO.write("First line in testfile: " .. text)
+      FINALLY
+        # An exception here is not caught.
+        fd.close()
+      }
+    }
+
+    IO.print(tryWithReturn())
+    IO.print(tryWithCatch())
+    IO.print(tryNested())
+  }
+
+  FUNC tryWithReturn() string
+    TRY
+      IF TRUE
+        RETURN "return in try"
+      }
+      RETURN "not reached"
+    FINALLY 
+      IO.print("finally cleaning up")
+    }
+    RETURN "not in try"
+  }
+
+  FUNC tryWithCatch() string
+    list<string> nop
+    TRY
+      RETURN nop[3]
+    CATCH E.Exception e
+      RETURN "tryWithCatch caught: " .. Util.stripLine(e.toString(TRUE))
+    }
+    RETURN "wrong"
+  }
+
+  FUNC tryNested() string
+    list<string> nop
+    string val
+    TRY
+      val = "one"
+      TRY
+        string s = nop[0]  # NIL pointer use
+        val = "two"
+      FINALLY
+        val = "finally"
+      }
+      val = "three"
+    CATCH E.Exception e
+      IO.print(Util.stripLine(e.ToString()) .. " - tryNested caught")
+      RETURN "with val " .. (val ?: "NIL")
+    }
+    RETURN "wrong"
+  }
+
+  PROC throwOne(int round)
+    TRY
+      IF round == 1
+        THROW E.Error.NEW("this is an error")
+      ELSEIF round == 2
+        THROW E.Interrupt.NEW("this is an interrupt")
+      ELSE
+        THROW E.Exit.NEW(123)
+      }
+    CATCH E.Error, E.Interrupt e
+      IO.print("throwOne caught " .. e.getMessage())
+    }
+  }
+
+  PROC test3()
+    TRY
+      throwOne(1)
+      throwOne(2)
+      throwOne(3)
+    CATCH E.Exception te
+      IO.print("test3 not caught: " .. te.getMessage())
+    }
+  }
+
+  PROC test4a()
+    # BREAK inside a TRY inside a FOR
+    FOR s IN ["one", "two"]
+      TRY
+        IO.print("For: " .. s)
+        BREAK
+      FINALLY
+        IO.print("After the inner break")
+      }
+      IO.print("End of the loop")
+    }
+  }
+
+  PROC test4b()
+    # BREAK inside a FOR inside a TRY
+    TRY
+      FOR s IN ["three", "four"]
+        IO.print("For: " .. s)
+        BREAK
+      }
+      IO.print("After the loop")
+    FINALLY
+      IO.print("After the outer break")
+    }
+  }
+
+  PROC test4c()
+    # CONTINUE inside a TRY inside a FOR
+    FOR s IN ["five", "six"]
+      TRY
+        IO.print("For: " .. s)
+        CONTINUE
+      FINALLY
+        IO.print("After the inner continue")
+      }
+      IO.print("End of the continue loop")
+    }
+  }
+
+  PROC test4d()
+    # CONTINUE inside a FOR inside a TRY
+    TRY
+      FOR s IN ["seven", "eight"]
+        IO.print("For: " .. s)
+        CONTINUE
+      }
+      IO.print("After the continue loop")
+    FINALLY
+      IO.print("After the outer continue")
+    }
+  }
+
+  PROC test5()
+    # var declared in TRY block is visible in ELSE block
+    TRY
+      int f = 4
+    CATCH E.IOError e
+      IO.print("notreached")
+    ELSE
+      IO.print("f is " .. f)
+    }
+  }
+
+  CLASS One
+    One $next
+  }
+
+  FUNC breakMe() int
+    One o
+    # NIL pointer use causes a SEGV, which can be caught.
+    # TODO: When using the C optimizer the stack backtrace may not always have
+    # this position.
+    o.next = o
+    RETURN 6
+  }
+
+  PROC test6()
+    # catch SEGV in initialization
+    TRY
+      int f = breakMe()
+    CATCH E.MemoryAccess e
+      IO.print("test6 caught SEGV: " .. Util.stripLine(e.toString(TRUE)))
+    }
+
+    # And verify it works twice (SEGV didn't get blocked by signal handler).
+    TRY
+      int f = breakMe()
+    CATCH E.MemoryAccess e
+      IO.print("test6 caught SEGV again: "
+                                        .. Util.stripLine(e.toString(TRUE)))
+    }
+  }
+
+}

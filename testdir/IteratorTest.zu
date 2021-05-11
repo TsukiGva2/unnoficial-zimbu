@@ -1,0 +1,184 @@
+# Testing iterators.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE IteratorTest @public
+
+  PROC test() @public
+    IO.print("testdir/IteratorTest.zu")
+    test1()
+    testFor()
+  }
+
+  CLASS Foo<Titem> IMPLEMENTS I.Iterable<Titem>
+    list<Titem> $items = NEW()
+
+    PROC $add(Titem item)
+      $items.add(item)
+    }
+
+    FUNC $Iterator() I.Iterator<Titem>
+      RETURN FooIterator<Titem>.NEW($items)
+    }
+  }
+
+  CLASS FooIterator<Titem> IMPLEMENTS I.Iterator<Titem>
+    list<Titem> $items
+    int         $pos
+    bool        $canRemove
+
+    NEW(list<Titem> items)
+      $items = items
+    }
+
+    FUNC $hasNext() bool
+      RETURN $pos < $items.Size()
+    }
+
+    FUNC $next() Titem
+      Titem item = $peek()
+      ++$pos
+      $canRemove = TRUE
+      RETURN item
+    }
+
+    FUNC $peekSupported() bool
+      RETURN TRUE
+    }
+
+    FUNC $peek() Titem
+      IF $pos >= $items.Size()
+        THROW E.OutOfRange.NEW("Calling next() while there is no next item")
+      }
+      RETURN $items.get($pos)
+    }
+
+    FUNC $removeSupported() bool
+      RETURN TRUE
+    }
+
+    FUNC $remove() status
+      IF !$canRemove
+        THROW E.OutOfRange.NEW("Calling remove() not after next()")
+      }
+      IF $pos > $items.Size()
+        THROW E.OutOfRange.NEW("Calling remove() past the end")
+      }
+      $items.clear($pos - 1)
+      $canRemove = FALSE
+      RETURN OK
+    }
+  }
+
+  PROC test1()
+    Foo<int> foos = NEW()
+    foos.add(1)
+    foos.add(2)
+    foos.add(3)
+
+    FOR item IN foos
+      IO.print(item .. "+")
+    }
+    FOR item IN foos.Iterator()
+      IO.print(item .. "/")
+    }
+    FooIterator<int> it = foos.Iterator()
+    WHILE it.hasNext()
+      IO.print(it.next() .. ",")
+    }
+
+    # Check the generic type works.
+    I.Iterator<int> it2 = foos.Iterator()
+
+    # New iterator starts all over.
+    it = foos.Iterator()
+    IO.print(it.next() .. " again")
+    IO.print(it.peek() .. " peek")
+    IO.print(it.next() .. " really")
+    IO.print(it.peek() .. " peek")
+    IO.print(it.peek() .. " peek")
+  }
+
+  CLASS Container IMPLEMENTS I.Iterable<string>
+    list<string> $s = ["Cone", "Ctwo", "Cthree"]
+
+    FUNC $Iterator() I.Iterator<string> @public
+      RETURN ContIterator.NEW($s)
+    }
+
+    FUNC $KeyIterator() I.KeyIterator<int, string> @public
+      RETURN ContKeyIterator.NEW($s)
+    }
+  }
+
+  CLASS ContIterator IMPLEMENTS I.Iterator<string>
+    list<string> $items
+    int          $pos
+    bool         $canRemove
+
+    NEW(list<string> items)
+      $items = items
+    }
+
+    FUNC $hasNext() bool
+      RETURN $pos < $items.Size()
+    }
+
+    FUNC $next() string
+      string item = $items.get($pos)
+      ++$pos
+      RETURN item
+    }
+
+    FUNC $peekSupported() bool
+      RETURN FALSE
+    }
+
+    FUNC $peek() string
+      RETURN NIL
+    }
+  }
+
+  CLASS ContKeyIterator IMPLEMENTS I.KeyIterator<int, string>
+    list<string> $items
+    int          $pos
+    bool         $canRemove
+
+    NEW(list<string> items)
+      $items = items
+    }
+
+    FUNC $hasNext() bool
+      RETURN $pos < $items.Size()
+    }
+
+    FUNC $next() int, string
+      string item = $items.get($pos)
+      ++$pos
+      RETURN $pos - 1, item
+    }
+
+    FUNC $peekSupported() bool
+      RETURN FALSE
+    }
+
+    FUNC $peek() int, string
+      RETURN 0, NIL
+    }
+  }
+
+  PROC testFor()
+    IO.print("FOR over container")
+    Container ct = NEW()
+    FOR s IN ct
+      IO.print("?: " .. s)
+    }
+    FOR i, s IN ct
+      IO.print(i .. ": " .. s)
+    }
+  }
+
+}

@@ -1,0 +1,891 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Common for Resolve and Write classes.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "BitsValueType.zu"
+IMPORT "ClassType.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "EnumType.zu"
+IMPORT "EnumValueType.zu"
+IMPORT "ExprArg.zu"
+IMPORT "ExprEval.zu"
+IMPORT "ForLoopInfo.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodType.zu"
+IMPORT "ModuleType.zu"
+IMPORT "Output.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "SymUse.zu"
+IMPORT "TargetLang.zu"
+IMPORT "TupleType.zu"
+IMPORT "Type.zu"
+IMPORT "ValueType.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+IMPORT "ZuiMethodTypeExt.zu"
+
+CLASS WriteCommon @items=public   # TODO: restrict visibility
+  bool       $writing        # TRUE when writing code, FALSE for Resolve itself
+
+  bool       $didMarkUsed    # TRUE when finished marking items as used,
+                             # before starting to write code.
+
+  # Return the name of the language, to be displayed in
+  # "Generating {langName} code".
+  # Overruled in subclasses for a specific language.
+  FUNC $getLangName() string @default
+    RETURN "none"
+  }
+
+  # Return the target language.
+  # Overruled in subclasses for a specific language.
+  FUNC $getTargetLang() TargetLang @default
+    RETURN 0
+  }
+
+  GENERATE_IF FALSE
+    # For debugging: When 1 indicates that a specific used item was found.
+    int $found
+  }
+
+  # Mark |decl| as being used for this language.  Also recursively marks
+  # Declarations used inside |decl| as being used.
+  PROC $setDeclUsed(Declaration decl)
+    GENERATE_IF FALSE
+      # For debugging: Value for $found when returning.
+      int found
+    }
+
+    TargetLang lang = $getTargetLang()
+    IF !decl.isUsed(lang)
+      decl.setUsed(lang)
+
+      GENERATE_IF FALSE
+        # For debugging: set found flag for specific item.
+        IF lang.c && decl.pName == "ICd__Ixd"
+          found = 1
+          IO.print("decl used: " .. decl.getName(TRUE))
+        }
+      }
+
+      # Setting a used flag after code generation has started is only allowed
+      # for items defined in the language-specific code, not in the program or
+      # libraries.  Check module and class scopes.
+      IF $didMarkUsed && decl.scopeName != NIL
+                                          && ['M', 'C'].has(decl.scopeName[0])
+        THROW "Internal error: Declaration "
+                         .. decl.getName(TRUE) .. " marked used while writing"
+      }
+
+      # Call setDeclUsed() on explicitly specified dependencies.
+      FOR d IN decl.getDependsOnKeys()
+        $setDeclUsed(d)  # Recursive call
+
+        GENERATE_IF FALSE
+          # For debugging: Report caller that caused $found to become 1
+          IF $found == 1
+            found = 1
+            $found = 2
+            IO.print("From dependsOn of " .. decl.getName(TRUE))
+          }
+        }
+      }
+
+      # Call setDeclUsed() on explicitly specified dependencies with a
+      # condition.
+      FOR d IN decl.getDependsOnCondKeys()
+        Declaration condDecl = decl.dependsOnCond[d]
+        IF condDecl.isUsed(lang)
+          $setDeclUsed(d)  # Recursive call
+
+          GENERATE_IF FALSE
+            # For debugging: Report caller that caused $found to become 1
+            IF $found == 1
+              found = 1
+              $found = 2
+              IO.print("From dependsOnCond of " .. decl.getName(TRUE))
+            }
+          }
+        ELSE
+          # Now if the condDecl is marked as used also mark the conditional
+          # dependency as used.
+          condDecl.addDependsOn(d)
+        }
+      }
+
+      # Call setDeclUsed() on language-specific specified dependencies.
+      FOR d IN decl.getLangDependsOnList(lang)
+        $setDeclUsed(d)  # Recursive call
+
+        GENERATE_IF FALSE
+          # For debugging: Report caller that caused $found to become 1
+          IF $found == 1
+            found = 1
+            $found = 2
+            IO.print("From langDependsOn of " .. decl.getName(TRUE))
+          }
+        }
+      }
+
+      # Call setDeclUsed() on language-specific specified dependencies with a
+      # condition.
+      FOR dl IN decl.getLangDependsOnCondList(lang)
+        IF dl[0].isUsed(lang)
+          $setDeclUsed(dl[1])  # Recursive call
+
+          GENERATE_IF FALSE
+            # For debugging: Report caller that caused $found to become 1
+            IF $found == 1
+              found = 1
+              $found = 2
+              IO.print("From langDependsOnCond of " .. decl.getName(TRUE))
+            }
+          }
+        ELSE
+          # Now if the conditional declaration is marked as used also mark the
+          # conditional dependency as used.
+          dl[0].addDependsOn(dl[1])
+        }
+      }
+
+      # Call setDeclUsed() for all declarations used in all scopes inside
+      # decl.
+      Zui.Declaration zuiDecl = decl.zuiDecl
+      IF zuiDecl != NIL && zuiDecl.hasType() && decl.type != NIL
+        Zui.Type type = zuiDecl.getType()
+        IF decl.type ISA MethodType
+          Scope scope
+          SWITCH type.getType()
+            CASE Zui.TypeEnum.eNEW
+            CASE Zui.TypeEnum.ePROC
+            CASE Zui.TypeEnum.eFUNC
+              scope = ZuiMethodTypeExt.get(type.getMethodDecl()).scope
+          }
+
+          IF scope != NIL && scope.usedDecl != NIL
+            FOR d IN scope.usedDecl.keys()
+              $setDeclUsed(d)  # Recursive call.
+
+              GENERATE_IF FALSE
+                # For debugging: Report caller that caused $found to become 1
+                IF $found == 1
+                  found = 1
+                  $found = 2
+                  IO.print("From method scope of " .. decl.getName(TRUE))
+                }
+              }
+            }
+          }
+        ELSEIF decl.type ISA ModuleType || decl.type ISA ClassType
+          # In a class and module mark Init and EarlyInit as used.
+          # Also mark items with @earlyInit as used.
+          Scope scope
+          ClassType ct
+          IF decl.type ISA ModuleType
+            scope = decl.type.<ModuleType>.scope
+          ELSE
+            ct = decl.type
+            scope = ct.scope
+          }
+          WHILE scope != NIL
+            IF scope.declDict != NIL
+              multiDict<string, Declaration> declDict = scope.declDict
+              FOR k IN declDict.keys()
+                FOR d IN declDict.get(k)
+                  IF k == "Init" || k == "EarlyInit"
+                     || (d.type.zuiAttr != NIL && d.type.zuiAttr.getEarlyInit())
+                    $setDeclUsed(d)  # Recursive call.
+
+                    GENERATE_IF FALSE
+                      # For debugging: Report caller that caused $found to
+                      # become 1
+                      IF $found == 1
+                        found = 1
+                        $found = 2
+                        IO.print("From init of " .. decl.getName(TRUE))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            IF decl.type ISA ClassType && ct.parent != NIL
+              # Also mark Init and EarlyInit in extended classes as used.
+              ct = ct.parent
+              scope = ct.scope
+            ELSE
+              scope = NIL
+            }
+          }
+        ELSEIF decl.type ISA ContainerType
+            # TODO: mark key and item types as used
+        ELSEIF decl.type ISA TupleType
+            # TODO: mark all types as used
+        ELSEIF decl.type ISA ReferenceType || decl.type ISA ValueType
+            # TODO: mark type as used
+        }
+      ELSEIF decl.type != NIL && decl.type ISA MethodType
+        MethodType mt = decl.type
+        IF mt.scope != NIL && mt.scope.usedDecl != NIL
+          FOR d IN mt.scope.usedDecl.keys()
+            $setDeclUsed(d)  # Recursive call.
+
+            GENERATE_IF FALSE
+              # For debugging: Report caller that caused $found to become 1
+              IF $found == 1
+                found = 1
+                $found = 2
+                IO.print("From method scope of " .. decl.getName(TRUE))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    GENERATE_IF FALSE
+      # For debugging: Set $found to 1 when specific item was found
+      $found = found
+    }
+  }
+
+  # Set Declaration |from| as depending on Declaration |on|.
+  # If |from| is already marked as used |on| is also marked as used
+  # (recursively).
+  PROC $setDeclDependency(Declaration from, Declaration on)
+    from.addLangDependsOn($getTargetLang(), on)
+    IF $isDeclUsed(from)
+      $setDeclUsed(on)
+    }
+  }
+
+  # Invoke $setDeclDependency() for each item in |onList|.
+  PROC $setDeclDependency(Declaration from, list<Declaration> onList)
+    FOR on IN onList
+      $setDeclDependency(from, on)
+    }
+  }
+
+  # Set Declaration |from| as depending on Declaration |on|, under the
+  # condition that |cond| is used.
+  # If |from| is already marked as used |on| is also marked as used
+  # (recursively).
+  PROC $setDeclCondDependency(Declaration from, Declaration cond,
+                                                             Declaration on)
+    from.addLangDependsOnCond($getTargetLang(), cond, on)
+    IF $isDeclUsed(from) && $isDeclUsed(cond)
+      $setDeclUsed(on)
+    }
+  }
+
+  # Check if |decl| was marked as being used for this language.
+  FUNC $isDeclUsed(Declaration decl) bool
+    RETURN decl != NIL
+                  && (decl.isUsed($getTargetLang()) || !Generate.skipUnused())
+  }
+
+  # Return the type of the RHS.
+  # Returns NIL if there is an error.
+  FUNC $isaOpType(Zui.Expression expr, SContext ctx) Type
+    SymUse symUse = NEW(expr.getPos(), ctx)
+    Type rightType = Generate.generateDeclType(expr.getRight(),
+                                              ctx.copyNoOut(), isDecl, symUse)
+    IF rightType == NIL
+      # Produce the error message.
+      symUse.doError = TRUE
+      Generate.generateDeclType(expr.getRight(), ctx, isDecl, symUse)
+    }
+    RETURN rightType
+  }
+
+  # Produce the while() loop for FOR using an iterator
+  PROC $forLoopIteratorWhile(ForLoopInfo info,
+                         list<Declaration> varList, int iterIdx, SContext ctx)
+    Declaration.C firstVar = varList[iterIdx]
+    IF firstVar == NIL || firstVar.zuiPos == NIL
+      RETURN
+    }
+    ForLoopInfo.Iter iter = info.iters[iterIdx]
+
+    # Add the iterator to the scope so that generateObjectCall() can find
+    # it.
+    Declaration itDecl = NEW("__it" .. iterIdx)
+    itDecl.type = iter.iteratorType
+    itDecl.pName = iter.varDecl.pName
+    ctx.scope.addMember(itDecl)
+
+    # it.hasNext()
+    Zui.Expression nameExpr = NEW()
+    nameExpr.setPos(firstVar.zuiPos)
+    Zui.Expression left = NEW()
+    left.setType(Zui.ExprType.eID)
+    left.setPos(firstVar.zuiPos)
+    left.setId(NEW().setName("__it" .. iterIdx))
+    nameExpr.setLeft(left)
+    nameExpr.setRight(NEW().setId(NEW().setName("hasNext")))
+    Zui.MethodCall call = NEW()
+    call.setName(nameExpr)
+    call.setPos(firstVar.zuiPos)
+    Type retType = Generate.generateObjectCall(iter.iteratorType,
+                                                   call, NIL, ctx, Type.aBool)
+    IF retType != NIL && retType.ttype != Type.Enum.bool
+      ctx.error("Expected bool return type for hasNext()", firstVar.zuiPos)
+    }
+
+    string tempPName = info.multiExpr == NIL ? NIL
+                        : ZuiExpressionExt.get(info.multiExpr).tempDecl?.pName
+    IF ctx.out.writing
+      ctx.out.write(" && (")
+      IF info.multiExpr != NIL
+        ctx.out.write(tempPName)
+      ELSE
+        ctx.out.write(firstVar.pName)
+      }
+      ctx.out.write(" = ")
+    }
+
+    # it.next()
+    nameExpr.setRight(NEW().setId(NEW().setName("next")))
+    Generate.generateObjectCall(iter.iteratorType, call, NIL,
+                                                       ctx, iter.iteratorType)
+    ctx.scope.removeMember(itDecl)
+
+    IF ctx.out.writing
+      IF info.multiExpr != NIL
+        FOR i IN 0 UNTIL varList.Size()
+          ctx.out.write(", ")
+          ctx.out.write(varList[i].pName)
+          ctx.out.write(" = ")
+          ctx.out.write(tempPName)
+          ctx.out.write(".a" .. i)
+        }
+      }
+      ctx.out.write(", 1)")
+    }
+  }
+
+  SHARED
+
+    # Values OR'd together for "did_goto_finally" and the "rt" variable. This
+    # is used to decide what must happen after the FINALLY block and at the
+    # end of a scope.
+    int scopeReturn = 1    # RETURN was used
+    int scopeBreak = 2     # BREAK was used
+    int scopeContinue = 4  # CONTINUE was used
+
+    # Return a list of all possible classes for superclass |type|.
+    FUNC interfaceClassList(ClassType type, SContext ctx) list<Declaration>
+      list<Declaration> olist = NEW()
+      IF !type.isAbstract()
+        olist.add(type.getValueType(ctx))
+      }
+
+      FOR child IN type.children ?: []
+        olist.extend(interfaceClassList(child, ctx))
+      }
+      RETURN olist
+    }
+
+    # Generate binary operator with int values.
+    # Common for all C-like languages.
+    FUNC numberOp(Zui.Expression expr, SContext ctx) Type
+      VAR exprExt = ZuiExpressionExt.get(expr)
+      ctx.out.write("(")
+      Type destType = exprExt.leftExprType ?: Type.anInt
+      Type leftType = Generate.genExpr(expr.getLeft(), ctx, destType)
+      string op
+      SWITCH expr.getType()
+        CASE Zui.ExprType.eBIT_AND;     op = " & "
+        CASE Zui.ExprType.eBIT_OR;      op = " | "
+        CASE Zui.ExprType.eBIT_XOR;     op = " ^ "
+        CASE Zui.ExprType.eSHIFT_RIGHT; op = " >> "
+        CASE Zui.ExprType.eSHIFT_LEFT;  op = " << "
+        CASE Zui.ExprType.eMULTIPLY;    op = " * "
+        CASE Zui.ExprType.eDIVIDE;      op = " / "
+        CASE Zui.ExprType.eREMAINDER;   op = " % "
+        CASE Zui.ExprType.eADD;         op = " + "
+        CASE Zui.ExprType.eSUBTRACT;    op = " - "
+        DEFAULT
+             ctx.error("INTERNAL: numberOp not implemented", expr)
+      }
+      ctx.out.write(op)
+      Type rightType = Generate.genExpr(expr.getRight(), ctx, destType)
+      ctx.out.write(")")
+
+      IF exprExt.leftExprType?.ttype == Type.Enum.bitsValue
+        # Verify that the bits type matches and only contains bool members.
+        IF leftType ISNOTA BitsValueType || rightType ISNOTA BitsValueType
+          ctx.error("Left or right is not a BITS value", expr)
+        ELSEIF leftType.<BitsValueType>.bitsType
+                                      ISNOT rightType.<BitsValueType>.bitsType
+          ctx.error("Left and right of operator must be the same BITS type",
+                                                                         expr)
+        ELSEIF !leftType.<BitsValueType>.bitsType.isAllBool()
+          ctx.error("operator on BITS type only possible for bool members",
+                                                                         expr)
+        }
+      }
+      RETURN destType
+    }
+
+    PROC incrdecrOp(Zui.Expression expr, SContext ctx)
+      Zui.ExprType type = expr.getType()
+      IF type == Zui.ExprType.ePRE_INC
+        ctx.out.write("++")
+      ELSEIF type == Zui.ExprType.ePRE_DEC
+        ctx.out.write("--")
+      }
+      ctx.out.write("(")
+      Generate.genExpr(expr.getRight(), ctx, Type.anInt)
+      ctx.out.write(")")
+      IF type == Zui.ExprType.ePOST_INC
+        ctx.out.write("++")
+      ELSEIF type == Zui.ExprType.ePOST_DEC
+        ctx.out.write("--")
+      }
+    }
+
+    FUNC compareOp(Zui.Expression expr) string
+      SWITCH expr.getType()
+        CASE Zui.ExprType.eEQUAL
+        CASE Zui.ExprType.eIS
+          RETURN " == "
+        CASE Zui.ExprType.eNOTEQUAL
+        CASE Zui.ExprType.eISNOT
+          RETURN " != "
+        CASE Zui.ExprType.eGREATER
+          RETURN " > "
+        CASE Zui.ExprType.eGREATER_EQUAL
+          RETURN " >= "
+        CASE Zui.ExprType.eLESS
+          RETURN " < "
+        CASE Zui.ExprType.eLESS_EQUAL
+          RETURN " <= "
+      }
+      RETURN ""
+    }
+
+    PROC andorOp(Zui.Expression expr, SContext ctx)
+      ctx.out.write("(")
+      Generate.genExpr(expr.getLeft(), ctx, Type.aBool)
+      IF expr.getType() == Zui.ExprType.eAND
+        ctx.out.write(" && ")
+      ELSE
+        ctx.out.write(" || ")
+      }
+      Generate.genExpr(expr.getRight(), ctx, Type.aBool)
+      ctx.out.write(")")
+    }
+
+    FUNC altOp(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+      ctx.out.write("((")
+      ctx.gen.wrapExpr(expr.getCond(), ctx, Type.aBool)
+      ctx.out.write(") ? (")
+      ctx.gen.wrapExprConv(expr.getLeft(), ctx, exprArg)
+      ctx.out.write(") : (")
+      Type typeR = ctx.gen.wrapExprConv(expr.getRight(), ctx, exprArg)
+      ctx.out.write("))")
+      # TODO: if destType is NIL check syml and symr are the same type
+      RETURN typeR
+    }
+
+    # Keyword characters that can be used for an ID.
+    # The first one is Iaa, I. is reserved for often used keywords.
+    string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                     .. "_0123456789"
+    int charsetSize = charset.Size()
+    dict<string, int> %usedIds = NEW()
+
+    # Return a unique ID with a minimal number of characters, seeded by a
+    # name.  Usually the returned ID is the same if the seed is the same, but
+    # it's guaranteed to be unique.
+    FUNC getUid(string seed) string
+      string ret
+      ret = "Y"
+      int nr = seed.hash()
+      IF nr < 0
+        nr = -nr  # fix nat to int overflow
+      }
+
+      # Usually three characters are sufficient.
+      FOR i IN 1 TO 3
+        ret ..= charset[nr % charsetSize].asString()
+        IF nr < charsetSize
+          BREAK
+        }
+        nr = nr / charsetSize - 1
+      }
+
+      WHILE %usedIds.has(ret)
+        # This ID already exists, add additional characters until it is unique.
+        nr = %usedIds[ret]
+        %usedIds[ret] = nr + 1
+        ret ..= charset[nr % charsetSize].asString()
+      }
+      %usedIds.add(ret, 0)
+
+      RETURN ret
+    }
+
+
+    # Bits assignment of |rhs| to |lhs|, of type |bitsMember|.
+    # Return the number of undefined symbols in |lhs|.
+    FUNC bitsAssign(Zui.Expression lhs, Zui.Expression rhs,
+                                     ValueType bitsMember, SContext ctx) int
+      # Assignment to a BITS field requires some more work:
+      #  Zimbu: myFlags.on = someExpr
+      #  C:     myFlags = ((myFlags) & ~mask) | ((someExpr) << shift)
+      ctx.out.write("((")
+      Generate.generateVarname(lhs, ctx, NIL)
+      int shift = bitsMember.shift
+      ctx.out.write(") & " .. ~(bitsMember.mask << shift) .. ") | ((")
+      # TODO: proper handling of Nat
+      Type retType = bitsMember
+      IF retType.ttype == Type.Enum.nat
+        retType = Type.anInt
+      }
+      Generate.genExpr(rhs, ctx, retType)
+      IF shift == 0
+        ctx.out.write("))")
+      ELSE
+        ctx.out.write(") << " .. shift .. ")")
+      }
+      RETURN ZuiExpressionExt.get(lhs).undefined
+    }
+
+    PROC bitsMemberBool(Zui.Expression left, ValueType memberType,
+                                                                 SContext ctx)
+      ctx.out.write("(((")
+      Generate.genExpr(left, ctx)
+      int shift = memberType.shift
+      ctx.out.write(") & " .. (1 << shift) .. ")")
+      # We would need TRUE be 1 and not any non-zero value when it's again
+      # used to set a bits field.
+      IF shift > 0
+        ctx.out.write(" >> " .. shift)
+      }
+      ctx.out.write(")")
+    }
+
+    # An int (or nat) member of a BITS
+    PROC bitsMemberInt(Zui.Expression left, ValueType memberType,
+                                                                 SContext ctx)
+      # Getting a Nat out of a BITS:
+      #    (((expr) & (mask << shift)) >> shift)
+      # Getting an int  out of a BITS:
+      #    ZFixSign((((expr) & (mask << shift)) >> shift),
+      #                                            ~(mask >> 1))
+      IF memberType.ttype == Type.Enum.int
+        ctx.gen.setDeclUsed(%fixSign)
+        ctx.out.write("ZFixSign(")
+      }
+      ctx.out.write("(((")
+      Generate.genExpr(left, ctx)
+      int shift = memberType.shift
+      ctx.out.write(") & " .. (memberType.mask << shift) .. ")")
+      IF shift > 0
+        ctx.out.write(" >> " .. shift)
+      }
+      ctx.out.write(")")
+      IF memberType.ttype == Type.Enum.int
+        ctx.out.write(", " .. ~(memberType.mask >> 1) .. ")")
+      }
+    }
+
+    # UNITL of a DO block.
+    FUNC until(Zui.Condition cond, SContext ctx) int
+      ctx.out.writeIndent(ctx.scope.depth)
+      ctx.out.write("if (")
+      Generate.genExpr(cond.getCond(), ctx, Type.aBool)
+      ctx.out.write(") break;\n")
+      RETURN ZuiExpressionExt.get(cond.getCond()).undefined
+    }
+
+    # Declarations to keep track of used items.
+    Declaration.C %fixSign = NEW("fixSign")
+
+    # One function argument used for ToString().
+    PROC oneToStringArgument(Type type, Zui.MethodCall call,
+                                                 bool useQuotes, SContext ctx)
+      oneToStringArgument(type, call.getPos(),
+                        &ZuiMethodCallExt.get(call).undefined, useQuotes, ctx)
+    }
+
+    # One function argument used for ToString().
+    PROC oneToStringArgument(Type type, Zui.Position pos, int &undef,
+                                                 bool useQuotes, SContext ctx)
+      IF type == NIL
+        RETURN
+      }
+      ctx.addUsedItem(Declaration.itemToString)
+      IF !ctx.gen.writing
+        # Find the ToString function and mark it as used.
+        IF type.ttype == Type.Enum.object || type.ttype == Type.Enum.iobject
+          findToStringMethod(NIL, NIL, type, pos, undef, ctx)
+        ELSEIF type.ttype == Type.Enum.enumValue
+          EnumType et = type.<EnumValueType>.enumType
+          IF et.usedValueName == NIL
+            et.usedValueName = NEW("usedValueName")
+          }
+          ctx.addUsedItem(et.usedValueName)
+        ELSEIF type.ttype == Type.Enum.tuple
+          type.<TupleType>.usingToString(ctx)
+        }
+      ELSE
+        IF useQuotes
+          ctx.out.write(", 1")
+        ELSE
+          ctx.out.write(", 0")
+        }
+      }
+    }
+
+    # Find the ToString method of a class.
+    # |decl| is the class declaration.
+    # |cond| must be used for the ToString method to be marked as used.
+    FUNC findToStringMethod(Declaration decl, Declaration cond,
+              Type ct, Zui.Position pos, int &undef, SContext ctx) Declaration
+      Declaration func = ct.findMatchingMethod("ToString",
+                                        TRUE, [], NIL, skipShared, undef, ctx)
+      IF func != NIL
+        ctx.addUsedItem(func)
+        IF decl != NIL
+          # Class depends on the function.
+          decl.addDependsOnCond(func, cond)
+        }
+      }
+      # Need to mark the ToString() method of other classes as used.
+      IF ct.ttype == Type.Enum.iobject
+        ctx.gen.iobjectUseFunc("ToString", pos, undef, ct, func, ctx)
+      }
+      RETURN func
+    }
+
+    # Return the type index of |type|.
+    # This code uses TYPE_NUMBERS, keep in sync!
+    FUNC getArgumentType(Type type, Zui.Position pos, int &undef,
+                                                             SContext ctx) int
+      # Argument for item type
+      SWITCH type.getTtype()
+        #
+        # Integer value types: 0 - 79
+        #
+        CASE Type.Enum.int
+          RETURN 0
+        CASE Type.Enum.int8
+          RETURN 1
+        CASE Type.Enum.int16
+          RETURN 2
+        CASE Type.Enum.int32
+          RETURN 3
+
+        # Natural value types: 10 - 19
+        CASE Type.Enum.nat
+          RETURN 10
+        CASE Type.Enum.byte
+          RETURN 11
+        CASE Type.Enum.nat16
+          RETURN 12
+        CASE Type.Enum.nat32
+          RETURN 13
+
+        CASE Type.Enum.bool
+          RETURN 21
+        CASE Type.Enum.status
+          RETURN 22
+        CASE Type.Enum.enumValue
+          RETURN 23
+        # TODO: module returns 24 (was 4)
+        CASE Type.Enum.bitsValue
+          RETURN 25
+
+        #
+        # Float value types: 80 - 99
+        #
+        CASE Type.Enum.float
+          RETURN 80
+        CASE Type.Enum.float32
+          RETURN 81
+        CASE Type.Enum.float80
+          RETURN 82
+        CASE Type.Enum.float128
+          RETURN 83
+
+        #
+        # Reference types that are not allocated: 100 - 199
+        #
+        CASE Type.Enum.type
+          RETURN 101
+
+        #
+        # Reference types that are allocated and do not contain an allocated
+        # type: 200 - 299
+        #
+        CASE Type.Enum.string
+          RETURN 200
+        CASE Type.Enum.byteString
+          RETURN 201
+
+        # thread: 250
+        # cond: 251
+        # lock: 252
+        # autoLock: 253
+
+        #
+        # Reference types that are allocated and possibly contain an allocated
+        # type: 300 - 399
+        #
+        CASE Type.Enum.array
+          RETURN 300
+        CASE Type.Enum.list
+          RETURN 301
+        CASE Type.Enum.dict
+          RETURN 302
+
+        CASE Type.Enum.varString
+          RETURN 310
+        CASE Type.Enum.varByteString
+          RETURN 311
+
+        CASE Type.Enum.tuple
+          RETURN 320
+
+        CASE Type.Enum.callback
+        CASE Type.Enum.procRef
+        CASE Type.Enum.funcRef
+          RETURN 330
+
+        CASE Type.Enum.dyn
+          RETURN 360
+
+        CASE Type.Enum.object
+          Declaration func = type.findMatchingMethod("ToString",
+                                        TRUE, [], NIL, skipShared, undef, ctx)
+          IF func != NIL
+            ctx.addUsedItem(func)
+          ELSE
+            ++undef
+          }
+          RETURN 390
+        CASE Type.Enum.iobject
+          Declaration func = type.findMatchingMethod("ToString",
+                                        TRUE, [], NIL, skipShared, undef, ctx)
+          ctx.gen.iobjectUseFunc("ToString", pos, undef, type, func, ctx)
+          RETURN 391
+
+        DEFAULT
+          IF ctx.doError()
+            ctx.error("Unsupported item type for ToString(): "
+                                           .. type.getTtype().ToString(), pos)
+          }
+      }
+      RETURN -1
+    }
+
+    set<Declaration> newPosStringUsedDecl
+
+    # get a string with code to generate a Z.Pos for |posn|.
+    FUNC newPosString(Zui.Position posn, SContext ctx) string
+      IF !ctx.gen.writing && newPosStringUsedDecl != NIL
+        # Already figured out the dependencies, no need to produce the same
+        # code again.
+        ctx.scope.addUsedItems(newPosStringUsedDecl)
+        RETURN ""
+      }
+
+      ctx.scope.wantBacktrace = TRUE
+
+      Z.Pos pos = ctx.zcPos(posn)
+
+      # Z.Pos.NEW()
+      Zui.MethodCall call = NEW()
+      call.setPos(posn)
+      Zui.Expression name = call.newName().setType(Zui.ExprType.eMEMBER)
+      name.setPos(posn)
+
+      Zui.Expression zcName = name.newLeft().setType(Zui.ExprType.eID)
+      zcName.newId().setName("Z")
+      zcName.setPos(posn)
+
+      name.newRight().setType(Zui.ExprType.eID)
+                     .newId().setName("Pos")
+
+      # (filename, lnum, col)
+      Zui.Expression expr = NEW().setType(Zui.ExprType.eSTRING)
+      expr.setPos(posn)
+          .setStringValue(pos.filename)
+      call.addArgument(expr)
+
+      expr = NEW().setType(Zui.ExprType.eINT)
+      expr.setNumber(pos.lnum)
+      call.addArgument(expr)
+
+      expr = NEW().setType(Zui.ExprType.eINT)
+      expr.setNumber(pos.col)
+      call.addArgument(expr)
+
+      SContext tmpCtx = ctx.copyNewOut()
+      int undef
+      set<Declaration> usedDecl
+      IF !ctx.gen.writing
+        usedDecl = ctx.scope.swapUsedDecl(newPosStringUsedDecl)
+      }
+      Generate.generateNewCall(&undef, call, name, tmpCtx, FALSE, NIL)
+      IF !ctx.gen.writing
+        # Remember which Declarations were used in the NEW call.
+        newPosStringUsedDecl = ctx.scope.restoreUsedDecl(usedDecl)
+      }
+      RETURN tmpCtx.out.ToString()
+    }
+
+    # Write byteString as used inside a C string.
+    # Handle limited set of special characters.  Rest is done with octal.
+    PROC writeByteString(byteString s, Output out)
+      FOR i IN 0 UNTIL s.Size()
+        int c = s[i]
+        IF c == '\n'
+          out.write("\\n")
+        ELSEIF c == '\r'
+          out.write("\\r")
+        ELSEIF c == '\t'
+          out.write("\\t")
+        ELSEIF c == '"'
+          out.write("\\\"")
+        ELSEIF c == '\\'
+          out.write("\\\\")
+        ELSEIF c < 32 || c >= 127
+          out.write(Generate.toOctal(c))
+        ELSE
+          out.write(c.asString())
+        }
+      }
+    }
+
+    #= Return TRUE if the expression evaluates to a fixed integer.
+    FUNC exprIsFixedInt(Zui.Expression expr, SContext ctx) bool
+      bool isContextFree
+      ExprEval.evalInt(expr, ctx, FALSE, &isContextFree)
+      RETURN isContextFree
+    }
+
+    # Return TRUE if this statement has the arguments of a FOR loop with ints
+    # only.
+    FUNC simpleForLoop(Zui.ForStatement stmt, SContext ctx) bool
+      RETURN exprIsFixedInt(stmt.getIter(0), ctx)
+          && stmt.hasTo() && exprIsFixedInt(stmt.getTo(), ctx)
+          && (!stmt.hasStep() || exprIsFixedInt(stmt.getStep(), ctx))
+    }
+
+  }
+}

@@ -1,0 +1,698 @@
+# Demo for ZWT.
+# Loaded by zwt_demo.zu
+
+IMPORT.PROTO "addressbook.proto"
+IMPORT "$PLUGIN/proto/Message.zu"
+
+MODULE ZwtDemoPage  # TODO: IMPLEMENTS ZWT.Page
+  PROC init()
+    # Start with a "Hello World" Label.
+    ZWT.Label hello = ZWT.Label.NEW("Hello, World!")
+
+    # Give the Label a margin to create space from the Table.
+    hello.setStyle(NEW().setMarginBottom(10))
+
+    # Add the Label to the root.
+    ZWT.root().add(hello)
+
+    # Create a Table with some text cells and borders
+    createTable()
+
+    # Create a few buttons with actions.
+    createButtons()
+
+    # Create a table with buttons that change the margin.
+    createButtonTable()
+
+    # Create a buttons that change the color value.
+    createColorButtons()
+
+    # Add a mix of hor and ver panels.
+    horAndVer()
+
+    # Add a scroll panel with contents.
+    scrollPanel()
+
+    # Add output of extend test.
+    checkExtend()
+
+    # Add output of ISA test.
+    checkISA()
+
+    # Add output of map() test.
+    checkListMap()
+
+    # Add output of join() test.
+    checkListJoin()
+
+    # Add a "close" button
+    ZWT.root().add(ZWT.HorizontalPanel.NEW())
+    ZWT.root().add(ZWT.Button.NEW("Close", closeProc))
+
+    # Demo of using a protocol buffer.
+    ZWT.root().add(ZWT.HorizontalPanel.NEW())
+    ZWT.root().add(ZWT.Button.NEW("Load adressbook", loadAddressBook))
+  }
+
+  ##################################
+
+  PROC createTable()
+    ZWT.Table t = NEW()
+    t.setWidget(0, 0, ZWT.Label.NEW("wrong"))
+    t.setWidget(0, 0, ZWT.Label.NEW("0-0"))
+    FOR i IN 1 TO 4
+      t.setWidget(1, i, ZWT.Label.NEW("1-" .. i))
+    }
+
+    ZWT.Label r2c0 = NEW("row 2 col 0")
+    r2c0.setStyle(NEW().setPaddingBot(10)  # doesn't do anything
+                       .setPaddingLeft(10))
+    t.setWidget(2, 0, r2c0)
+    FOR i IN 5 TO 2 STEP -1
+      t.setWidget(0, i, ZWT.Label.NEW("row 0 col " .. i))
+      # t.setWidget(0, 4, ZWT.Label.NEW("row 0 col 4"))
+      # t.setWidget(0, 3, ZWT.Label.NEW("row 0 col 3"))
+      # t.setWidget(0, 2, ZWT.Label.NEW("row 0 col 2"))
+    }
+
+    # Set the style to the Table.  The border is only around the Table, not
+    # every cell.
+    # Give the Table a margin to create space from the label above
+    t.setStyle(NEW()
+        .setBorderColor(NEW(255, 20, 20))
+        .setBorderThickness(2)
+        .setBorderStyle(ZWT.BorderStyle.dotted)
+        .setMarginTop(10)
+        .setMarginBot(10))
+
+    # Set a style to a few cells to give them a green border
+    ZWT.Style cs = NEW()
+        .setBorderThickness(1)
+        .setBorderStyle(ZWT.BorderStyle.solid)
+        .setBorderColor(NEW(20, 200, 20))
+        .setPaddingTop(5)  # works
+        .setMarginTop(17)   # doesn't work
+    t.setCellStyle(0, 3, cs)
+    t.setCellStyle(0, 4, cs)
+
+    # A thick dashed border around cell 1-1.
+    ZWT.Style rs = NEW()
+        .setBorderThickness(5)
+        .setBorderStyle(ZWT.BorderStyle.dashed)
+        .setBorderColor(NEW(20, 20, 200))
+    t.setCellStyle(1, 1, rs)
+
+    # A margin is set on the Widget in the cell.
+    ZWT.Style ms = NEW()
+        .setMarginLeft(10)
+        .setMarginRight(10)
+        .setPaddingTop(10)  # doesn't do anything
+        .setMarginTop(8)    # doesn't do anything
+    t.getWidget(0, 3).setStyle(ms)
+    t.getWidget(0, 4).setStyle(ms)
+
+    # Aligning needs to be set on the cell.
+    ZWT.Style middle = NEW()
+        .setHorAlign(ZWT.HorAlign.middle)
+        .setVerAlign(ZWT.VerAlign.middle)
+    t.setCellStyle(0, 0, middle)
+    t.setCellStyle(1, 3, middle)
+
+    ZWT.Style topright = NEW()
+        .setHorAlign(ZWT.HorAlign.right)
+        .setVerAlign(ZWT.VerAlign.top)
+    t.setCellStyle(1, 4, topright)
+
+    ZWT.Style botleft = NEW()
+        .setHorAlign(ZWT.HorAlign.left)
+        .setVerAlign(ZWT.VerAlign.bottom)
+    t.setCellStyle(1, 2, botleft)
+
+    # Add the table to the root.
+    ZWT.root().add(t)
+
+  }
+
+  ##################################
+
+  PROC createButtons()
+    ZWT.root().add(ZWT.Button.NEW("Create an alert", alert))
+    ZWT.root().add(ZWT.Button.NEW("Add something", say))
+
+    ZWT.root().add(ZWT.Button.NEW("Show Vertical panel", showVPanel))
+    ZWT.root().add(ZWT.Button.NEW("Show Horizontal panel", showHPanel))
+  }
+
+  PROC alert(ZWT.Event e)
+    ZWT.alert("Alert button: " .. e.type.ToString() .. " event")
+  }
+
+  PROC say(ZWT.Event e)
+    ZWT.Label l = NEW("Something")
+    l.setStyle(NEW().setPaddingLeft(15))
+    ZWT.root().add(l)
+  }
+
+  ZWT.VerticalPanel vPanel
+
+  PROC showVPanel(ZWT.Event e)
+    IF vPanel == NIL
+      vPanel = NEW()
+      vPanel.add(ZWT.Label.NEW("This is a VerticalPanel"))
+      vPanel.add(ZWT.Button.NEW("Remove panel", removeVPanel))
+      ZWT.root().add(vPanel)
+    }
+  }
+
+  PROC removeVPanel(ZWT.Event e)
+    IF vPanel != NIL
+      vPanel.clear()
+      vPanel.removeFromParent()
+      vPanel = NIL
+    }
+  }
+
+  ZWT.HorizontalPanel hPanel
+
+  PROC showHPanel(ZWT.Event e)
+    IF hPanel == NIL
+      hPanel = NEW()
+      hPanel.add(ZWT.Label.NEW("This is a Horizontal Panel"))
+      hPanel.add(ZWT.Button.NEW("Remove panel", removeHPanel))
+      ZWT.root().add(hPanel)
+    }
+  }
+
+  PROC removeHPanel(ZWT.Event e)
+    IF hPanel != NIL
+      hPanel.clear()
+      hPanel.removeFromParent()
+      hPanel = NIL
+    }
+  }
+
+  ###################################
+
+  PROC createButtonTable()
+    # Make a table with buttons that change the margin of the Button in the
+    # middle..
+    ZWT.Table btable = NEW()
+    btable.setStyle(NEW().setMarginTop(10).setMarginBot(10))
+
+    ZWT.Button some = NEW("Change me", NIL)
+    someStyle = NEW()
+       .setBGColor(color)
+    some.setStyle(someStyle)
+    btable.setWidget(1, 1, some)
+
+    buttonStyleOver = NEW()
+        .setBGColor(NEW(190, 220, 90))
+    buttonStyleOut = NEW()
+        .clearBGColor()
+
+    ZWT.Button down = NEW("VVVVV", toggleTopMargin)
+    down.setMouseOverHandler(buttonOver)
+    down.setMouseOutHandler(buttonOut)
+    btable.setWidget(0, 1, down)
+    btable.setCellStyle(0, 1, NEW().setHorAlign(ZWT.HorAlign.middle))
+
+    ZWT.Button left = NEW(">>>>", toggleLeftMargin)
+    left.setMouseOverHandler(buttonOver)
+    left.setMouseOutHandler(buttonOut)
+    btable.setWidget(1, 0, left)
+
+    ZWT.Button right = NEW("<<<<", toggleRightMargin)
+    right.setMouseOverHandler(buttonOver)
+    right.setMouseOutHandler(buttonOut)
+    btable.setWidget(1, 2, right)
+
+    ZWT.Button up = NEW("^^^^", toggleBottomMargin)
+    up.setMouseOverHandler(buttonOver)
+    up.setMouseOutHandler(buttonOut)
+    btable.setWidget(2, 1, up)
+    btable.setCellStyle(2, 1, NEW().setHorAlign(ZWT.HorAlign.middle))
+
+    ZWT.root().add(btable)
+  }
+
+  ZWT.Style buttonStyleOver
+  ZWT.Style buttonStyleOut
+
+  PROC buttonOver(ZWT.Event e)
+    e.widget.setStyle(buttonStyleOver)
+  }
+
+  PROC buttonOut(ZWT.Event e)
+    e.widget.setStyle(buttonStyleOut)
+  }
+
+  ##############################
+
+  PROC createColorButtons()
+    ZWT.HorizontalPanel colors = NEW()
+    ZWT.VerticalPanel red = NEW()
+    red.add(ZWT.Button.NEW("R ^", redUp))
+    redVal = ZWT.Label.NEW(color.red .. "")
+    red.add(redVal)
+    red.add(ZWT.Button.NEW("R V", redDown))
+    colors.add(red)
+    ZWT.VerticalPanel green = NEW()
+    green.add(ZWT.Button.NEW("G ^", greenUp))
+    greenVal = ZWT.Label.NEW(color.green .. "")
+    green.add(greenVal)
+    green.add(ZWT.Button.NEW("G V", greenDown))
+    colors.add(green)
+    ZWT.VerticalPanel blue = NEW()
+    blue.add(ZWT.Button.NEW("B ^", blueUp))
+    blueVal = ZWT.Label.NEW(color.blue .. "")
+    blue.add(blueVal)
+    blue.add(ZWT.Button.NEW("B V", blueDown))
+    colors.add(blue)
+    ZWT.root().add(colors)
+
+    redVal.setMouseOverHandler(helloOver)
+    redVal.setMouseOutHandler(helloOut)
+    greenVal.setMouseOverHandler(helloOver)
+    greenVal.setMouseOutHandler(helloOut)
+    blueVal.setMouseOverHandler(helloOver)
+    blueVal.setMouseOutHandler(helloOut)
+  }
+
+  ZWT.Style labelStyleBlue
+  PROC helloOver(ZWT.Event e)
+    IF labelStyleBlue == NIL
+      labelStyleBlue = NEW()
+      labelStyleBlue.setColor(NEW(0, 0, 255))
+    }
+    e.widget.setStyle(labelStyleBlue)
+  }
+  PROC helloOut(ZWT.Event e)
+    e.widget.setStyle(NIL)
+  }
+
+  ZWT.Color color = NEW(120, 220, 90)
+  ZWT.Label redVal
+  PROC redUp(ZWT.Event e)
+    color.setRed(color.red + 10)
+    redVal.setText(color.red .. "")
+    someStyle.setBGColor(color)
+  }
+  PROC redDown(ZWT.Event e)
+    color.setRed(color.red - 10)
+    redVal.setText(color.red .. "")
+    someStyle.setBGColor(color)
+  }
+  ZWT.Label greenVal
+  PROC greenUp(ZWT.Event e)
+    color.setGreen(color.green + 10)
+    greenVal.setText(color.green .. "")
+    someStyle.setBGColor(color)
+  }
+  PROC greenDown(ZWT.Event e)
+    color.setGreen(color.green - 10)
+    greenVal.setText(color.green .. "")
+    someStyle.setBGColor(color)
+  }
+  ZWT.Label blueVal
+  PROC blueUp(ZWT.Event e)
+    color.setBlue(color.blue + 10)
+    blueVal.setText(color.blue .. "")
+    someStyle.setBGColor(color)
+  }
+  PROC blueDown(ZWT.Event e)
+    color.setBlue(color.blue - 10)
+    blueVal.setText(color.blue .. "")
+    someStyle.setBGColor(color)
+  }
+
+  ##################################
+
+  ZWT.HorizontalPanel topPanel
+
+  PROC horAndVer()
+    # create a mix of hor and ver panels:
+    # +--------------------------+
+    # | h1   |+------+| L1111111 |
+    # |      || v2   ||          |
+    # |      || Label||          |
+    # |      ||      ||          |
+    # |      |+------+|          |
+    # +--------------------------+
+    topPanel = NEW()
+    topPanel.add(ZWT.Label.NEW("h1"))
+    ZWT.VerticalPanel v2 = NEW()
+    v2.add(ZWT.Label.NEW("v2"))
+    v2.add(ZWT.Label.NEW("Label"))
+    topPanel.add(v2)
+    ZWT.Label ls = NEW("L1111111")
+    topPanel.add(ls)
+    ls.setMouseOverHandler(helloOver)
+    ls.setMouseOutHandler(helloOut)
+    topPanel.add(ZWT.Button.NEW("panel info", showInfo))
+    ZWT.root().add(topPanel)
+    topPanel.setStyle(NEW().setMarginTop(10).setMarginBot(10))
+  }
+
+  PROC showInfo(ZWT.Event e)
+    ZWT.alert("topPanel: " .. topPanel.ToString())
+  }
+
+
+  ZWT.Style someStyle
+
+  PROC toggleTopMargin(ZWT.Event e)
+    someStyle.setMarginTop(someStyle.getMarginTop() > 0 ? 0 : 20)
+  }
+  PROC toggleLeftMargin(ZWT.Event e)
+    someStyle.setMarginLeft(someStyle.getMarginLeft() > 0 ? 0 : 20)
+  }
+  PROC toggleRightMargin(ZWT.Event e)
+    someStyle.setMarginRight(someStyle.getMarginRight() > 0 ? 0 : 20)
+  }
+  PROC toggleBottomMargin(ZWT.Event e)
+    someStyle.setMarginBot(someStyle.getMarginBot() > 0 ? 0 : 20)
+  }
+
+  ##############################
+
+  ZWT.ScrollPanel scrollP
+  ZWT.TextBlock scrollTL
+  ZWT.TextBlock scrollTM
+  ZWT.TextBlock scrollTR
+  ZWT.TextBlock scrollML
+  ZWT.TextBlock scrollMM
+  ZWT.TextBlock scrollMR
+  ZWT.TextBlock scrollBL
+  ZWT.TextBlock scrollBM
+  ZWT.TextBlock scrollBR
+
+  PROC scrollPanel()
+    scrollP = NEW()
+    scrollTL = NEW("top left top left top left top left top left")
+    scrollTM = NEW("top middle top middle top middle top")
+    scrollTR = NEW("top right top right top right top")
+    scrollML = NEW("middle left middle left middle left")
+    scrollMM = NEW("middle middle middle middle middle")
+    scrollMR = NEW("middle right middle right middle")
+    scrollBL = NEW("bottom left bottom left bottom left")
+    scrollBM = NEW("bottom middle bottom middle bottom")
+    scrollBR = NEW("bottom right bottom right bottom right")
+
+    ZWT.Style grey = NEW().setBGColor(NEW(230, 230, 230)).setWidth(100)
+    scrollTM.setStyle(grey)
+    scrollML.setStyle(grey)
+    scrollMR.setStyle(grey)
+    scrollBM.setStyle(grey)
+
+    ZWT.Table table = NEW()
+    table.setWidget(0, 0, scrollTL)
+    table.setWidget(0, 1, scrollTM)
+    table.setWidget(0, 2, scrollTR)
+    table.setWidget(1, 0, scrollML)
+    table.setWidget(1, 1, scrollMM)
+    table.setWidget(1, 2, scrollMR)
+    table.setWidget(2, 0, scrollBL)
+    table.setWidget(2, 1, scrollBM)
+    table.setWidget(2, 2, scrollBR)
+    scrollP.add(table)
+
+    ZWT.Style sps = NEW()
+        .setWidth(150)
+        .setHeight(100)
+        .setBorderThickness(2)
+        .setBorderStyle(ZWT.BorderStyle.solid)
+        .setBorderColor(NEW(200, 200, 200))
+    scrollP.setStyle(sps)
+
+    ZWT.HorizontalPanel horPanel = NEW()
+    horPanel.add(scrollP)
+
+    # Add buttons to scroll to specific positions.
+    ZWT.VerticalPanel verPanel = NEW()
+    horPanel.add(verPanel)
+    verPanel.add(ZWT.Button.NEW("show top-left", showTopLeft))
+    verPanel.add(ZWT.Button.NEW("show bot-right", showBotRight))
+    verPanel.add(ZWT.Button.NEW("show middle", showMiddle))
+
+    verPanel = NEW()
+    horPanel.add(verPanel)
+    verPanel.add(ZWT.Button.NEW("scroll Left", gotoLeft))
+    verPanel.add(ZWT.Button.NEW("scroll 20 right", gotoRight20))
+    verPanel.add(ZWT.Button.NEW("scroll Right", gotoRight))
+
+    verPanel = NEW()
+    horPanel.add(verPanel)
+    verPanel.add(ZWT.Button.NEW("scroll Top", gotoTop))
+    verPanel.add(ZWT.Button.NEW("scroll 20 down", gotoDown20))
+    verPanel.add(ZWT.Button.NEW("scroll Bottom", gotoBottom))
+
+    ZWT.root().add(horPanel)
+  }
+
+  PROC showTopLeft(ZWT.Event e)
+    scrollP.ensureVisible(scrollTL)
+  }
+
+  PROC showBotRight(ZWT.Event e)
+    scrollP.ensureVisible(scrollBR)
+  }
+
+  PROC showMiddle(ZWT.Event e)
+    scrollP.ensureVisible(scrollMM)
+  }
+
+  PROC gotoLeft(ZWT.Event e)
+    scrollP.scrollLeft()
+  }
+
+  PROC gotoRight(ZWT.Event e)
+    scrollP.scrollRight()
+  }
+
+  PROC gotoRight20(ZWT.Event e)
+    scrollP.scrollHorizontal(scrollP.getHorizontalScroll() + 20)
+  }
+
+  PROC gotoTop(ZWT.Event e)
+    scrollP.scrollTop()
+  }
+
+  PROC gotoBottom(ZWT.Event e)
+    scrollP.scrollBottom()
+  }
+
+  PROC gotoDown20(ZWT.Event e)
+    scrollP.scrollVertical(scrollP.getVerticalScroll() + 20)
+  }
+
+  ##############################
+
+  PROC closeProc(ZWT.Event e)
+    ZWT.OkCancelDialog dialog = NEW(ZWT.Label.NEW("Really close?"), doClose)
+    dialog.show()
+  }
+
+  PROC doClose(status ok)
+    IF ok == OK
+      ZWT.root().clear()
+      ZWT.root().add(ZWT.Label.NEW("Bye bye"))
+    #  ZWT.close() # This doesn't work yet.
+    }
+  }
+
+  ##############################
+  # Test a child class replacing a method from a parent class.
+  CLASS Top
+    string $a
+    string $b
+
+    NEW(string a) @default
+      $a = "Top " .. a
+    }
+
+    NEW(string a, string b)
+      NEW(a)
+      $b = b
+    }
+
+    FUNC $getA() string
+      RETURN $a .. " from Top"
+    }
+
+    FUNC $getB() string @default
+      RETURN $b .. " from Top"
+    }
+
+    FUNC $getBoth() string
+      RETURN $getA() .. " and " .. $getB()
+    }
+
+  }
+
+  CLASS Child EXTENDS Top
+    NEW(string a) @replace
+      $a = "Child " .. a
+    }
+
+    FUNC $getB() string @replace
+      RETURN $b .. " from Child"
+    }
+  }
+
+  PROC checkExtend()
+    ZWT.VerticalPanel panel = NEW()
+
+    # The NEW(a) in Top.NEW(a, b) must invoke Child.NEW(a)
+    Child c = NEW("one", "two")
+    panel.add(ZWT.Label.NEW("Should say \"Child one\": " .. c.a))
+    panel.add(ZWT.Label.NEW("Should say \"Child one from Top and two from Child\": " .. c.getBoth()))
+
+    ZWT.root().add(panel)
+  }
+
+  ##############################
+   
+  PROC checkISA()
+    ZWT.VerticalPanel panel = NEW()
+    IF panel ISA ZWT.VerticalPanel
+      panel.add(ZWT.Label.NEW("checkISA: OK"))
+    ELSE
+      panel.add(ZWT.Label.NEW("checkISA: wrong for VerticalPanel"))
+    }
+
+    # Need to create one for ISA to do something.
+    list<string> myList
+    CLASS MyBuilder IMPLEMENTS ZWT.I_WidgetBuilder<string>
+      FUNC $get(string t) ZWT.Widget
+        RETURN NIL
+      }
+    }
+    ZWT.VerticalPanel dummy = NEW()
+    ZWT.ListController<string> listCtrl = NEW(dummy, myList, MyBuilder.NEW())
+
+    IF panel ISA ZWT.ListController<string>
+      panel.add(ZWT.Label.NEW("checkISA: wrong for panel"))
+    ELSEIF listCtrl ISNOTA ZWT.ListController<string>
+      panel.add(ZWT.Label.NEW("checkISA: wrong for ListController"))
+    ELSE
+      panel.add(ZWT.Label.NEW("checkISA: OK"))
+    }
+    ZWT.root().add(panel)
+  }
+
+  ##############################
+
+  PROC checkListMap()
+    ZWT.VerticalPanel panel = NEW()
+    list<string> sl = ["one", "two", "three"]
+    panel.add(ZWT.Label.NEW("mapped string list: "
+                                        .. sl.map({ s => s .. s }).ToString()))
+    panel.add(ZWT.Label.NEW("keymapped string list: "
+                         .. sl.keyMap({ i, s => i .. ": " .. s }).ToString()))
+    list<int> il = [11, 22, 33]
+    panel.add(ZWT.Label.NEW("mapped int list: "
+                                        .. il.map({ n => n * 2 }).ToString()))
+    panel.add(ZWT.Label.NEW("keymapped int list: "
+                                  .. il.keyMap({ i, n => n + i }).ToString()))
+    ZWT.root().add(panel)
+  }
+
+  ##############################
+
+  CLASS Foo
+    string $name
+    NEW(string name)
+      $name = name
+    }
+    FUNC $ToString() string
+      RETURN $name
+    }
+  }
+
+  PROC checkListJoin()
+    ZWT.VerticalPanel panel = NEW()
+    list<string> sl = ["one", "two", "three"]
+    panel.add(ZWT.Label.NEW("joined string list: " .. sl.join()))
+    panel.add(ZWT.Label.NEW("joined string list: " .. sl.join("/")))
+
+    list<int> il = [11, 22, 33]
+    panel.add(ZWT.Label.NEW("joined int list: " .. il.join()))
+    panel.add(ZWT.Label.NEW("joined int list: " .. il.join(", ")))
+
+    list<Foo> ol = NEW().add(NEW("a")).add(NEW("b")).add(NEW("c"))
+    panel.add(ZWT.Label.NEW("joined object list: " .. ol.join()))
+    panel.add(ZWT.Label.NEW("joined object list: " .. ol.join("<=>")))
+
+    ZWT.root().add(panel)
+  }
+
+  ##############################
+
+  # Load the address book from the server.
+  PROC loadAddressBook(ZWT.Event e)
+    # Invoke the RPC call defined in addressbook.proto.
+    # Create an GetOptions message to pass to the server
+    Tutorial.GetOptions options = NEW()
+    options.setName("this is not used")
+
+    VAR control = Tutorial.AddressService.callGetAddressBook(
+                                                      options, gotAddressBook)
+    # Could use |control| to check the progress of the RPC or cancel it.
+  }
+
+  ZWT.Table addressTable
+
+  # Callback for when the GetAddressBook RPC returns.
+  PROC gotAddressBook(RPC.Control control, Message msg)
+    Tutorial.AddressBook book = msg
+    IF addressTable == NIL
+      addressTable = NEW()
+      ZWT.root().add(addressTable)
+    ELSE
+      addressTable.clear()
+    }
+
+    # A margin is set on the Widget in the cell.
+    ZWT.Style ml = NEW().setMarginLeft(10).setMarginRight(10)
+    ZWT.Style oddStyle = NEW().setBGColor(NEW(220, 220, 220))
+    ZWT.Style evenStyle = NEW().setBGColor(NEW(190, 190, 190))
+
+    IF book.getPersonList() == NIL
+      IO.print("personList is NIL")
+      RETURN
+    }
+    int row
+    FOR person IN book.getPersonList()
+      ZWT.Label l = NEW("Person: " .. person.getName())
+      l.setStyle(ml)
+      addressTable.setWidget(row, 0, l)
+      l = NEW("ID: " .. person.getId())
+      l.setStyle(ml)
+      addressTable.setWidget(row, 1, l)
+      IF person.hasEmail()
+        l = NEW(person.getEmail())
+        l.setStyle(ml)
+        addressTable.setWidget(row, 2, l)
+      }
+      ZWT.VerticalPanel vp = NEW()
+      FOR phone IN person.getPhoneList()
+        ZWT.HorizontalPanel hp = NEW()
+        l = NEW("tel: ")
+        l.setStyle(ml)
+        hp.add(l)
+        hp.add(ZWT.Label.NEW(phone.getNumber()))
+        IF phone.hasType()
+          hp.add(ZWT.Label.NEW(phone.getType().ToString().slice(1)))
+        }
+        vp.add(hp)
+      }
+      addressTable.setWidget(row, 3, vp)
+      IF row & 1 == 0
+        addressTable.setRowStyle(row, evenStyle)
+      ELSE
+        addressTable.setRowStyle(row, oddStyle)
+      }
+      ++row
+    }
+  }
+}

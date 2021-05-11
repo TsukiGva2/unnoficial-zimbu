@@ -1,0 +1,13 @@
+# Small test program: Verify that this does not compile.
+BITS SomeBits
+  bool $one
+  int5 $two
+}
+
+FUNC Main() int
+  SomeBits a
+  SomeBits b
+  SomeBits c = a | b
+  RETURN 0
+}
+

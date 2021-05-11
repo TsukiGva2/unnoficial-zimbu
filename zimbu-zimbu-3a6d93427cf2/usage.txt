@@ -1,0 +1,73 @@
+Zimbu - the programming language
+
+  spec/zimbu.mkd - the language specification
+  usage.txt      - how to use the program (this file)
+  design.txt     - decisions made when creating the language
+  classes.txt    - more design stuff
+  design_gui.txt - GUI design
+  todo.txt       - lots of things to do
+
+
+The Zimbu program converts the Zimbu code to C code and compiles it with any
+ordinary C compiler.  This means it works on any system with a C compiler.
+
+  prog.zu -> prog.c -> prog
+
+
+For most people: Use the binary program "zimbu" that reads:
+	project file
+	*.zu input files
+	any data files
+Zimbu generates ANSI C code.  Using a C90 or C99 compiler will also work.
+
+
+DIRECTLY CREATING A PROGRAM
+
+      zimbu -o prog main.zu
+
+This will create the executable "prog" from the Zimbu file "main.zu".
+If you leave out "-o prog" the executable will be called "main".
+All the imported files will be added automatically.
+
+
+DIRECTLY EXECUTING A PROGRAM
+
+      zimbu prog.zu -x
+
+This will compile prog.zu into the executable "prog" and execute it.
+
+
+ZIMBU SCRIPT
+
+Add this line to the top of a Zimbu source file:
+
+        #!/usr/bin/env zimbush
+
+Then make it executable and run it.  The hello.zu file is an example.
+
+        chmod +x hello.zu
+        ./hello.zu
+
+
+BOOTSTRAP
+
+The Zimbu generated C code comes from the Zimbu source files:
+
+                  (1)                (2)
+        zimbu.zu  ------>  zimbu.c  ------>   zimbu
+                  zimbu               cc       |
+                   ^                           |
+                   |                           |
+                   +---------------------------+
+
+(1): On a computer where "zimbu" is already available.
+(2): On any computer with a C compiler.
+     Uses the generated C code, uses a simple, portable Makefile
+
+
+
+Copyright 2009 Bram Moolenaar  All Rights Reserved
+Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+vim: set tw=78 et sw=2 :

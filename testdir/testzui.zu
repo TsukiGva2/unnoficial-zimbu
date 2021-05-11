@@ -1,0 +1,9 @@
+# A simplistic program to test reading and writing .zui files.
+
+IMPORT "TestSome.zu"
+
+FUNC Main() int
+  IO.print("nothing")
+  TestSome.doNothing()
+  RETURN 0
+}

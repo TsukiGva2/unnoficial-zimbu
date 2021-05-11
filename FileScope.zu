@@ -1,0 +1,192 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# FileScope class.
+#
+# A Scope used for the toplevel of a file.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "Parse.zu"
+IMPORT "Pos.zu"
+IMPORT "Scope.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiFile.zu"
+
+CLASS FileScope EXTENDS Scope @items=public
+  ZimbuFile      $zimbuFile    # Info about the file itself.
+
+  list<UsedFile> $importList   # list of imports for this scope
+
+  # Mapping from the Zui.SymbolRef.ref number to the declaration that defines
+  # it.  The value can be NIL for items that were encountered but the
+  # declaration wasn't located yet (forward declaration or type not yet
+  # known).
+  dict<int, Zui.Declaration> $declarations
+
+  # Mapping from the Zui.SymbolRef.ref number to the Zui.SymbolRef that refers
+  # to it.
+  dict<int, Zui.SymbolRef>   $symbolRefs
+
+  int     $lastRef           # Used for the last added Zui.SymbolRef.ref.
+
+  int     $undefined         # Undefined symbols during last resolve of this
+                             # file.
+
+  int     $topscopePass      # May differ from $pass.
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @define
+    RETURN FALSE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @define
+    RETURN TRUE
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @define
+    RETURN TRUE
+  }
+
+  # Can there be statements in this Scope?
+  FUNC $hasStatements() bool @define
+    RETURN FALSE
+  }
+
+  # Return the $zimbuFile in this scope or the first outer scope where it is
+  # not NIL.
+  FUNC $topZimbuFile() ZimbuFile @replace
+    IF $zimbuFile != NIL
+      RETURN $zimbuFile
+    }
+    IF $outer != NIL
+      RETURN $outer.topZimbuFile()
+    }
+    RETURN NIL
+  }
+
+  # Add |import| to the list of imports
+  PROC $addImport(UsedFile import)
+    IF $importList == NIL
+      $importList = NEW()
+    }
+    $importList.add(import)
+  }
+
+  # Search for a declaration in imported symbols.
+  # Return NIL when no match found.
+  FUNC $getDeclInImport(string name, SymUse symUse) Declaration @replace
+    IF $importList != NIL
+      FOR usedFile IN $importList
+        ZimbuFile zimbuFile = usedFile.zimbuFile
+        IF zimbuFile.fileScope != NIL
+          Declaration decl
+          IF usedFile.asName != NIL
+            IF name == usedFile.asName
+              string error
+              IF zimbuFile.item != NIL
+                decl = zimbuFile.item
+              ELSE
+                int size
+                IF zimbuFile.fileScope.declDict != NIL
+                  size = zimbuFile.fileScope.declDict.Size()
+                }
+                SWITCH size
+                  CASE 0
+                    IF zimbuFile.startedPass > 1
+                      error = "Imported file does not define anything"
+                    }
+                  CASE 1
+                    # cannot happen?
+                    decl = zimbuFile.fileScope.declDict.values()[0][0]
+                  DEFAULT
+                    error = "Imported file defines more than one item"
+                }
+              }
+              IF decl != NIL
+                IF decl.name[0].isUpper() != usedFile.asName[0].isUpper()
+                  error = "case mismatch: " .. decl.name
+                                               .. " vs. " .. usedFile.asName
+                }
+              }
+              IF error != NIL && !usedFile.didError && symUse != NIL
+                symUse.pos.error(error)
+                usedFile.didError = TRUE
+              }
+            }
+          ELSE
+            IF zimbuFile.item != NIL
+              # Use the one defined item, avoid a dict lookup.
+              IF name == zimbuFile.item.name
+                decl = zimbuFile.item
+              }
+            ELSE
+              decl = Declaration.find(zimbuFile.fileScope.declDict, name)
+            }
+          }
+
+          IF decl != NIL
+            IF symUse == NIL || symUse.visibleInScope(decl, zimbuFile.fileScope)
+              RETURN decl
+            }
+            IF symUse != NIL && symUse.doError
+              symUse.pos.error(name .. " is not visible in this scope")
+              Declaration.reportError("Defined here", decl, symUse.ctx)
+              BREAK
+            ELSE
+              decl = NIL
+            }
+          }
+        }
+      }
+    }
+    RETURN NIL
+  }
+
+  SHARED
+
+    # Parse file |fileName| and return a FileScope with the result.
+    # Return NIL whent the file can't be read.
+    FUNC parseFile(string fileName, string indent, UsedFile usedFile) FileScope
+      bool isMainFile = usedFile.zimbuFile.isMainFile
+
+      ZuiFile zf = usedFile.zimbuFile.zuiFile
+      Parse.ParseResult pr
+      zf.contents, pr = Parse.parseFile(fileName, indent,
+                                  toplevel + (isMainFile ? mainfile : import))
+      IF pr == NIL
+        RETURN NIL
+      }
+
+      # Create a scope and set it up for the next steps.
+      FileScope fileScope = NEW(NIL, zf.contents.getStatementList())
+      fileScope.pass = 1
+      fileScope.importIndent = indent
+      fileScope.zimbuFile = usedFile.zimbuFile
+      fileScope.undefined = 97  # always do one pass
+
+      usedFile.zimbuFile.usedIdKeywords = pr.usedIdKeywords
+
+  #    IF LOG.isDebug() && isMainFile
+  #      # debugging: dump the result of parsing.
+  #      IO.write(fileScope.statements.ToString())
+  #    }
+
+      RETURN fileScope
+    }
+
+  }
+}

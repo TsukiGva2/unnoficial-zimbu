@@ -1,0 +1,448 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module FLOAT - float support
+#
+
+#= Methods for the builtin float type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE FLOATModule @public
+
+  #= The builtin type float.
+  #- The object methods can be used on a float variable or value:
+  #% string val = 12.0.ToString()
+  #
+  #- You can also create a float from a string: "12.0".toFloat()
+  #
+  #- Mathematical operations do what is expected.
+  #- "x % y" computes the floating-point remainder of dividing x by y.  The
+  #- return value is x - n * y, where n is the quotient of x / y, rounded
+  #- toward zero to an integer.
+  #
+  #- In case of doubt about specific computations, check the documentation for
+  #- the C math library.
+  #
+  #- Special values:
+  #
+  #- INF - Positive infinity
+  #
+  #- NINF - Negative infinity
+  #
+  #- NAN - Not A Number.  Note that when val is Not A Number "val == NAN" and
+  #- "NAN == val" evaluate to TRUE , but "val == val" will evaluate to FALSE.
+  CLASS STARTfloat @public
+    # For Zudocu: start of float class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in a float.
+  #- Always returns 8, since a float is 64 bits
+  FUNC Size(float this) int @public
+    ###### Only for generating documentation.
+    RETURN 8
+  }
+
+  #= Return the number in a short form.
+  #- For example, 1.234.ToString() returns "1.234".
+  #
+  #- This uses 6 decimal places and uses the exponent notation when that is
+  #- shorter.
+  FUNC ToString(float this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the number in the specified |format|.
+  #- For example, 1.2345678.ToString("10.3e") returns "   1.235e+00".
+  #
+  #- The |format| has the fields: [width][.precision]{type}.
+  #
+  #- [width] is the minimum width of the result.  When needed spaces are
+  #- prepended.  When omitted no spaces are prepended.
+  #
+  #- [.precision] gives the number of digits after the dot for types e, E,
+  #- f and F.  For types g and G it is the maximum number of significant
+  #- digits.
+  #
+  #- {type} can be e for the style [-]d.ddde±dd where there is one digit
+  #- before the dot and the number of digits after the dot is equal to the
+  #- precision. If the precision is missing, it is taken as 6.  If the
+  #- precision is zero, no dot appears.  The exponent always contains at
+  #- least two digits. If the value is zero, the exponent is 00.
+  #- The number is rounded before applying the precision.
+  #
+  #- {type} can be E for the same style as e, but using
+  #- letter E rather than e for the exponent.
+  #-
+  #- {type} can be f or F for the  style [-]ddd.ddd, where the number of
+  #- digits after the dot is equal to the precision specification.  If the
+  #- precision is missing, it is taken as 6. If the precision is explicitly
+  #- zero, no decimal-point character appears. If a decimal point appears, at
+  #- least one digit appears before it.
+  #- The number is rounded before applying the precision.
+  #
+  #- {type} can be g for the style of f or e. The precision specifies the
+  #- number of significant digits.  If the precision is missing, 6 digits are
+  #- given.  If the precision is zero, it is treated as 1.  Style e is used if
+  #- the exponent from its conversion is less than -4 or greater than or equal
+  #- to the precision.  Trailing zeros are removed from the fractional part of
+  #- the result. A decimal point appears  only if it is followed by at least
+  #- one digit.
+  #
+  #- {type} can be G for the same style as g, but using letter E rather
+  #- than e for the exponent
+  FUNC ToString(float this, string format) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 when |other| is larger than this float, zero when |other| is
+  #= equal to this float, and 1 when |other| is smaller than this float.
+  FUNC Compare(float this, float other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this float.
+  FUNC Equal(float this, float other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the value is INF or NINF.
+  #- Equivalent of "val == INF || val == NINF"
+  FUNC isInfinite(float this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return TRUE if the value is NAN.
+  #- Equivalent of "val == NAN"
+  FUNC isNan(float this) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the absolute value.
+  #- Equivalent to: v < 0 ? -v : v
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is INF or NINF the result is INF.
+  FUNC abs(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the largest integral value not greater than the value.
+  #- For example, 0.5.floor() is 0.0 and -0.5.floor() is -1.0.
+  #
+  #- If the value is NAN, INF or NINF the result is the same.
+  FUNC floor(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the smallest integral value not less than the value.
+  #- For example, 0.5.ceil() is 1.0 and -0.5.ceil() is 0.0.
+  #
+  #- If the value is NAN, INF or NINF the result is the same.
+  FUNC ceil(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value rounded to integer, toward zero.
+  #- For example, 0.5.trunc() is 0.0 and -0.5.trunc() is 0.0.
+  #
+  #- If the value is NAN, INF or NINF the result is the same.
+  FUNC trunc(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value rounded to integer, away from zero.
+  #- For example, 0.5.round() is 1.0 and -0.5.round() is -1.0.
+  #
+  #- If the value is NAN, INF or NINF the result is the same.
+  FUNC round(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value of e (the base of natural logarithms) raised to the
+  #= power of the value.
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is INF the result is INF.
+  #
+  #- If the value is NINF the result is zero.
+  #
+  #- If the result underflows the result is zero.
+  #
+  #- If the result overflows the result is T.float.max.
+  FUNC exp(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the natural logarithm of the value.
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is 1 the result is zero.
+  #
+  #- If the value is INF the result is INF.
+  #
+  #- If the value is zero the result is T.float.max.
+  #
+  #- If the value is negative or NINF the result is NAN.
+  FUNC log(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the base 10 logarithm of the value.
+  #- For special values see log().
+  FUNC log10(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the nonnegative quare root of the value.
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is zero the result is zero.
+  #
+  #- If the value is INF the result is INF.
+  #
+  #- If the value is less than zero the result is NAN.
+  FUNC sqrt(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the value raised to the power of |x|.
+  #- If the value is less than 0, and |x| is a normal number the result is
+  #- NAN.
+  #
+  #- If the result overflows the result is T.float.max.
+  #
+  #- If the result underflows the result is 0.0.
+  #
+  #- Except as specified below, if the value or |x| is a NAN, the result is a
+  #- NAN.
+  #
+  #- If the value is 1, the result is 1.0 (even if |x| is a NAN).
+  #
+  #- If the value is 0, the result is 1.0 (even if |x| is a NAN).
+  #
+  #- If the value is +0 (-0), and |x| is an odd integer greater than 0, the
+  #- result  is +0 (-0).
+  #
+  #- If |x|  is 0, and the value greater than 0 and not an odd integer, the
+  #- result is +0.
+  #
+  #- If |x| is -1, and the value is INF or NINF, the result is 1.0.
+  #
+  #- If the absolute value of |x| is less than 1, and the value is NINF, the
+  #- result is INF.
+  #
+  #- If the absolute value of |x| is greater than 1, and the value is NINF,
+  #- the result is +0.
+  #
+  #- If the absolute value of |x| is less than 1, and the value is INF, the
+  #- result is +0.
+  #
+  #- If the absolute value of |x| is greater than 1, and the value is INF, the
+  #- result is INF.
+  #
+  #- If |x| is NINF, and the value is an odd integer less than 0, the result
+  #- is -0.
+  #
+  #- If |x| is NINF, and the value less than 0 and not an odd integer, the
+  #- result is +0.
+  #
+  #- If |x| is NINF, and the value is an odd integer greater than 0, the
+  #- result is NINF.
+  #
+  #- If |x| is NINF, and the value greater than 0 and not an odd integer, the
+  #- result is INF.
+  #
+  #- If |x| is INF, and the value less than 0, the result is +0.
+  #
+  #- If |x| is INF, and the value greater than 0, the result is INF.
+  #
+  #- If |x| is +0 or -0, and the value is an odd integer less than 0,
+  #- the result is T.float.max with same sign as |x|.
+  #
+  #- If |x| is +0 or -0, and the value is less than 0 and not an odd integer,
+  #- the result is T.float.max
+  FUNC pow(float this, float x) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the sine value, using the value as radians.
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is INF or NINF the result is NAN.
+  FUNC sin(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic sine value.
+  #- This is defined mathematically as
+  #- x.sinh() = (x.exp() - (-x).exp()) / 2
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +0 (-0), the result is +0 (-0) .
+  #
+  #- If the value is INF or NINF the result is INF or NINF.
+  #
+  #- If the result overflows, the result is T.float.max, with the same sign as
+  #- the value.
+  FUNC sinh(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the cosine value, using the value as radians.
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is INF or NINF the result is NAN.
+  FUNC cos(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic cosine value.
+  #- This is defined mathematically as
+  #-   x.cosh() = (x.exp() + (-x).exp()) / 2
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +0 (-0), the result 1.
+  #
+  #- If the value is INF or NINF the result is INF.
+  #
+  #- If the result overflows, the result is T.float.max.
+  FUNC cosh(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the tangent value, using the value as radians.
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is INF or NINF the result is NAN.
+  #
+  #- If the result overflows, the result is T.float.max, with the
+  #- mathematically correct sign.
+  FUNC tan(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the hyperbolic tangent value.
+  #- This is defined mathematically as
+  #-   x.tanh() = x.sinh() / x.cosh()
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +0 (-0), the result is +0 (-0) .
+  #
+  #- If the value is INF (NINF), the result is +1 (-1).
+  FUNC tanh(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc sine of the value.
+  #- That is the value whose sine is this value.
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +0 (-0), the result is +0 (-0) .
+  #
+  #- If the value is below -1 or above 1 the result is NAN.
+  FUNC asin(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc cosine of the value.
+  #- That is the value whose cosine is this value.
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +1 the result is +0.
+  #
+  #- If the value is INF or NINF the result is NAN
+  #
+  #- If the value is below -1 or above 1 the result is NAN.
+  FUNC acos(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arc tangent of the value.
+  #- That is the value whose tangent is this value.
+  #
+  #- If the value is NAN the result is NAN.
+  #
+  #- If the value is +0 (-0), the result is +0 (-0) .
+  #
+  #- If the value is INF (NINF) the result is PI/2 (-PI/2).
+  FUNC atan(float this) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the principal value of the arg tangent of the value divided by
+  #= |x|.
+  #- Uses the signs of the two values to determine the quadrant of the result.
+  #
+  #- TODO: document special values
+  FUNC atan2(float this, float x) float @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #! For Zudocu: end of float class.
+  CLASS ENDfloat
+  }
+
+  #= Maximum value of a float, used for overflow.
+  #- Used as T.float.max
+  #
+  #- Note that this prints as "inf".
+  float max @public
+
+  #= The value of PI
+  #- Used as T.float.pi
+  float pi @public
+
+  #= The value of e
+  #- Used as T.float.e
+  float e @public
+
+  #! Return the status of whether initialization has been done.
+  FUNC EarlyInit() status
+>>>
+ %pi% = 3.14159265358979323846;
+ %e% = 2.7182818284590452354;
+ %max% = HUGE_VAL;
+<<<
+    RETURN OK
+  }
+
+}

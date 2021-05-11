@@ -1,0 +1,221 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Token class.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+
+CLASS Token @items=public   # TODO: restrict visibility
+  Type          $type
+  string        $value
+  bool          $hasComment      # includes a comment (line_sep can have it)
+  bool          $hasCommentFirst # comment starts before line break
+  Zui.Position  $zuiPos          # start position of the token
+
+  # Create a Z.Pos from $zuiPos.
+  FUNC $zcPos() Z.Pos @private
+    RETURN Z.Pos.NEW($zuiPos.getFilename(),
+                                       $zuiPos.getLine(), $zuiPos.getColumn())
+  }
+
+  # Report an error detected during parse phase after getting this token.
+  PROC $error(string msg)
+    LOG.error(msg, $zcPos())
+  }
+
+  # Report an error for token found in a place where it is not accepted.
+  PROC $errorNotAllowed()
+    LOG.error("'\($value)' not allowed here", $zcPos())
+  }
+
+  # Return TRUE if the token has a type that is white space or comment.
+  FUNC $isSep() bool
+    RETURN $type == Type.sep || $type == Type.line_sep || $type == Type.comment
+  }
+
+  # Return a shallow copy of the object.  Positions are deep-copied.
+  FUNC $copy() Token
+    Token t = NEW()
+    t.type = $type
+    t.value = $value
+    t.hasComment = $hasComment
+    t.hasCommentFirst = $hasCommentFirst
+    IF $zuiPos != NIL
+      t.zuiPos = $zuiPos.copy(FALSE)
+    }
+    RETURN t
+  }
+
+  ENUM Type @directory
+    unknown
+    eof         # end of input
+    sep         # separator: at least a space or line break
+    line_sep    # line separator: at least a line break
+    comment     # comment without preceding white space or line break
+    empty       # nothing
+
+    nil
+    this
+    parent
+    false
+    true
+    ok
+    fail
+    stringLiteral  # string literal
+    stringExprStart  # string literal followed by \(expr)
+    char        # 'c'
+    any
+    var
+
+    use         # USE
+    get         # GET
+    threeDots   # ...
+
+    id          # identifier or number, text is in "value"
+
+    import
+    as
+    options
+
+    alias
+    type
+    copy_start  # >>>
+    copy_end    # <<<
+
+    module
+    class
+    shared
+    static
+    interface
+    piece
+    enum
+    bits
+    func
+    proc
+    lambda
+
+    extends
+    implements
+    include
+
+    inf  # INF
+    ninf  # NINF
+    nan  # NAN
+
+    return
+    exit
+    throw
+    try
+    catch
+    finally
+    defer
+
+    # predefined methods
+    new
+    ready
+
+    c           # for "Class.C"
+    i           # for "Class.I"
+
+    build_if
+    build_elseif
+    build_else
+    generate_if
+    generate_elseif
+    generate_else
+    generate_error
+
+    if
+    elseif
+    else
+    ifnil
+    while
+    break
+    continue
+    proceed
+    switch
+    case
+    default
+    do
+    until
+    for
+    in
+    to
+    upto
+    step
+
+    comma          # ,
+    semicolon      # ;
+    colon          # :
+    question       # ?
+    colonnil       # ?:
+    dotnil         # ?.
+    at             # @
+    dot            # .
+    p_open         # (
+    p_close        # )
+    c_open         # {
+    c_close        # }
+    sq_open        # [
+    sq_o_open      # O[
+    sq_close       # ]
+    dollar         # $
+
+    minus          # -
+    minmin         # --
+    plus           # +
+    plusplus       # ++
+    tilde          # ~
+    star           # *
+    slash          # /
+    percent        # %
+    concat         # _
+    bit_or         # |
+    bit_xor        # ^
+    amp            # &
+    rshift         # >>
+    lshift         # <<
+
+    assign         # =
+    minassign      # -=
+    plusassign     # +=
+    multassign     # *=
+    divassign      # /=
+    percentassign  # %=
+    tildeassign    # ~=
+    andassign      # &=
+    orassign       # |=
+    xorassign      # ^=
+    stringassign   # ..=
+    lshiftassign   # <<=
+    rshiftassign   # >>=
+
+    isis           # ==
+    gives          # =>
+    notequal       # !=
+    match          # =~
+    nomatch        # !~
+    and            # &&
+    or             # ||
+    not            # !
+    gt             # >
+    gte            # >=
+    lt             # <
+    lte            # <=
+
+    is             # IS
+    isnot          # ISNOT
+    isa            # ISA
+    isnota         # ISNOTA
+
+    # For ZUT files
+    html           # HTML
+    css            # CSS
+  }
+}

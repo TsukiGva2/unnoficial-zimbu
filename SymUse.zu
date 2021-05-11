@@ -1,0 +1,185 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Class used when looking up a Declaration.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "FileScope.zu"
+IMPORT "MethodType.zu"
+IMPORT "ModuleScope.zu"
+IMPORT "Pos.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "SharedScope.zu"
+IMPORT "Type.zu"
+IMPORT "TypedefType.zu"
+IMPORT "Visibility.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiFile.zu"
+
+CLASS SymUse @items=public   # TODO: restrict visibility
+  bool      $reading   # TRUE when the symbol is used for reading only.
+  bool      $adding    # TRUE when symbol is going to be added
+  bool      $doError   # when TRUE give an error for the first Declaration
+                       # that's found but is not visible.
+  SContext  $ctx       # Context where the symbol is used.
+  Pos       $pos       # Position used for error messages.
+
+  # Create the position from a zui file position (lacking the file name) and
+  # the context (which has the file name).
+  NEW(Zui.Position pos, SContext ctx)
+    $pos = ctx.pos(pos)
+    $ctx = ctx
+  }
+
+  # For declaration |decl| defined in scope |scope|, return TRUE if access is
+  # allowed from this context.
+  FUNC $visibleInScope(Declaration decl, Scope symScope) bool
+    CHECK.true(decl != NIL)
+    IF $ctx.scope.flags.isParentMethod
+      RETURN TRUE  # Generating method for parent class.
+    }
+
+    IF symScope.classType != NIL
+      RETURN $visibleInClass(decl, symScope.classType, symScope)
+    }
+
+    # A class or method can be used even when defined outside of a function
+    # scope.
+    IF decl.type ISA ClassType || decl.type ISA MethodType
+                               || decl.type ISA TypedefType
+      RETURN $visibleInModule(decl, symScope)
+    }
+
+    # When using "var" inside a function and "var" is defined outside of that
+    # function, it must be in a module or shared section of a class.  Matters
+    # for a function defined inside another functions.
+    Scope scope = $ctx.scope
+    bool inFunction
+    WHILE scope != NIL && scope ISNOT symScope
+      IF scope.isMethodType()
+        inFunction = TRUE
+        BREAK
+      }
+      scope = scope.outer
+    }
+    IF !inFunction || symScope ISA ModuleScope
+                   || symScope ISA SharedScope
+                   || symScope ISA FileScope
+      RETURN $visibleInModule(decl, symScope)
+    }
+    RETURN FALSE
+  }
+
+  # For declaration |decl| defined as a member of |topDecl|, return TRUE if
+  # access is allowed from this context.
+  FUNC $visibleInDecl(Declaration decl, Declaration topDecl, SContext ctx) bool
+    CHECK.true(decl != NIL)
+    IF $ctx.scope.flags.isParentMethod
+      RETURN TRUE  # Generating method for parent class.
+    }
+
+    SWITCH topDecl.type.ttype
+      CASE Type.Enum.module
+      CASE Type.Enum.builtinModule
+        RETURN $visibleInModule(decl, topDecl.scopeBase)
+
+      CASE Type.Enum.class
+      CASE Type.Enum.object
+      CASE Type.Enum.iobject
+        RETURN $visibleInClass(decl, topDecl.type.getClassType(ctx),
+                                                            topDecl.scopeBase)
+    }
+
+    # TODO: other types?
+    RETURN TRUE
+  }
+
+  # For declaration |decl| defined in class |classType|, return TRUE if access
+  # is allowed from this context.
+  FUNC $visibleInClass(Declaration decl, ClassType classType, Scope symScope
+       ) bool
+    # A class is always visible inside the class itself:
+    #    CLASS Foo
+    #      FUNC $Compare(Foo foo) int  "Foo" is OK here
+    IF $ctx.scope.insideScope(classType.scope)
+      RETURN TRUE
+    }
+
+    Zui.Visibility vis = $effectiveVisibility(decl)
+    SWITCH vis
+      CASE Zui.Visibility.ePRIVATE
+        RETURN $ctx.scope.classType IS classType
+      CASE Zui.Visibility.ePROTECTED
+        IF $ctx.scope.classType == NIL
+          RETURN FALSE  # not in any class
+        }
+        RETURN classType.hasSubclass($ctx.scope.classType.<ClassType>)
+      CASE Zui.Visibility.eFILE
+        RETURN $visibleInFile(symScope)
+      CASE Zui.Visibility.eDIRECTORY
+        RETURN $visibleInDir(symScope)
+    }
+    RETURN TRUE
+  }
+
+  # For Declaration |decl| defined in module |symScope|, return TRUE if access
+  # is allowed from this context.
+  FUNC $visibleInModule(Declaration decl, Scope symScope) bool
+    Zui.Visibility vis = $effectiveVisibility(decl)
+    SWITCH vis
+      CASE Zui.Visibility.ePRIVATE
+        RETURN $ctx.scope.insideScope(symScope)
+      CASE Zui.Visibility.eFILE
+        RETURN $visibleInFile(symScope)
+      CASE Zui.Visibility.eDIRECTORY
+        RETURN $visibleInDir(symScope)
+    }
+    RETURN TRUE
+  }
+
+  FUNC $effectiveVisibility(Declaration decl) Zui.Visibility
+    IF decl.zuiAttr == NIL
+      RETURN Zui.Visibility.eUNSET
+    }
+    IF $reading && decl.zuiAttr.hasReadVisibility()
+      RETURN decl.zuiAttr.getReadVisibility()
+    }
+    IF !decl.zuiAttr.hasVisibility()
+      RETURN Zui.Visibility.eUNSET
+    }
+    RETURN decl.zuiAttr.getVisibility()
+  }
+
+  FUNC $visibleInFile(Scope scope) bool
+    IF scope == NIL
+      RETURN FALSE
+    }
+    ZimbuFile definedIn = scope.topZimbuFile()
+    ZimbuFile usedIn = $ctx.scope.topZimbuFile()
+    IF definedIn == NIL
+      THROW "Internal error: ZimbuFile not set"
+    }
+    IF usedIn == NIL
+      THROW "Internal error: ZimbuFile not set"
+    }
+    RETURN definedIn IS usedIn
+  }
+
+  FUNC $visibleInDir(Scope scope) bool
+    ZimbuFile definedIn = scope.topZimbuFile()
+    ZimbuFile usedIn = $ctx.scope.topZimbuFile()
+    IF usedIn.dirName.Size() < definedIn.dirName.Size()
+      RETURN FALSE
+    }
+    RETURN usedIn.dirName.startsWith(definedIn.dirName)
+  }
+}

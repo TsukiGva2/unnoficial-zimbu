@@ -1,0 +1,5 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  IO.print(IO.isWritable("testdir/progs/isWritable.zu"))
+  RETURN 0
+}

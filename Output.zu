@@ -1,0 +1,285 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Output class and associated classes.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS Output @items=public                   # TODO: restrict visibility
+  bool         $writing   # FALSE when not actually writing
+  FragmentHead $head      # stores the output
+
+  # Create an Output that writes into a new FragmentHead.
+  NEW()
+    $head = NEW()
+  }
+  
+  # Create an Output that writes into |head|.
+  # Use NIL to create an Output that doesn't write anywhere.
+  NEW(FragmentHead head)
+    $head = head
+  }
+
+  PROC $write(string s)
+    # Handling NIL argument makes the C compiler point to the problem.
+    string ss = (s == NIL) ? "NIL" : s
+    IF $writing
+      IF $head != NIL
+        $head.add(ss)
+      }
+    }
+  }
+
+  PROC $prepend(string s)
+    # Safety: handle NIL argument
+    string ss = (s == NIL) ? "NIL" : s
+    IF $writing
+      IF $head != NIL
+        $head.insert(ss)
+      }
+    }
+  }
+
+  # Append the fragments of |out|.head.
+  PROC $append(Output out)
+    IF $writing && out.head != NIL
+      IF $head != NIL
+        $head.append(out.head)
+      }
+    }
+  }
+
+  # Write spaces to "out" for |depth| indent.
+  PROC $writeIndent(int depth)
+    IF $writing
+      int todo = depth
+      WHILE todo > 0
+        SWITCH todo
+          CASE 1; $write(" "); RETURN
+          CASE 2; $write("  "); RETURN
+          CASE 3; $write("   "); RETURN
+          CASE 4; $write("    "); RETURN
+          CASE 5; $write("     "); RETURN
+          CASE 6; $write("      "); RETURN
+          CASE 7; $write("       "); RETURN
+          DEFAULT; $write("        "); todo -= 8
+        }
+      }
+    }
+  }
+
+  FUNC $empty() bool
+    RETURN $head == NIL || $head.empty()
+  }
+
+  FUNC $ToString() string
+    IF $head == NIL
+      RETURN ""
+    }
+    RETURN $head.ToString()
+  }
+
+  # Write the concatenated text to file |fd|.
+  PROC $writeToFile(IO.File fd)
+    IF $head != NIL
+      $head.write(fd)
+    }
+  }
+
+  # Return an output that is a copy of this Output, to be used to write
+  # declarations to the start of a block.
+  FUNC $copy() Output
+    Output blockOut = NEW(NIL)
+    blockOut.writing = $writing
+    IF $head != NIL
+      blockOut.head = $head.copy()
+    }
+    RETURN blockOut
+  }
+
+  # Clear the text.
+  PROC $clear()
+    IF $head != NIL
+      $head.clear()
+    }
+  }
+
+  # Reset the values of this object to those of |src|
+  PROC $reset(Output src)
+    $writing = src.writing
+    IF src.head == NIL
+      $head = NIL
+    ELSE
+      $head = src.head.copy()
+    }
+  }
+
+  SHARED
+
+    # A dummy output, it never writes and items are not marked as used.
+    Output %noOut = NEW(NIL)
+
+    # A dummy output, it never writes but items are marked as used.
+    Output %noOutUseItems = NEW(NIL)
+
+    # List of strings to be written to a file later.
+    CLASS FragmentHead @directory @items=directory
+      list<string> $items
+
+      NEW()
+        $items = NEW()
+      }
+
+      # Append a string
+      PROC $add(string text)
+        $items.add(text)
+      }
+
+      # Append FragmentHead |head| to this one.
+      PROC $append(FragmentHead head)
+        IF head.items != NIL
+          CHECK.true($items ISNOT head.items, "appending list to itself")
+          $items.extend(head.items)
+        }
+      }
+
+      # Prepend a string
+      PROC $insert(string text)
+        $items.insert(text)
+      }
+
+      # Return a shallow copy of the object.
+      FUNC $copy() FragmentHead
+        FragmentHead lh = NEW()
+        lh.items = $items
+        RETURN lh
+      }
+
+      # Write the concatenated text to file |fd|.
+      PROC $write(IO.File fd)
+        FOR s IN $items
+          fd.write(s)
+        }
+      }
+
+      # Delete all text.
+      PROC $clear()
+        $items = NEW()
+      }
+
+      # Return a string with all text concatenated.
+      FUNC $ToString() string
+        IO.StringWriter w = NEW()
+        FOR s IN $items
+          w.write(s)
+        }
+        string s = w.ToString()
+        # TODO: remove this, the garbage collector should reclaim memory.
+        w.clear()
+        RETURN s
+      }
+
+      # Return true when there is no actual text.
+      FUNC $empty() bool
+        FOR s IN $items
+          IF s != NIL && s != ""
+            RETURN FALSE
+          }
+        }
+        RETURN TRUE
+      }
+    }
+
+    # A group of outputs used to write to several parts at one time.
+    # Besides the normal group of outputs, two are used for the current body
+    # code and current declarations code.
+    CLASS Group @directory @items=directory
+      Output $out            # current code output
+      Output $varOut         # current declarations output (start of block)
+
+      Output $typeOut        # typedefs
+      Output $structOut      # structure definitions
+      Output $declOut        # variable and function declarations
+      Output $bodyOut        # function bodies
+      Output $imtInitOut     # IMT inits
+      string $earlyInitLead
+      Output $earlyInitOut   # var early inits
+      string $initLead
+      Output $initOut        # var inits
+      Output $mainOut        # main code
+      Output $origBodyOut    # Original bodyOut, used for nested functions
+
+      # Flags used to write some things in an abstract class, e.g. an enum.
+      bool $origDeclOutWriting  # saved declOut.writing in abstract class
+      bool $origBodyOutWriting  # saved bodyOut.writing in abstract class
+
+      NEW()
+        $typeOut = NEW(NEW())
+        $structOut = NEW(NEW())
+        $declOut = NEW(NEW())
+        $bodyOut = NEW(NEW())
+        $imtInitOut = NEW(NEW())
+        $earlyInitOut = NEW(NEW())
+        $initOut = NEW(NEW())
+        $mainOut = NEW(NEW())
+        $out = $mainOut
+        $varOut = $declOut
+      }
+
+      PROC $startWriting()
+        $typeOut.writing = TRUE
+        $structOut.writing = TRUE
+        $declOut.writing = TRUE
+        $bodyOut.writing = TRUE
+        $imtInitOut.writing = TRUE
+        $earlyInitOut.writing = TRUE
+        $initOut.writing = TRUE
+        $mainOut.writing = TRUE
+      }
+
+      FUNC $copy() Group
+        Group outs = NEW()
+        outs.out = $out
+        outs.varOut = $varOut
+        outs.typeOut = $typeOut
+        outs.structOut = $structOut
+        outs.declOut = $declOut
+        outs.bodyOut = $bodyOut
+        outs.imtInitOut = $imtInitOut
+        outs.earlyInitOut = $earlyInitOut
+        outs.initOut = $initOut
+        outs.mainOut = $mainOut
+        outs.origBodyOut = $origBodyOut
+        RETURN outs
+      }
+
+      # Make a copy of the Output.Group and adjust it for starting a new code
+      # block.
+      FUNC $startNewBlock() Group
+        Group g = THIS.copy()
+
+        # g.varOut = g.out.copy()  # varOut appends to "out"
+        # variable declarations directly written to "out"
+        g.varOut = g.out
+
+        # Body statements written to a new Output, to be appended after the
+        # declarations in $endNewBlock().
+        Output out = NEW()
+        out.writing = g.bodyOut.writing
+        g.out = out
+        g.bodyOut = out
+
+        RETURN g
+      }
+
+      PROC $endNewBlock()
+        $varOut.append($bodyOut)
+      }
+    }
+
+  }
+
+}

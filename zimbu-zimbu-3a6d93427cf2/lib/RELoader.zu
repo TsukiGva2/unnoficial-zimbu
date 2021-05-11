@@ -1,0 +1,54 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# RE module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT ../Builtin.zu
+IMPORT ../Declaration.zu
+IMPORT ../DeclStore.zu
+IMPORT ../SContext.zu
+IMPORT ../Type.zu
+
+MODULE RELoader @public @items=public
+  Declaration moduleDecl
+  Declaration regexDecl
+
+  # Prepare for using the builtin RE module.
+  FUNC prepare() Builtin
+    DeclStore.wantPName("MREModule__CRegex", "MNEW")
+    DeclStore.wantPName("MREModule__CRegex", "MNEW__1")
+    DeclStore.wantPName("MREModule__CRegex", "Mmatches")
+    Builtin b = NEW()
+    b.moduleName = "REModule"
+    b.fileName = "REModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the RE module is used, after it was processed once.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("RE", builtin)
+
+      IF LOG.errorCount == 0
+        # Define the "regex" class as an alias for RE.Regex.
+        regexDecl = moduleDecl.type.findMember("Regex", NIL)
+        IF regexDecl == NIL || regexDecl.type.ttype != Type.Enum.class
+          LOG.internal("cannot find RE.Regex")
+          EXIT 2
+        }
+      }
+    }
+  }
+
+  FUNC getRegexDecl() Declaration
+    RETURN regexDecl
+  }
+
+}

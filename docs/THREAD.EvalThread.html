@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>THREAD.EvalThread class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='THREAD.html'>up:&nbsp;THREAD</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> T.evalThread&lt;Titem&gt;
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Thread to be used for evaluating a function and returning the result
+ through a pipe.
+</p>
+<p class='ptext'> <b>Titem</b> is the type of the item returned through the pipe.
+<p class='ptext'> Example: evaluate an expression in a thread:
+<pre class='example'> pipe&lt;string&gt; p = T.evalThread&lt;string&gt;.NEW().eval({ =&gt; "hello there" })
+ IO.print(p.read())
+</pre>
+<p class='ptext'>
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='THREAD.EvalThread.html#NEW'><b>NEW</b></a>(<small>f</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.EvalThread.html#$setProc'><b>$setProc</b></a>(<small>f</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the function to be invoked by start().
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.EvalThread.html#$eval'><b>$eval</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Start the thread and return the pipe to read the result from.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.EvalThread.html#$getPipe'><b>$getPipe</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the pipe to read the result from.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='THREAD.EvalThread.html#eval'><b>eval</b></a>(<small>f</small>) <small><span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Quick way to evaluate a function in a thread.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='THREAD.ThreadBase.html'>THREAD.ThreadBase</A>:</td></tr>
+
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$name'><b>$name</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> optional name, NIL when not set
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='THREAD.State.html'>THREAD.State</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$state'><b>$state</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> state of the thread
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='Type.html'>Type</A></span></small>&nbsp;</td><td class='nowrap'><A href='THREAD.ThreadBase.html#$type'><b>$type</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> type of thread
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td>
+ Create a new thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$setName'><b>$setName</b></a>(<small>name</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Set the name of the thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$start'><b>$start</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Start executing the thread.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$wait'><b>$wait</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait in the current thread for the thread of this object to finish.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$kill'><b>$kill</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Kill the thread, stop its execution.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='THREAD.ThreadBase.html#$remove'><b>$remove</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Not Implemented Yet
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; Titem&gt;</span> f)<span class='attribute'> @public</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$eval'><b>$eval</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Start the thread and return the pipe to read the result from.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$getPipe'><b>$getPipe</b></A>() <span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the pipe to read the result from.
+</p>
+<p class='ptext'> read() on this pipe will only work once.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setProc'><b>$setProc</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; Titem&gt;</span> f)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the function to be invoked by start().
+</p>
+<p class='ptext'> TODO: return the object.
+</p>
+</td></tr></table></td></tr></table><h2>shared (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='eval'><b>eval</b></A>(<span class='type'><span class='type'>func</span>&lt; =&gt; Titem&gt;</span> f) <span class='type'><A class='typehref' href='PIPE.Pipe.html'>pipe</A>&lt;Titem&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Quick way to evaluate a function in a thread.
+</p>
+<p class='ptext'> Equivalent to T.evalThread&lt;Titem&gt;.NEW().eval(f)
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,49 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# part of the builtin module ZWT: Events
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+#! Each item from this module gets an ALIAS in ZWT.
+MODULE EventModule @public
+  GENERATE_IF Z.lang == "JS"
+
+    #= An event that can be triggered and acted upon.
+    #- This forms the connection between the Javascript call and the ZWT
+    #- objects.
+    CLASS Event @public @items=public
+      ZWT.Widget    $widget   #= The Widget for which the event is triggered.
+      EventType     $type     #= The type of event that happens.
+      ZWT.JsEvent   $jsEvent  #= The low-level Javascript event, optional
+
+      #= Create a new Event from the arguments.
+      NEW(ZWT.Widget widget, EventType type)
+        $widget = widget
+        $type = type
+      }
+
+      # Make a shallow copy of the Event.
+      FUNC $copy() Event
+        Event e = NEW($widget, $type)
+        e.jsEvent = $jsEvent
+        RETURN e
+      }
+    }
+
+  }
+
+  #= Used in the |Event| class.
+  ENUM EventType @public
+    all              #= handler listening to all events
+    click            #= mouse click
+    mouseOver        #= mouse pointer entering the area
+    mouseOut         #= mouse pointer leaving the area
+    key              #= key pressed that produces a character
+    keyDown          #= key pressed
+    keyUp            #= key released
+  }
+
+}

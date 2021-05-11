@@ -1,0 +1,37 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# NAT16 module loader
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../ModuleType.zu"
+IMPORT "../SContext.zu"
+
+MODULE NAT16Loader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin NAT16 module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "NAT16Module"
+    b.fileName = "NAT16Module.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the NAT16 module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("NAT16", builtin)
+      ModuleType mt = moduleDecl.type.<ModuleType>
+    }
+  }
+}

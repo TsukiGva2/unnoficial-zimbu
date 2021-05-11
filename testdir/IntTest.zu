@@ -1,0 +1,272 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for int-like types: int, int8, int16, int32
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE IntTest @public
+
+  PROC test() @public
+    IO.print("testdir/IntTest.zu")
+    testNegativeToString()
+    testMinMax()
+    testToQuotedString()
+    testToHex()
+    testIsMethods()
+    testPadding()
+    testPrecedence()
+    testAbs()
+    testValues()
+    testFloatfuncs()
+    testPredefMethods()
+  }
+
+  PROC testNegativeToString()
+    string v = -(234) .. ""
+    IO.print(v)
+    v = -234.ToString()
+    IO.print(v)
+    v = 123
+  }
+
+  PROC testMinMax()
+    IO.print("T.int.min: " .. T.int.min)
+    IO.print("T.int.max: " .. T.int.max)
+    IO.print("T.int8.min: " .. T.int8.min)
+    IO.print("T.int8.max: " .. T.int8.max)
+    IO.print("T.int16.min: " .. T.int16.min)
+    IO.print("T.int16.max: " .. T.int16.max)
+    IO.print("T.int32.min: " .. T.int32.min)
+    IO.print("T.int32.max: " .. T.int32.max)
+  }
+  
+  PROC testToQuotedString()
+    IO.print(0.toQuotedString())
+    IO.print(1.toQuotedString())
+    IO.print(10.toQuotedString())
+    IO.print(123.toQuotedString())
+    IO.print(1234.toQuotedString())
+    IO.print(12345.toQuotedString())
+    IO.print(123456.toQuotedString())
+    IO.print(1234567.toQuotedString())
+
+    IO.print(-1.toQuotedString())
+    IO.print(-10.toQuotedString())
+    IO.print(-123.toQuotedString())
+    IO.print(-1234.toQuotedString())
+    IO.print(-12345.toQuotedString())
+    IO.print(-123456.toQuotedString())
+    IO.print(-1234567.toQuotedString())
+  }
+
+  PROC testToHex()
+    int n0
+    IO.print(n0.toHex())             # 0
+    int n3 = 3
+    IO.print(n3.toHex())             # 3
+    int n11 = 11
+    IO.print(n11.toHex())            # b
+    int n127 = 127
+    IO.print(n127.toHex())           # 7f
+    int n255 = 255
+    IO.print(n255.toHex())           # ff
+    int n256 = (256 * 256 - 1)
+    IO.print(n256.toHex())            # ffff
+    int n268435455 = 268435455
+    IO.print(n268435455.toHex())       # fffffff
+    int n2147483647 = 2147483647
+    IO.print(n2147483647.toHex())      # 7fffffff
+
+    IO.print(n0.toHex(3))               # 000
+    IO.print(n3.toHex(2))               # 03
+    IO.print(n11.toHex(8))              # 0000000b
+    IO.print(n127.toHex(4))             # 007f
+    IO.print(n255.toHex(3))             # 0ff
+    IO.print(n256.toHex(20))            # 0000000000000000ffff
+    IO.print(n268435455.toHex(3))        # fffffff
+    IO.print(n2147483647.toHex(8))       # 7fffffff
+
+    int n43981 = 43981
+    IO.print(n43981.toHexUpper())        # ABCD
+    IO.print(n43981.toHexUpper(6))       # 00ABCD
+  }
+
+  PROC testIsMethods()
+    IO.print("Yes: " .. "-0" .. '0'.isDigit()
+                         .. "-9" .. '9'.isDigit()
+                         .. "-0" .. '0'.isHexDigit()
+                         .. "-9" .. '9'.isHexDigit()
+                         .. "-a" .. 'a'.isHexDigit()
+                         .. "-A" .. 'A'.isHexDigit()
+                         .. "-f" .. 'f'.isHexDigit()
+                         .. "-F" .. 'F'.isHexDigit()
+                         .. "- " .. ' '.isWhite()
+                         .. "-\\t" .. '\t'.isWhite()
+                         .. "-\\n" .. '\n'.isWhite()
+                         .. "-\\x7f" .. '\x7f'.isWhite()
+                         .. "-\\u00a0" .. '\u00a0'.isWhite()
+                         .. "- " .. ' '.isWhiteAscii()
+                         .. "-\\t" .. '\t'.isWhiteAscii()
+                         .. "-\\n" .. '\n'.isWhiteAscii()
+                         .. "-\\x7f" .. 0x7f.isWhiteAscii()
+                         .. "-\\xa0" .. 0xa0.isWhiteAscii()
+                         .. "-a" .. 'a'.isAlpha()
+                         .. "-z" .. 'z'.isAlpha()
+                         .. "-A" .. 'A'.isAlpha()
+                         .. "-Z" .. 'Z'.isAlpha()
+                         .. "-a" .. 'a'.isLower()
+                         .. "-z" .. 'z'.isLower()
+                         .. "-A" .. 'A'.isUpper()
+                         .. "-Z" .. 'Z'.isUpper())
+    IO.print("No: "  .. "-a" .. 'a'.isDigit()
+                         .. "--" .. '-'.isDigit()
+                         .. "-g" .. 'g'.isHexDigit()
+                         .. "-G" .. 'G'.isHexDigit()
+                         .. "-z" .. 'z'.isHexDigit()
+                         .. "-Z" .. 'Z'.isHexDigit()
+                         .. "--" .. '-'.isHexDigit()
+                         .. "-_" .. '_'.isHexDigit()
+                         .. "-!" .. '!'.isWhite()
+                         .. "-a" .. 'a'.isWhite()
+                         .. "-~" .. '~'.isWhite()
+                         .. "-¡" .. '¡'.isWhite()
+                         .. "-!" .. '!'.isWhiteAscii()
+                         .. "-a" .. 'a'.isWhiteAscii()
+                         .. "-~" .. '~'.isWhiteAscii()
+                         .. "-¡" .. '¡'.isWhiteAscii()
+                         .. "-0" .. '0'.isAlpha()
+                         .. "--" .. '-'.isAlpha()
+                         .. "-." .. '.'.isAlpha()
+                         .. "-/" .. '/'.isAlpha()
+                         .. "-A" .. 'A'.isLower()
+                         .. "-Z" .. 'Z'.isLower()
+                         .. "-a" .. 'a'.isUpper()
+                         .. "-z" .. 'z'.isUpper())
+  }
+
+  PROC testPadding()
+    int neg = -123
+    IO.print(neg.ToString())
+    IO.print(neg.ToString("0d"))
+    IO.print(neg.ToString("03d"))
+    IO.print(neg.ToString("04d"))
+    IO.print(neg.ToString("05d"))
+    IO.print(neg.ToString("012d"))
+
+    int pos = 123
+    IO.print(pos.ToString())
+    IO.print(pos.ToString("0d"))
+    IO.print(pos.ToString("03d"))
+    IO.print(pos.ToString("04d"))
+    IO.print(pos.ToString("05d"))
+    IO.print(pos.ToString("012d"))
+
+    int hex = 0xef
+    IO.print(hex.ToString("0x"))
+    IO.print(hex.ToString("04x"))
+    hex = 0x1234
+    IO.print(hex.ToString("08x"))
+    hex = 0x1234'5678
+    IO.print(hex.ToString("08x"))
+  }
+
+  PROC testPrecedence()
+    IO.print("40 / 5 / 2 = " .. (40 / 5 / 2) .. " (4)")
+    IO.print("40 / 5 * 2 = " .. (40 / 5 * 2) .. " (16)")
+    IO.print("40 / 5 % 3 = " .. (40 / 5 % 3) .. " (2)")
+  }
+
+  PROC testAbs()
+    IO.print(123.abs())
+    IO.print(-123.abs())
+    IO.print(T.int.max.abs())
+    IO.print(T.int.min.abs())
+  }
+
+  PROC testValues()
+    # Test smallest and biggest number that can be assigned.
+    int8 i8 = 128 - 1
+    i8 = 128 - 1
+    i8 = -128
+    nat8 n8 = 256 - 1
+    n8 = 256 - 1
+    n8 = 0
+    int16 i16 = 256 * 128 - 1
+    i16 = 256 * 128 - 1
+    i16 = -256 * 128
+    nat16 n16 = 256 * 256 - 1
+    n16 = 256 * 256 - 1
+    n16 = 0
+    int32 i32 = 256 * 256 * 256 * 128 - 1
+    i32 = 256 * 256 * 256 * 128 - 1
+    i32 = -256 * 256 * 256 * 128
+    nat32 n32 = 256 * 256 * 256 * 256 - 1
+    n32 = 256 * 256 * 256 * 256 - 1
+    n32 = 0
+  }
+
+  PROC testFloatfuncs()
+    int f1 = 1
+    int f2 = -1
+    int f3 = 3
+    IO.print("floor(): " .. f1.floor() .. " , " .. f2.floor())
+    IO.print("ceil(): " .. f1.ceil() .. " , " .. f2.ceil())
+    IO.print("round(): " .. f1.round() .. " , " .. f2.round())
+    IO.print("trunc(): " .. f1.trunc() .. " , " .. f2.trunc())
+    IO.print("abs(): " .. f1.abs() .. " , " .. f2.abs())
+
+    IO.print("exp(): " .. f1.exp() .. " , " .. f3.exp())
+    IO.print("log(): " .. f1.log() .. " , " .. f3.log())
+    IO.print("log10(): " .. f1.log10() .. " , " .. f3.log10())
+    IO.print("sqrt(): " .. f1.sqrt() .. " , " .. f3.sqrt())
+    IO.print("pow(): " .. f1.pow(f2) .. " , " .. f3.pow(f2))
+
+    IO.print("sin(): " .. f1.sin())
+    IO.print("sinh(): " .. f1.sinh())
+    IO.print("tan(): " .. f1.tan())
+    IO.print("tanh(): " .. f1.tanh())
+    IO.print("cos(): " .. f1.cos())
+    IO.print("cosh(): " .. f1.cosh())
+    IO.print("acos(): " .. f1.acos())
+    IO.print("asin(): " .. f1.asin())
+    IO.print("atan(): " .. f1.atan())
+    IO.print("atan2(): " .. f1.atan2(f2))
+  }
+
+  PROC testPredefMethods()
+    int n = 1234
+    IO.print(n.Size())
+    IO.print(n.ToString())
+    IO.print(n.Type().ToString())
+    int8 n8 = 123
+    IO.print(n8.Size())
+    IO.print(n8.ToString())
+    IO.print(n8.Type().ToString())
+    int16 n16 = 1234
+    IO.print(n16.Size())
+    IO.print(n16.ToString())
+    IO.print(n16.Type().ToString())
+    int32 n32 = 1234
+    IO.print(n32.Size())
+    IO.print(n32.ToString())
+    IO.print(n32.Type().ToString())
+
+    int eight = 8
+    int four = 4
+    int otherFour = 4
+    IO.print("4.Compare(4): " .. (four.Compare(four)))
+    IO.print("4.Compare(8): " .. (four.Compare(eight)))
+    IO.print("8.Compare(4): " .. (eight.Compare(four)))
+    IO.print("max.Compare(max): " .. (T.int.max.Compare(T.int.max)))
+    IO.print("max.Compare(min): " .. (T.int.max.Compare(T.int.min)))
+    IO.print("min.Compare(min): " .. (T.int.min.Compare(T.int.min)))
+    IO.print("min.Compare(max): " .. (T.int.min.Compare(T.int.max)))
+
+    IO.print("4.Equal(4): " .. (four.Equal(otherFour)))
+    IO.print("8.Equal(4): " .. (eight.Equal(four)))
+  }
+}

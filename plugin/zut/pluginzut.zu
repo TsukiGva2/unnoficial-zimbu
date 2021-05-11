@@ -1,0 +1,530 @@
+#
+# Main file of the Zimbu Templates plugin
+#
+# Usage:
+#      pluginzut infile.zut outfile.zu
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+IMPORT "../../Input.zu"
+IMPORT "../../Token.zu"
+IMPORT "../../TokenInput.zu"
+
+# We use Token.Type a lot, define an alias.
+ALIAS Token.Type TType
+
+FUNC Main() int
+  # TODO: -I {path} and --import_path {path} options.
+  IF ARG.Size() != 2
+    IO.print("Usage: " .. ARG.rawName .. " infile.zut outfile.zu")
+    EXIT 1
+  }
+
+  # Catch common mistakes in arguments.
+  string inFileName = ARG.get(0)
+  IF !inFileName.endsWith(".zut")
+    IO.print("ERROR: Input name must end in '.zut': " .. inFileName)
+    EXIT 1
+  }
+  string outFileName = ARG.get(1)
+  IF !outFileName.endsWith(".zu")
+    IO.print("ERROR: output name must end in '.zu': " .. outFileName)
+    EXIT 1
+  }
+
+  # Parse the input file, write a Zimbu module to the output file.
+  #
+  # This reads and parses one file.  The resulting zimbu file may import other
+  # files, they get processed when compiling that zimbu file.
+  #
+  # Each section results in a string that's written to the output file.
+  IO.File inFile = IO.fileReader(inFileName)
+  Input input = NEW(inFile, inFileName, "", record = TRUE)
+  TokenInput in = NEW(input)
+
+  IO.File outFile = IO.fileWriter(outFileName)
+
+  processFile(in, outFile)
+
+  IF LOG.errorCount > 0
+    # Write an error to the file, returning a non-zero exit value is not
+    # always recognized.
+    outFile.write("failed to process \(inFileName)")
+    RETURN 1
+  }
+
+  RETURN 0
+}
+
+CLASS Import
+  string     $fileName  # e.g. subdir/MyController.zu
+  string     $itemName  # e.g. MyController
+  bool       $usedAsController
+}
+
+PROC processFile(TokenInput in, IO.File outFile)
+  outFile.print("# GENERATED FILE - DO NOT EDIT")
+  outFile.print("# generated from \(in.input.pos.filename)")
+  outFile.print()
+
+  bool insideModule
+  bool seenModuleName
+  bool seenHtml
+  bool hasCss
+
+  # Store the imports, the once used as a controller get "@javascript"
+  dict<string, Import> imports = NEW()
+
+  IO.Writer out = outFile
+
+  WHILE TRUE
+    Token token = in.getToken()
+    IF token.type == TType.eof
+      IF insideModule
+        in.error("Missing } to end the MODULE")
+      }
+      BREAK
+    }
+
+    SWITCH token.type
+      CASE TType.comment
+      CASE TType.sep
+      CASE TType.line_sep
+        # Comment and white space: copy as-is.
+        out.write(in.input.getRecord())
+
+      CASE TType.import
+        processImport(in, imports)
+
+        # Store the produced text until we know how to write the imports.
+        out = IO.StringWriter.NEW()
+
+      CASE TType.module
+        IF insideModule
+          in.error("Already inside a MODULE")
+          # The rest is probably going to be a mess, give up.
+          RETURN
+        }
+        out.write(in.input.getRecord())
+        insideModule = TRUE
+
+      CASE TType.id
+        IF insideModule && !seenModuleName
+          out.write(in.input.getRecord())
+          seenModuleName = TRUE
+        ELSE
+          in.error("Unexpected ID")
+        }
+
+      CASE TType.at
+        token = in.getToken()
+        IF token.type == TType.id
+          # Copy @attribute
+          out.write(in.input.getRecord())
+        ELSE
+          in.error("Unexpected @")
+        }
+
+      CASE TType.c_close
+        IF insideModule
+          insideModule = FALSE
+        ELSE
+          in.error("Unmatched }")
+        }
+
+      CASE TType.css
+        IF seenHtml
+          in.error("CSS must come before the first HTML")
+        }
+        IF hasCss
+          in.error("can only have one CSS block")
+        }
+        processCss(token, in, out)
+        hasCss = TRUE
+
+      CASE TType.html
+        seenHtml = TRUE
+        processHtml(token, in, hasCss, imports, out)
+
+      DEFAULT
+        in.error("Unrecognized token: \(token.type.ToString())")
+    }
+  }
+
+  IF out ISNOT outFile
+    # Write the imports, possibly with the javascript annotation.
+    # Insert "../", the templates are produced in ZUDIR.
+    FOR import IN imports
+      outFile.write("IMPORT \"../\(import.fileName)\"")
+      IF import.usedAsController
+        outFile.write(" @javascript")
+      }
+      outFile.write("\n")
+    }
+
+    # Write the body.
+    outFile.write(out.ToString())
+  }
+}
+
+PROC processImport(TokenInput in, dict<string, Import> imports)
+  # Skip until the first quote. 
+  in.input.getRecord()
+  WHILE TRUE
+    Token token = in.getToken()
+    IF token.type == TType.eof
+      BREAK
+    }
+    IF token.type == TType.stringLiteral
+      Import import = NEW()
+      import.fileName = token.value
+      string shortName = IO.tail(token.value)
+      int dotIdx = shortName.find(".")
+      IF dotIdx > 0
+        shortName = shortName.slice(0, dotIdx - 1)
+      }
+      imports.set(shortName, import)
+      BREAK
+    }
+  }
+  in.input.getRecord()
+}
+
+# Process an HTML block.
+PROC processHtml(Token htmlToken, TokenInput in, bool hasCss,
+                                  dict<string, Import> imports, IO.Writer out)
+  # TODO: proper parsing
+  out.write("FUNC")
+  in.input.getRecord()
+
+  # Read and write the function signature: name(type arg)
+  bool hadParen
+  int parens
+  WHILE TRUE
+    Token token = in.getToken()
+    SWITCH token.type
+      CASE TType.eof
+        in.error("Unexpected end of file")
+        RETURN
+      CASE TType.p_open
+        IF !hadParen
+          hadParen = TRUE
+          out.write(in.input.getRecord())
+          out.write("ZUT.Context context, ")
+        }
+        ++parens
+      CASE TType.p_close
+        --parens
+    }
+    IF hadParen && parens == 0
+      BREAK
+    }
+  }
+  out.write(in.input.getRecord())
+  out.write(" string")
+
+  # Read and write attributes (until end of line)
+  WHILE TRUE
+    Token token = in.getToken()
+    IF token.type == TType.eof
+      in.error("Unexpected end of file")
+      RETURN
+    }
+    IF token.type == TType.line_sep
+      BREAK
+    }
+  }
+  out.write(in.input.getRecord())
+
+  IF hasCss
+    out.print("addCss(context)")
+    out.write("    ")
+  }
+  out.print("IO.StringWriter w = NEW()")
+
+  # Keep track of which actions were already registered.
+  # Key is "controllerName/actionName".
+  set<string> actionsDone = NEW()
+
+  # Keep track of which events were already listened on.
+  set<string> eventsDone = NEW()
+
+  # TODO: Proper HTML parsing
+  in.emptyStack()
+  int curlyDepth
+  int spaceCount
+  WHILE TRUE
+    int c = in.get()
+    SWITCH c
+      CASE IO.eof
+        in.error("Unexpected end of file")
+        RETURN
+      CASE  '{'
+        ++curlyDepth
+      CASE '}'
+        --curlyDepth
+      CASE '#'
+        IF spaceCount >= 2
+          # Read and discard a Zimbu-style comment.
+          # Avoids finding {} and [] inside it.
+          writeRecorded(in, out, imports, actionsDone, eventsDone)
+          WHILE TRUE
+            c = in.get()
+            IF c == '\n' || c == IO.eof
+              BREAK
+            }
+          }
+          getRecorded(in)
+        }
+      CASE '['
+        writeRecorded(in, out, imports, actionsDone, eventsDone)
+
+        # [=expression] or [A statement]
+        processStatement(in, out)
+    }
+    IF curlyDepth == -1
+      BREAK
+    }
+    IF c == ' '
+      ++spaceCount
+    ELSEIF c == '\n'
+      spaceCount = 2
+    ELSE
+      spaceCount = 0
+    }
+  }
+
+  writeRecorded(in, out)
+
+  out.print("    RETURN w.ToString()")
+  out.print("  }")
+}
+
+# Process a CSS block.
+PROC processCss(Token htmlToken, TokenInput in, IO.Writer out)
+  # TODO: proper parsing
+  in.input.getRecord()
+
+  out.print("PROC addCss(ZUT.Context context)")
+  out.print("    IF context.hasCss(\"\(in.input.pos.filename)\")")
+  out.print("      RETURN")
+  out.print("    }")
+
+  out.print("    IO.StringWriter w = NEW()")
+
+  # TODO: Proper CSS parsing
+  in.emptyStack()
+  int curlyDepth
+  int spaceCount
+  WHILE TRUE
+    int c = in.get()
+    SWITCH c
+      CASE  IO.eof
+        in.error("Unexpected end of file")
+        RETURN
+      CASE  '{'
+        ++curlyDepth
+      CASE '}'
+        --curlyDepth
+      CASE '#'
+        IF spaceCount >= 2
+          # Read and discard a Zimbu-style comment.
+          # Avoids finding {} and [] inside it.
+          writeRecorded(in, out)
+          WHILE TRUE
+            c = in.get()
+            IF c == '\n' || c == IO.eof
+              BREAK
+            }
+          }
+          getRecorded(in)
+        }
+      CASE '['
+        writeRecorded(in, out)
+        processStatement(in, out)
+    }
+    IF curlyDepth == -1
+      BREAK
+    }
+    IF c == ' '
+      ++spaceCount
+    ELSEIF c == '\n'
+      spaceCount = 2
+    ELSE
+      spaceCount = 0
+    }
+  }
+
+  writeRecorded(in, out)
+
+  out.print("    context.addCss(\"\(in.input.pos.filename)\", w.ToString())")
+  out.print("  }")
+}
+
+FUNC getRecorded(TokenInput in) string
+  # Exclude the last character
+  in.input.push(' ')
+  string recorded = in.input.getRecord()
+  in.input.get()
+  in.input.getRecord()  # drop the space
+  RETURN recorded
+}
+
+# Write what was recorded in |in.input|, except the last character.
+PROC writeRecorded(TokenInput in, IO.Writer out,
+                   dict<string, Import> imports = NIL,
+                   set<string> actionsDone = NIL,
+                   set<string> eventsDone = NIL)
+  string recorded = getRecorded(in)
+
+  IF imports != NIL
+    # Find controller names.
+    string lastController
+    int idx
+    WHILE TRUE
+      int cidx = recorded.find(" zcontroller=\"", idx)
+      int aidx = recorded.find(" zaction=\"", idx)
+      IF cidx < 0 && aidx < 0
+        BREAK
+      }
+
+      bool isAction
+      IF cidx >= 0 && cidx < aidx
+        idx = cidx + 14
+      ELSE
+        idx = aidx + 10
+        isAction = TRUE
+      }
+
+      int end = idx
+      WHILE end < recorded.Size() && recorded[end] != '"'
+        ++end
+      }
+      string value = recorded.slice(idx, end - 1)
+
+      IF isAction
+        # The value is "click: method, hoover: method".
+        FOR action IN value.split(",")
+          list<string> parts = action.split(":")
+          IF parts.Size() == 2
+            string eventName = parts[0].trim()
+            string funcName = parts[1].trim()
+
+            IF !eventsDone.has(eventName)
+              # TODO: error for unknown event name.
+              out.print("    context.listen(ZUT.EventType.\(eventName))")
+              actionsDone.set(eventName)
+            }
+
+            string key = lastController .. "/" .. funcName
+            IF !actionsDone.has(key)
+              out.print("    ZUT.registerAction(\"\(lastController)\", \"\(funcName)\")")
+              actionsDone.set(key)
+            }
+          }
+        }
+      ELSE
+        IF imports.has(value)
+          imports[value].usedAsController = TRUE
+        ELSE
+          LOG.error("Controller not imported: \(value)")
+        }
+        # TODO: when parsing HTML should make a stack for lastController.
+        lastController = value
+      }
+    }
+  }
+
+  # Remove indent.
+  int nl
+  WHILE TRUE
+    nl = recorded.find('\n', nl)
+    IF nl < 0
+      BREAK
+    }
+    int i = nl + 1
+    WHILE i < recorded.Size() && recorded[i].isWhite()
+      ++i
+    }
+    IF i > nl + 1
+      recorded = recorded.slice(0, nl) .. recorded.slice(i)
+    }
+    nl = nl + 1
+  }
+
+  string trimmed = recorded.trim()
+  IF trimmed.Size() > 0
+    out.write("    w.write(''\"")
+    out.write(trimmed)
+
+    # If the text ends in white space, write one space.
+    # If the white space contained a NL, write a NL.
+    int end = recorded.Size() - 1
+    bool foundNL
+    WHILE end >= 0 && recorded[end].isWhite()
+      IF recorded[end] == '\n'
+        foundNL = TRUE
+        BREAK
+      }
+      --end
+    }
+    IF foundNL
+      out.writeChar('\n')
+    ELSEIF end < recorded.Size() - 1
+      out.writeChar(' ')
+    }
+    out.print("\"'')")
+  }
+}
+
+# Process a [statement].
+PROC processStatement(TokenInput in, IO.Writer out)
+  int squareDepth
+
+  # TODO: proper Zimbu expression parsing
+  WHILE TRUE
+    SWITCH in.get()
+      CASE IO.eof
+        in.error("Unexpected end of file")
+        RETURN
+      CASE '['
+        ++squareDepth
+      CASE ']'
+        --squareDepth
+    }
+    IF squareDepth == -1
+      BREAK
+    }
+  }
+  # Exclude the "]"
+  in.input.push(' ')
+  string stmtText = in.input.getRecord().trim()
+  in.input.get()
+  in.input.getRecord()  # drop the space
+
+  IF stmtText.startsWith("=")
+    # [=expression]
+    out.write("    w.write(")
+    out.write(stmtText.slice(1))
+    out.print(")")
+  ELSEIF stmtText == "#"
+    # [#] TODO: proper white space handling.
+    out.print("    w.write(\"# \")")
+  ELSE
+    # [statement]
+    out.write("    ")
+    out.print(stmtText)
+  }
+}

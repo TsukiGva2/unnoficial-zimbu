@@ -1,0 +1,482 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Write IMT: create tables for calling methods on an interface.
+#
+# Copyright 2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../ClassType.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../MethodType.zu"
+IMPORT "../Output.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "WriteC.zu"
+
+MODULE WriteIMT @public @items=public         # TODO: restrict visibility
+
+  # Generate the interface member lookup table for class |classDecl|
+  # implementing interface |itf|, with the interface members |itf.memberList|.
+  PROC generateInterfaceMemberTable(Declaration classDecl,
+                                                     Type itf, SContext ctx)
+    ClassType itfClass = itf.getClassType(ctx)
+    IF Generate.skipUnused() && !ctx.gen.isDeclUsed(classDecl)
+      # The class is not used, the table will be unused.
+      RETURN
+    }
+
+    # Write the header to declOut.
+    string tableName = Declaration.interfaceMemberTableName(
+                                                     classDecl, itfClass, ctx)
+
+    # Write the actual table to bodyOut.  Use origBodyOut when inside a
+    # method.
+    Output out = ctx.outs.bodyOut
+    IF ctx.outs.origBodyOut != NIL
+      out = ctx.outs.origBodyOut
+    }
+    out.write("Tc *" .. tableName .. "[] = {\n")
+    out.write(" (Tc*)&" .. classDecl.pName .. "__T,\n")
+    int count = generateIMT(classDecl, itfClass, tableName, 1, out, ctx, TRUE)
+
+    # Member variables can be defined in parents.
+    # For interfaces also methods.
+    WHILE TRUE
+      itfClass = itfClass.parent
+      IF itfClass == NIL
+        BREAK
+      }
+      count = generateIMT(classDecl, itfClass, tableName, count,
+                              out, ctx, itfClass.ttype == Type.Enum.interface)
+    }
+    out.write("};\n")
+
+    ctx.outs.declOut.write("Tc *" .. tableName)
+    ctx.outs.declOut.write("[" .. count .. "];\n")
+  }
+
+  bool startedClass
+
+  FUNC generateIMT(Declaration classDecl, Type itf,
+                                             string tableName, int countStart,
+                                     Output out, SContext ctx, bool doMethods
+                 ) int
+    int count = countStart
+    VAR declDict = itf.getObjectDeclDict()
+    IF declDict != NIL
+      Output imtOut = ctx.outs.imtInitOut
+
+      # CAREFUL: this loop must be done in exactly the same order as in
+      # classMemberTableIndex()
+      FOR memberList IN declDict.values()
+        FOR decl IN memberList
+          IF decl.name.find("__") > 0
+            # Skip method added from parent.
+          ELSEIF decl.getClassName() != NIL
+            IF decl.type.isMethodType()
+              IF doMethods
+                int undef
+                Declaration method = classDecl.type.findMatchingMethod(
+                                      decl.name, TRUE, decl.type.getArgList(),
+                                                 NIL, methodArgs, &undef, ctx)
+                IF method == NIL
+                  # This can happen when an argument is unknown while the
+                  # function is not being generated.
+                  out.write(" (Tc*)0, /* optimized-out: ")
+                  out.write(decl.name .. " */\n")
+                ELSE
+                  string name = method.pName
+                  IF name == NIL
+                    IF decl.type.ttype != Type.Enum.builtinMethod
+                      LOG.internal("Method without pName: \(decl)")
+                    }
+                    name = "0"
+                  }
+                  out.write(" (Tc*)")
+                  # An Init() method is only generated when type.defined is
+                  # TRUE.
+                  IF (ctx.gen.isDeclUsed(method) || !Generate.skipUnused())
+                         && (!Generate.isInitName(method.name)
+                                                       || method.type.defined)
+                    out.write(name)
+                  ELSE
+                    # TODO: Can we omit this table entry?
+                    out.write("0")
+                    name = "0"
+                  }
+                  out.write(", /* " .. method.getName(FALSE) .. " */\n")
+
+                  IF decl.hasDirectRef
+                    out.write(" (Tc*)")
+                    IF name == "0"
+                      out.write("0")
+                    ELSE
+                      out.write("&")
+                      out.write(WriteC.directRefName(name))
+                    }
+                    out.write(", /* Tcb */\n")
+                    ++count
+                  }
+
+                  MethodType methodType = decl.type.<MethodType>
+                  IF methodType.callbackStmt != NIL
+                    # The Init() method will allocate a callback, which must
+                    # be found later for an iobject.
+                    Declaration callbackDecl = methodType.getCallbackDecl(ctx)
+                    out.write(" (Tc*)0, /* cb ")
+                    out.write(callbackDecl.pName)
+                    out.write(" */\n")
+                    ++count
+                    IF !Generate.skipUnused()
+                                           || ctx.gen.isDeclUsed(callbackDecl)
+                      writeIMTline(classDecl.pName, tableName, FALSE, count,
+                                    callbackDecl.pName, &startedClass, imtOut)
+                    }
+                  }
+                }
+                ++count
+              }
+            ELSEIF decl.type.ttype != Type.Enum.class
+                && decl.type.ttype != Type.Enum.enum
+              # The pointer computations cannot be used in the array
+              # initialization for some compilers (e.g., clang).  Write a zero
+              # and fill in the correct value in ZimtInit().
+              out.write(" (Tc*)0,\n")
+              IF !Generate.skipUnused() || ctx.gen.isDeclUsed(decl)
+                writeIMTline(classDecl.pName, tableName, FALSE, count,
+                                            decl.pName, &startedClass, imtOut)
+              }
+              ++count
+            }
+          ELSE
+            LOG.internal("object member without className: \(decl.name)")
+          }
+        }
+      }
+    }
+    RETURN count
+  }
+
+  # Return the table index for |member| in |classType|.
+  FUNC classMemberTableIndex(ClassType classType, Declaration member,
+                                                              bool reportError
+                            ) int
+    int idx = 1
+    VAR classDeclDict = classType.getObjectDeclDict()
+    IF classDeclDict != NIL
+      FOR memList IN classDeclDict.values()
+        FOR decl IN memList
+          IF decl IS member
+            RETURN idx
+          }
+          IF decl.getClassName() != NIL
+            && decl.name.find("__") < 0  # Don't count methods from the parent
+            && (decl.type.isMethodType()
+                || (decl.type.ttype != Type.Enum.class
+                 && decl.type.ttype != Type.Enum.interface
+                 && decl.type.ttype != Type.Enum.enum))
+            idx++
+
+            IF decl.hasDirectRef
+              idx++
+            }
+            IF decl.type.isMethodType()
+                                 && decl.type.<MethodType>.callbackStmt != NIL
+              idx++
+            }
+          }
+        }
+      }
+    }
+
+    # Member variables and interface methods can be defined in parents.
+    ClassType ct = classType
+    WHILE TRUE
+      ct = ct.parent
+      IF ct == NIL
+        BREAK
+      }
+
+      VAR declDict = ct.getObjectDeclDict()
+      IF declDict != NIL
+        FOR memList IN declDict.values()
+          FOR decl IN memList
+            IF decl IS member
+              RETURN idx
+            }
+            # Do not count classes, interfaces or enums.
+            # Do not count methods, unless in an interface.
+            IF decl.getClassName() != NIL
+                 && (!decl.type.isMethodType()
+                                    || classType.ttype == Type.Enum.interface)
+                 && decl.type.ttype != Type.Enum.class
+                 && decl.type.ttype != Type.Enum.interface
+                 && decl.type.ttype != Type.Enum.enum
+              idx++
+            }
+          }
+        }
+      }
+    }
+
+    IF reportError
+      string name = member.pName ?: member.name
+      LOG.internal("could not find \(name) IN \(classType.pName)")
+    }
+    RETURN 0
+  }
+
+  # Generate the table of interface member lookup tables for class
+  # |classType|.
+  PROC generateIMTTable(Type classType, SContext ctx)
+    # Write the header to declOut.
+    string decl = "Tc **" .. interfaceMemberTableTableName(classType)
+
+    # Write the actual table to bodyOut.  Use origBodyOut when inside a
+    # method.
+    Output out = ctx.outs.bodyOut
+    IF ctx.outs.origBodyOut != NIL
+      out = ctx.outs.origBodyOut
+    }
+    out.write(decl .. "[] = {\n")
+    int count = writeIMTnames(classType.<ClassType>, classType, out, ctx)
+    out.write("};\n")
+
+    ctx.outs.declOut.write(decl .. "[" .. count .. "];\n")
+  }
+
+  # Write the InterfaceMemberTable name for each child of |class| to |out|.
+  # Used recursively, keep in sync with ClassType.findChild().
+  FUNC writeIMTnames(ClassType class, Declaration itfDecl,
+                                                 Output out, SContext ctx) int
+    int count
+    IF !class.isAbstract()
+      # Do the class itself first.
+      string value = "  0"
+      IF !Generate.skipUnused() || ctx.gen.isDeclUsed(class)
+        Declaration decl = class.isUsingInterface(itfDecl, ctx)
+        IF decl != NIL
+          value = Declaration.interfaceMemberTableName(class, itfDecl, ctx)
+        }
+      }
+      out.write("  ")
+      out.write(value)
+      out.write(",\n")
+      ++count
+    }
+
+    # Then the children, recursively.
+    IF class.children != NIL
+      FOR child IN class.children
+        count += writeIMTnames(child, itfDecl, out, ctx)
+      }
+    }
+    RETURN count
+  }
+
+  # Return the name of the table with interface member table names
+  # for class |decl|.
+  FUNC interfaceMemberTableTableName(Declaration decl) string
+    IF decl.pName == NIL
+      RETURN "NIL"  # Must have had an error earlier.
+    }
+    RETURN decl.pName .. "__imtt"
+  }
+
+  PROC writeToTable(Declaration classDecl, SContext ctx)
+    # Write the actual table to bodyOut.  Use origBodyOut when inside a
+    # method.
+    Output out = ctx.outs.bodyOut
+    IF ctx.outs.origBodyOut != NIL
+      out = ctx.outs.origBodyOut
+    }
+    string typeName = classDecl.type.getTypeName(ctx)
+    string tableName = "To" .. typeName
+    out.write("To " .. tableName .. "[] = {\n")
+
+    int count
+    Output tmpOut = NEW()
+    tmpOut.writing = TRUE
+
+    list<string> memberNames
+    IF ctx.gen.<WriteC>.ttoHasMemberNames()
+      # Write a list with the member names.
+      memberNames = NEW()
+    }
+
+    # Find member variables in the class itself and in parents.
+    ClassType thisClass = classDecl.type.getClassType(ctx)
+    ClassType class = thisClass
+    WHILE class != NIL
+      count = writeToTableLines(classDecl, class, tableName,
+                                              count, tmpOut, memberNames, ctx)
+      class = class.parent
+    }
+
+    out.write(" {" .. count .. ", 0},\n")
+    out.append(tmpOut)
+    out.write("};\n")
+
+    ctx.outs.declOut.write("To " .. tableName .. "[" .. (count + 1) .. "];\n")
+
+    IF memberNames != NIL
+      out.write("char *Str" .. typeName .. "[] = {\n")
+      FOR name IN memberNames
+        out.write(" \"")
+        out.write(name)
+        out.write("\",\n")
+      }
+      out.write("};\n")
+      ctx.outs.declOut.write("char *Str" .. typeName .. "[];\n")
+    }
+
+    string staticName = ctx.gen.<WriteC>.writeStaticString(thisClass.name, ctx)
+    writeClassType(thisClass, staticName, tableName, out, ctx)
+
+  }
+
+  PROC writeClassType(ClassType thisClass, string staticName, string toName,
+                                                     Output out, SContext ctx)
+    out.write("Tto ")
+    out.write(thisClass.pName)
+    out.write("__T = {390, (Tc*)&")
+    out.write(staticName)
+    out.write(", ")
+
+    # Only lookup the ToString function when ToString() is used on an item.
+    Declaration foundFunc
+    int undef
+    IF ctx.gen.isDeclUsed(Declaration.itemToString)
+      foundFunc = thisClass.findMatchingMethod("ToString",
+                                       TRUE, [], NIL, skipShared, &undef, ctx)
+    }
+    IF foundFunc == NIL
+      out.write("0")
+    ELSE
+      out.write(foundFunc.pName)
+    }
+
+    IF ctx.gen.<WriteC>.ttoHasMemberNames()
+      IF thisClass.isAllocType(ctx)
+        out.write(", 0")
+      ELSE
+        out.write(", Str")
+        out.write(thisClass.pName)
+      }
+    }
+
+    IF ctx.gen.<WriteC>.ttoHasMethods()
+      foundFunc = thisClass.findMatchingMethod("Size",
+                                       TRUE, [], NIL, skipShared, &undef, ctx)
+      IF foundFunc == NIL || !ctx.gen.isDeclUsed(foundFunc)
+        out.write(", 0")
+      ELSE
+        out.write(", ")
+        out.write(foundFunc.pName)
+      }
+
+      # Finish is only really used when hasFinish is used.
+      Declaration finishMethod
+      IF ctx.gen.isDeclUsed(Declaration.hasFinish)
+        finishMethod = Generate.getFinishMethod(thisClass.scope, ctx)
+      }
+      IF finishMethod == NIL
+        out.write(", 0")
+      ELSE
+        out.write(", ")
+        out.write(finishMethod.pName)
+      }
+
+      Declaration.C arg = NEW("", thisClass.getValueType(ctx))
+      foundFunc = thisClass.findMatchingMethod("Equal",
+                                    TRUE, [arg], NIL, skipShared, &undef, ctx)
+      IF foundFunc == NIL || !ctx.gen.isDeclUsed(foundFunc)
+        out.write(", 0")
+      ELSE
+        out.write(", ")
+        out.write(foundFunc.pName)
+      }
+
+      foundFunc = thisClass.findMatchingMethod("Compare",
+                                    TRUE, [arg], NIL, skipShared, &undef, ctx)
+      IF foundFunc == NIL || !ctx.gen.isDeclUsed(foundFunc)
+        out.write(", 0")
+      ELSE
+        out.write(", ")
+        out.write(foundFunc.pName)
+      }
+    }
+
+    out.write(", ")
+    out.write(toName)
+
+    out.write("};\n")
+  }
+
+  FUNC writeToTableLines(Declaration classDecl, Declaration decl,
+               string tableName, int countStart, Output out,
+               list<string> memberNames, SContext ctx) int
+    int count = countStart
+    VAR declDict = decl.type.getObjectDeclDict()
+    IF declDict != NIL
+      Output imtOut = ctx.outs.imtInitOut
+
+      FOR memberList IN declDict.values()
+        FOR d IN memberList
+          IF !d.type.isMethodType()
+               && (!Generate.skipUnused() || ctx.gen.isDeclUsed(d))
+            string typeName = d.type.getTypeName(ctx)
+            IF typeName != ""
+                 && ((d.getClassName() != NIL && d.type.isManaged())
+                               || ctx.gen.isDeclUsed(Declaration.itemToString))
+              # The pointer computations cannot be used in the array
+              # initialization for some compilers (e.g., clang).  Write a zero
+              # and fill in the correct value in ZimtInit().
+              out.write(" {0, (Tt*)&")
+              out.write(typeName)
+              out.write("__T}, /* ")
+              out.write(d.name)
+              out.write(" */\n")
+              writeIMTline(classDecl.pName, tableName, TRUE, count + 1,
+                                               d.pName, &startedClass, imtOut)
+              ++count
+              IF memberNames != NIL
+                memberNames.add(d.name)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    RETURN count
+  }
+
+  PROC writeIMTline(string typeName, string tableName, bool off, int index,
+                             string itemName, bool &didAline, Output imtOut)
+    IF !didAline
+      didAline = TRUE
+      imtOut.write(" {\n")
+      imtOut.write("  " .. typeName .. " *p = 0;\n")
+    }
+    imtOut.write("  " .. tableName)
+    imtOut.write("[" .. index)
+    IF off
+      imtOut.write("].off = (int)")
+    ELSE
+      imtOut.write("] = (Tc*)")
+    }
+    imtOut.write("((Tc*)&p->" .. itemName .. " - (Tc*)p);\n")
+  }
+
+  PROC writeIMTend(SContext ctx)
+    IF startedClass
+      startedClass = FALSE
+      ctx.outs.imtInitOut.write(" }\n")
+    }
+  }
+}

@@ -1,0 +1,54 @@
+# The Zimbu compiler written in Zimbu
+#
+# Token for a proto buffer.
+#
+# This is used for the pluginproto program.  It must be usable in other
+# programs as well, thus do not add any dependencies on the write code.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS PToken @items=directory
+  Type      $type
+  string    $value
+
+  Z.Pos     $startPos
+  Z.Pos     $endPos
+
+  ENUM Type
+    unknown
+
+    package
+    message
+    enum
+    option
+
+    required
+    optional
+    repeated
+    default
+
+    service
+    rpc
+    returns
+
+    id
+    number
+    bool
+    char
+    string
+
+    semicolon
+    equal
+    p_open       # (
+    p_close      # )
+    c_open       # {
+    c_close      # }
+    s_open       # [
+    s_close      # ]
+
+    eof
+  }
+}

@@ -1,0 +1,36 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# HTTP module loader
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Config.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../SContext.zu"
+IMPORT "../genC/WriteC.zu"
+
+MODULE HTTPLoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin HTTP module.
+  FUNC prepare() Builtin
+    Builtin b = NEW()
+    b.moduleName = "HTTPModule"
+    b.fileName = "HTTPModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the HTTP module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("HTTP", builtin)
+    }
+  }
+}

@@ -1,0 +1,888 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# MethodType class.
+#
+# A Type used for a func and a proc.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "CallbackType.zu"
+IMPORT "ClassType.zu"
+IMPORT "Declaration.zu"
+IMPORT "ExprArg.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodScope.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "MultipleType.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "Template.zu"
+IMPORT "Type.zu"
+IMPORT "TupleType.zu"
+IMPORT "WriteCommon.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiStatementExt.zu"
+
+CLASS MethodType EXTENDS ReferenceType @items=public
+  MethodScope         $scope
+
+  # Normal arguments.
+  list<Declaration.C> $arguments
+  int                 $optionalArgCount   # nr of arguments with default value
+  bool                $varargs            # last arg is "type ... args"
+  bool                $varargsName        # uses args.names[]
+  TupleType           $varargsTuple       # used for the varargs argument
+
+  # USE arguments.
+  list<Declaration>   $useArguments
+
+  # auto-USE arguments.
+  list<Declaration>   $autoArguments
+
+  # When there is more than one return type $returnType is a MultipleType.
+  # $returnType is NIL for a proc.
+  Type                $returnType
+
+  # For methods with more than one implementation.
+  int                 $identNumber
+
+  # For a method inherited from a parent class: number of levels up it was
+  # defined.
+  int                 $parentLevel
+
+  # For a method inherited from a parent class: the method in the parent
+  # class.
+  MethodType          $parentMethod
+
+  # For a method inherited from a parent class, not replaced and using the
+  # original name, the other copy of the method, the one that will be
+  # produced.
+  MethodType          $producedMethod
+
+  # For a method inherited in child classes: the classes where the copy
+  # exists.  This is used when the copy is deleted because it is replaced.
+  list<ClassType>     $childMethodClasses
+
+  # A copy of the method in the parent class, resolved and generated in the
+  # context of this class.
+  Zui.Declaration     $copyDecl
+
+  # When not NIL this method is templated and it lists the templates that were
+  # found for this method.
+  list<Template>      $templateList
+
+  # When not NIL the list of names used in the template: <Tone, Ttwo>
+  list<string>        $templateNames
+
+  # Class for Class.func.(arg) and Class.func<int>
+  Type                $classType
+
+  # For Type.Enum.builtinMethod: Method to produce code for this symbol.
+  proc<Declaration.C, Zui.MethodCall, SContext> $produce
+
+  # Cached ValueType.
+  MethodRefType       $valueType
+
+  # Function signature, depends on return and argument types
+  string              $signature
+
+  # Scopes that need another pass if the signature changes
+  set<Scope>          $users
+
+  # Callback for when the method is used in an expression.
+  # Only set when it is actually encountered.
+  CallbackType        $callback
+
+  # Statement with the declaration of a callback for directly calling the
+  # method.  Only for when there are $useArguments or $autoArguments and the
+  # method is called directly.
+  Zui.Statement       $callbackStmt
+
+  # Callbacks for when the method is used as the first type in a callback<>.
+  list<CallbackType>  $callbackList
+
+  NEW(Type.Enum type, string name) @replace
+    PARENT.NEW(type, name)
+    $arguments = NEW()
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    MethodType ret = NEW($ttype, $name)
+    $copyMethodValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyMethodValues(MethodType ret) @default
+    $copyReferenceValues(ret)
+    ret.scope = $scope
+    ret.arguments = $arguments
+    ret.useArguments = $useArguments
+    ret.autoArguments = $autoArguments
+    ret.returnType = $returnType
+    ret.identNumber = $identNumber
+    ret.parentLevel = $parentLevel
+    ret.parentMethod = $parentMethod
+    ret.templateList = $templateList
+    ret.templateNames = $templateNames
+    ret.classType = $classType
+    ret.produce = $produce
+    # $valueType not copied
+    ret.signature = $signature
+    # $users not copied
+    # $callback not copied
+    # $callbackStmt not copied
+    # $callbackList not copied
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @replace
+    RETURN FALSE
+  }
+
+  # Return something nicer than "ref".
+  FUNC $typeName(bool long) string @replace @default
+    string s
+    IF $ttype == Type.Enum.func
+      s = "func<"
+    ELSE
+      s = "proc<"
+    }
+    string comma = ""
+    FOR arg IN $arguments
+      s ..= comma .. arg.type.typeName(long)
+      comma = ", "
+    }
+    IF $ttype == Type.Enum.func
+      IF $returnType == NIL
+        s ..= " => [unknown]"
+      ELSE
+        s ..= " => " .. $returnType.typeName(long)
+      }
+    }
+    s ..= ">"
+    RETURN s
+  }
+
+  # If this type is a Class, Enum, Bits or Method, return a reference to it.
+  # Otherwise return THIS.
+  FUNC $getValueType(SContext ctx) Type @replace
+    RETURN $getMethodRef()
+  }
+
+  # Return a reference to this method.
+  FUNC $getMethodRef() MethodRefType
+    IF $valueType == NIL
+      string name = "reference to " .. ($name == NIL ? "unnamed" : $name)
+      IF $ttype == Type.Enum.proc
+        $valueType = NEW(Type.Enum.procRef, THIS, name)
+      ELSE
+        $valueType = NEW(Type.Enum.funcRef, THIS, name)
+      }
+    }
+    RETURN $valueType
+  }
+
+  # Add an argument |name| using a copy of |type|
+  PROC $addArgument(string name, Type type, Zui.Declaration zuiDecl)
+    Declaration.C decl = NEW(name)
+    decl.type = type
+    decl.zuiDecl = zuiDecl  # includes any default value in the init field
+
+    IF $arguments == NIL
+      $arguments = NEW()
+    }
+    $arguments.add(decl)
+  }
+
+  FUNC $typeDefined() bool @replace
+    IF $arguments == NIL
+      RETURN FALSE
+    }
+    FOR arg IN $arguments
+      IF arg.type == NIL || !arg.type.typeDefined()
+        RETURN FALSE
+      }
+    }
+    IF $ttype == Enum.func
+      RETURN $returnType != NIL && $returnType.typeDefined()
+    }
+    RETURN TRUE
+  }
+
+  # Return TRUE if this is a method.
+  FUNC $isMethodType() bool @replace
+    RETURN TRUE
+  }
+
+  # Return TRUE if this is a method or a reference to a method.
+  FUNC $isMethodOrRefType() bool @replace
+    RETURN TRUE
+  }
+
+  # For a proc, func, procRef, funcRef: return the method type.
+  # Otherwise return NIL
+  FUNC $getMethod() MethodType @replace
+    RETURN THIS
+  }
+
+  # Return the argument list.
+  FUNC $getArgList() list<Declaration.C> @replace
+    RETURN $arguments
+  }
+
+  # Return the return type.
+  FUNC $getReturnType() Type @replace
+    RETURN $returnType
+  }
+
+  # Return the types as they are used in a typespec.
+  # For a func the type at the highest index is the return type.
+  # func<type0, type1 => retType1, retType2>
+  # proc<type0, type1>
+  FUNC $getTypespecType(int idxArg) Type @replace @default
+    int idx = idxArg
+    IF $arguments != NIL
+      IF idx < $arguments.Size()
+        RETURN $arguments[idx].type
+      }
+      idx -= $arguments.Size()
+    }
+    IF $returnType != NIL
+      IF $returnType.getTtype() == Type.Enum.multiple
+        MultipleType mt = $returnType
+        IF idx < mt.types.Size()
+          RETURN mt.types[idx]
+        }
+      }
+      IF idx == 0
+        RETURN $returnType
+      }
+    }
+    RETURN NIL
+  }
+
+  # Update the function signature, made of the return and argument types.
+  # If it changes set $needPass in scopes of users.
+  PROC $setSignature(SContext ctx)
+    IO.StringWriter w = NEW()
+    w.write($returnType == NIL ? "NIL" : $returnType.typeName(TRUE))
+    FOR arg IN $arguments
+      w.write(",")
+      w.write(arg == NIL || arg.type == NIL ? "NIL" : arg.type.typeName(TRUE))
+    }
+    string sig = w.ToString()
+    IF $signature != NIL && sig != $signature
+      # Function signature changed, users of the function need another pass.
+      $setNeedPassInUsers(ctx)
+    }
+
+    $signature = sig
+  }
+
+  # Add a scope where $needPass should be set when the signature changes.
+  PROC $addUser(Scope scope)
+    IF $users == NIL
+      $users = NEW()
+    }
+    $users.set(scope)
+  }
+
+  # Set $needPass flag in scopes of users.
+  PROC $setNeedPassInUsers(SContext ctx)
+    IF $users != NIL
+      FOR scope IN $users.keys()
+        scope.setNeedPass(ctx)
+      }
+    }
+  }
+
+  # Return TRUE if this method starts with "IFNIL".
+  FUNC $hasIfnil() bool
+    RETURN $scope != NIL
+        && $scope.statements != NIL
+        && $scope.statements.Size() > 0
+        && $scope.statements[0].getType() == Zui.StatementType.eIFNIL
+  }
+
+  # Return TRUE if there are any normal or USE arguments.
+  FUNC $hasAnyArguments() bool
+    RETURN ($arguments != NIL && $arguments.Size() > 0)
+           || $hasUseArguments()
+  }
+
+  # Return TRUE if there are USE arguments.
+  FUNC $hasUseArguments() bool
+    RETURN ($useArguments != NIL && $useArguments.Size() > 0)
+        || ($autoArguments != NIL && $autoArguments.Size() > 0)
+  }
+
+  # Add a callback, for when the method is used in an expression.
+  FUNC $getCallback(SContext ctx) CallbackType
+    IF $producedMethod != NIL
+      # Callbacks are kept on the method that is actually produced.
+      RETURN $producedMethod.getCallback(ctx)
+    }
+    IF $scope == NIL
+      IF ctx.out.writing
+        ctx.internalError("Scope is NIL", NIL)
+      }
+      RETURN NIL
+    }
+    IF $callback == NIL
+      $callback = NEW(Type.Enum.callback, "callback")
+      $callback.pName = WriteCommon.getUid($scope.ToString() .. "/cb")
+      $callback.methodType = THIS
+
+      # Make sure the method gets another pass so that it can be generated
+      # with the callback.
+      $scope.setNeedPass(ctx)
+    }
+    RETURN $callback
+  }
+
+  # Add a callback used in the first type of callback<>.
+  # |args| are the further types.
+  FUNC $getCallback(list<Declaration.C> argTypes, SContext ctx) CallbackType
+    IF $producedMethod != NIL
+      # Callbacks are kept on the method that is actually produced.
+      RETURN $producedMethod.getCallback(argTypes, ctx)
+    }
+
+    IF $callbackList == NIL
+      $callbackList = NEW()
+    ELSE
+      # Re-use an existing callback with identical argument types.
+      FOR cb IN $callbackList
+        IF cb.arguments.Size() == argTypes.Size()
+          bool mismatch
+          FOR i IN 0 UNTIL cb.arguments.Size()
+            IF !Type.matchingTypes(cb.arguments[i].type, argTypes[i].type, ctx)
+              mismatch = TRUE
+              BREAK
+            }
+          }
+          IF !mismatch
+            RETURN cb
+          }
+        }
+      }
+    }
+
+    CallbackType cb = NEW(Type.Enum.callback, "callback")
+    cb.pName = WriteCommon.getUid(ctx.scope.ToString() .. "/cb")
+    cb.methodType = THIS
+    cb.arguments = argTypes
+
+    # Only store the callback if all the types are defined.
+    FOR arg IN argTypes
+      IF arg.type == NIL || !arg.type.typeDefined()
+        RETURN cb
+      }
+    }
+    $callbackList.add(cb)
+
+    # Add to the list of all callbacks, so that it will be generated.
+    IF ctx.topScope.allCallbacks == NIL
+      ctx.topScope.allCallbacks = NEW()
+    }
+    ctx.topScope.allCallbacks.add(cb)
+
+    RETURN cb
+  }
+
+  # Get a callback declaration.  Used when a method with USE arguments is used
+  # in an expression.  The declaration will be generated where the method is
+  # defined, so that USE arguments have the value of where the method is
+  # defined.
+  FUNC $getCallbackDecl(SContext ctx) Declaration
+    IF $producedMethod != NIL
+      # Callbacks are kept on the method that is actually produced.  Not the
+      # one copied from the parent with the original name, but the one ending
+      # in "__p1".
+      RETURN $producedMethod.getCallbackDecl(ctx)
+    }
+
+    Zui.Declaration zuiDecl
+    VAR declExt
+    IF $callbackStmt == NIL
+      $callbackStmt = NEW()
+      ZuiStatementExt.get($callbackStmt).props.allocMem = TRUE
+      zuiDecl = $callbackStmt.newDeclaration()
+      # Type is required, but not actually used.
+      zuiDecl.newType().setType(Zui.TypeEnum.eUNKNOWN)
+      declExt = ZuiDeclarationExt.get(zuiDecl)
+      declExt.decl = NEW("cb")
+      CallbackType type = $getCallback(ctx)
+      declExt.decl.type = type
+      declExt.decl.zuiDecl = zuiDecl
+      # Make sure the method gets another pass so that it can be generated
+      # with the callback.
+      $scope.setNeedPass(ctx)
+    ELSE
+      zuiDecl = $callbackStmt.getDeclaration()
+      declExt = ZuiDeclarationExt.get(zuiDecl)
+    }
+    RETURN declExt.decl
+  }
+
+  SHARED
+
+    CLASS Skip @directory @items=directory
+      Declaration  $method    # method to skip when searching for a matching
+                              # method
+      bool    $foundSkip      # TRUE when |skip| was encountered
+      bool    $skipWhenFound  # skip default method when foundSkip is TRUE
+      int     $convCost       # computed argument conversion cost
+
+      NEW(Declaration skip)
+        $method = skip
+        $skipWhenFound = TRUE
+      }
+    }
+
+    BITS FindFuncOptions
+      bool $findFirst          # stop when a match has been found
+      bool $searchParent       # search in parent classes
+      bool $convert            # try with converting arguments
+      bool $skipAbstract       # skip abstract methods
+      bool $skipShared         # don't look in SHARED section of class
+      bool $allowInvisible     # don't check visibility
+      bool $onlyDefined        # only find method with type.defined set
+      bool $ignoreLocal        # ignore @local (for error messages)
+      bool $methodArgs         # Arguments are from another method, not
+                               # the result of expression evaluation.
+    }
+
+    # Find the matching method |name| in class or module |parent| or |scope|.
+    # Either |parent| or |scope| is NIL.
+    # Return NIL when not found.
+    FUNC findMatchingMethod(string name,
+                            Type parent,
+                            Scope scope,
+                            bool isObjectMethod,
+                            list<Declaration.C> argList,
+                            list<Zui.Expression> args,
+                            FindFuncOptions optionsArg,
+                            int &undef,
+                            bool doError,
+                            Zui.Position pos,
+                            string msg,
+                            SContext ctx
+                           ) Declaration
+      MethodType.FindFuncOptions options = optionsArg
+      int nundef
+      multiDict<int, Declaration> funcs = NEW()
+      IF parent != NIL
+        parent.findMatchingMethods(name, isObjectMethod, argList,
+                                            NIL, options, &nundef, funcs, ctx)
+      ELSEIF scope != NIL
+        scope.findMatchingFuncs(name,
+                        isObjectMethod, &nundef, argList,
+                        NIL, options, funcs, ctx)
+      ELSE
+        THROW "Internal error: both parent and scope are NIL"
+      }
+      Declaration decl
+      int funcKey
+      IF funcs.Size() > 0
+        funcKey = funcs.keys().sort()[0]
+        decl = funcs.get(funcKey)[0]
+      }
+      IF decl == NIL && argList.Size() > 0
+        options.convert = TRUE
+        nundef = 0
+        IF parent != NIL
+          parent.findMatchingMethods(name, isObjectMethod, argList,
+                                            NIL, options, &nundef, funcs, ctx)
+        ELSE
+          scope.findMatchingFuncs(name,
+                        isObjectMethod, &nundef, argList,
+                        NIL, options, funcs, ctx)
+        }
+        IF funcs.Size() > 0
+          funcKey = funcs.keys().sort()[0]
+          decl = funcs.get(funcKey)[0]
+        }
+      }
+      undef += nundef
+
+      IF doError
+        Type type = decl?.type
+        IF type == NIL
+          IF ctx.doError()
+            # List errors in the argument first.
+            IF args != NIL
+              Generate.getDeclListFromArguments(args, ctx, TRUE)
+            }
+
+            ctx.error("No method with matching arguments for "
+                                                 .. name .. "() " .. msg, pos)
+            IF parent != NIL
+              listMatchingMethods(ctx, pos,
+                             isObjectMethod, name, parent, argList, options)
+            ELSE
+              listMatchingFunctions(ctx, pos, isObjectMethod,
+                                                          name, argList, TRUE)
+            }
+          }
+        ELSEIF (scope != NIL || type.defined)
+                                       && type.<MethodType.C>.parentLevel == 0
+          # Check for another matching function.  Only when there was no error
+          # in defining one of the matching functions, in that case we want to
+          # report the error at function definition, not where it is used.
+          IF funcs.get(funcKey).Size() > 1
+            undef += 2
+            IF ctx.doError()
+              # This may be caused by errors in the arguments, produce them
+              # first to see that.
+              IF args != NIL
+                Generate.getDeclListFromArguments(args, ctx, TRUE)
+              }
+
+              ctx.error("More than one method with matching arguments for "
+                               .. name .. MethodType.argTypesAsString(argList)
+                               .. msg,
+                               pos)
+              ctx.error("matches here", decl.zuiPos)
+              FOR other IN funcs.get(funcKey)
+                IF other ISNOT decl
+                  ctx.error("and matches here", other.zuiPos)
+                }
+              }
+              # Don't set decl to NIL to avoid more errors.
+            ELSE
+              decl = NIL
+            }
+          }
+        }
+      }
+
+      RETURN decl
+    }
+
+    # Find methods with name |methodName| in declList that match the arguments
+    # |argList|.
+    # When |options.findFirst| is TRUE stop after finding the first match.
+    # When |options.convert| is TRUE accept automatic conversion.
+    # Skip method |skip|.
+    # The caller can check if there is another function that matches, using
+    # |skip|.
+    PROC findMatchingFunctionsInList(list<Declaration> declList,
+                                     string methodName,
+                                     list<Declaration.C> argList,
+                                     Skip skip,
+                                     FindFuncOptions options,
+                                     int &undef,
+                                     multiDict<int, Declaration> funcs,
+                                     SContext ctx)
+      IF declList == NIL
+        RETURN
+      }
+      int argListSize
+      IF argList != NIL
+        argListSize = argList.Size()
+      }
+
+      FOR decl IN declList
+        Type declType = decl.type.getEffType()
+        IF declType ISNOTA MethodType
+          CONTINUE
+        }
+        MethodType methodType = declType
+        MethodType skipParentMethod
+        MethodType declParentMethod
+        IF skip != NIL
+          skipParentMethod = skip.method.type.<MethodType.C>.parentMethod
+          declParentMethod = methodType.parentMethod
+        }
+
+        # Compare the .type here, for an alias the declaration differs but the
+        # .type is equal.
+        IF skipParentMethod != NIL && (decl IS skipParentMethod # .decl
+            || (declParentMethod != NIL
+                                     && declParentMethod IS skipParentMethod))
+          # Skip is a copy of "decl" or both are a copy of the same method.
+        ELSEIF decl.name == methodName
+                 && (skip == NIL || !skip.foundSkip
+                  || !skip.skipWhenFound || !methodType.zuiAttr.getIsdefault())
+                 && !(options.skipAbstract && methodType.isAbstract())
+                 && !(options.onlyDefined && !methodType.defined)
+          # Method has the right name and is not a default method found after
+          # finding a matching method.
+          list<Declaration.C> declArgList = methodType.getArgList()
+          int argCount
+          IF declArgList != NIL
+            argCount = declArgList.Size()
+          ELSE
+            argCount = -1
+          }
+
+          IF (argListSize <= argCount
+                      && argListSize >= argCount - methodType.optionalArgCount)
+              || (methodType.varargs && argListSize >= argCount - 1)
+            # Method has a matching number of arguments, considering optional
+            # arguments and varargs.
+            int totalCost
+            int idx
+            IF !methodType.defined
+              # When one of the functions with a matching name and number of
+              # arguments has an error, return that one, so that we skip an
+              # error at the function call and report only the error at the
+              # function definition.
+              idx = argCount
+              totalCost = 0
+            ELSE
+              bool checkNamedArguments
+              WHILE (idx < argCount || methodType.varargs) && idx < argListSize
+                IF argList[idx].name != "" && !options.methodArgs
+                  checkNamedArguments = TRUE
+                  BREAK
+                }
+
+                Type a1t = declArgList[
+                                    idx >= argCount ? argCount - 1 : idx].type
+                Type a2t = argList[idx].type
+                IF a2t == NIL
+                  BREAK
+                }
+
+                # If the method is a template, an argument that uses a
+                # template type has unknown type.  It's a match only for an
+                # argument with a known type.
+                IF methodType.templateList != NIL
+                  IF a2t.ttype == Type.Enum.unknown
+                    BREAK
+                  }
+                ELSE
+                  # We can convert a reference to what it refers to.  We don't
+                  # do it when the other argument is a NIL.
+                  IF a2t.ttype == Type.Enum.byRef
+                      && !(a1t.ttype == Type.Enum.byRef
+                                             || a1t.ttype == Type.Enum.nilval)
+                    Type ref = a2t.<ReferenceType.C>.getReferencedType()
+                    IF ref != NIL
+                      a2t = ref
+                    }
+                  }
+
+                  int cost = Type.argConvCost(a1t, a2t, undef, ctx)
+                  IF cost >= (options.convert
+                                    ? Type.convCostMax : Type.convCostSimilar)
+                    BREAK
+                  }
+                  totalCost += cost
+                }
+                idx++
+              }
+
+              int nonOptionalFound
+              IF checkNamedArguments
+                # The caller has "name = expr". This and the following
+                # arguments must be found in the remaining arguments of
+                # declType, except when the argument can be part of a varargs
+                # rgument.  Only check the name, not the type.
+                int startIdx = idx
+                array<bool> foundFlags = NEW(argCount - startIdx)
+                int foundNames
+                WHILE idx < argListSize
+                  bool found
+                  FOR i IN startIdx UNTIL argCount
+                    IF declArgList[i].name == argList[idx].name
+                      IF foundFlags[i - startIdx]
+                        ctx.error("Duplicate argument name",
+                                                argList[idx].zuiDecl.getPos())
+                        BREAK
+                      }
+                      found = TRUE
+                      foundFlags[i - startIdx] = TRUE
+                      BREAK
+                    }
+                  }
+                  IF !found && !methodType.varargs
+                    BREAK
+                  }
+                  ++foundNames
+                  ++idx
+                }
+                int required = methodType.varargs
+                       ? argCount - 1 : argCount - methodType.optionalArgCount
+                FOR i IN startIdx UNTIL required
+                  IF !foundFlags[i]
+                    # Required argument was not found.
+                    idx = 0
+                    BREAK
+                  }
+                }
+              }
+            }
+
+            IF idx == argListSize
+              # found a match
+              IF skip != NIL && methodType IS skip.method.type
+                skip.foundSkip = TRUE
+                skip.convCost = totalCost
+              ELSE
+                funcs.add(totalCost, decl)
+                IF options.findFirst  # Only add the first match.
+                  BREAK
+                }
+              }
+            }
+          }
+        }
+      }
+
+      RETURN
+    }
+
+    PROC listMatchingMethods(SContext ctx, Zui.Position pos,
+                             bool objectMethod, string name, Type parent,
+                             list<Declaration.C> argTypeList,
+                             FindFuncOptions options)
+      bool isNew = name == "NEW"
+      ctx.error("Expected: " .. (objectMethod && !isNew ? "$" : "")
+                               .. name ..  argTypesAsString(argTypeList), pos)
+
+      Type type = parent
+      WHILE type != NIL
+        VAR dd = type.getDeclDict()
+        VAR odd = type.getObjectDeclDict()
+        FOR d IN [dd, odd]
+          FOR l IN d?.values()
+            FOR decl IN l
+              IF decl.name == name
+                         && !(options.skipAbstract && decl.type.isAbstract())
+                IF decl.zuiPos != NIL
+                  IO.write(ctx.zcPos(decl.zuiPos).ToString())
+                  IO.write(": ")
+                }
+                string msg = "Candidate: "
+                IF type ISNOT parent && decl.hasLocalAttr()
+                  msg = "Local method: "
+                }
+                IO.print(msg .. (d IS odd && !isNew ? "$" : "") .. name
+                                  .. argTypesAsString(decl.type.<MethodType>))
+              }
+            }
+          }
+        }
+        IF type ISNOTA ClassType
+          BREAK
+        }
+        type = type.<ClassType.C>.parent
+      }
+    }
+
+    PROC listMatchingFunctions(SContext ctx, Zui.Position pos,
+                          bool dollar, string funcName,
+                          list<Declaration.C> argTypeList, bool skipAbstract)
+      ctx.error("Looking for: " .. (dollar ? "$" : "") .. funcName
+                             .. MethodType.argTypesAsString(argTypeList), pos)
+
+      ctx.scope.listMatchingFunc(funcName, skipAbstract, ctx)
+    }
+
+
+    FUNC argTypesAsString(list<Declaration.C> argList) string
+      string s = "("
+      IF argList != NIL
+        string comma = ""
+        FOR da IN argList
+          s ..= comma
+          s ..= da.type.typeName(TRUE)
+          comma = ", "
+        }
+      }
+      s ..= ")"
+      RETURN s
+    }
+
+    FUNC argTypesAsString(MethodType methodType) string
+    list<Declaration.C> argList = methodType.getArgList()
+      string s = "("
+      IF argList != NIL
+        string comma = ""
+        FOR idx IN 0 UNTIL argList.Size()
+          Declaration.C da = argList[idx]
+          s ..= comma
+          IF idx == argList.Size() - methodType.optionalArgCount
+            s ..= "["
+          }
+          s ..= da.type.typeName(TRUE)
+          IF methodType.varargs && idx == argList.Size() - 1
+            s ..= "..."
+          }
+          comma = ", "
+        }
+        IF methodType.optionalArgCount > 0
+          s ..= "]"
+        }
+      }
+      s ..= ")"
+      RETURN s
+    }
+
+    # Create a MethodType object from a Zui.TypeEnum.
+    FUNC createFromTypeEnum(Zui.TypeEnum type, string name) Type
+      SWITCH type
+        CASE Zui.TypeEnum.eNEW
+          RETURN MethodType.NEW(Type.Enum.new, name)
+        CASE Zui.TypeEnum.ePROC
+          RETURN MethodType.NEW(Type.Enum.proc, name)
+        CASE Zui.TypeEnum.eFUNC
+          RETURN MethodType.NEW(Type.Enum.func, name)
+        CASE Zui.TypeEnum.eLAMBDA
+          # Changed to Type.Enum.proc when there is no return type.
+          RETURN MethodType.NEW(Type.Enum.func, name)
+      }
+      LOG.internal("Not a method type: \(type.ToString())")
+      RETURN Type.anUnknown
+    }
+
+    # If there is an existing method in "methods" matching |mt| return that
+    # one.  Otherwise add |mt| to "methods".
+    # Used to reduce the number of callbacks generated.
+    FUNC findMethod(MethodType mt, SContext ctx) MethodType
+      STATIC list<MethodType> %methods = NEW()
+
+      FOR m IN %methods
+        # Check that the properties as they are filled in by
+        # generateMethodType() match.
+        IF m.ttype == mt.ttype
+            && (m.classType == NIL) == (mt.classType == NIL)
+            && (m.classType == NIL || m.classType IS mt.classType)
+            && m.arguments.Size() == mt.arguments.Size()
+            && (m.ttype != Type.Enum.func
+                || Type.matchingTypes(m.returnType, mt.returnType, ctx))
+          bool mismatch
+          FOR i IN 0 UNTIL m.arguments.Size()
+            IF !Type.matchingTypes(m.arguments[i].type, mt.arguments[i].type,
+                                                                          ctx)
+              mismatch = TRUE
+              BREAK
+            }
+          }
+          IF !mismatch
+            RETURN m
+          }
+        }
+      }
+
+      # Not found, add this method to the list.
+      %methods.add(mt)
+      RETURN mt
+    }
+
+  }
+}

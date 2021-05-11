@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>E.AccessDenied class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='E.html'>up:&nbsp;E</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> E.AccessDenied
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Exception thrown when a file cannot be opened for the current user
+ and the requested operation.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='E.AccessDenied.html#NEW'><b>NEW</b></a>(<small>fname</small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a new E.AccessDenied exception with file name <b>fname</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='E.IOError.html'>E.IOError</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='E.IOError.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Create a new E.IOError exception.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Parent: <A href='E.Error.html'>E.Error</A></td></tr>
+
+<tr><td colspan=3>Inherited from <A href='E.Exception.html'>E.Exception</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#NEW'><b>NEW</b></a>(<small>pos, msg</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new generic exception with position <b>pos</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$ToString'><b>$ToString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the exception.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$writeTo'><b>$writeTo</b></a>(<small>w</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Write a string representation of the exception to <b>w</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$toString'><b>$toString</b></a>(<small>verbose</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the exception.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$writeTo'><b>$writeTo</b></a>(<small>verbose, w</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a string representation of the exception.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$getMessage'><b>$getMessage</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the message of the Exception.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$getPos'><b>$getPos</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='Z.Pos.html'>Z.Pos</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the position where the Exception was thrown.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='E.Exception.html#$getBacktrace'><b>$getBacktrace</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='Z.Pos.html'>Z.Pos</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the stack trace of where the Exception was thrown.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> fname)<span class='attribute'> @replace</span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new E.AccessDenied exception with file name <b>fname</b>.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2011 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>IO.ByteWriter class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='IO.html'>up:&nbsp;IO</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> IO.ByteWriter
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> A Writer that stores a sequence of bytes.
+ Call toByteString() to get the result.
+</p>
+&nbsp;<br><div>Implements <A href='IO.I_ByteWriter.html'>IO.I_ByteWriter</A></div>&nbsp;<br><table><tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$write'><b>$write</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> and returns OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$write'><b>$write</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> and returns OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$writeByte'><b>$writeByte</b></a>(<small>byte</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Appends one byte <b>byte</b> and returns OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$Size'><b>$Size</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the current byte length.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$toByteString'><b>$toByteString</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Returns the current byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.ByteWriter.html#$remove'><b>$remove</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Takes one byte from the end of the byteString and returns it.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='IO.Writer.html'>IO.Writer</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> as "TRUE" or "FALSE".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> as "FAIL" or "OK".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> depending on its actual type.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$writeChar'><b>$writeChar</b></a>(<small>char</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>char</b> as a UTF-8 byte sequence.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> as "TRUE" or "FALSE" and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> as "FAIL" or "OK" and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> depending on its actual type and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes a newline and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$format'><b>$format</b></a>(<small>fmt, arguments</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Formats the string and writes it with a newline appended.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Size'><b>$Size</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the current byte length.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$remove'><b>$remove</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Takes one byte from the end of the byteString and returns it.
+</p>
+<p class='ptext'> If the string is empty returns IO.eof.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$toByteString'><b>$toByteString</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Returns the current byteString.
+</p>
+<p class='ptext'> Writing may continue after this.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> and returns OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>(<span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @replace</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> and returns OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeByte'><b>$writeByte</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> byte) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @replace</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Appends one byte <b>byte</b> and returns OK.
+</p>
+<p class='ptext'> Only the lower 8 bits of <b>byte</b> are used, the rest is ignored.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

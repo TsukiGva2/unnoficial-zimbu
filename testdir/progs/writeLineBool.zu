@@ -1,0 +1,8 @@
+# Small test program: Verify that this compiles and runs.
+FUNC Main() int
+  bool yes = TRUE
+  bool no
+  IO.print(yes)
+  IO.print(no)
+  RETURN 0
+}

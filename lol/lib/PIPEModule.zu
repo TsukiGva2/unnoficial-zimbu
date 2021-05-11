@@ -1,0 +1,188 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module PIPE
+#
+
+#= Classes, Interfaces and methods for pipe support.
+#
+#- Still very much under development.
+#
+#- TODO: proper error handling
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE PIPEModule @public
+
+  #! The PIPEloader changes "PIPEmodule.Pipe" to "pipe", as this is how it
+  #! is used globally.
+
+  #= The builtin type pipe.
+  #
+  #- Pipes are a thread-safe way to send objects from one thread to another
+  #- thread.  Or from one collection of threads to another collection of
+  #- threads.
+  #
+  #- Example:
+  #% pipe<string> tp = T.evalThread<string>.NEW().eval({ => "hello thread!" })
+  #% IO.print("from thread: " .. tp.read())
+  CLASS Pipe<Titem> @public
+    bool         $isOpen       #= state of the pipe
+    int          $bufferSize   #= maximum number of items buffered
+    list<Titem>  $itemList   #! the items
+    lock         $lock       #! protects access to lists and bufferSize
+    cond         $readCond   #! what readers wait on: something to read
+    cond         $writeCond  #! what writers wait on: space to write
+
+    #= Create a new pipe with buffer size one.
+    NEW() @public
+      $itemList = NEW()
+      $lock = NEW()
+      $readCond = NEW()
+      $writeCond = NEW()
+      $bufferSize = 1
+      $isOpen = TRUE
+    }
+
+    #= Create a new pipe with buffer size |bufferSize|.
+    NEW(int bufferSize) @public
+      NEW()
+      $bufferSize = bufferSize
+    }
+
+    #= Change the buffer size to |bufferSize|.
+    #- When the buffer size increases it triggers writers to fill the space.
+    #- When the buffer size decreases nothing happens, readers must first read
+    #- any items to get below the new buffer size.
+    PROC $setBufferSize(int bufferSize) @public
+      int oldSize
+      # WITH $lock
+      $lock.begin()
+        oldSize = $bufferSize
+        $bufferSize = bufferSize
+      #}
+      $lock.end()
+
+      # If there is more space wake up all writing threads.
+      IF bufferSize > oldSize
+        $writeCond.wakeup(TRUE)
+      }
+    }
+
+    #= Close the pipe.
+    #- All further writes will fail.
+    #- Reading is still possible so long as there are items to read.
+    #- Once the pipe is empty reading will fail.
+    PROC $close() @public
+      # WITH $lock
+      $lock.begin()
+        $isOpen = FALSE
+      #}
+      $lock.end()
+
+      # Wake up all waiting threads.  If there is nothing to read readers will
+      # return fail.  Writers waiting for space will also return fail.
+      $readCond.wakeup(TRUE)
+      $writeCond.wakeup(TRUE)
+    }
+
+    #= Wait for the pipe to be empty and closed.
+    PROC $wait() @public
+      # WITH $lock
+      $lock.begin()
+        WHILE TRUE
+          IF !$isOpen && $itemList.Size() == 0
+            BREAK
+          }
+
+          # We have to wait for readers to read the last item. Readers wake up
+          # writers, thus wait on the writeCond.
+          $writeCond.wait($lock)
+        }
+      #}
+      $lock.end()
+    }
+
+    #= Return the number of items currently buffered and ready to be read.
+    FUNC $Size() int @public
+      # WITH $lock
+      $lock.begin()
+      int n = $itemList.Size()
+      $lock.end()
+      RETURN n
+    }
+
+    #!
+    FUNC $size() int @public
+      RETURN $Size()
+    }
+
+    #= Write one item into the pipe.
+    #- Blocks until there is space in the pipe buffer.
+    #- Returns FAIL if the pipe has been closed.
+    FUNC $write(Titem item) status @public
+      # WITH $lock
+      $lock.begin()
+        WHILE TRUE
+          IF !$isOpen
+            $lock.end()
+            RETURN FAIL
+          }
+          IF $itemList.Size() < $bufferSize
+            $itemList.insert(item)
+            BREAK
+          }
+          $writeCond.wait($lock)
+        }
+      #}
+      $lock.end()
+
+      # Wake up one waiting read thread.
+      $readCond.wakeup(TRUE)
+      RETURN OK
+    }
+
+    #= Read one item from the pipe.
+    #- Blocks until an item is available or the pipe is closed.
+    #- When an item is available |st| is set to OK.
+    #- When the pipe is closed |st| is set to FAIL and return NIL.
+    FUNC $read(status &st) Titem @public
+      # WITH $lock
+      $lock.begin()
+        WHILE TRUE
+          IF $itemList.Size() > 0
+            st = OK
+            Titem s = $itemList.remove()
+            $lock.end()
+
+            # Wake up a writing thread, there is space now.
+            $writeCond.wakeup(FALSE)
+            RETURN s
+          }
+          IF !$isOpen
+            st = FAIL
+            BREAK
+          }
+          $readCond.wait($lock)
+        }
+      #}
+      $lock.end()
+      Titem ret
+      RETURN ret
+    }
+
+    #= Read one item from the pipe.
+    #- Blocks until an item is available or the pipe is closed.
+    #- When an item is available it is returned.
+    #- When the pipe is closed returns NIL.
+    FUNC $read() Titem @public
+      status st
+      RETURN $read(&st)
+    }
+
+  }
+
+}

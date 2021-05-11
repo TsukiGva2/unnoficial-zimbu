@@ -1,0 +1,48 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module NAT16 - nat16 support
+#
+
+#= Methods for the builtin nat16 type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE NAT16Module @public
+
+  #= The builtin type nat16: 16 bit natural number.
+  #- Although this is a separate type, the methods for nat are used.
+  #- Listed here are only the methods that differ from the nat methods.
+  #
+  #- NOTE: When compiled to Javascript a nat16 is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTnat16 @public
+    # For Zudocu: start of nat16 class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in a nat16.
+  #- Always returns 2, since a nat16 is 16 bits
+  FUNC Size(nat16 this) int @public
+    ###### Only for generating documentation.
+    RETURN 2
+  }
+
+  #! For Zudocu: end of nat16 class.
+  CLASS ENDnat16
+  }
+
+  #= Maximum value of a nat16.
+  #- Used as T.nat16.max
+  int max @public
+          = 0xffff
+
+  #= Minimum value of a nat16.
+  #- Used as T.nat16.min
+  int min @public
+          = 0
+}

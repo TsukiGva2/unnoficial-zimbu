@@ -1,0 +1,83 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Tests for the builtin module VARBYTESTRING.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+FUNC test_slice() status
+  varString vs = "012345"
+  TEST.equal("45".toVarString(), vs.slice(4))
+  TEST.equal("5".toVarString(), vs.slice(5))
+  TEST.equal("".toVarString(), vs.slice(6))
+  TEST.equal("".toVarString(), vs.slice(99))
+  TEST.equal("012345".toVarString(), vs.slice(0))
+  TEST.equal("012345".toVarString(), vs.slice(-1))
+  TEST.equal("012345".toVarString(), vs.slice(-22))
+
+  vs = NIL
+  TEST.equal(NIL, vs.slice(2))
+
+  RETURN OK
+}
+
+FUNC test_slice2() status
+  varString vs = "012345"
+  TEST.equal("234".toVarString(), vs.slice(2, 4))
+  TEST.equal("5".toVarString(), vs.slice(5, 10))
+  TEST.equal("".toVarString(), vs.slice(6, 10))
+  TEST.equal("".toVarString(), vs.slice(99, 95))
+  TEST.equal("".toVarString(), vs.slice(4, 3))
+  TEST.equal("".toVarString(), vs.slice(1, 0))
+  TEST.equal("".toVarString(), vs.slice(0, -1))
+
+  TEST.equal("0123".toVarString(), vs.slice(0, 3))
+  TEST.equal("0123".toVarString(), vs.slice(-1, 3))
+  TEST.equal("0123".toVarString(), vs.slice(-22, 3))
+
+  vs = NIL
+  TEST.equal(NIL, vs.slice(2, 3))
+
+  RETURN OK
+}
+
+FUNC test_sliceSize() status
+  varString vs = "this and that"
+  TEST.equal("this".toVarString(), vs.sliceSize(0, 4))
+  TEST.equal("that".toVarString(), vs.sliceSize(9, 4))
+  TEST.equal(" and ".toVarString(), vs.sliceSize(4, 5))
+
+  vs = "012345"
+  TEST.equal("5".toVarString(), vs.sliceSize(5, 5))
+  TEST.equal("".toVarString(), vs.sliceSize(6, 5))
+  TEST.equal("01234".toVarString(), vs.sliceSize(-1, 5))
+  TEST.equal("01234".toVarString(), vs.sliceSize(-2, 5))
+
+  vs = NIL
+  TEST.equal(NIL, vs.sliceSize(-2, 5))
+
+  RETURN OK
+}
+
+FUNC test_sliceWrapSize() status
+  varString vs = "this and that"
+  TEST.equal("this".toVarString(), vs.sliceWrapSize(0, 4))
+  TEST.equal("that".toVarString(), vs.sliceWrapSize(-4, 4))
+  TEST.equal(" and ".toVarString(), vs.sliceWrapSize(4, 5))
+
+  vs = "012345"
+  TEST.equal("5".toVarString(), vs.sliceWrapSize(5, 5))
+  TEST.equal("".toVarString(), vs.sliceWrapSize(6, 5))
+  TEST.equal("5".toVarString(), vs.sliceWrapSize(-1, 5))
+  TEST.equal("45".toVarString(), vs.sliceWrapSize(-2, 5))
+
+  vs = NIL
+  TEST.equal(NIL, vs.sliceWrapSize(-2, 5))
+
+  RETURN OK
+}

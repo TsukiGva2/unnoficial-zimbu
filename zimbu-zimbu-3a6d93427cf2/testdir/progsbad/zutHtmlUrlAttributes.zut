@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML - Url / Attributes
+  TEMPLATE inHtmlUrlAttributes(ZUT.Attributes attr) ZUT.Html @public
+    <a href="[=attr]">here</a>
+  }
+}
+

@@ -1,0 +1,2433 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# C implementation for List.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../ContainerType.zu"
+IMPORT "../Conversion.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../ListStuff.zu"
+IMPORT "../ManageMemory.zu"
+IMPORT "../Output.zu"
+IMPORT "../SContext.zu"
+IMPORT "../Type.zu"
+IMPORT "../WriteCommon.zu"
+IMPORT "../ZuiExpressionExt.zu"
+IMPORT "WriteC.zu"
+IMPORT "WriteIMT.zu"
+
+MODULE WriteListC @public @items=public      # TODO: restrict visibility
+
+  # Declarations used to keep track of used items.
+  Declaration %listFindIdx = NEW("listFindIdx")
+  Declaration %listAdd = NEW("listAdd")
+  Declaration %listInsert = NEW("listInsert")
+  Declaration %listInsertIobj = NEW("listInsertIobj")
+  Declaration %listInsertDyn = NEW("listInsertDyn")
+  Declaration %listGet = NEW("listGet")
+  Declaration %listGetPtr = NEW("listGetPtr")
+  Declaration %listGetPtrP = NEW("listGetPtrP")
+  Declaration %listGetIobj = NEW("listGetIobj")
+  Declaration %listGetIobjP = NEW("listGetIobjP")
+  Declaration %listGetDyn = NEW("listGetDyn")
+  Declaration %listGetDynP = NEW("listGetDynP")
+  Declaration %listGetInt = NEW("listGetInt")
+  Declaration %listGetIntP = NEW("listGetIntP")
+  Declaration %listGetFloat = NEW("listGetFloat")
+  Declaration %listFind = NEW("listFind")
+  Declaration %listFindIobj = NEW("listFindIobj")
+  Declaration %listFindDyn = NEW("listFindDyn")
+  Declaration %listRemoveIntItem = NEW("listRemoveIntItem")
+  Declaration %listRemoveFloatItem = NEW("listRemoveFloatItem")
+  Declaration %listClearItem = NEW("listClearItem")
+  Declaration %listRemovePtrItem = NEW("listRemovePtrItem")
+  Declaration %listRemoveIobjItem = NEW("listRemoveIobjItem")
+  Declaration %listRemoveDynItem = NEW("listRemoveDynItem")
+  Declaration %listPopList = NEW("listPopList")
+  Declaration %listSize = NEW("listSize")
+  Declaration %listSlice = NEW("listSlice")
+  Declaration %listExtend = NEW("listExtend")
+  Declaration %listGrow = NEW("listGrow")
+  Declaration %listConcat = NEW("listConcat")
+  Declaration %listClear = NEW("listClear")
+  Declaration %listCopy = NEW("listCopy")
+  Declaration %listEqual = NEW("listEqual")
+  Declaration %listCompare = NEW("listCompare")
+  Declaration %listMap = NEW("listMap")
+  Declaration %listKeyMap = NEW("listKeyMap")
+#  Declaration %listJoin = NEW("listJoin")
+  Declaration %listJoinVal = NEW("listJoinVal")
+  Declaration %listInit = NEW("listInit")
+  Declaration %listFill = NEW("listFill")
+  Declaration %listFillIobj = NEW("listFillIobj")
+  Declaration %listFillDyn = NEW("listFillDyn")
+  Declaration %stringListSort = NEW("stringListSort")
+  Declaration %intListSort = NEW("intListSort")
+  Declaration %natListSort = NEW("natListSort")
+  Declaration %floatListSort = NEW("floatListSort")
+  Declaration %objectListSort = NEW("objectListSort")
+  Declaration %iobjectListSort = NEW("iobjectListSort")
+  Declaration %dynListSort = NEW("dynListSort")
+
+  # [item1, item2]  ->  Id = ZnewList(), ZLap(Id, item1), ZLap(Id, item2)
+  # |destType| is the type of a list item (may be NIL).
+  FUNC generateListPart(Zui.Expression expr, string noAllocName,
+                                         SContext ctx, Type destType) Type
+    ctx.setDeclUsed(Declaration.newList)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    string id
+
+    Type type = destType
+    string separator = ", "
+    bool useTempVar
+    IF expr.sizeListItem() > 0
+      ctx.setDeclUsed(%listAdd)
+      IF noAllocName == NIL
+        id = WriteC.genTempUseStart(expr, "Tl *", &useTempVar, &separator, ctx)
+      ELSE
+        id = "&" .. noAllocName
+      }
+
+      # Get the type from the resolve pass.
+      IF destType == NIL || destType.getTtype() == Type.Enum.unknown
+        # fallback: use the type from the first item.
+        # TODO: can we drop this?
+        type = Generate.genExpr(expr.getListItem(0), ctx.copyNoOut(), destType)
+        type = type?.getEffType()
+      }
+    }
+
+    Output out = ctx.out
+    IF out.writing
+      # Create the list.
+      IF type == NIL
+        ctx.error("List type unknown", expr.getPos())
+      ELSEIF noAllocName == NIL
+        out.write("ZnewList(" .. WriteC.getTname(type, ctx))
+        out.write(", " .. expr.sizeListItem() .. ")")
+      ELSE
+        # %theList = [1, 2, 3]
+        ctx.setDeclUsed(%listInit)
+        out.write("ZListInit(&")
+        out.write(noAllocName)
+        out.write(", ")
+        out.write(WriteC.getTname(type, ctx) .. ")")
+      }
+
+      # Now write each added item.
+      FOR item IN expr.getListItemList()
+        out.write(separator)
+        IF type.getTtype() == Type.Enum.iobject
+          out.write("ZLapIobj((Tl*)")
+        ELSEIF type.getTtype() == Type.Enum.dyn
+          out.write("ZLapDyn((Tl*)")
+        ELSE
+          out.write("ZLap((Tl*)")
+        }
+        out.write(id)
+        out.write(", ")
+        WriteC.writeTzOrIobjArg(type, item, ctx)
+        out.write(")")
+      }
+      IF useTempVar
+        out.write(")")
+      }
+    }
+
+    RETURN type
+  }
+
+  # get value from list: list[idx]
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr, bool lvalue,
+                                                 SContext ctx, Type destType
+       ) Type
+    ctx.setDeclUsed(%listGet)
+    string close = ")"
+    IF type.itemType != NIL && type.itemType.getTtype() == Type.Enum.iobject
+      IF lvalue
+        ctx.setDeclUsed(%listGetIobjP)
+        ctx.setDeclUsed(Declaration.throwCstringOutOfRange)
+        ctx.out.write("*ZListGetIobjP(")
+      ELSE
+        ctx.setDeclUsed(%listGetIobj)
+        ctx.out.write("ZListGetIobj(")
+      }
+    ELSEIF type.itemType != NIL && type.itemType.getTtype() == Type.Enum.dyn
+      IF lvalue
+        ctx.setDeclUsed(%listGetDynP)
+        ctx.setDeclUsed(Declaration.throwCstringOutOfRange)
+        ctx.out.write("*ZListGetDynP(")
+      ELSE
+        ctx.setDeclUsed(%listGetDyn)
+        ctx.out.write("ZListGetDyn(")
+      }
+    ELSEIF type.itemType != NIL && !type.itemType.isValueType()
+      string fname
+      IF lvalue
+        ctx.setDeclUsed(%listGetPtrP)
+        ctx.setDeclUsed(Declaration.throwCstringOutOfRange)
+        fname = "ZListGetPtrP"
+        ctx.out.write("*")
+      ELSE
+        ctx.setDeclUsed(%listGetPtr)
+        fname = "ZListGetPtr"
+      }
+
+      # ZListGetInt returns void *, prepend type cast to actual type.
+      close = ")" .. ctx.gen.ptrTypecast(type.itemType, lvalue, ctx)
+      ctx.out.write(fname .. "(")
+    ELSEIF lvalue
+      # listGetIntP() also works for float.
+      ctx.setDeclUsed(%listGetIntP)
+      ctx.setDeclUsed(Declaration.throwCstringOutOfRange)
+      ctx.out.write("*(")
+      ctx.gen.vartype(type.itemType, FALSE, expr.getPos(), ctx)
+      ctx.out.write("*)ZListGetIntP(")
+    ELSEIF type.itemType != NIL && type.itemType.isFloatType()
+      ctx.setDeclUsed(%listGetFloat)
+      ctx.out.write("ZListGetFloat(")
+    ELSE
+      ctx.setDeclUsed(%listGetInt)
+      ctx.out.write("ZListGetInt(")
+    }
+    ctx.gen.genArg(expr.getLeft(), ctx, NIL)
+    ctx.out.write(", ")
+    ctx.gen.genArg(expr.getRight(), ctx, Type.anInt)
+    ctx.out.write(close)
+    IF type.itemType != NIL
+      RETURN type.itemType
+    }
+    RETURN destType
+  }
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) != FAIL
+                                                       && type.itemType != NIL
+        ctx.out.write("ZListToString(")
+        Generate.generateVarname(objExpr, ctx, type)
+        WriteC.oneToStringArgument(type.itemType, call, TRUE, ctx)
+        # TODO: format argument
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "Type"
+      ctx.out.write("(&")
+      ctx.out.write(type.typeUsed(ctx).pName)
+      ctx.out.write("__T)")
+      retType = Type.aType
+    ELSEIF methodName == "get"
+      # list.get(idx) is the same as list[idx].
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        Zui.Expression expr = NEW()
+        expr.setLeft(objExpr)
+        expr.setRight(argList[0])
+        retType = ctx.gen.subscript(expr, ctx, NIL)
+      }
+    ELSEIF methodName == "add" || methodName == "insert"
+      # For C:
+      # numberList.add(item)  ->  ZLa(numberList, -1, item)
+      # numberList.add(item, i)  ->  ZLa(numberList, i, item)
+      # numberList.insert(item) -> ZListInsert(numberList, 0, item)
+      # numberList.insert(item, i) -> ZListInsert(numberList, i, item)
+      IF Generate.checkArgCount(call, 1, 2, ctx) != FAIL
+        IF methodName == "add"
+          ctx.setDeclUsed(%listAdd)
+          IF call.sizeArgument() > 1
+            IF type.itemType.getTtype() == Type.Enum.iobject
+              ctx.out.write("ZLaIobj(")
+            ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+              ctx.out.write("ZLaDyn(")
+            ELSE
+              ctx.out.write("ZLa(")
+            }
+          ELSE
+            IF type.itemType.getTtype() == Type.Enum.iobject
+              ctx.out.write("ZLapIobj(")
+            ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+              ctx.out.write("ZLapDyn(")
+            ELSE
+              ctx.out.write("ZLap(")
+            }
+          }
+        ELSEIF type.itemType.getTtype() == Type.Enum.iobject
+          ctx.setDeclUsed(%listInsertIobj)
+          ctx.out.write("ZListInsertIobj(")
+        ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+          ctx.setDeclUsed(%listInsertDyn)
+          ctx.out.write("ZListInsertDyn(")
+        ELSE
+          ctx.setDeclUsed(%listInsert)
+          ctx.out.write("ZListInsert(")
+        }
+        ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+        Generate.generateVarname(objExpr, ctx, type)
+
+        # generate the index argument
+        IF call.sizeArgument() > 1
+          ctx.out.write(", ")
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+        ELSE
+          IF methodName != "add"
+            ctx.out.write(", 0")   # insert(item) inserts before start of list
+          }
+        }
+        ctx.out.write(", ")
+
+        # generate the pointer or integer value
+        WriteC.writeTzOrIobjArg(type.itemType, call.getArgument(0), ctx)
+
+        # finish up
+        ctx.out.write(")")
+      }
+      retType = ListStuff.newList(type)
+    ELSEIF methodName == "extend" || methodName == "concat"
+      # List.extend(list)
+      # List.concat(list)
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        ctx.setDeclUsed(%listExtend)
+        ctx.setDeclUsed(%listGrow)
+        ctx.setDeclUsed(WriteC.copyItems)
+        IF methodName == "extend"
+          ctx.out.write("ZListExtend(")
+        ELSE
+          ctx.setDeclUsed(%listConcat)
+          ctx.out.write("ZListConcat(")
+        }
+        ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        # type of both lists should be equal
+        Zui.Expression arg0 = call.getArgument(0)
+        Generate.genExpr(arg0, ctx, type)
+        ctx.out.write(")")
+      }
+      retType = ListStuff.newList(type)
+    ELSEIF methodName == "clear" && call.sizeArgument() == 0
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        ctx.setDeclUsed(%listClear)
+        ctx.out.write("ZListClear(")
+        ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "find" || methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "has"
+          ctx.out.write("(")
+        }
+        IF type.itemType.getTtype() == Type.Enum.iobject
+          ctx.setDeclUsed(%listFindIobj)
+          ctx.out.write("ZListFindIobj(")
+        ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+          ctx.setDeclUsed(%listFindDyn)
+          ctx.out.write("ZListFindDyn(")
+        ELSE
+          ctx.setDeclUsed(%listFind)
+          ctx.out.write("ZListFind(")
+        }
+        ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+
+        # generate the pointer or integer value
+        WriteC.writeTzOrIobjArg(type.itemType, call.getArgument(0), ctx)
+
+        # finish up
+        ctx.out.write(")")
+        IF methodName == "has"
+          ctx.out.write(">= 0)")
+        }
+      }
+      retType = methodName == "has" ? Type.aBool : Type.anInt
+    ELSEIF methodName == "remove"
+           || (methodName == "clear" && call.sizeArgument() == 1)
+      IF Generate.checkArgCount(call, 0, 2, ctx) != FAIL
+        bool removeOne
+        bool hasArg
+
+        IF !call.hasArgument()
+          # mylist.remove()
+          removeOne = TRUE
+        ELSEIF call.sizeArgument() == 1
+          # mylist.remove(index)
+          # mylist.clear(index)
+          removeOne = TRUE
+          hasArg = TRUE
+        }
+
+        IF removeOne
+          # mylist.remove() or mylist.remove(index) or mylist.clear(index)
+          IF methodName == "clear"
+            ctx.setDeclUsed(%listClearItem)
+            ctx.out.write("ZListClearItem(")
+          ELSEIF type.itemType.isFloatType()
+            ctx.setDeclUsed(%listRemoveFloatItem)
+            ctx.out.write("ZListRemoveFloatItem(")
+          ELSEIF type.itemType == NIL || type.itemType.isValueType()
+            ctx.setDeclUsed(%listRemoveIntItem)
+            ctx.out.write("ZListRemoveIntItem(")
+          ELSEIF type.itemType.getTtype() == Type.Enum.iobject
+            ctx.setDeclUsed(%listRemoveIobjItem)
+            ctx.out.write("ZListRemoveIobjItem(")
+          ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+            ctx.setDeclUsed(%listRemoveDynItem)
+            ctx.out.write("ZListRemoveDynItem(")
+          ELSE
+            ctx.setDeclUsed(%listRemovePtrItem)
+            ctx.out.write("ZListRemovePtrItem(")
+          }
+          ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+          Generate.generateVarname(objExpr, ctx, type)
+          ctx.out.write(", ")
+          IF hasArg
+            Zui.Expression arg0 = call.getArgument(0)
+            Generate.genExpr(arg0, ctx, Type.anInt)
+          ELSE
+            ctx.out.write("-1")
+          }
+          ctx.out.write(")")
+          IF methodName == "clear"
+            retType = type
+          ELSEIF type.itemType != NIL
+            retType = type.itemType
+          }
+        ELSE
+          # mylist.remove(start, end)
+          ctx.setDeclUsed(%listPopList)
+          ctx.out.write("ZListPopList(")
+          ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+          Generate.generateVarname(objExpr, ctx, type)
+          ctx.out.write(", ")
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", ")
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+          ctx.out.write(")")
+          retType = ListStuff.newList(type)
+        }
+      }
+    ELSEIF methodName == "slice"
+      IF Generate.checkArgCount(call, 1, 2, ctx) != FAIL
+        # mylist.slice(start, end)
+        ctx.setDeclUsed(%listSlice)
+        ctx.out.write("ZListSlice(")
+        ctx.out.write("(Tl*)")  # In case it was decleared volatile.
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        Zui.Expression arg0 = call.getArgument(0)
+        IF call.sizeArgument() > 1
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", ")
+          Zui.Expression arg1 = call.getArgument(1)
+          Generate.genExpr(arg1, ctx, Type.anInt)
+        ELSE
+          # slice(start) == slice(start, -1)
+          Generate.genExpr(arg0, ctx, Type.anInt)
+          ctx.out.write(", -1")
+        }
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "sort"
+      string fname
+      Declaration sortFunc
+      IF type.itemType != NIL
+        SWITCH type.itemType.ttype
+          CASE Type.Enum.string
+            ctx.setDeclUsed(%stringListSort)
+            fname = "ZstringListSort"
+          CASE Type.Enum.int
+          CASE Type.Enum.int8
+          CASE Type.Enum.int16
+          CASE Type.Enum.int32
+            ctx.setDeclUsed(%intListSort)
+            fname = "ZintListSort"
+          CASE Type.Enum.nat
+          CASE Type.Enum.byte
+          CASE Type.Enum.nat16
+          CASE Type.Enum.nat32
+            ctx.setDeclUsed(%natListSort)
+            fname = "ZnatListSort"
+          CASE Type.Enum.float
+          CASE Type.Enum.float32
+          CASE Type.Enum.float80
+          CASE Type.Enum.float128
+            ctx.setDeclUsed(%floatListSort)
+            fname = "ZfloatListSort"
+          CASE Type.Enum.object
+          CASE Type.Enum.iobject
+            IF type.itemType.ttype == Type.Enum.iobject
+              ctx.setDeclUsed(%iobjectListSort)
+              fname = "ZiobjectListSort"
+            ELSEIF type.itemType.ttype == Type.Enum.dyn
+              ctx.setDeclUsed(%dynListSort)
+              fname = "ZdynListSort"
+            ELSE
+              ctx.setDeclUsed(%objectListSort)
+              fname = "ZobjectListSort"
+            }
+            sortFunc = Generate.findCompare(type.itemType, ctx)
+            IF sortFunc == NIL && ctx.doError()
+              ctx.error("Compare() function not found", call.getPos())
+            ELSEIF type.itemType.ttype == Type.Enum.iobject
+              Declaration d = type.itemType.compareWrapper
+              IF d.name != "generated" && type.itemType.compareFunc != NIL
+                d.name = "generated"
+
+                # Need to write the wrapper that turns the iobject into an
+                # object.
+                # TODO: call the right function, like generateObjectCall().
+                Output bout = ctx.outs.origBodyOut
+                bout.write("int ")
+                bout.write(d.pName)
+                bout.write("(Tr *l, void *r) {\n")
+                bout.write("  return ")
+                bout.write("((int (*)(void *, Tr))(l->table[")
+                bout.write(WriteIMT.classMemberTableIndex(
+                                    type.itemType.getClassType(ctx),
+                                    type.itemType.compareFunc,
+                                    ctx.doError()) .. "")
+                bout.write("]))(l->ptr, *(Tr*)r);\n")
+                bout.write("}\n")
+              }
+            }
+        }
+      }
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        # nothing
+      ELSEIF fname == NIL
+        IF ctx.doError()
+          ctx.error("sort() is currently only supported for int, nat, float, string and objects with a Compare() method",
+                                                              call.getPos())
+        }
+      ELSE
+        # mylist.sort()
+        ctx.out.write(fname .. "(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        IF !call.hasArgument()
+          # sort()
+          ctx.out.write("1")
+        ELSE
+          # sort(ascending)
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExpr(arg0, ctx, Type.aBool)
+        }
+        IF sortFunc != NIL
+          ctx.out.write(", ")
+          ctx.out.write("(int (*)(const void*, const void*))")
+          ctx.out.write(sortFunc.pName)
+        }
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "join"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        # nothing
+      ELSEIF type.itemType != NIL
+        # mylist.join()
+        string fname
+        ctx.setDeclUsed(%listJoinVal)
+        fname = "ZListJoinVal"
+        ctx.out.write(fname .. "(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(", ")
+        IF !call.hasArgument()
+          # join()
+          ctx.out.write("Zstr(\" \")")
+        ELSE
+          Zui.Expression arg0 = call.getArgument(0)
+          Generate.genExprDoConv(arg0, ctx.copyNoOut(), Type.aString)
+          VAR arg0Ext = ZuiExpressionExt.get(arg0)
+          IF arg0Ext.conversion == Conversion.nat2string
+                 || arg0Ext.conversion == Conversion.int2string
+            # join(separator-char)
+            ctx.out.write("ZintAsString(")
+            Generate.genExprDoConv(arg0, ctx, Type.anInt)
+            ctx.out.write(")")
+            ctx.setDeclUsed(Declaration.asString)
+          ELSE
+            # join(separator-string)
+            Generate.genExprDoConv(arg0, ctx, Type.aString)
+          }
+        }
+        WriteC.oneToStringArgument(type.itemType, call, FALSE, ctx)
+        ctx.out.write(")")
+        retType = Type.aString
+      }
+    ELSEIF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "map"
+          ctx.setDeclUsed(%listMap)
+          ctx.out.write("ZListMap(")
+        ELSE
+          ctx.setDeclUsed(%listKeyMap)
+          ctx.out.write("ZListKeyMap(")
+        }
+        Generate.generateVarname(objExpr, ctx, type)
+
+        ctx.out.write(", ")
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "copy"
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        ctx.setDeclUsed(%listCopy)
+        ctx.out.write("ZListCopy(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(")")
+        retType = ListStuff.newList(type)
+      }
+    ELSEIF methodName == "size" || methodName == "Size"
+      IF Generate.checkArgCount(call, 0, 0, ctx) != FAIL
+        ctx.setDeclUsed(%listSize)
+        ctx.out.write("ZListSize(")
+        Generate.generateVarname(objExpr, ctx, type)
+        ctx.out.write(")")
+      }
+      retType = Type.anInt
+    ELSE
+      IF ctx.doError()
+        ctx.error("Method " .. methodName
+            .. "() not supported for list<" .. type.itemType.typeName() .. ">",
+                                                                call.getPos())
+      }
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  PROC writeListAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    IF type.itemType != NIL
+      ctx.setDeclUsed(Declaration.alloc)
+      list<Zui.Expression> args = call.getArgumentList()
+      Output out = ctx.out
+
+      IF args.Size() == 2
+        IF type.itemType.getTtype() == Type.Enum.iobject
+          ctx.setDeclUsed(%listFillIobj)
+          out.write("ZListFillIobj(")
+        ELSEIF type.itemType.getTtype() == Type.Enum.dyn
+          ctx.setDeclUsed(%listFillDyn)
+          out.write("ZListFillDyn(")
+        ELSE
+          ctx.setDeclUsed(%listFill)
+          out.write("ZListFill(")
+        }
+      }
+      IF noAllocName != NIL
+        # %theList = NEW()  or %theList = NEW(3, "x")
+        ctx.setDeclUsed(%listInit)
+        out.write("ZListInit(&")
+        out.write(noAllocName)
+        out.write(", ")
+        out.write(WriteC.getTname(type.itemType, ctx) .. ")")
+      ELSE
+        ctx.setDeclUsed(Declaration.newList)
+        out.write("ZnewList(" .. WriteC.getTname(type.itemType, ctx) .. ", 0)")
+      }
+      IF args.Size() == 2
+        out.write(", ")
+        Generate.genExprDoConv(args[0], ctx, Type.anInt)
+        out.write(", ")
+        WriteC.writeTzOrIobjArg(type.itemType, args[1], ctx)
+        out.write(")")
+      }
+    }
+  }
+
+  # Set dependencies of used items.
+  PROC addDependencies(WriteC gen)
+
+    Declaration.newList.addDependsOn(Declaration.alloc)
+    %listFill.addDependsOn(Declaration.alloc)
+
+    %listAdd.addDependsOn(%listFindIdx)
+    %listAdd.addDependsOn(%listGrow)
+    %listInsert.addDependsOn(%listFindIdx)
+    %listGet.addDependsOn(%listFindIdx)
+    %listGetPtr.addDependsOn(%listFindIdx)
+    %listGetPtrP.addDependsOn(%listFindIdx)
+    %listGetIobj.addDependsOn(%listFindIdx)
+    %listGetIobjP.addDependsOn(%listFindIdx)
+    %listRemoveIntItem.addDependsOn(%listFindIdx)
+    %listRemoveFloatItem.addDependsOn(%listFindIdx)
+    %listClearItem.addDependsOn(%listFindIdx)
+    %listRemovePtrItem.addDependsOn(%listFindIdx)
+    %listPopList.addDependsOn(%listFindIdx)
+    %listSlice.addDependsOn(%listFindIdx)
+    %listInsert.addDependsOn(%listAdd)
+    %listConcat.addDependsOn(Declaration.alloc)
+    %listConcat.addDependsOn(%listCopy)
+    %listConcat.addDependsOn(%listExtend)
+    %listConcat.addDependsOn(%listGrow)
+  }
+
+  PROC writeTypedefs(WriteC gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.list)
+      IF !gen.manageMemory()
+        gen.setDeclUsed(WriteC.zfree)
+      }
+
+      fd.write(''"
+typedef struct CListHead__S Tl; /* list head */
+"'')
+    }
+  }
+
+  PROC writeDecl(WriteC gen, IO.File fd)
+    IF gen.isDeclUsed(Declaration.list)
+      # List used to be implemented as a linked list of items, but this has
+      # two disadvantages:
+      # 1. Lookup by index is very slow for long lists.
+      # 2. Need to allocate an item for the next/prev pointers.
+      #
+      # Current implementation assumes that most inserts/removes happen at the
+      # end of the list, some at the start of the list, and few in the middle.
+      #
+      # |empty| is the number of spaces at the start of the list.  This avoids
+      # copies when doing insert/delete at the start.
+      # |space| is the total number of items that can be stored in |items|.
+      fd.write(''"
+struct CListHead__S {
+"'')
+      fd.write(gen.getStructHead())
+
+      # Put itemType first, when there is no "np" field it is used to check
+      # for NULL, this means the list was not yet initialized.
+      fd.write(''" Tt *itemType;
+ void **items;"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        # let valgrind find the allocated memory
+        fd.write(''"
+ void *alloced;"'')
+      }
+      fd.write(''"
+ Ti empty;
+ Ti space;
+ Ti itemCount;
+ int itemSize;
+ int tosNr;
+};"'')
+      IF gen.isDeclUsed(%listAdd)
+        fd.write(''"
+Tl *ZLa(Tl *head, Ti after, Tz val);"'')
+      }
+      IF gen.isDeclUsed(Declaration.newList)
+        fd.write(''"
+Tl *ZnewList(Tt *itemType, Ti size);"'')
+      }
+      IF gen.isDeclUsed(%listInit)
+        fd.write(''"
+Tl *ZListInit(Tl *head, Tt *itemType);"'')
+      }
+      IF gen.isDeclUsed(%listAdd)
+        fd.write(''"
+Tl *ZLap(Tl *head, Tz val);"'')
+      }
+      IF gen.isDeclUsed(%listGetPtr)
+        fd.write(''"
+void *ZListGetPtr(Tl *head, Ti idx);"'')
+      }
+      IF gen.isDeclUsed(%listRemovePtrItem)
+        fd.write(''"
+void *ZListRemovePtrItem(Tl *head, Ti idx);"'')
+      }
+      IF gen.isDeclUsed(%listFind)
+        fd.write(''"
+Ti ZListFind(Tl *head, Tz val);"'')
+      }
+      IF gen.isDeclUsed(%listClearItem)
+        fd.write(''"
+Tl *ZListClearItem(Tl *head, Ti idx);"'')
+      }
+      IF gen.isDeclUsed(Declaration.itemToString)
+        fd.write(''"
+void ZListToStringGa(Tl *head, int useq, Tg *ga);"'')
+      }
+      IF gen.isDeclUsed(Type.aDyn) || gen.isDeclUsed(Declaration.itemEqual)
+        fd.write(''"
+Tz ZListGetTz(Tl *head, Ti idx);"'')
+      }
+    }
+  }
+
+  PROC writeBody(WriteC gen, IO.File fd)
+    IF !gen.isDeclUsed(Declaration.list)
+      RETURN
+    }
+
+    IF gen.isDeclUsed(%listFindIdx)
+      # Turn a list index into an index into head->[PI]items.
+      # Takes care of negative index, count from the end.
+      # Returns a negative number when out of range.
+      fd.write(''"
+Ti ZListFindIdx(Tl *head, Ti idx) {
+ if (head == NULL) ZthrowCstringNil("Accessing NIL list");
+ if (idx < 0) {
+  Ti n = head->itemCount + idx;
+  if (n < 0) return n;
+  return n + head->empty;
+ }
+ if (idx >= head->itemCount) return -1;
+ return idx + head->empty;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.newList) || gen.isDeclUsed(%listInit)
+      fd.write(''"
+void ZListSetType(Tl* head, Tt *itemType) {
+ head->itemType = itemType;
+ if (itemType == NULL) ZthrowCstringNil("Creating list without type");
+ switch (itemType->nr) {
+  case 0:
+  case 10:
+  case 80:
+  case 82:
+  case 83:
+  case 24:
+  case 25:
+   head->itemSize = 8; break;
+  case 1:
+  case 11:
+   head->itemSize = 1; break;
+  case 12:
+  case 2:
+   head->itemSize = 2; break;
+  case 3:
+  case 13:
+  case 81:
+   head->itemSize = 4; break;
+  case 21:
+  case 22:
+  case 23:
+   head->itemSize = sizeof(int); break;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  case 360:
+   head->itemSize = sizeof(Tx); break;"'')
+      }
+      fd.write(''"
+  case 391:
+   head->itemSize = sizeof(Tr); break;
+  default:
+   head->itemSize = sizeof(void*); break;
+ }
+}
+"'')
+    }
+
+    # This code uses TYPE_NUMBERS, keep in sync!
+    IF gen.isDeclUsed(Declaration.newList)
+      # When the size is known allocate space for that many items right away.
+      # When the size is small or not known add 64 bytes space for the first
+      # few items to reduce the number of allocations.
+      fd.write(''"
+Tl *ZnewList(Tt *itemType, Ti size) {
+ int alloc = size > ((itemType->nr == 1 || itemType->nr == 11) ? 64 : 8);
+ int extraSize = itemType != NULL && itemType->nr == 391 ? 8 * sizeof(Tr)"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(" : itemType->nr == 360 ? 8 * sizeof(Tx)")
+      }
+      fd.write(''" : 64;
+ Tl *head = Za(sizeof(Tl) + (alloc ? 0 : extraSize));
+ ZListSetType(head, itemType);
+ if (alloc) {
+  head->items = ZaOff(head->itemSize * size);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+  head->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+  head->space = size;
+ } else {
+  head->items = (void**)(head + 1);
+  head->space = extraSize / head->itemSize;
+ }
+ return head;
+}"'')
+    }
+
+    IF gen.isDeclUsed(%listInit)
+      fd.write(''"
+Tl *ZListInit(Tl *head, Tt *itemType) {
+ memset(head, 0, sizeof(Tl));"'')
+      IF gen.hasNpField()
+        fd.write(''"
+ head->np = &Znoalloc;"'')
+      }
+      fd.write(''"
+ ZListSetType(head, itemType);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFill)
+      fd.write(''"
+Tl *ZListFill(Tl *head, Ti len, Tz val) {
+ Ti i;
+ head->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->space = len;
+ head->itemCount = len;
+ switch (head->itemType->nr) {
+  case 0:
+  case 10:
+  case 24:
+  case 25:
+   for (i = 0; i < len; ++i) ((Ti*)head->items)[i] = val.ival;
+   break;
+  case 1:
+  case 11:
+   for (i = 0; i < len; ++i) ((char*)head->items)[i] = val.ival;
+   break;
+  case 2:
+  case 12:
+   for (i = 0; i < len; ++i) ((Ti16*)head->items)[i] = val.ival;
+   break;
+  case 3:
+  case 13:
+   for (i = 0; i < len; ++i) ((Ti32*)head->items)[i] = val.ival;
+   break;
+  case 21:
+  case 22:
+  case 23:
+   for (i = 0; i < len; ++i) ((int*)head->items)[i] = val.ival;
+   break;
+  case 80:
+  case 82:
+  case 83:
+   for (i = 0; i < len; ++i) ((Tf*)head->items)[i] = val.fval;
+   break;
+  case 81:
+   for (i = 0; i < len; ++i) ((Tf32*)head->items)[i] = val.fval;
+   break;
+  default:
+   for (i = 0; i < len; ++i) head->items[i] = val.ptr;
+   break;
+ }
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFillIobj)
+      fd.write(''"
+Tl *ZListFillIobj(Tl *head, Ti len, Tr tr) {
+ Ti i;
+ head->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->space = len;
+ head->itemCount = len;
+ for (i = 0; i < len; ++i) ((Tr*)head->items)[i] = tr;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFillDyn)
+      fd.write(''"
+Tl *ZListFillDyn(Tl *head, Ti len, Tx tx) {
+ Ti i;
+ head->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->space = len;
+ head->itemCount = len;
+ for (i = 0; i < len; ++i) ((Tx*)head->items)[i] = tx;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listJoinVal)
+       || gen.isDeclUsed(Declaration.itemToString)
+      fd.write(''"
+void ZListitemToString(Tl *head, int useq, Ti n, Tg *ga) {
+ switch (head->itemType->nr) {
+  case 0:
+  case 10:
+  case 24:
+  case 25:
+   ZitemToString(head->itemType, useq, (Tz)((Ti*)head->items)[n], ga);
+   break;
+  case 1:
+  case 11:
+   ZitemToString(head->itemType, useq, (Tz)(Ti)((char*)head->items)[n], ga);
+   break;
+  case 12:
+  case 2:
+   ZitemToString(head->itemType, useq, (Tz)(Ti)((Ti16*)head->items)[n], ga);
+   break;
+  case 3:
+  case 13:
+   ZitemToString(head->itemType, useq, (Tz)(Ti)((Ti32*)head->items)[n], ga);
+   break;
+  case 21:
+  case 22:
+  case 23:
+   ZitemToString(head->itemType, useq, (Tz)(Ti)((int*)head->items)[n], ga);
+   break;
+  case 80:
+  case 82:
+  case 83:
+   ZitemToString(head->itemType, useq, (Tz)((Tf*)head->items)[n], ga);
+   break;
+  case 81:
+   ZitemToString(head->itemType, useq, (Tz)(Tf)((Tf32*)head->items)[n], ga);
+   break;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+  case 360:
+   {
+    Tx *tx = (Tx*)head->items + n;
+    ZitemToString(tx->type, useq, tx->u, ga);
+    break;
+   }"'')
+      }
+      fd.write(''"
+  case 391:
+   {
+    Tr *tr = (Tr*)head->items + n;
+    ZitemToString((Tt*)(tr->table[0]), useq, (Tz)tr->ptr, ga);
+    break;
+   }
+  default:
+   ZitemToString(head->itemType, useq, (Tz)head->items[n], ga);
+   break;
+ }
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Declaration.itemToString)
+      fd.write(''"
+void ZListToStringGa(Tl *head, int useq, Tg *ga) {
+ Ti n = head->empty;
+ Ti tot = head->empty + head->itemCount;
+ int itemType = head->itemType->nr;
+ Tn *e = "'' .. gen.getEnvCode() .. ''";
+ ga_append(ga, "[");
+ if (head->itemCount) {
+  if (head->tosNr == e->tosNr) {
+   ga_append(ga, "recursive-list");
+  } else {
+   head->tosNr = e->tosNr;
+   for (;;) {
+    ZListitemToString(head, useq, n, ga);
+    if (++n == tot) break;
+    ga_append(ga, ", ");
+   }
+   head->tosNr = 0;
+  }
+ }
+ ga_append(ga, "]");
+}
+
+Tc *ZListToString(Tl *head, int useq) {
+ Tg ga;
+ Tc *r;
+ if (head == NULL) return (Tc*)&ZNilString;
+ ++"'' .. gen.getEnvCode() .. ''"->tosNr;
+ ga.data = NULL;
+ ga.used = 0;
+ ZListToStringGa(head, useq, &ga);
+ r = ZnewString(ga.data, ga.used);"'')
+        IF !gen.manageMemory()
+          fd.write(''"
+ Zfree(ga.data - ZOH_OFF);"'')
+        }
+        fd.write(''"
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listEqual)
+      # TODO: if the left and right types are equal, can directly compare the
+      # array byte-for-byte.
+      fd.write(''"
+Tb ZListEqual(Tl *headl, Tl *headr) {
+ Ti n;
+ Ti tot;
+ Tz l;
+ Tz r;
+ if (headl == NULL || headr == NULL) ZthrowCstringNil("Comparing with NIL list");
+ if (headl->itemCount != headr->itemCount) return 0;
+ tot = headl->itemCount;
+ for (n = 0; n < tot; ++n) {
+  l = ZListGetTz(headl, n);
+  r = ZListGetTz(headr, n);
+  if (!ZitemEqual(headl->itemType, l, headr->itemType, r)) return 0;
+ }
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listCompare)
+      # TODO: if the left and right types are equal, can directly compare the
+      # array byte-for-byte.
+      fd.write(''"
+int ZListCompare(Tl *headl, Tl *headr) {
+ Ti n;
+ Ti tot;
+ int v;
+ if (headl == NULL || headr == NULL) ZthrowCstringNil("Comparing with NIL list");
+ tot = headl->itemCount;
+ if (headr->itemCount < tot) tot = headr->itemCount;
+ for (n = 0; n < tot; ++n) {
+  v = ZitemEqual(headl->itemType, ZListGetTz(headl, n), headr->itemType, ZListGetTz(headr, n));
+  if (v != 0) return v;
+ }
+ if (headl->itemCount == headr->itemCount) return 0;
+ return headl->itemCount > headr->itemCount ? 1 : -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGrow)
+      # When growth is needed:
+      # - At least 8 items.
+      # - For up to 100 items grow 25%.
+      # - Above 100 items grow 12.5%.
+      # When adding 1 item at a time we get the size sequence:
+      #     8, 18, 30, 45, 64, 88, 118, 133, 150, ...
+      fd.write(''"
+void ZListGrow(Tl *head, Ti count) {
+ Ti newsize = head->empty + head->itemCount + count;
+ if (newsize <= head->space) return;
+ if (newsize < 100) {
+  newsize += (newsize >> 2) + 7;
+ } else {
+  newsize += newsize >> 3;
+ }
+ if (head->items == (void**)(head + 1)) {
+  head->items = ZaOff(head->itemSize * newsize);
+  memmove(head->items, head + 1, head->itemSize * head->itemCount);
+ } else {
+  head->items = ZranOff(head->items, head->itemSize * head->space, head->itemSize * newsize);
+ }"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ head->space = newsize;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listExtend)
+      fd.write(''"
+Tl *ZListExtend(Tl *head, Tl *head2) {
+ if (head == NULL) ZthrowCstringNil("Attempt to extend NIL list");
+ if (head2 == NULL) return head;  /* TODO: throw exception? */
+ ZListGrow(head, head2->itemCount);
+ ZcopyItems(head->itemType, head->itemSize, head->items, head->empty + head->itemCount, head2->itemType, head2->itemSize, head2->items, head2->empty, head2->itemCount);
+ head->itemCount += head2->itemCount;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listAdd)
+      fd.write(''"
+Tl *ZLa(Tl *head, Ti after, Tz val) {
+ Ti nAfter;
+ Ti idx;
+ Ti len;
+ if (head == NULL) ZthrowCstringNil("Attempt to append to NIL list");
+ ZListGrow(head, 1);
+ if (after < 0) {
+  nAfter = head->itemCount + after;
+  if (nAfter < 0) nAfter = -1;
+ } else {
+  nAfter = after;
+  if (nAfter >= head->itemCount) nAfter = head->itemCount - 1;
+ }
+ idx = nAfter + head->empty + 1;
+ len = head->itemCount - nAfter - 1;
+ switch (head->itemType->nr) {
+  case 0:
+  case 10:
+  case 24:
+  case 25:
+   if (len > 0 && idx >= head->empty)
+    memmove(((Ti*)head->items) + idx + 1, ((Ti*)head->items) + idx, head->itemSize * len);
+   ((Ti*)head->items)[idx] = val.ival;
+   break;
+  case 1:
+  case 11:
+   if (len > 0 && idx >= head->empty)
+    memmove(((char*)head->items) + idx + 1, ((char*)head->items) + idx, head->itemSize * len);
+   ((char*)head->items)[idx] = val.ival;
+   break;
+  case 12:
+  case 2:
+   if (len > 0 && idx >= head->empty)
+    memmove(((Ti16*)head->items) + idx + 1, ((Ti16*)head->items) + idx, head->itemSize * len);
+   ((Ti16*)head->items)[idx] = val.ival;
+   break;
+  case 3:
+  case 13:
+   if (len > 0 && idx >= head->empty)
+    memmove(((Ti32*)head->items) + idx + 1, ((Ti32*)head->items) + idx, head->itemSize * len);
+   ((Ti32*)head->items)[idx] = val.ival;
+   break;
+  case 21:
+  case 22:
+  case 23:
+   if (len > 0 && idx >= head->empty)
+    memmove(((int*)head->items) + idx + 1, ((int*)head->items) + idx, head->itemSize * len);
+   ((int*)head->items)[idx] = val.ival;
+   break;
+  case 80:
+  case 82:
+  case 83:
+   if (len > 0 && idx >= head->empty)
+    memmove(((Tf*)head->items) + idx + 1, ((Tf*)head->items) + idx, head->itemSize * len);
+   ((Tf*)head->items)[idx] = val.fval;
+   break;
+  case 81:
+   if (len > 0 && idx >= head->empty)
+    memmove(((Tf32*)head->items) + idx + 1, ((Tf32*)head->items) + idx, head->itemSize * len);
+   ((Tf32*)head->items)[idx] = val.fval;
+   break;
+  default:
+   if (len > 0 && idx >= head->empty)
+    memmove(head->items + idx + 1, head->items + idx, head->itemSize * len);
+   head->items[idx] = val.ptr;
+   break;
+ }
+ ++head->itemCount;
+ return head;
+}
+Tl *ZLap(Tl *head, Tz val) {
+ return ZLa(head, -1, val);
+}
+"'')
+      fd.write(''"
+Tl *ZLaIobj(Tl *head, Ti after, Tr val) {
+ Ti nAfter;
+ Ti idx;
+ Ti len;
+ if (head == NULL) ZthrowCstringNil("Attempt to append to NIL list");
+ ZListGrow(head, 1);
+ if (after < 0) {
+  nAfter = head->itemCount + after;
+  if (nAfter < 0) nAfter = -1;
+ } else {
+  nAfter = after;
+  if (nAfter >= head->itemCount) nAfter = head->itemCount - 1;
+ }
+ idx = nAfter + head->empty + 1;
+ len = head->itemCount - nAfter - 1;
+ if (len > 0 && idx >= head->empty)
+  memmove((Tr*)head->items + idx + 1, (Tr*)head->items + idx, head->itemSize * len);
+ ((Tr*)head->items)[idx] = val;
+ ++head->itemCount;
+ return head;
+}
+Tl *ZLapIobj(Tl *head, Tr val) {
+ return ZLaIobj(head, -1, val);
+}"'')
+
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+Tl *ZLaDyn(Tl *head, Ti after, Tx val) {
+ Ti nAfter;
+ Ti idx;
+ Ti len;
+ if (head == NULL) ZthrowCstringNil("Attempt to append to NIL list");
+ ZListGrow(head, 1);
+ if (after < 0) {
+  nAfter = head->itemCount + after;
+  if (nAfter < 0) nAfter = -1;
+ } else {
+  nAfter = after;
+  if (nAfter >= head->itemCount) nAfter = head->itemCount - 1;
+ }
+ idx = nAfter + head->empty + 1;
+ len = head->itemCount - nAfter - 1;
+ if (len > 0 && idx >= head->empty)
+  memmove((Tx*)head->items + idx + 1, (Tx*)head->items + idx, head->itemSize * len);
+ ((Tx*)head->items)[idx] = val;
+ ++head->itemCount;
+ return head;
+}
+Tl *ZLapDyn(Tl *head, Tx val) {
+ return ZLaDyn(head, -1, val);
+}"'')
+      }
+    }
+
+    IF gen.isDeclUsed(%listInsert)
+      fd.write(''"
+Tl *ZListInsert(Tl *head, Ti before, Tz val) {
+ Ti nBefore;
+ Ti idx;
+ if (head == NULL) ZthrowCstringNil("Invoking insert() on NIL list");
+ if (head->itemCount == 0 || before >= head->itemCount) return ZLa(head, -1, val);
+ if (before < 0) {
+  nBefore = head->itemCount + before;
+ } else {
+  nBefore = before;
+ }
+ if (nBefore <= 0) nBefore = -head->itemCount;
+ return ZLa(head, nBefore - 1, val);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listInsertIobj)
+      fd.write(''"
+Tl *ZListInsertIobj(Tl *head, Ti before, Tr val) {
+ Ti nBefore;
+ Ti idx;
+ if (head == NULL) ZthrowCstringNil("Invoking insert() on NIL list");
+ if (head->itemCount == 0 || before >= head->itemCount) return ZLaIobj(head, -1, val);
+ if (before < 0) {
+  nBefore = head->itemCount + before;
+ } else {
+  nBefore = before;
+ }
+ if (nBefore <= 0) nBefore = -head->itemCount;
+ return ZLaIobj(head, nBefore - 1, val);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listInsertDyn)
+      fd.write(''"
+Tl *ZListInsertDyn(Tl *head, Ti before, Tx val) {
+ Ti nBefore;
+ Ti idx;
+ if (head == NULL) ZthrowCstringNil("Invoking insert() on NIL list");
+ if (head->itemCount == 0 || before >= head->itemCount) return ZLaDyn(head, -1, val);
+ if (before < 0) {
+  nBefore = head->itemCount + before;
+ } else {
+  nBefore = before;
+ }
+ if (nBefore <= 0) nBefore = -head->itemCount;
+ return ZLaDyn(head, nBefore - 1, val);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listClear)
+      fd.write(''"
+Tl *ZListClear(Tl *head) {
+ Ti n;
+ if (head == NULL) ZthrowCstringNil("Invoking clear() on NIL list");
+ if (head->itemCount == 0) return head;"'')
+      IF !gen.manageMemory()
+        fd.write(''"
+ if (head->items != (void**)(head + 1)) Zfree((void*)head->items - ZOH_OFF);"'')
+      }
+      fd.write(''"
+ head->items = NULL;"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ head->alloced = NULL;"'')
+      }
+      fd.write(''"
+ head->empty = 0;
+ head->space = 0;
+ head->itemCount = 0;
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listCopy)
+      fd.write(''"
+Tl *ZListCopy(Tl *head) {
+ Tl *newhead;
+ Ti len;
+ Ti n;
+ if (head == NULL) ZthrowCstringNil("Invoking copy() on NIL list");
+ len = head->itemCount;
+ newhead = Za(sizeof(Tl));
+ newhead->itemType = head->itemType;
+ newhead->itemSize = head->itemSize;
+ newhead->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+ newhead->alloced = (void*)newhead->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+ memmove(newhead->items, (char*)head->items + head->empty * head->itemSize, len * head->itemSize);
+ newhead->space = len;
+ newhead->itemCount = len;
+ return newhead;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listSize)
+      fd.write(''"
+Ti ZListSize(Tl *head) {
+ if (head == NULL) return 0;
+ return head->itemCount;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listConcat)
+      fd.write(''"
+Tl *ZListConcat(Tl *head1, Tl *head2) {
+ Tl *newhead;
+ if (head1 == NULL) ZthrowCstringNil("Attempt to use concat() on NIL list");
+ newhead = ZListCopy(head1);
+ if (head2 != NULL) ZListExtend(newhead, head2);
+ return newhead;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetInt)
+        || gen.isDeclUsed(Type.aDyn)
+        || gen.isDeclUsed(Declaration.itemEqual)
+        || gen.isDeclUsed(WriteC.forList)
+      fd.write(''"
+Ti ZListGetInt(Tl *head, Ti idx) {
+ Ti r;
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  switch (head->itemType->nr) {
+   case 0:
+   case 24:
+   case 25:
+    r = ((Ti*)head->items)[n]; break;
+   case 10:
+    r = (Ti)((Tu*)head->items)[n]; break;
+   case 1:
+    r = ((char*)head->items)[n]; break;
+   case 11:
+    r = (Ti)((Tc*)head->items)[n]; break;
+   case 2:
+    r = ((Ti16*)head->items)[n]; break;
+   case 12:
+    r = (Ti)((Tu16*)head->items)[n]; break;
+   case 3:
+    r = ((Ti32*)head->items)[n]; break;
+   case 13:
+    r = (Ti)((Tu32*)head->items)[n]; break;
+   case 21:
+   case 22:
+   case 23:
+    r = ((int*)head->items)[n]; break;
+  }
+ } else r = 0;
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetIntP)
+      fd.write(''"
+void *ZListGetIntP(Tl *head, Ti idx) {
+ Ti *r;
+ Ti n = ZListFindIdx(head, idx);
+ if (n < 0) ZthrowCstringOutOfRange(idx, "index out of range");
+ return (void*)head->items + n * head->itemSize;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetFloat)
+        || gen.isDeclUsed(Type.aDyn)
+        || gen.isDeclUsed(Declaration.itemEqual)
+        || gen.isDeclUsed(WriteC.forList)
+      fd.write(''"
+Tf ZListGetFloat(Tl *head, Ti idx) {
+ Tf r;
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  switch (head->itemType->nr) {
+   case 80:
+   case 82:
+   case 83:
+    r = ((Tf*)head->items)[n]; break;
+   case 81:
+    r = (Tf)((Tf32*)head->items)[n]; break;
+  }
+ } else r = 0;
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetPtr) || gen.isDeclUsed(Type.aDyn)
+                                      || gen.isDeclUsed(Declaration.itemEqual)
+      fd.write(''"
+void *ZListGetPtr(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) return head->items[n];
+ return NULL;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetPtrP)
+      fd.write(''"
+void *ZListGetPtrP(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n < 0) ZthrowCstringOutOfRange(idx, "index out of range");
+ return &(head->items[n]);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetIobj)
+      fd.write(''"
+Tr ZListGetIobj(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) return ((Tr*)head->items)[n];
+ return trZero;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetIobjP)
+      fd.write(''"
+Tr *ZListGetIobjP(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n < 0) ZthrowCstringOutOfRange(idx, "index out of range");
+ return &(((Tr*)head->items)[n]);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetDyn)
+      fd.write(''"
+Tx ZListGetDyn(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) return ((Tx*)head->items)[n];
+ return txZero;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listGetDynP)
+      fd.write(''"
+Tx *ZListGetDynP(Tl *head, Ti idx) {
+ Ti n = ZListFindIdx(head, idx);
+ if (n < 0) ZthrowCstringOutOfRange(idx, "index out of range");
+ return &(((Tx*)head->items)[n]);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(Type.aDyn) || gen.isDeclUsed(Declaration.itemEqual)
+      fd.write(''"
+Tz ZListGetTz(Tl *head, Ti idx) {
+ if (head->itemType->nr < 80) return (Tz)ZListGetInt(head, idx);
+ if (head->itemType->nr < 100) return (Tz)ZListGetFloat(head, idx);
+ return (Tz)ZListGetPtr(head, idx);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFind)
+      # TODO: compare pointer values properly.
+      fd.write(''"
+Ti ZListFind(Tl *head, Tz val) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL list");
+ n = head->empty;
+ tot = n + head->itemCount;
+ for ( ; n < tot ; ++n)
+  switch (head->itemType->nr) {
+   case 0:
+   case 24:
+   case 25:
+    if (((Ti*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 10:
+    if ((Ti)((Tu*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 1:
+    if (((char*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 11:
+    if ((Ti)((Tc*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 2:
+    if (((Ti16*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 12:
+    if ((Ti)((Tu16*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 3:
+   case 13:
+    if (((Ti32*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 21:
+   case 22:
+   case 23:
+    if (((int*)head->items)[n] == val.ival) return n - head->empty;
+    break;
+   case 80:
+   case 82:
+   case 83:
+    if (((Tf*)head->items)[n] == val.fval) return n - head->empty;
+    break;
+   case 81:
+    if (((Tf32*)head->items)[n] == (Tf32)val.fval) return n - head->empty;
+    break;
+   case 200:
+   case 201:
+    if (ZstringCmp(head->items[n], val.ptr) == 0) return n - head->empty;
+    break;"'')
+      IF gen.isDeclUsed(Type.aDyn)
+        fd.write(''"
+   case 360:
+    if (ZdynEqual(*(Tx*)head->items[n], *(Tx*)val.ptr) == 0) return n - head->empty;
+    break;"'')
+      }
+      fd.write(''"
+   case 391:
+    ZthrowCstringNil("Invoking find() on iobject list");
+    break;
+   default:
+    if (head->items[n] == val.ptr) return n - head->empty;
+    break;
+  }
+ return -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFindIobj)
+      # TODO: compare pointer values properly.
+      fd.write(''"
+Ti ZListFindIobj(Tl *head, Tr tr) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL list");
+ n = head->empty;
+ tot = n + head->itemCount;
+ for ( ; n < tot ; ++n)
+  if (((Tr*)head->items + n)->ptr == tr.ptr) return n - head->empty;
+ return -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listFindDyn)
+      fd.write(''"
+Ti ZListFindDyn(Tl *head, Tx tx) {
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Attempt to find in NIL list");
+ n = head->empty;
+ tot = n + head->itemCount;
+ for ( ; n < tot ; ++n)
+  if (ZdynEqual(((Tx*)head->items)[n], tx) return n - head->empty;
+ return -1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listClearItem)
+      fd.write(''"
+Tl *ZListClearItem(Tl *head, Ti idx) {
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  if (len > 0)
+   memmove(((char*)head->items) + n * head->itemSize, ((char*)head->items) + (n + 1) * head->itemSize, len * head->itemSize);
+  head->itemCount--;
+  // ZListShrink(head);
+ }
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listRemoveIntItem)
+      fd.write(''"
+Ti ZListRemoveIntItem(Tl *head, Ti idx) {
+ Ti r = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  switch (head->itemType->nr) {
+   case 0:
+   case 10:
+   case 24:
+   case 25:
+    r = ((Ti*)head->items)[n]; break;
+   case 1:
+   case 11:
+    r = ((char*)head->items)[n]; break;
+   case 12:
+   case 2:
+    r = ((Ti16*)head->items)[n]; break;
+   case 3:
+   case 13:
+    r = ((Ti32*)head->items)[n]; break;
+   case 21:
+   case 22:
+   case 23:
+    r = ((int*)head->items)[n]; break;
+  }
+  if (len > 0)
+   memmove((char*)head->items + n * head->itemSize, (char*)head->items + (n + 1) * head->itemSize, len * head->itemSize);
+  head->itemCount--;
+  // ZListShrink(head);
+ }
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listRemoveFloatItem)
+      fd.write(''"
+Tf ZListRemoveFloatItem(Tl *head, Ti idx) {
+ Tf r = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  switch (head->itemType->nr) {
+   case 80:
+   case 82:
+   case 83:
+    r = ((Tf*)head->items)[n]; break;
+   case 81:
+    r = ((Tf32*)head->items)[n]; break;
+  }
+  if (len > 0)
+   memmove((char*)head->items + n * head->itemSize, (char*)head->items + (n + 1) * head->itemSize, len * head->itemSize);
+  head->itemCount--;
+  // ZListShrink(head);
+ }
+ return r;
+}
+"'')
+    }
+
+    # remove() and clear() use the same C function.
+    IF gen.isDeclUsed(%listRemovePtrItem)
+      fd.write(''"
+void *ZListRemovePtrItem(Tl *head, Ti idx) {
+ void *r = NULL;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  r = head->items[n];
+  if (len > 0)
+   memmove(head->items + n, head->items + n + 1, len * sizeof(void*));
+  head->itemCount--;
+  // ZListShrink(head);
+ }
+ return r;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listRemoveIobjItem)
+      fd.write(''"
+Tr ZListRemoveIobjItem(Tl *head, Ti idx) {
+ Tr r;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  r = ((Tr*)head->items)[n];
+  if (len > 0)
+   memmove(((Tr*)head->items) + n, ((Tr*)head->items) + n + 1, len * sizeof(Tr));
+  head->itemCount--;
+  // ZListShrink(head);
+  return r;
+ }
+ return trZero;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listRemoveDynItem)
+      fd.write(''"
+Tx ZListRemoveDynItem(Tl *head, Ti idx) {
+ Tx r;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ Ti n = ZListFindIdx(head, idx);
+ if (n >= 0) {
+  Ti len = head->itemCount - (n - head->empty) - 1;
+  r = ((Tx*)head->items)[n];
+  if (len > 0)
+   memmove(((Tx*)head->items) + n, ((Tx*)head->items) + n + 1, len * sizeof(Tx));
+  head->itemCount--;
+  // ZListShrink(head);
+  return r;
+ }
+ return txZero;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listPopList)
+      fd.write(''"
+Tl *ZListPopList(Tl *head, Ti i1, Ti i2) {
+ Tl *newhead;
+ Ti n;
+ Ti ai1;
+ Ti ai2;
+ if (head == NULL) ZthrowCstringNil("Invoking remove() on NIL list");
+ newhead = Za(sizeof(Tl));
+ newhead->itemType = head->itemType;
+ newhead->itemSize = head->itemSize;
+ ai1 = i1 >= 0 ? i1 : head->itemCount + i1;
+ ai2 = i2 >= 0 ? i2 : head->itemCount + i2;
+ if (ai1 < 0) ai1 = 0;
+ if (ai1 < head->itemCount && ai1 <= ai2) {
+  Ti len;
+  if (ai2 >= head->itemCount) ai2 = head->itemCount - 1;
+  len = ai2 - ai1 + 1;
+  newhead->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+  newhead->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+  memmove(newhead->items, (char *)head->items + (ai1 + head->empty) * head->itemSize, (ai2 - ai1 + 1) * head->itemSize);
+
+  n = head->itemCount - ai2 - 1;
+  if (n > 0)
+   memmove((char *)head->items + (ai1 + head->empty) * head->itemSize, (char *)head->items + (ai2 + 1) * head->itemSize, n * head->itemSize);
+
+  head->itemCount -= len;
+  newhead->itemCount = len;
+  // ZListShrink(head);
+ }
+ return newhead;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listSlice)
+      fd.write(''"
+Tl *ZListSlice(Tl *head, Ti i1, Ti i2) {
+ Tl *newhead;
+ Ti n;
+ Ti len;
+ Ti ai1;
+ Ti ai2;
+ if (head == NULL) ZthrowCstringNil("Invoking slice() on NIL list");
+ newhead = Za(sizeof(Tl));
+ newhead->itemType = head->itemType;
+ newhead->itemSize = head->itemSize;
+ ai1 = i1 >= 0 ? i1 : head->itemCount + i1;
+ ai2 = i2 >= 0 ? i2 : head->itemCount + i2;
+ if (ai1 < 0) ai1 = 0;
+ if (ai1 < head->itemCount && ai1 <= ai2) {
+  if (ai2 >= head->itemCount) ai2 = head->itemCount - 1;
+  len = ai2 - ai1 + 1;
+  newhead->items = ZaOff(head->itemSize * len);"'')
+      IF gen.manageMemory() && ManageMemory.isExitclean()
+        fd.write(''"
+  newhead->alloced = (void*)head->items - ZOH_OFF;"'')
+      }
+      fd.write(''"
+  newhead->space = len;
+  memmove(newhead->items, (char*)head->items + (ai1 + head->empty) * head->itemSize, len * head->itemSize);
+  newhead->itemCount = len;
+ }
+ return newhead;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%intListSort)
+      fd.write(''"
+static int intCmp(const void *p1, const void *p2) {
+ return *(Ti const *)p1 == *(Ti const *)p2 ? 0 : *(Ti const *)p1 > *(Ti const *)p2 ? 1 : -1;
+}
+static int int8Cmp(const void *p1, const void *p2) {
+ return *(char const *)p1 - *(char const *)p2;
+}
+static int int16Cmp(const void *p1, const void *p2) {
+ return *(Ti16 const *)p1 - *(Ti16 const *)p2;
+}
+static int int32Cmp(const void *p1, const void *p2) {
+ return *(Ti32 const *)p1 - *(Ti32 const *)p2;
+}
+static int intCmpR(const void *p1, const void *p2) {
+ return *(Ti const *)p2 == *(Ti const *)p1 ? 0 : *(Ti const *)p2 > *(Ti const *)p1 ? 1 : -1;
+}
+static int int8CmpR(const void *p1, const void *p2) {
+ return *(char const *)p2 - *(char const *)p1;
+}
+static int int16CmpR(const void *p1, const void *p2) {
+ return *(Ti16 const *)p2 - *(Ti16 const *)p1;
+}
+static int int32CmpR(const void *p1, const void *p2) {
+ return *(Ti32 const *)p2 - *(Ti32 const *)p1;
+}
+Tl *ZintListSort(Tl *head, int asc) {
+ int i = 0;
+ void *f;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ switch (head->itemType->nr) {
+  case 0: f = asc ? intCmp : intCmpR; break;
+  case 1: f = asc ? int8Cmp : int8CmpR; break;
+  case 2: f = asc ? int16Cmp : int16CmpR; break;
+  case 3: f = asc ? int32Cmp : int32CmpR; break;
+ }
+ qsort((char*)head->items + head->empty * head->itemSize, head->itemCount, head->itemSize, f);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%natListSort)
+      fd.write(''"
+static int natCmp(const void *p1, const void *p2) {
+ return *(Tu const *)p1 == *(Tu const *)p2 ? 0 : *(Tu const *)p1 > *(Tu const *)p2 ? 1 : -1;
+}
+static int nat8Cmp(const void *p1, const void *p2) {
+ return *(Tc const *)p1 == *(Tc const *)p2 ? 0 : *(Tc const *)p1 > *(Tc const *)p2 ? 1 : -1;
+}
+static int nat16Cmp(const void *p1, const void *p2) {
+ return *(Tu16 const *)p1 == *(Tu16 const *)p2 ? 0 : *(Tu16 const *)p1 > *(Tu16 const *)p2 ? 1 : -1;
+}
+static int nat32Cmp(const void *p1, const void *p2) {
+ return *(Tu32 const *)p1 == *(Tu32 const *)p2 ? 0 : *(Tu32 const *)p1 > *(Tu32 const *)p2 ? 1 : -1;
+}
+static int natCmpR(const void *p1, const void *p2) {
+ return *(Tu const *)p2 == *(Tu const *)p1 ? 0 : *(Tu const *)p2 > *(Tu const *)p1 ? 1 : -1;
+}
+static int nat8CmpR(const void *p1, const void *p2) {
+ return *(Tc const *)p2 == *(Tc const *)p1 ? 0 : *(Tc const *)p2 > *(Tc const *)p1 ? 1 : -1;
+}
+static int nat16CmpR(const void *p1, const void *p2) {
+ return *(Tu16 const *)p2 == *(Tu16 const *)p1 ? 0 : *(Tu16 const *)p2 > *(Tu16 const *)p1 ? 1 : -1;
+}
+static int nat32CmpR(const void *p1, const void *p2) {
+ return *(Tu32 const *)p2 == *(Tu32 const *)p1 ? 0 : *(Tu32 const *)p2 > *(Tu32 const *)p1 ? 1 : -1;
+}
+Tl *ZnatListSort(Tl *head, int asc) {
+ int i = 0;
+ void *f;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ switch (head->itemType->nr) {
+  case 10: f = asc ? natCmp : natCmpR; break;
+  case 11: f = asc ? nat8Cmp : nat8CmpR; break;
+  case 12: f = asc ? nat16Cmp : nat16CmpR; break;
+  case 13: f = asc ? nat32Cmp : nat32CmpR; break;
+ }
+ qsort((char*)head->items + head->empty * head->itemSize, head->itemCount, head->itemSize, f);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%floatListSort)
+      fd.write(''"
+static int floatCmp(const void *p1, const void *p2) {
+ return *(Tf const *)p1 == *(Tf const *)p2 ? 0 : *(Tf const *)p1 > *(Tf const *)p2 ? 1 : -1;
+}
+static int float32Cmp(const void *p1, const void *p2) {
+ return *(Tf32 const *)p1 == *(Tf32 const *)p2 ? 0 : *(Tf32 const *)p1 > *(Tf32 const *)p2 ? 1 : -1;
+}
+static int floatCmpR(const void *p1, const void *p2) {
+ return *(Tf const *)p2 == *(Tf const *)p1 ? 0 : *(Tf const *)p2 > *(Tf const *)p1 ? 1 : -1;
+}
+static int float32CmpR(const void *p1, const void *p2) {
+ return *(Tf32 const *)p2 == *(Tf32 const *)p1 ? 0 : *(Tf32 const *)p2 > *(Tf32 const *)p1 ? 1 : -1;
+}
+Tl *ZfloatListSort(Tl *head, int asc) {
+ int i = 0;
+ void *f;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ switch (head->itemType->nr) {
+  case 80:
+  case 82:
+  case 83: f = asc ? floatCmp : floatCmpR; break;
+  case 81: f = asc ? float32Cmp : float32CmpR; break;
+ }
+ qsort((char*)head->items + head->empty * head->itemSize, head->itemCount, head->itemSize, f);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%stringListSort)
+      fd.write(''"
+static int stringCmp(const void *p1, const void *p2) {
+ Tc *p1p;
+ Tc *p2p;
+ Ti len1 = ZstringSizePtr(*(Tc **)p1, &p1p);
+ Ti len2 = ZstringSizePtr(*(Tc **)p2, &p2p);
+ size_t len = len1 < len2 ? len1 : len2;
+ int r = memcmp(p1p, p2p, len);
+ if (r == 0) return len1 - len2;
+ return r;
+}
+static int stringCmpR(const void *p1, const void *p2) {
+ Tc *p1p;
+ Tc *p2p;
+ Ti len1 = ZstringSizePtr(*(Tc **)p1, &p1p);
+ Ti len2 = ZstringSizePtr(*(Tc **)p2, &p2p);
+ size_t len = len1 < len2 ? len1 : len2;
+ int r = memcmp(p2p, p1p, len);
+ if (r == 0) return len2 - len1;
+ return r;
+}
+Tl *ZstringListSort(Tl *head, int asc) {
+ int i = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ qsort(head->items + head->empty, head->itemCount, sizeof(Tc*), asc ? stringCmp : stringCmpR);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%objectListSort)
+          || gen.isDeclUsed(%iobjectListSort)
+          || gen.isDeclUsed(%dynListSort)
+      fd.write(''"
+int (*cf)(const void*, const void*);"'')
+    }
+
+    IF gen.isDeclUsed(%objectListSort)
+      fd.write(''"
+static int objectCmp(const void *p1, const void *p2) {
+ return cf(*(char**)p1, *(char**)p2);
+}
+static int objectCmpR(const void *p1, const void *p2) {
+ return cf(*(char**)p2, *(char**)p1);
+}
+Tl *ZobjectListSort(Tl *head, int asc, int (*f)(const void*, const void*)) {
+ char **table;
+ int i = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ cf = f;
+ qsort(head->items + head->empty, head->itemCount, sizeof(char*), asc ? objectCmp : objectCmpR);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%iobjectListSort)
+      fd.write(''"
+static int iobjectCmpR(const void *p1, const void *p2) {
+ return cf(p2, p1);
+}
+Tl *ZiobjectListSort(Tl *head, int asc, int (*f)(const void*, const void*)) {
+ char **table;
+ int i = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ cf = f;
+ qsort((Tr*)head->items + head->empty, head->itemCount, sizeof(Tr), asc ? f : iobjectCmpR);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%dynListSort)
+      fd.write(''"
+static int dynCmpR(const void *p1, const void *p2) {
+ return cf(p2, p1);
+}
+Tl *ZdynListSort(Tl *head, int asc, int (*f)(const void*, const void*)) {
+ char **table;
+ int i = 0;
+ if (head == NULL) ZthrowCstringNil("Invoking sort() on NIL list");
+ cf = f;
+ qsort((Tx*)head->items + head->empty, head->itemCount, sizeof(Tx), asc ? f : dynCmpR);
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listJoinVal)
+      fd.write(''"
+Tc *ZListJoinVal(Tl *head, Tc *sep, int useq) {
+ int size = 0;
+ Tc *sepp;
+ Tg ga;
+ Ti n;
+ Ti tot;
+ if (head == NULL) ZthrowCstringNil("Invoking join() on NIL list");
+ if (sep == NULL) ZthrowCstringNil("Invoking join() with NIL argument");
+ ga.data = NULL;
+ ga.used = 0;
+ ZstringSizePtr(sep, &sepp);
+ n = head->empty;
+ tot = n + head->itemCount;
+ if (n < tot) {
+  for (;;) {
+   Tc *p;
+   Ti len;
+   ZListitemToString(head, useq, n, &ga);
+   if (++n == tot) break;
+   ga_append(&ga, (char *)sepp);
+  }
+ }
+ return ZnewString(ga.data, ga.used);
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListIobj)
+      fd.write(''"
+int ZforListIobjCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(Tr*)tfl->valp = ((Tr*)l->items)[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListIobjKey)
+      fd.write(''"
+int ZforListIobjKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(Tr*)tfl->valp = ((Tr*)l->items)[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListDyn)
+      fd.write(''"
+int ZforListDynCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(Tx*)tfl->valp = ((Tx*)l->items)[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListDynKey)
+      fd.write(''"
+int ZforListDynKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(Tx*)tfl->valp = ((Tx*)l->items)[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListEnum)
+      fd.write(''"
+int ZforListEnumCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(Te*)tfl->valp = ZListGetInt(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListEnumKey)
+      fd.write(''"
+int ZforListEnumKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(Te*)tfl->valp = ZListGetInt(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListFloat)
+      fd.write(''"
+int ZforListFloatCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(Tf*)tfl->valp = ZListGetFloat(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListFloatKey)
+      fd.write(''"
+int ZforListFloatKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(Tf*)tfl->valp = ZListGetFloat(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListInt)
+      fd.write(''"
+int ZforListIntCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(Ti*)tfl->valp = ZListGetInt(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListIntKey)
+      fd.write(''"
+int ZforListIntKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(Ti*)tfl->valp = ZListGetInt(l, i);
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListPtr)
+      fd.write(''"
+int ZforListPtrCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *(char**)tfl->valp = l->items[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(WriteC.forListPtrKey)
+      fd.write(''"
+int ZforListPtrKeyCont(Tfl *tfl) {
+ Tl *l = tfl->l;
+ Ti i = tfl->i;
+ if (l == NULL || i >= l->itemCount) return 0;
+ *tfl->keyp = i;
+ *(char**)tfl->valp = l->items[i + l->empty];
+ ++tfl->i;
+ return 1;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listMap)
+      IF gen.manageMemory()
+        fd.write(''"
+Zfo ZListMapfo[3] = {{0,&list__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Tl *ZListMap(Tl *head, Tcb *f) {
+ Ti n;
+ Ti tot;"'')
+      IF gen.manageMemory()
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZListMapfo[0].off = (void*)&sf - (void*)&head;
+  ZListMapfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZListMapfo", fd)
+      }
+      # TODO: implement iobject map
+      # TODO: implement dyn map
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking map() on NIL list");
+ n = head->empty;
+ tot = n + head->itemCount;
+ for ( ; n < tot; ++n) {
+  switch (head->itemType->nr) {
+   case 0:
+   case 10:
+   case 24:
+   case 25:
+    ((Ti*)head->items)[n] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, ((Ti*)head->items)[n]);
+    break;
+   case 1:
+   case 11:
+    ((char*)head->items)[n] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, ((char*)head->items)[n]);
+    break;
+   case 12:
+   case 2:
+    ((Ti16*)head->items)[n] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, ((Ti16*)head->items)[n]);
+    break;
+   case 3:
+   case 13:
+    ((Ti32*)head->items)[n] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, ((Ti32*)head->items)[n]);
+    break;
+   case 21:
+   case 22:
+   case 23:
+    ((int*)head->items)[n] = ((Ti (*)(Tcb *, Ti))f->cfunc)(f, ((int*)head->items)[n]);
+    break;
+   case 80:
+   case 82:
+   case 83:
+    ((Tf*)head->items)[n] = ((Tf (*)(Tcb *, Tf))f->cfunc)(f, ((Tf*)head->items)[n]);
+    break;
+   case 81:
+    ((Tf32*)head->items)[n] = ((Tf32 (*)(Tcb *, Tf32))f->cfunc)(f, ((Tf32*)head->items)[n]);
+    break;
+   case 391:
+    ZthrowCstringNil("Invoking map() on iobject list");
+   default:
+    head->items[n] = ((void *(*)(Tcb *, void *))f->cfunc)(f, head->items[n]);
+    break;
+  }
+ }"'')
+      IF gen.manageMemory()
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+    IF gen.isDeclUsed(%listKeyMap)
+      IF gen.manageMemory()
+        fd.write(''"
+Zfo ZListKeyMapfo[3] = {{0,&list__T},{0,&cb__T},{0,0}};"'')
+      }
+      fd.write(''"
+Tl *ZListKeyMap(Tl *head, Tcb *f) {
+ Ti n;
+ Ti tot;"'')
+      IF gen.manageMemory()
+        fd.write(''"
+ Tn *e = "'' .. gen.getEnvCode() .. ''";"'')
+        gen.stackFrameLead(fd)
+        fd.write(''"
+  ZListKeyMapfo[0].off = (void*)&sf - (void*)&head;
+  ZListKeyMapfo[1].off = (void*)&sf - (void*)&f;"'')
+        gen.stackFrameFoot("ZListKeyMapfo", fd)
+      }
+      # TODO: Implement iobject keyMap()
+      # TODO: Implement dyn keyMap()
+      fd.write(''"
+ if (head == NULL) ZthrowCstringNil("Invoking keyMap() on NIL list");
+ tot = head->itemCount;
+ for (n = 0; n < tot; ++n) {
+  switch (head->itemType->nr) {
+   case 0:
+   case 10:
+   case 24:
+   case 25:
+    ((Ti*)head->items)[n + head->empty] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, n, ((Ti*)head->items)[n + head->empty]);
+    break;
+   case 1:
+   case 11:
+    ((char*)head->items)[n + head->empty] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, n, ((char*)head->items)[n + head->empty]);
+    break;
+   case 12:
+   case 2:
+    ((Ti16*)head->items)[n + head->empty] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, n, ((Ti16*)head->items)[n + head->empty]);
+    break;
+   case 3:
+   case 13:
+    ((Ti32*)head->items)[n + head->empty] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, n, ((Ti32*)head->items)[n + head->empty]);
+    break;
+   case 21:
+   case 22:
+   case 23:
+    ((int*)head->items)[n + head->empty] = ((Ti (*)(Tcb *, Ti, Ti))f->cfunc)(f, n, ((int*)head->items)[n + head->empty]);
+    break;
+   case 80:
+   case 82:
+   case 83:
+    ((Tf*)head->items)[n + head->empty] = ((Tf (*)(Tcb *, Ti, Tf))f->cfunc)(f, n, ((Tf*)head->items)[n + head->empty]);
+    break;
+   case 81:
+    ((Tf32*)head->items)[n + head->empty] = ((Tf32 (*)(Tcb *, Ti, Tf32))f->cfunc)(f, n, ((Tf32*)head->items)[n + head->empty]);
+    break;
+   case 391:
+    ZthrowCstringNil("Invoking keyMap() on iobject list");
+   default:
+    head->items[n + head->empty] = ((void *(*)(Tcb *, Ti, void *))f->cfunc)(f, n, head->items[n + head->empty]);
+    break;
+  }
+ }"'')
+      IF gen.manageMemory()
+        gen.stackFrameEnd(fd)
+      }
+      fd.write(''"
+ return head;
+}
+"'')
+    }
+
+  }
+
+}

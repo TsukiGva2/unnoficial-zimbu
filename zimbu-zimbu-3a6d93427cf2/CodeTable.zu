@@ -1,0 +1,131 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# CodeTable class.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT Config.zu
+IMPORT SContext.zu
+IMPORT WriteCommon.zu
+
+#= This table makes a list of all code positions we want to remember.
+#- The access is simply by position number, which must be stored in the
+#- code to retrieve it, e.g., in the call stack.
+MODULE CodeTable
+
+  CLASS Method
+    string            $id          # Unique ID for the method.
+    string            $fileId      # ID of the file this method is in.
+    int               $noPosOffset # offset for position with NIL $pos.
+    dict<int, list<Z.Pos>>  $entries
+  }
+
+  dict<string, list<Method>>  %methods = NEW()
+  dict<string, string>        %files = NEW()  # key is file name, value is ID
+  dict<int, Method>           %usedOffsets = NEW()
+  int                         lastOffset      # only for --profalloc
+
+  # Add a new position to be remembered.
+  # Return the index by which it can be accessed.
+  FUNC addEntry(string text, Z.Pos pos) int
+    CHECK.notNil(text)
+    CHECK.true(pos != NIL)
+
+    string fileId
+    IF %files.has(pos.filename)
+      fileId = %files[pos.filename]
+    ELSE
+      fileId = WriteCommon.getUid(pos.filename)
+      %files[pos.filename] = fileId
+    }
+
+    # Each method is stored only once and referred to by an ID.  It is
+    # possible that the same method name can be used in two files.
+    #
+    # Normally we make an array for every method, broken up in parts of 100
+    # positions.  The offset is based on a hash of the text, so that it is
+    # stable when changing the code.
+    #
+    # When --profalloc is used, number positions from 1 upwards, so that we
+    # get one big continuous range.
+    string methodId
+    int ret
+    list<Method> methodList = %methods.get(text, NIL)
+    FOR method IN methodList
+      IF method.fileId == fileId
+        # Found the method in the right file.
+        methodId = method.id
+        int maxOffset
+        FOR offset IN method.entries.keys()
+          list<Z.Pos> entryList = method.entries[offset]
+          IF Config.profalloc
+            # Only use the table if the last entry is the last offset handed
+            # out.
+            IF offset + entryList.Size() - 1 == lastOffset
+              ret = ++lastOffset
+              entryList.add(pos)
+              BREAK
+            }
+          ELSEIF entryList.Size() < 100
+            # Add entry to table that has space.
+            ret = offset * 100 + entryList.Size()
+            entryList.add(pos)
+            BREAK
+          }
+          maxOffset = offset > maxOffset ? offset : maxOffset
+        }
+        IF ret == 0
+          # Need to add a new table.
+          IF Config.profalloc
+            maxOffset = ++lastOffset
+            ret = maxOffset
+          ELSE
+            DO
+              ++maxOffset
+            UNTIL !%usedOffsets.has(maxOffset)
+            ret = maxOffset * 100
+          }
+          %usedOffsets.add(maxOffset, method)
+          list<Z.Pos> entryList = NEW()
+          entryList.add(pos)
+          method.entries.add(maxOffset, entryList)
+        }
+        BREAK
+      }
+    }
+
+    IF methodId == NIL
+      # Need to add a new method
+      Method method = NEW()
+      IF methodList == NIL
+        methodList = NEW()
+        %methods.add(text, methodList)
+      }
+      methodList.add(method)
+      method.id = WriteCommon.getUid(text)
+      method.fileId = fileId
+      int offset
+      IF Config.profalloc
+        offset = ++lastOffset
+        ret = offset
+      ELSE
+        offset = text.hash() % 100'000
+        WHILE %usedOffsets.has(offset)
+          ++offset
+        }
+        ret = offset * 100
+      }
+      %usedOffsets.add(offset, method)
+      list<Z.Pos> entryList = NEW()
+      entryList.add(pos)
+      method.entries = NEW()
+      method.entries.add(offset, entryList)
+    }
+
+    RETURN ret
+  }
+}

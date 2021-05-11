@@ -1,0 +1,7 @@
+
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  int v = -("1234")
+  RETURN 0
+}

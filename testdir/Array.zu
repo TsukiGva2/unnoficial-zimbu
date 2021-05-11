@@ -1,0 +1,349 @@
+# Test arrays
+
+MODULE Array @public
+
+  PROC test() @public
+    test1()
+    test2()
+    test3()
+    testIobjects()
+    test4()
+    test5()
+    testEnum()
+    testTypes()
+    testMap()
+    testForWithIndex()
+    testForEach()
+    testEqual()
+    testFindHas()
+    testBounds()
+  }
+
+  # array of int
+  PROC test1()
+    array<int> ints = NEW(5)
+    ints[0] = 0
+    ints[4] = 4
+    IO.print("zero = " .. ints[0] .. ", four = " .. ints[4])
+    IO.print("size: " .. ints.Size())
+
+    array<int> w = NEW(2)
+    w[0] = 2
+    w[1] = 3
+    ints.set(1, w)
+    IO.print(ints.ToString())
+
+    byteString b = "\x44\x55"
+    ints.set(2, b)
+    IO.print(ints.ToString())
+
+    ints.set(3, [8, 9])
+    IO.print(ints.ToString())
+
+    IO.print("array type: " .. ints.Type().ToString())
+
+    ints = NIL
+    IO.print("NIL array: " .. ints.ToString())
+  }
+
+  # array of string
+  PROC test2()
+    array<string> strings = NEW(6)
+    strings[1] = "1"
+    strings[5] = "5"
+    IO.print("one = " .. strings[1] .. ", five = " .. strings[5])
+
+    array<string> foo = NEW(3)
+    foo[0] = "a"
+    foo[1] = "b"
+    foo[2] = "c"
+    strings.set(4, foo)
+    IO.print(strings.ToString())
+
+    strings.set(0, ["x", "y"])
+    IO.print(strings.ToString())
+  }
+
+  CLASS Foo
+    int $i
+    NEW(int i)
+      $i = i
+    }
+    
+    FUNC $ToString() string
+      RETURN $i
+    }
+  }
+
+  # array of objects
+  PROC test3()
+    array<Foo> foos = NEW(5)
+    foos[0] = NEW(0)
+    foos[3] = NEW(3)
+    IO.print("zero = " .. foos[0].i .. ", three = " .. foos[3].i)
+
+    foos.set(2, [Foo.NEW(8), Foo.NEW(9)])
+    IO.print(foos.ToString())
+  }
+
+  CLASS Parent
+    int $nr
+    NEW(int nr)
+      $nr = nr
+    }
+  }
+
+  CLASS Child EXTENDS Parent
+    string $name
+  }
+
+  # array of iobjects
+  PROC testIobjects()
+    array<Parent> ps = NEW(5)
+    ps[0] = NEW(0)
+    ps[3] = NEW(3)
+    IO.print("zero = " .. ps[0].nr .. ", three = " .. ps[3].nr)
+
+    Parent p1 = Parent.NEW(8)
+    Parent p2 = Child.NEW(9)
+    ps.set(2, [p1, p2])
+    IO.print(ps.ToString())
+
+    ps[4] = NEW(11)
+    IO.print(ps.ToString())
+
+    array<Parent> pa = NEW(3)
+    pa[0] = NEW(5)
+    ps.set(3, pa)
+    IO.print(ps.ToString())
+
+    ps.resize(8)
+    ps[7] = NEW(7)
+    IO.print(ps.ToString())
+    ps.resize(3)
+    IO.print(ps.ToString())
+  }
+
+  # array of bytes
+  PROC test4()
+    array<byte> bytes = NEW(5)
+    bytes[0] = 0
+    bytes[1] = 1
+    bytes[4] = 4
+    IO.print("zero = " .. bytes[0]
+              .. ", one = " .. bytes[1]
+              .. ", four = " .. bytes[4])
+    IO.print("size: " .. bytes.Size())
+    bytes.resize(20)
+    IO.print("size now: " .. bytes.Size())
+    IO.print("zero = " .. bytes[0]
+              .. ", one = " .. bytes[1]
+              .. ", four = " .. bytes[4])
+
+    bytes b = "\x01\x02"
+    bytes.set(3, b)
+    IO.print(bytes.ToString())
+
+    bytes.set(5, [3, 4, 5, 6])
+    IO.print(bytes.ToString())
+  }
+
+  # array init from list
+  PROC test5()
+    array<int> ai = [1, 2, 4]
+    IO.print(ai.ToString())
+    array<int> ac = ['a', 'b', 'c']
+    IO.print(ac.ToString())
+    array<string> as = ["one", "two", "four"]
+    IO.print(as.ToString())
+    array<list<string>> als = [["one", "four"], ["five", "six"]]
+#    IO.print(als.ToString())
+  }
+
+  PROC testEnum()
+    ENUM Color
+      black
+      blue
+      red
+      orange
+    }
+    array<Color> cs = NEW(6)
+    cs[1] = Color.orange
+    cs[3] = Color.black
+    cs[5] = Color.blue
+    IO.print("Colors array: " .. cs.ToString())
+
+    IO.print("black: " .. Color.FromString("black").ToString())
+    IO.print("blue: " .. Color.FromString("blue").ToString())
+    IO.print("red: " .. Color.FromString("red").ToString())
+    IO.print("orange: " .. Color.FromString("orange").ToString())
+    IO.print("asdf: " .. Color.FromString("asdf").ToString())
+  }
+
+  PROC testTypes()
+    array<int> ia = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<int8> ia8 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<int16> ia16 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<int32> ia32 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<nat> na = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<nat8> na8 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<nat16> na16 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<nat32> na32 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<float> fa = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+    array<float32> fa32 = [11, 256 + 22, 256 * 256 * 3 + 33, 256 * 256 * 256 * 256 * 7 + 44]
+
+    IO.write("int array: ")
+    FOR i IN ia
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint8 array: ")
+    FOR i IN ia8
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint16 array: ")
+    FOR i IN ia16
+      IO.write(i .. ", ")
+    }
+    IO.write("\nint32 array: ")
+    FOR i IN ia32
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat array: ")
+    FOR i IN na
+      IO.write(i .. ", ")
+    }
+    IO.write("\nbyte array: ")
+    FOR i IN na8
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat16 array: ")
+    FOR i IN na16
+      IO.write(i .. ", ")
+    }
+    IO.write("\nnat32 array: ")
+    FOR i IN na32
+      IO.write(i .. ", ")
+    }
+    IO.write("\nfloat array: ")
+    FOR i IN fa
+      IO.write(i .. ", ")
+    }
+    IO.write("\nfloat32 array: ")
+    FOR i IN fa32
+      IO.write(i .. ", ")
+    }
+    IO.print()
+  }
+
+  PROC testMap()
+    array<int> ac = [1, 2, 3]
+    ac.map({ n => n + 3 })
+    IO.print("mapped: " .. ac.ToString())
+
+    ac.keyMap({ n, i => n + i })
+    IO.print("keyMapped: " .. ac.ToString())
+
+    array<string> sl = ac.mapTo({ n => n .. ":" })
+    IO.print("mapTo: " .. sl.ToString())
+
+    sl = ac.keyMapTo({ i, n => i .. ": " .. n })
+    IO.print("keyMapTo: " .. sl.ToString())
+  }
+
+  PROC testForWithIndex()
+    array<int> ai = [1, 2, 3]
+    FOR i, s IN ai
+      IO.print(i .. ": " .. s)
+    }
+
+    array<float> af = [1.1, 2.2, 3.3]
+    FOR i, s IN af
+      IO.print(i .. ": " .. s)
+    }
+
+    array<string> as = ["one", "two", "three"]
+    FOR i, s IN as
+      IO.print(i .. ": " .. s)
+    }
+  }
+
+  PROC testForEach()
+    array<string> isa = ["one", "two", "three"]
+    VAR a = isa.forEach({ s => IO.print(s) })
+    a.forKeyEach({ i, s => IO.print(i .. ": " .. s) })
+  }
+
+  PROC testEqual()
+    array<int> a = [1, 2, 3]
+    array<int> b = [1, 2, 3]
+    array<int8> b8 = [1, 2, 3]
+    array<int> c = [1, 4, 3]
+    IO.print("equal array: " .. (a == b))
+    IO.print("equal array: " .. (a == b8))
+    IO.print("not equal array: " .. (a == c))
+
+    array<string> sa = ["1", "2", "3"]
+    array<string> sb = ["1", "2", "3"]
+    array<string> sc = ["1", "4", "3"]
+    IO.print("equal array: " .. (sa == sb))
+    IO.print("not equal array: " .. (sa == sc))
+  }
+
+  PROC testFindHas()
+    array<int> ai = [0, 1, 2, 3, 4]
+    IO.print("index of 2: \(ai.find(2)) has: \(ai.has(2))")
+    IO.print("index of 9: \(ai.find(9)) has: \(ai.has(9))")
+
+    array<byte> ab = [0, 1, 2, 3, 4]
+    IO.print("index of 1: \(ab.find(1)) has: \(ab.has(1))")
+    IO.print("index of 8: \(ab.find(8)) has: \(ab.has(8))")
+
+    array<float> af = [0, 0.1, 2.2, 3.33, 4.444]
+    IO.print("index of 0.1: \(af.find(0.1)) has: \(af.has(0.1))")
+    IO.print("index of 3.33: \(af.find(3.33)) has: \(af.has(3.33))")
+    IO.print("index of 17: \(af.find(17)) has: \(af.has(17))")
+
+    array<string> as = ["one", "two", "three"]
+    IO.print("index of one: \(as.find("one")) has: \(as.has("one"))")
+    IO.print("index of none: \(as.find("none")) has: \(as.has("none"))")
+
+    array<Parent> ps = NEW(5)
+    ps[0] = NEW(0)
+    ps[3] = NEW(3)
+    IO.print("index of 3: \(ps.find(ps[3])) has: \(ps.has(ps[3]))")
+    IO.print("index of 8: \(ps.find(NEW(8))) has: \(ps.has(NEW(8)))")
+
+    array<dyn> ad = ["one", 1, TRUE]
+    IO.print("index of one: \(ad.find("one")) has: \(ad.has("one"))")
+    IO.print("index of 1: \(ad.find(1)) has: \(ad.has(1))")
+    IO.print("index of TRUE: \(ad.find(TRUE)) has: \(ad.has(TRUE))")
+    IO.print("index of none: \(ad.find(123)) has: \(ad.has(123))")
+  }
+
+  PROC testBounds()
+    array<string> sa = NEW(2)
+    sa[0] = "one"
+    sa[1] = "two"
+    doThrow(sa, 2, TRUE, "three")
+    doThrow(sa, -1, TRUE, "three")
+    doThrow(sa, 2, FALSE, "three")
+    doThrow(sa, -1, FALSE, "three")
+  }
+
+  PROC doThrow(array<string> sa, int idx, bool set, string value)
+    TRY
+      IF set
+        sa[idx] = value
+      ELSE
+        string s = sa[idx]
+      }
+      IO.print("bounds check \(set) \(idx) failed")
+    CATCH E.OutOfRange e
+      IF e.ToString().find("array index") >= 0
+        IO.print("caught index \(set ? "set" : "get") \(idx)")
+      ELSE
+        IO.print("caught something else")
+      }
+    }
+  }
+}

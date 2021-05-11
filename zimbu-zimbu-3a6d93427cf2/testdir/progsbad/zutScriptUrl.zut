@@ -1,0 +1,7 @@
+MODULE Testing
+  # HTML + Javascript / Url
+  TEMPLATE inScriptUrl(ZUT.Url text) ZUT.Html @public
+    <script>[=text]</script>
+  }
+}
+

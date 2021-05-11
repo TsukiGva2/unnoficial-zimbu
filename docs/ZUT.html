@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>ZUT module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> ZUT
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Zimbu Templates
+</p>
+<table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.EventConfig.html'><b>EventConfig</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The configuration for events handled by ZUT.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.Context.html'><b>Context</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The context for processing ZUT templates.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ALIAS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.HtmlFunc.html'><b>HtmlFunc</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The type used for a ZUT template method producing HTML.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.Page.html'><b>Page</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The properties of an HTML page.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.Element.html'><b>Element</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Lowest level object, an HTML element.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='ZUT.EventType.html'><b>EventType</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td></tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='ZUT.Event.html'><b>Event</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> The properties of an event.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='ZUT.html#getAttribute'><b>getAttribute</b></a>(<small>el, name</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return the value of an attribute of an Element.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.html#fillElement'><b>fillElement</b></a>(<small>id, template</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Fill element <b>id</b> with the result of <b>template</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.html#createPage'><b>createPage</b></a>(<small>httpContext, page</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Function passed to a FunctionServlet to create the HTML page.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='ZUT.html#uid'><b>uid</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Return a unique ID.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='createPage'><b>createPage</b></A>(<span class='type'><A class='typehref' href='HTTP.Context.html'>HTTP.Context</A></span> httpContext, <span class='type'><A class='typehref' href='ZUT.Page.html'>ZUT.Page</A></span> page) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Function passed to a FunctionServlet to create the HTML page.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='fillElement'><b>fillElement</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> id, <span class='type'><A class='typehref' href='ZUT.HtmlFunc.html'>ZUT.HtmlFunc</A></span> template)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Fill element <b>id</b> with the result of <b>template</b>.
+</p>
+<p class='ptext'> Can only be used in the client.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='getAttribute'><b>getAttribute</b></A>(<span class='type'><A class='typehref' href='ZUT.Element.html'>ZUT.Element</A></span> el, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return the value of an attribute of an Element.
+</p>
+<p class='ptext'> Returns an empty string when the attribute does not exist.
+<p class='ptext'> Can only be used in the client.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='uid'><b>uid</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Return a unique ID.
+</p>
+<p class='ptext'> This will start with "z_" when used in the server, "z-" when used in the
+ client.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2014 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

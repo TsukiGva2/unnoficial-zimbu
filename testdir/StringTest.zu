@@ -1,0 +1,1360 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for string-like types: string, varString, byteString,
+# varByteString
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE StringTest @public
+
+  PROC test() @public
+    IO.print("testdir/StringTest.zu")
+    testToString()
+    testToStringFormat()
+    testFormat()
+    testToInt()
+    testToLowerUpper()
+    testFind()
+    testFind2()
+    testStartEnd()
+    testFindChar()
+    testSlice()
+    testSize()
+    testConcat()
+    testConvert()
+    testAdd()
+    testSplit()
+    testLatinConvert()
+    testReverse()
+    testGetChar()
+    testStringReader()
+    testEscape()
+    testReplace()
+    testStrip()
+    testPadding()
+    testCompare()
+    testPredef()
+    testNil()
+    testStringExpr()
+    testFromArray()
+    testToArray()
+  }
+
+  ###############################################################
+  
+  PROC testToString()
+    # Automatic conversion from string.
+    string cs = "string-"
+    string sv = cs
+    varString vs = cs
+    byteString b = cs
+    varByteString vb = cs
+
+    # Automatic or explicit conversion to string.
+    IO.print(cs .. cs)
+    IO.print(cs .. sv)
+    IO.print(cs .. sv.ToString())
+    IO.print(cs .. vs)
+    IO.print(cs .. vs.ToString())
+    IO.print(cs .. b.ToString())
+    IO.print(cs .. vb.ToString())
+
+    # Automatic conversion from string.
+    sv = "string-"
+    cs = sv
+    vs = sv
+    b = sv
+    vb = sv
+
+    # Automatic or explicit conversion to string.
+    IO.print(sv .. sv)
+    IO.print(sv .. cs)
+    IO.print(sv .. cs.ToString())
+    IO.print(sv .. vs)
+    IO.print(sv .. vs.ToString())
+    # IO.print(sv .. b)  No automatic conversion
+    IO.print(sv .. b.ToString())
+    # IO.print(sv .. vb)  No automatic conversion
+    IO.print(sv .. vb.ToString())
+
+    # Automatic conversion from varString.
+    vs = "varString-"
+    cs = vs
+    sv = vs
+    b = vs
+    vb = vs
+
+    # Automatic or explicit conversion to varString.
+    IO.print(vs .. cs)
+    IO.print(vs .. cs.toVarString())
+    IO.print(vs .. sv)
+    IO.print(vs .. sv.toVarString())
+    IO.print(vs .. vs)
+    # IO.print(vs .. b)  # No automatic conversion
+    IO.print(vs .. b.toVarString())
+    # IO.print(vs .. vb)  # No automatic conversion
+    IO.print(vs .. vb.toVarString())
+
+    # Automatic conversion from byteString.
+    b = "byteString-"
+    # cs = b  # no automatic conversion
+    cs = b.ToString()
+    # sv = b  # no automatic conversion
+    sv = b.ToString()
+    # vs = b  # no automatic conversion
+    vs = b.toVarString()
+    vb = b
+
+    # Automatic or explicit conversion to byteString.
+    # IO.print(b .. cs)  # no automatic conversion
+    IO.print(b.ToString() .. cs)
+    # IO.print(b .. sv)  # no automatic conversion
+    IO.print(b.ToString() .. sv)
+    # IO.print(b .. vs)  # no automatic conversion
+    IO.print(b.toVarString() .. vs)
+    # IO.print(b .. b)  # no automatic conversion
+    IO.print((b .. b).ToString())
+    # IO.print(b .. vb)  # no automatic conversion
+    IO.print((b .. vb).ToString())
+    # IO.print(b.toVarByteString() .. vb)  # no automatic conversion
+    # IO.print((b.toVarByteString() .. vb).ToString()) XX
+    IO.print((b .. vb).ToString())
+
+    # Automatic conversion from varByteString.
+    vb = "varByteString-"
+    # cs = vb  # no automatic conversion
+    cs = vb.ToString()
+    # sv = vb  # no automatic conversion
+    sv = vb.ToString()
+    # vs = vb  # no automatic conversion
+    vs = vb.toVarString()
+    b = vb
+
+    # Automatic or explicit conversion to varByteString.
+    # IO.print(vb .. cs)  # no automatic conversion
+    IO.print(vb.ToString() .. cs)
+    # IO.print(vb .. sv)  # no automatic conversion
+    IO.print(vb.ToString() .. sv)
+    # IO.print(vb .. vs)  # no automatic conversion
+    IO.print(vb.toVarString() .. vs)
+    # IO.print(vb .. b)  # no automatic conversion
+    IO.print((vb .. b).ToString())
+    IO.print((vb.toByteString() .. b).ToString())
+    # IO.print(vb .. vb)  # no automatic conversion
+    IO.print((vb .. vb).ToString())
+  }
+
+  PROC testToStringFormat()
+    IO.print("/" .. ("some string".ToString("8s")) .. "/")
+    IO.print("/" .. ("some string".ToString("15s")) .. "/")
+    IO.print("/" .. ("some string".ToString("-15s")) .. "/")
+
+    IO.print("/" .. ("some string".ToString(".15s")) .. "/")
+    IO.print("/" .. ("some string".ToString(".-15s")) .. "/")
+
+    IO.print("/" .. ("some string".ToString(".8s")) .. "/")
+    IO.print("/" .. ("some string".ToString(".-8s")) .. "/")
+
+    IO.print("/" .. ("some string".ToString("10.8s")) .. "/")
+    IO.print("/" .. ("some string".ToString("10.-8s")) .. "/")
+
+    IO.print("/" .. ("some string".ToString("-10.8s")) .. "/")
+    IO.print("/" .. ("some string".ToString("-10.-8s")) .. "/")
+
+    IO.print("/" .. ("something great".ToString("...+8s")) .. "/")
+    IO.print("/" .. ("something great".ToString("..10s")) .. "/")
+    IO.print("/" .. ("something great".ToString("...-8s")) .. "/")
+
+    byteString b = "some bytestring"
+    IO.print("/" .. (b.ToString(".8s")) .. "/")
+    IO.print("/" .. (b.ToString("...10s")) .. "/")
+  }
+
+  PROC testFormat()
+    ENUM Color
+      red
+      blue
+      white
+    }
+    Color color = Color.red
+    IO.print("the {0} is {1}".format("desk", color))
+    IO.print("the {0} {{is} {1}".format("desk", color))
+    IO.print("the {item} is {color}".format(item = "desk", color = color))
+    IO.print("the {.-4s item} is {04d size} long".format(item = "long desk", size = 13))
+    tuple<array<string>, array<dyn>> args = [["a", "b"], ["chair", color]]
+    IO.print("the {a} is {b}".format(arguments = args))
+    # TODO: conversion of enum value to dyn
+    # IO.print("the {x} is {y}".format(arguments = [["x", "y"], ["fiets", Color.blue]]))
+    IO.print("the {x} is {y}".format(arguments = [["x", "y"], ["fiets", "blue"]]))
+    
+    IO.print("there is no {foo} argument".format(bar = "yes"))
+    TRY
+      IO.print("{THROW}there is no {foo} argument".format(bar = "yes"))
+    CATCH E.BadValue e
+      IO.print("Caught exception: \(e.getMessage())")
+    }
+
+    IO.print("two spaces {s s foo}".format(foo = "yes"))
+    TRY
+      IO.print("{THROW}two spaces {.s s foo}".format(foo = "yes"))
+    CATCH E.BadValue e
+      IO.print("Caught exception: \(e.getMessage())")
+    }
+
+    IO.print("this doesn't end {foo".format(foo = "yes"))
+    TRY
+      IO.print("{THROW}this doesn't end {foo".format(foo = "yes"))
+    CATCH E.BadValue e
+      IO.print("Caught exception: \(e.getMessage())")
+    }
+
+    IO.format("the {item} is {color}", item = "desk", color = color)
+  }
+
+  PROC testToInt()
+    string s = "1234"
+    int sa = s.toInt()
+    string sv = "-5678"
+    int sva = sv.toInt()
+    varString vs = "9012"
+    int vsa = vs.toInt()
+    IO.print("toInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    string bad = ""
+    TRY 
+      sa = "x0".toInt()
+    CATCH E.Exception e
+      bad ..= "bad: x0"
+    }
+    IO.print(bad)
+    IO.print(bad.toInt(123))
+
+    s = "1'23_4"
+    sa = s.quotedToInt()
+    sv = "-56'78"
+    sva = sv.quotedToInt()
+    vs = "9'0'1_2"
+    vsa = vs.quotedToInt()
+    IO.print("quotedToInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    bad = ""
+    TRY 
+      sa = "x10'101".quotedToInt()
+    CATCH E.Exception e
+      bad ..= "bad: x10'101"
+    }
+    IO.print(bad)
+    IO.print(bad.quotedToInt(111))
+
+    s = "10101010"
+    sa = s.binToInt()
+    sv = "11111111"
+    sva = sv.binToInt()
+    vs = "00110011"
+    vsa = vs.binToInt()
+    IO.print("binToInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    bad = ""
+    TRY 
+      sa = "-10101".binToInt()
+    CATCH E.Exception e
+      bad ..= "bad: -10101"
+    }
+    TRY 
+      sa = "x1010".binToInt()
+    CATCH E.Exception e
+      bad ..= ", bad: x1010"
+    }
+    IO.print(bad)
+    IO.print("-1010".binToInt(222))
+    IO.print("x1010".binToInt(333))
+
+    s = "10_10'10_10"
+    sa = s.quotedBinToInt()
+    sv = "11'11_11'11"
+    sva = sv.quotedBinToInt()
+    vs = "00'110_011"
+    vsa = vs.quotedBinToInt()
+    IO.print("quotedBinToInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    bad = ""
+    TRY 
+      sa = "-10101".quotedBinToInt()
+    CATCH E.Exception e
+      bad ..= "bad: -10101"
+    }
+    TRY 
+      sa = "x1010".quotedBinToInt()
+    CATCH E.Exception e
+      bad ..= ", bad: x1010"
+    }
+    IO.print(bad)
+    IO.print("-1010".quotedBinToInt(444))
+    IO.print("x1010".quotedBinToInt(555))
+
+    s = "1234"
+    sa = s.hexToInt()
+    sv = "0Xffff"
+    sva = sv.hexToInt()
+    vs = "0x00a"
+    vsa = vs.hexToInt()
+    IO.print("hexToInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    bad = ""
+    TRY 
+      sa = "-13".hexToInt()
+    CATCH E.Exception e
+      bad ..= "bad: -13"
+    }
+    TRY 
+      sa = "x3".hexToInt()
+    CATCH E.Exception e
+      bad ..= ", bad: x3"
+    }
+    IO.print(bad)
+    IO.print("-13".hexToInt(666))
+    IO.print("x3".hexToInt(777))
+
+    s = "1'23_4"
+    sa = s.quotedHexToInt()
+    sv = "ff'ff"
+    sva = sv.quotedHexToInt()
+    vs = "0'0_a"
+    vsa = vs.quotedHexToInt()
+    IO.print("quotedHexToInt(): " .. sa .. "/" .. sva .. "/" .. vsa)
+    bad = ""
+    TRY 
+      sa = "-13".quotedHexToInt()
+    CATCH E.Exception e
+      bad ..= "bad: -13"
+    }
+    TRY 
+      sa = "x3".quotedHexToInt()
+    CATCH E.Exception e
+      bad ..= ", bad: x3"
+    }
+    IO.print(bad)
+    IO.print("-13".quotedHexToInt(888))
+    IO.print("x3".quotedHexToInt(999))
+
+    IO.print("1234: " .. 1'234 .. ", 1000000: " .. 1'000'000)
+    IO.print("0b01010101: " .. 0b0101'0101
+               .. ", 0B1001010101: " .. 0B10'0101'0101)
+    IO.print("0X1A2B3C: " .. 0X1A'2B'3C .. ", 0x1a2b3c: " .. 0x1a'2b'3c)
+  }
+
+  PROC testToLowerUpper()
+    # string toUpper() and toLower()
+    string s = "abBA dABba"
+    string empty = ""
+    IO.print("upper: " .. s.toUpper())
+    IO.print("lower: " .. s.toLower())
+    IO.print("toLower of AbCdEf: " .. ("AbCdEf".toLower())
+                .. "; toLower of empty string: '" .. empty.toLower() .. "'")
+
+    # string toUpperAscii() and toLowerAscii()
+    string xsv = "ānöthêr "
+    string sv = "ānöthêr " .. "hêllo"
+    string sve = ""
+    string sup = sv.toUpperAscii()
+    IO.print("Upper: '" .. sup .. "'  '" .. sve.toUpperAscii() .. "'")
+    string slow = sup.toLowerAscii()
+    IO.print("Lower: '" .. slow .. "'  '" .. sve.toLowerAscii() .. "'")
+
+    # varString toUpperAscii() and toLowerAscii()
+    varString vs = "ānöthêr " .. "hêllo"
+    varString vse = ""
+    varString vup = vs.toUpperAscii()
+    IO.print("Upper: '" .. vup .. "'  '" .. vse.toUpperAscii() .. "'")
+    varString vlow = vup.toLowerAscii()
+    IO.print("Lower: '" .. vlow .. "'  '" .. vse.toLowerAscii() .. "'")
+
+    # varByteString toUpperAscii() and toLowerAscii()
+    varByteString vb = "ānöthêr " .. "hêllo"
+    varByteString vbe = ""
+    varByteString bup = vb.asVarString().toUpperAscii()
+    IO.print("Upper: '\(bup.ToString())'  '\(vbe.asVarString().toUpperAscii())'")
+    varByteString blow = bup.asVarString().toLowerAscii()
+    IO.print("Lower: '\(blow.ToString())'  '\(vbe.asVarString().toLowerAscii())'")
+
+    s = NIL
+    IO.print("Upper NIL: " .. s.toUpper())
+    IO.print("UpperAscii NIL: " .. s.toUpperAscii())
+    IO.print("Lower NIL: " .. s.toLower())
+    IO.print("LowerAscii NIL: " .. s.toLowerAscii())
+  }
+
+  PROC testFind()
+    string fuubar = "fuubar"
+    IO.print("string fuubar.find(fuu): " .. fuubar.find("fuu"))
+    IO.print("string fuubar.find(bar): " .. fuubar.find("bar"))
+    IO.print("string fuubar.find(foo): " .. fuubar.find("foo"))
+
+    string barfuubar = "barfuubar"
+    IO.print("string barfuubar.findLast(fuu): "
+                                      .. barfuubar.findLast("fuu"))
+    IO.print("string barfuubar.findLast(bar): "
+                                      .. barfuubar.findLast("bar"))
+    IO.print("string barfuubar.findLast(a): " .. barfuubar.findLast("a"))
+    IO.print("string barfuubar.findLast(foo): "
+                                                 .. barfuubar.findLast("foo"))
+
+    string svfb = "fúubär"
+    IO.print("string fúubär.find(fúu): " .. svfb.find("fúu"))
+    IO.print("string fúubär.find(bär): " .. svfb.find("bär"))
+    IO.print("string fúubar.find(foo): " .. svfb.find("foo"))
+
+    string svbfb = "bärfúubär"
+    IO.print("string bärfúubär.findLast(fuu): " .. svbfb.findLast("fúu"))
+    IO.print("string bärfúubär.findLast(bär): " .. svbfb.findLast("bär"))
+    IO.print("string bärfuubär.findLast(ä): " .. svbfb.findLast("ä"))
+    IO.print("string bärfuubär.findLast(foo): " .. svbfb.findLast("foo"))
+
+    varString vsfb = "fúubär"
+    IO.print("varString fúubär.find(fúu): " .. vsfb.find("fúu"))
+    IO.print("varString fúubär.find(bär): " .. vsfb.find("bär"))
+    IO.print("varString fúubar.find(foo): " .. vsfb.find("foo"))
+
+    varString vsbfb = "bärfúubär"
+    IO.print("varString bärfúubär.findLast(fuu): " .. vsbfb.findLast("fúu"))
+    IO.print("varString bärfúubär.findLast(bär): " .. vsbfb.findLast("bär"))
+    IO.print("varString bärfuubär.findLast(ä): " .. vsbfb.findLast("ä"))
+    IO.print("varString bärfuubär.findLast(foo ): " .. vsbfb.findLast("foo"))
+
+    byteString bfb = "fúubär"
+    IO.print("byteString fúubär.find(fúu): " .. bfb.find("fúu"))
+    IO.print("byteString fúubär.find(bär): " .. bfb.find("bär"))
+    IO.print("byteString fúubar.find(foo): " .. bfb.find("foo"))
+
+    byteString bbfb = "bärfúubär"
+    IO.print("byteString bärfúubär.findLast(fuu): " .. bbfb.findLast("fúu"))
+    IO.print("byteString bärfúubär.findLast(bär): " .. bbfb.findLast("bär"))
+    IO.print("byteString bärfuubär.findlast(ä): " .. bbfb.findLast("ä"))
+    IO.print("byteString bärfuubär.findLast(foo): " .. bbfb.findLast("foo"))
+
+    varByteString vbfb = "fúubär"
+    IO.print("varByteString fúubär.find(fúu): " .. vbfb.find("fúu"))
+    IO.print("varByteString fúubär.find(bär): " .. vbfb.find("bär"))
+    IO.print("varByteString fúubar.find(foo): " .. vbfb.find("foo"))
+
+    varByteString vbbfb = "bärfúubär"
+    IO.print("varByteString bärfúubär.findLast(fuu): " .. vbbfb.findLast("fúu"))
+    IO.print("varByteString bärfúubär.findLast(bär): " .. vbbfb.findLast("bär"))
+    IO.print("varByteString bärfuubär.findlast(ä): " .. vbbfb.findLast("ä"))
+    IO.print("varByteString bärfuubär.findLast(foo): " .. vbbfb.findLast("foo"))
+  }
+
+  PROC testFind2()
+    string fuubar = "fuubarfuu"
+    IO.print("string fuubar.find(fuu, 0): " .. fuubar.find("fuu", 0))
+    IO.print("string fuubar.find(fuu, 1): " .. fuubar.find("fuu", 1))
+    IO.print("string fuubar.find(fuu, 5): " .. fuubar.find("fuu", 5))
+    IO.print("string fuubar.find(fuu, 6): " .. fuubar.find("fuu", 6))
+    IO.print("string fuubar.find(fuu, 7): " .. fuubar.find("fuu", 7))
+    IO.print("string fuubar.find(fuu, 8): " .. fuubar.find("fuu", 8))
+    IO.print("string fuubar.find(fuu, 9): " .. fuubar.find("fuu", 9))
+  }
+
+  PROC testStartEnd()
+    string empty = ""
+    string fuubar = "fuubar"
+    string bar = "bar"
+    IO.print("string fuubar.startsWith(fuu): " .. fuubar.startsWith("fuu"))
+    IO.print("string fuubar.startsWith(bar): " .. fuubar.startsWith("bar"))
+    IO.print("string bar.startsWith(fuubar): " .. bar.startsWith(fuubar))
+    IO.print("string empty.startsWith(empty): " .. empty.startsWith(empty))
+
+    IO.print("string fuubar.endsWith(fuu): " .. fuubar.endsWith("fuu"))
+    IO.print("string fuubar.endsWith(bar): " .. fuubar.endsWith("bar"))
+    IO.print("string bar.endsWith(fuubar): " .. bar.endsWith(fuubar))
+    IO.print("string empty.endsWith(empty): " .. empty.endsWith(empty))
+
+    string svempty = ""
+    string svfuubar = "füubâr"
+    string svbar = "bâr"
+    IO.print("string svfuubar.startsWith(fuu): "
+                                                .. svfuubar.startsWith("füu"))
+    IO.print("string svfuubar.startsWith(svbar): "
+                                                .. svfuubar.startsWith("bâr"))
+    IO.print("string svbar.startsWith(svfuubar): "
+                                                .. svbar.startsWith(svfuubar))
+    IO.print("string svempty.startsWith(svempty): "
+                                               .. svempty.startsWith(svempty))
+
+    IO.print("string svfuubar.endsWith(fuu): "
+                                                  .. svfuubar.endsWith("füu"))
+    IO.print("string svfuubar.endsWith(svbar): "
+                                                  .. svfuubar.endsWith("bâr"))
+    IO.print("string svbar.endsWith(svfuubar): "
+                                                  .. svbar.endsWith(svfuubar))
+    IO.print("string svempty.endsWith(svempty): "
+                                                 .. svempty.endsWith(svempty))
+
+    varString vsempty = ""
+    varString vsfuubar = "füubâr"
+    varString vsbar = "bâr"
+    IO.print("varString vsfuubar.startsWith(fuu): "
+                                                .. vsfuubar.startsWith("füu"))
+    IO.print("varString vsfuubar.startsWith(vsbar): "
+                                                .. vsfuubar.startsWith("bâr"))
+    IO.print("varString vsbar.startsWith(vsfuubar): "
+                                                .. vsbar.startsWith(vsfuubar))
+    IO.print("varString vsempty.startsWith(vsempty): "
+                                               .. vsempty.startsWith(vsempty))
+
+    IO.print("varString vsfuubar.endsWith(fuu): "
+                                                  .. vsfuubar.endsWith("füu"))
+    IO.print("varString vsfuubar.endsWith(vsbar): "
+                                                  .. vsfuubar.endsWith("bâr"))
+    IO.print("varString vsbar.endsWith(vsfuubar): "
+                                                  .. vsbar.endsWith(vsfuubar))
+    IO.print("varString vsempty.endsWith(vsempty): "
+                                                 .. vsempty.endsWith(vsempty))
+
+    byteString bempty = ""
+    byteString bfuubar = "füubâr"
+    byteString bbar = "bâr"
+    IO.print("byteString bfuubar.startsWith(fuu): "
+                                                .. bfuubar.startsWith("füu"))
+    IO.print("byteString bfuubar.startsWith(bbar): "
+                                                .. bfuubar.startsWith("bâr"))
+    IO.print("byteString bbar.startsWith(bfuubar): "
+                                                .. bbar.startsWith(bfuubar))
+    IO.print("byteString bempty.startsWith(bempty): "
+                                               .. bempty.startsWith(bempty))
+
+    IO.print("byteString bfuubar.endsWith(fuu): "
+                                                  .. bfuubar.endsWith("füu"))
+    IO.print("byteString bfuubar.endsWith(bbar): "
+                                                  .. bfuubar.endsWith("bâr"))
+    IO.print("byteString bbar.endsWith(bfuubar): "
+                                                  .. bbar.endsWith(bfuubar))
+    IO.print("byteString bempty.endsWith(bempty): "
+                                                 .. bempty.endsWith(bempty))
+
+    varByteString vbempty = ""
+    varByteString vbfuubar = "füubâr"
+    varByteString vbbar = "bâr"
+    IO.print("varByteString vbfuubar.startsWith(fuu): "
+                                                .. vbfuubar.startsWith("füu"))
+    IO.print("varByteString vbfuubar.startsWith(vbbar): "
+                                                .. vbfuubar.startsWith("bâr"))
+    IO.print("varByteString vbbar.startsWith(vbfuubar): "
+                                                .. vbbar.startsWith(vbfuubar))
+    IO.print("varByteString vbempty.startsWith(vbempty): "
+                                               .. vbempty.startsWith(vbempty))
+
+    IO.print("varByteString vbfuubar.endsWith(fuu): "
+                                                  .. vbfuubar.endsWith("füu"))
+    IO.print("varByteString vbfuubar.endsWith(vbbar): "
+                                                  .. vbfuubar.endsWith("bâr"))
+    IO.print("varByteString vbbar.endsWith(vbfuubar): "
+                                                  .. vbbar.endsWith(vbfuubar))
+    IO.print("varByteString vbempty.endsWith(vbempty): "
+                                                 .. vbempty.endsWith(vbempty))
+  }
+
+  PROC testFindChar()
+    # test string.find() and byteString.find() with int argument
+    string hay = "fini me"
+    IO.print("0:" .. hay.find('f')
+        .. " 4:" .. hay.find(' ')
+        .. " 6:" .. hay.asByteString().find('e')
+        .. " -1:" .. hay.find('x'))
+
+    IO.print("0:" .. hay.find('f', 0)
+        .. " -1:" .. hay.find('f', 1)
+        .. " 6:" .. hay.find('e', 6)
+        .. " -1:" .. hay.asByteString().find('e', 8))
+
+    IO.print("3:" .. hay.findLast('i')
+        .. " 0:" .. hay.findLast('f')
+        .. " 6:" .. hay.asByteString().findLast('e')
+        .. " -1:" .. hay.findLast('x'))
+
+    IO.print("1:" .. hay.findLast('i', 2)
+        .. " 0:" .. hay.findLast('f', 0)
+        .. " 6:" .. hay.asByteString().findLast('e', 6)
+        .. " -1:" .. hay.asByteString().findLast('e', 5))
+
+    string svhay = "fíní më"
+    IO.print("0:" .. svhay.find('f')
+        .. " 4:" .. svhay.find(' ')
+        .. " 6:" .. svhay.find('ë')
+        .. " -1:" .. svhay.find('e'))
+
+    IO.print("0:" .. svhay.find('f', 0)
+        .. " -1:" .. svhay.find('f', 1)
+        .. " 6:" .. svhay.find('ë', 6)
+        .. " -1:" .. svhay.find('ë', 8))
+
+    IO.print("3:" .. svhay.findLast('í')
+        .. " 0:" .. svhay.findLast('f')
+        .. " 6:" .. svhay.findLast('ë')
+        .. " -1:" .. svhay.findLast('x'))
+
+    IO.print("1:" .. svhay.findLast('í', 2)
+        .. " 0:" .. svhay.findLast('f', 0)
+        .. " 6:" .. svhay.findLast('ë', 6)
+        .. " -1:" .. svhay.findLast('ë', 5))
+
+    varString vshay = "fínd më"
+    IO.print("0:" .. vshay.find('f')
+        .. " 3:" .. vshay.find('d')
+        .. " 6:" .. vshay.find('ë')
+        .. " -1:" .. vshay.find('e'))
+
+    IO.print("0:" .. vshay.find('f', 0)
+        .. " -1:" .. vshay.find('f', 1)
+        .. " 6:" .. vshay.find('ë', 6)
+        .. " -1:" .. vshay.find('ë', 8))
+
+    IO.print("3:" .. vshay.findLast('í')
+        .. " 0:" .. vshay.findLast('f')
+        .. " 6:" .. vshay.findLast('ë')
+        .. " -1:" .. vshay.findLast('x'))
+
+    IO.print("1:" .. vshay.findLast('í', 2)
+        .. " 0:" .. vshay.findLast('f', 0)
+        .. " 6:" .. vshay.findLast('ë', 6)
+        .. " -1:" .. vshay.findLast('ë', 5))
+
+    byteString bhay = "fini me"
+    IO.print("0:" .. bhay.find('f')
+        .. " 4:" .. bhay.find(' ')
+        .. " 6:" .. bhay.find('e')
+        .. " -1:" .. bhay.find('x'))
+
+    IO.print("0:" .. bhay.find('f', 0)
+        .. " -1:" .. bhay.find('f', 1)
+        .. " 6:" .. bhay.find('e', 6)
+        .. " -1:" .. bhay.find('e', 8))
+
+    IO.print("3:" .. bhay.findLast('i')
+        .. " 0:" .. bhay.findLast('f')
+        .. " 6:" .. bhay.findLast('e')
+        .. " -1:" .. bhay.findLast('x'))
+
+    IO.print("1:" .. bhay.findLast('i', 2)
+        .. " 0:" .. bhay.findLast('f', 0)
+        .. " 6:" .. bhay.findLast('e', 6)
+        .. " -1:" .. bhay.findLast('e', 5))
+
+    varByteString vbhay = "fini me"
+    IO.print("0:" .. vbhay.find('f')
+        .. " 4:" .. vbhay.find(' ')
+        .. " 6:" .. vbhay.find('e')
+        .. " -1:" .. vbhay.find('x'))
+
+    IO.print("0:" .. vbhay.find('f', 0)
+        .. " -1:" .. vbhay.find('f', 1)
+        .. " 6:" .. vbhay.find('e', 6)
+        .. " -1:" .. vbhay.find('e', 8))
+
+    IO.print("3:" .. vbhay.findLast('i')
+        .. " 0:" .. vbhay.findLast('f')
+        .. " 6:" .. vbhay.findLast('e')
+        .. " -1:" .. vbhay.findLast('x'))
+
+    IO.print("1:" .. vbhay.findLast('i', 2)
+        .. " 0:" .. vbhay.findLast('f', 0)
+        .. " 6:" .. vbhay.findLast('e', 6)
+        .. " -1:" .. vbhay.findLast('e', 5))
+  }
+
+  PROC testSlice()
+    # test string slice(i, j)
+    string blah = "Nat32"
+    int bits = blah.slice(3).toInt()
+    IO.print("slice(3, -1): " .. blah.slice(3, -1) .. " = " .. bits)
+    blah = "12345"
+    IO.print("slice(0, 0): " .. blah.slice(0, 0))
+    IO.print("slice(0, 1): " .. blah.slice(0, 1))
+    IO.print("slice(0, 4): " .. blah.slice(0, 4))
+    IO.print("slice(0, 5): " .. blah.slice(0, 5))
+    IO.print("slice(0, 99): " .. blah.slice(0, 99))
+    IO.print("slice(1, 99): " .. blah.slice(1, 99))
+    IO.print("slice(4, 99): " .. blah.slice(4, 99))
+    IO.print("slice(5, 99): " .. blah.slice(5, 99))
+    IO.print("slice(6, 99): " .. blah.slice(6, 99))
+    IO.print("slice(3, -1): " .. blah.slice(3, -1))
+    IO.print("slice(3, -2): " .. blah.slice(3, -2))
+    IO.print("slice(3, -3): " .. blah.slice(3, -3))
+    IO.print("slice(3, -5): " .. blah.slice(3, -5))
+    IO.print("slice(3, -6): " .. blah.slice(3, -6))
+    IO.print("slice(-2, -1): " .. blah.slice(-2, -1))
+    IO.print("slice(-1, -1): " .. blah.slice(-1, -1))
+    IO.print("slice(-4, -4): " .. blah.slice(-4, -4))
+    IO.print("slice(-5, -5): " .. blah.slice(-5, -5))
+    IO.print("slice(-6, -6): " .. blah.slice(-6, -6))
+
+    # test string slice(i)
+    string tt = "0123456789"
+    IO.print("tt.slice(0) " .. tt.slice(0))
+    IO.print("tt.slice(4) " .. tt.slice(4))
+    IO.print("tt.slice(9) " .. tt.slice(9))
+    IO.print("tt.slice(10) " .. tt.slice(10))
+    IO.print("tt.slice(11) " .. tt.slice(11))
+    IO.print("tt.slice(-1) " .. tt.slice(-1))
+    IO.print("tt.slice(-2) " .. tt.slice(-2))
+    IO.print("tt.slice(-10) " .. tt.slice(-10))
+    IO.print("tt.slice(-11) " .. tt.slice(-11))
+
+    # string slice()
+    string sv = "ānöthêr " .. "hêllo"
+    string sv0 = sv.slice(2, 1)
+    IO.print("sv0: '" .. sv0 .. "'")
+    string sv1 = sv.slice(2, 2)
+    IO.print("sv1: '" .. sv1 .. "'")
+    string sv2 = sv.slice(2, 3)
+    IO.print("sv2: '" .. sv2 .. "'")
+    string sv3 = sv.slice(2, 4)
+    IO.print("sv3: '" .. sv3 .. "'")
+    string sv4 = sv.slice(2, 5)
+    IO.print("sv4: '" .. sv4 .. "'")
+    string svlong = sv.slice(2)
+    IO.print("svlong: '" .. svlong .. "'")
+
+    # test string slice(i, j)
+    string svblah = "Nät32"
+    bits = svblah.slice(3).toInt()
+    IO.print("slice(3, -1): " .. svblah.slice(3, -1) .. " = " .. bits)
+    svblah = "áβçðè"
+    IO.print("slice(0, 0): " .. svblah.slice(0, 0))
+    IO.print("slice(0, 1): " .. svblah.slice(0, 1))
+    IO.print("slice(0, 4): " .. svblah.slice(0, 4))
+    IO.print("slice(0, 5): " .. svblah.slice(0, 5))
+    IO.print("slice(0, 99): " .. svblah.slice(0, 99))
+    IO.print("slice(1, 99): " .. svblah.slice(1, 99))
+    IO.print("slice(4, 99): " .. svblah.slice(4, 99))
+    IO.print("slice(5, 99): " .. svblah.slice(5, 99))
+    IO.print("slice(6, 99): " .. svblah.slice(6, 99))
+    IO.print("slice(3, -1): " .. svblah.slice(3, -1))
+    IO.print("slice(3, -2): " .. svblah.slice(3, -2))
+    IO.print("slice(3, -3): " .. svblah.slice(3, -3))
+    IO.print("slice(3, -5): " .. svblah.slice(3, -5))
+    IO.print("slice(3, -6): " .. svblah.slice(3, -6))
+    IO.print("slice(-2, -1): " .. svblah.slice(-2, -1))
+    IO.print("slice(-1, -1): " .. svblah.slice(-1, -1))
+    IO.print("slice(-4, -4): " .. svblah.slice(-4, -4))
+    IO.print("slice(-5, -5): " .. svblah.slice(-5, -5))
+    IO.print("slice(-6, -6): " .. svblah.slice(-6, -6))
+
+    # test string slice(i)
+    string svtt = "0123456789"
+    IO.print("svtt.slice(0) " .. svtt.slice(0))
+    IO.print("svtt.slice(4) " .. svtt.slice(4))
+    IO.print("svtt.slice(9) " .. svtt.slice(9))
+    IO.print("svtt.slice(10) " .. svtt.slice(10))
+    IO.print("svtt.slice(11) " .. svtt.slice(11))
+    IO.print("svtt.slice(-1) " .. svtt.slice(-1))
+    IO.print("svtt.slice(-2) " .. svtt.slice(-2))
+    IO.print("svtt.slice(-10) " .. svtt.slice(-10))
+    IO.print("svtt.slice(-11) " .. svtt.slice(-11))
+
+    # varString slice()
+    varString vs = "ānöthêr " .. "hêllo"
+    varString vs0 = vs.slice(2, 1)
+    IO.print("vs0: '" .. vs0 .. "'")
+    varString vs1 = vs.slice(2, 2)
+    IO.print("vs1: '" .. vs1 .. "'")
+    varString vs2 = vs.slice(2, 3)
+    IO.print("vs2: '" .. vs2 .. "'")
+    varString vs3 = vs.slice(2, 4)
+    IO.print("vs3: '" .. vs3 .. "'")
+    varString vs4 = vs.slice(2, 5)
+    IO.print("vs4: '" .. vs4 .. "'")
+    varString vslong = vs.slice(2)
+    IO.print("vslong: '" .. vslong .. "'")
+
+    # test varString slice(i, j)
+    varString vsblah = "Nät32"
+    bits = vsblah.slice(3).toInt()
+    IO.print("slice(3, -1): " .. vsblah.slice(3, -1) .. " = " .. bits)
+    vsblah = "áβçðè"
+    IO.print("slice(0, 0): " .. vsblah.slice(0, 0))
+    IO.print("slice(0, 1): " .. vsblah.slice(0, 1))
+    IO.print("slice(0, 4): " .. vsblah.slice(0, 4))
+    IO.print("slice(0, 5): " .. vsblah.slice(0, 5))
+    IO.print("slice(0, 99): " .. vsblah.slice(0, 99))
+    IO.print("slice(1, 99): " .. vsblah.slice(1, 99))
+    IO.print("slice(4, 99): " .. vsblah.slice(4, 99))
+    IO.print("slice(5, 99): " .. vsblah.slice(5, 99))
+    IO.print("slice(6, 99): " .. vsblah.slice(6, 99))
+    IO.print("slice(3, -1): " .. vsblah.slice(3, -1))
+    IO.print("slice(3, -2): " .. vsblah.slice(3, -2))
+    IO.print("slice(3, -3): " .. vsblah.slice(3, -3))
+    IO.print("slice(3, -5): " .. vsblah.slice(3, -5))
+    IO.print("slice(3, -6): " .. vsblah.slice(3, -6))
+    IO.print("slice(-2, -1): " .. vsblah.slice(-2, -1))
+    IO.print("slice(-1, -1): " .. vsblah.slice(-1, -1))
+    IO.print("slice(-4, -4): " .. vsblah.slice(-4, -4))
+    IO.print("slice(-5, -5): " .. vsblah.slice(-5, -5))
+    IO.print("slice(-6, -6): " .. vsblah.slice(-6, -6))
+
+    # test varString slice(i)
+    varString vstt = "0123456789"
+    IO.print("vstt.slice(0) " .. vstt.slice(0))
+    IO.print("vstt.slice(4) " .. vstt.slice(4))
+    IO.print("vstt.slice(9) " .. vstt.slice(9))
+    IO.print("vstt.slice(10) " .. vstt.slice(10))
+    IO.print("vstt.slice(11) " .. vstt.slice(11))
+    IO.print("vstt.slice(-1) " .. vstt.slice(-1))
+    IO.print("vstt.slice(-2) " .. vstt.slice(-2))
+    IO.print("vstt.slice(-10) " .. vstt.slice(-10))
+    IO.print("vstt.slice(-11) " .. vstt.slice(-11))
+
+    # byteString slice()
+    byteString b = "another " .. "hello" .. " from me"
+    byteString b0 = b.slice(3, 2)
+    IO.print("b0: '\(b0)'")
+    byteString b1 = b.slice(3, 3)
+    IO.print("b1: '\(b1)'")
+    byteString b2 = b.slice(3, 4)
+    IO.print("b2: '\(b2)'")
+    byteString b3 = b.slice(3, 5)
+    IO.print("b3: '\(b3)'")
+    byteString b4 = b.slice(3, 6)
+    IO.print("b4: '\(b4)'")
+    byteString blong = b.slice(3)
+    IO.print("blong: '\(blong)'")
+
+    # test byteString slice(i, j)
+    byteString bblah = "Nat32"
+    bits = bblah.slice(3).asString().toInt()
+    IO.print("slice(3, -1): \(bblah.slice(3, -1)) = \(bits)")
+    bblah = "12345"
+    IO.print("slice(0, 0): \(bblah.slice(0, 0))")
+    IO.print("slice(0, 1): \(bblah.slice(0, 1))")
+    IO.print("slice(0, 4): \(bblah.slice(0, 4))")
+    IO.print("slice(0, 5): \(bblah.slice(0, 5))")
+    IO.print("slice(0, 99): \(bblah.slice(0, 99))")
+    IO.print("slice(1, 99): \(bblah.slice(1, 99))")
+    IO.print("slice(4, 99): \(bblah.slice(4, 99))")
+    IO.print("slice(5, 99): \(bblah.slice(5, 99))")
+    IO.print("slice(6, 99): \(bblah.slice(6, 99))")
+    IO.print("slice(3, -1): \(bblah.slice(3, -1))")
+    IO.print("slice(3, -2): \(bblah.slice(3, -2))")
+    IO.print("slice(3, -3): \(bblah.slice(3, -3))")
+    IO.print("slice(3, -5): \(bblah.slice(3, -5))")
+    IO.print("slice(3, -6): \(bblah.slice(3, -6))")
+    IO.print("slice(-2, -1): \(bblah.slice(-2, -1))")
+    IO.print("slice(-1, -1): \(bblah.slice(-1, -1))")
+    IO.print("slice(-4, -4): \(bblah.slice(-4, -4))")
+    IO.print("slice(-5, -5): \(bblah.slice(-5, -5))")
+    IO.print("slice(-6, -6): \(bblah.slice(-6, -6))")
+
+    # test string slice(i)
+    byteString btt = "0123456789"
+    IO.print("btt.slice(0) \(btt.slice(0))")
+    IO.print("btt.slice(4) \(btt.slice(4))")
+    IO.print("btt.slice(9) \(btt.slice(9))")
+    IO.print("btt.slice(10) \(btt.slice(10))")
+    IO.print("btt.slice(11) \(btt.slice(11))")
+    IO.print("btt.slice(-1) \(btt.slice(-1))")
+    IO.print("btt.slice(-2) \(btt.slice(-2))")
+    IO.print("btt.slice(-10) \(btt.slice(-10))")
+    IO.print("btt.slice(-11) \(btt.slice(-11))")
+
+    # varByteString slice()
+    varByteString vb = "another " .. "hello" .. " from me"
+    varByteString vb0 = vb.slice(3, 2)
+    IO.print("vb0: '\(vb0)'")
+    varByteString vb1 = vb.slice(3, 3)
+    IO.print("vb1: '\(vb1)'")
+    varByteString vb2 = vb.slice(3, 4)
+    IO.print("vb2: '\(vb2)'")
+    varByteString vb3 = vb.slice(3, 5)
+    IO.print("vb3: '\(vb3)'")
+    varByteString vb4 = vb.slice(3, 6)
+    IO.print("vb4: '\(vb4)'")
+    varByteString vblong = vb.slice(3)
+    IO.print("vblong: '\(vblong)'")
+
+    # test varByteString slice(i, j)
+    varByteString vbblah = "Nat32"
+    bits = vbblah.slice(3).asVarString().toInt()
+    IO.print("slice(3, -1): \(vbblah.slice(3, -1)) = \(bits)")
+    vbblah = "12345"
+    IO.print("slice(0, 0): \(vbblah.slice(0, 0))")
+    IO.print("slice(0, 1): \(vbblah.slice(0, 1))")
+    IO.print("slice(0, 4): \(vbblah.slice(0, 4))")
+    IO.print("slice(0, 5): \(vbblah.slice(0, 5))")
+    IO.print("slice(0, 99): \(vbblah.slice(0, 99))")
+    IO.print("slice(1, 99): \(vbblah.slice(1, 99))")
+    IO.print("slice(4, 99): \(vbblah.slice(4, 99))")
+    IO.print("slice(5, 99): \(vbblah.slice(5, 99))")
+    IO.print("slice(6, 99): \(vbblah.slice(6, 99))")
+    IO.print("slice(3, -1): \(vbblah.slice(3, -1))")
+    IO.print("slice(3, -2): \(vbblah.slice(3, -2))")
+    IO.print("slice(3, -3): \(vbblah.slice(3, -3))")
+    IO.print("slice(3, -5): \(vbblah.slice(3, -5))")
+    IO.print("slice(3, -6): \(vbblah.slice(3, -6))")
+    IO.print("slice(-2, -1): \(vbblah.slice(-2, -1))")
+    IO.print("slice(-1, -1): \(vbblah.slice(-1, -1))")
+    IO.print("slice(-4, -4): \(vbblah.slice(-4, -4))")
+    IO.print("slice(-5, -5): \(vbblah.slice(-5, -5))")
+    IO.print("slice(-6, -6): \(vbblah.slice(-6, -6))")
+
+    # test string slice(i)
+    varByteString vbtt = "0123456789"
+    IO.print("vbtt.slice(0) \(vbtt.slice(0))")
+    IO.print("vbtt.slice(4) \(vbtt.slice(4))")
+    IO.print("vbtt.slice(9) \(vbtt.slice(9))")
+    IO.print("vbtt.slice(10) \(vbtt.slice(10))")
+    IO.print("vbtt.slice(11) \(vbtt.slice(11))")
+    IO.print("vbtt.slice(-1) \(vbtt.slice(-1))")
+    IO.print("vbtt.slice(-2) \(vbtt.slice(-2))")
+    IO.print("vbtt.slice(-10) \(vbtt.slice(-10))")
+    IO.print("vbtt.slice(-11) \(vbtt.slice(-11))")
+  }
+
+  PROC testSize()
+    # byteString Size()
+    byteString s = "hello"
+    byteString sl = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+
+    IO.print("s.Size() 5: " .. s.Size())
+    IO.print("sl.Size() 130: " .. sl.Size())
+
+    # string and varString Size()
+    string sv = "héllö"
+    string svl = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+    varString vs = "hellò"
+
+    IO.print("sv.Size() 5: " .. sv.Size())
+    IO.print("svl.Size() 130: " .. svl.Size())
+    IO.print("vs.Size() 5: " .. vs.Size())
+
+    # Bytes and varByteString Size()
+    byteString b = "hello"
+    byteString bl = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+    varByteString vb = "hello"
+
+    IO.print("b.Size() 5: " .. b.Size())
+    IO.print("bl.Size() 130: " .. bl.Size())
+    IO.print("vb.Size() 5: " .. vb.Size())
+  }
+
+  PROC testConcat()
+    # two string literals into a string
+    string s = "hello" .. " world"
+    IO.print("s.Size() 11: " .. s.Size() .. ": '" .. s .. "'")
+
+    # two string literals into a string
+    string sv = "hëllo" .. " wórld"
+    IO.print("sv.Size() 11: " .. sv.Size() .. ": '" .. sv .. "'")
+
+    # concatenating string literals to varString
+    varString vs = "ānöther " .. "hêllo"
+    IO.print("vs.Size() 13: " .. vs.Size() .. ": '" .. vs .. "'")
+
+    # string to varString conversion
+    varString vs2 = sv
+    IO.print("vs2.Size() 11: " .. vs2.Size() .. ": '" .. vs2 .. "'")
+
+    # concatenate varString
+    varString bc = vs .. " cöncaténated"
+    IO.print(bc)
+
+    # concatenate string
+    string sv2 = sv .. " agaîn"
+    IO.print("concatenated string: '" .. sv2 .. "'")
+
+    # two string literals into a byteString
+    byteString b = "hello" .. " world"
+    IO.print("b.Size() 11: " .. b.Size() .. ": '" .. b.ToString() .. "'")
+
+    # concatenating byteString to varByteString
+    varByteString vb = "another " .. "hello"
+    IO.print("vb.Size() 13: " .. vb.Size() .. ": '" .. vb.ToString() .. "'")
+
+    # byteString to varByteString conversion
+    varByteString vb2 = b
+    IO.print("vb2.Size() 11: " .. vb2.Size() .. ": '" .. vb2.ToString() .. "'")
+
+    # concatenate varByteString
+    varByteString vbc = vb .. " concatenated"
+    IO.print(vbc.ToString())
+
+    # concatenate byteString
+    byteString bv2 = b .. " again"
+    IO.print("concatenated byteString: '" .. bv2.ToString() .. "'")
+
+    # concatenate string and int/status/bool
+    PROC printCstring(string cs)
+      IO.print(cs)
+    }
+    string x = "hello "
+    status st = FAIL
+    bool bl = TRUE
+    printCstring(x .. StringTest.three)
+    printCstring(x .. st)
+    printCstring(x .. bl)
+
+    # concatenate string and int/status/bool
+    PROC printString(string svs)
+      IO.print(svs)
+    }
+    string svx = "hello "
+    printString(svx .. StringTest.three)
+    printString(svx .. st)
+    printString(svx .. bl)
+
+    # Smart concatenation collapsing
+    int nr = 8
+    IO.print("1 " .. nr .. " 3 ")
+    IO.print("1 " .. nr .. " 3 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr .. " 19 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr .. " 19 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr .. " 19 " .. nr .. " 21 ")
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr .. " 19 " .. nr .. " 21 " .. nr)
+    IO.print("1 " .. nr .. " 3 " .. nr .. " 5 " .. nr .. " 7 " .. nr .. " 9 " .. nr .. " 11 " .. nr .. " 13 " .. nr .. " 15 " .. nr .. " 17 " .. nr .. " 19 " .. nr .. " 21 " .. nr .. " 23 ")
+  }
+
+  int three = 3
+
+  # FUNC getString() varString
+  FUNC getString() string
+    RETURN "somé " .. "ştring"
+  }
+
+  # FUNC getBytes() varByteString
+  FUNC getBytes() byteString
+    RETURN "some " .. "varByteString"
+  }
+
+  PROC testConvert()
+    # convert varString to string
+    varString vs = "ānöthêr " .. "hêllo"
+    string svb = vs
+    IO.print("varString as string: '" .. svb .. "'")
+
+    varString vsf = getString()
+    IO.print("'" .. vsf.slice(3, 7) .. "'")
+
+    # convert varByteString to byteString
+    varByteString vb = "another " .. "hello"
+    byteString bvb = vb
+    IO.print("varByteString as byteString: '" .. bvb.ToString() .. "'")
+
+    varByteString vbf = getBytes()
+    IO.print("'" .. vbf.slice(3, 7).ToString() .. "'")
+  }
+
+  PROC testAdd()
+    # test tiny type of varString
+    varString zs = NEW()
+    zs.add("f")
+    zs.add("o")
+    zs.add("o")
+    IO.print("zs.Size() 3: " .. zs.Size() .. ": '" .. zs .. "'")
+    zs.add("b")
+    zs.add("a")
+    zs.add("r")
+    IO.print("zs.Size() 6: " .. zs.Size() .. ": '" .. zs .. "'")
+
+    # varString add()
+    varString vs = "ānöther " .. "hêllo"
+    vs.add(" fröm mĕ")
+    IO.print("vs.Size() 21: " .. vs.Size() .. ": '" .. vs .. "'")
+
+    # test tiny type of varByteString
+    varByteString zb = NEW()
+    zb.add("f")
+    zb.add("o")
+    zb.add("o")
+    IO.print("zb.Size() 3: " .. zb.Size() .. ": '" .. zb.ToString() .. "'")
+    zb.add("b")
+    zb.add("a")
+    zb.add("r")
+    IO.print("zb.Size() 6: " .. zb.Size() .. ": '" .. zb.ToString() .. "'")
+
+    # varByteString add()
+    varByteString vb = "another " .. "hello"
+    vb.add(" from me")
+    IO.print("vb.Size() 21: " .. vb.Size() .. ": '" .. vb.ToString() .. "'")
+  }
+
+  PROC testSplit()
+    # string split()
+    list<string> tsl = ["one, two, three", "one", "  one\ttwo  "]
+    FOR s IN tsl
+      IO.print("string split '" .. s .. "' " .. s.split().ToString())
+    }
+
+    # string splitAnyOf()
+    list<list<string>> sos = [["foo/bar: yes", "/: "],
+                              ["  foo /:+  bar  ", "/:+ "],
+                              ["foo/:+bar", "/:+ "]]
+    FOR sl IN sos
+      IO.print("string splitAnyOf '" .. sl[0] .. "' "
+                                        .. sl[0].splitAnyOf(sl[1]).ToString())
+    }
+
+    # string split(arg)
+    list<string> csl = ["one:two:three", ":one", "one", "one:", ":", "one::two"]
+    FOR s IN csl
+      IO.print("string split '" .. s .. "' " .. s.split(":").ToString())
+    }
+    csl = ["one, two, three", "one", "one, two, "]
+    FOR s IN csl
+      IO.print("string split '" .. s .. "' " .. s.split(", ").ToString())
+    }
+
+    # string split(arg)
+    list<string> svl = ["ònë:twò:thrëe", ":ònë", "ònë", "ònë:", ":", "ònë::twò"]
+    FOR s IN svl
+      IO.print("string split '" .. s .. "' " .. s.split(":").ToString())
+    }
+
+    svl = ["ònë, twò, thrëe", "ònë", "ònë, twò, "]
+    FOR s IN svl
+      IO.print("string split '" .. s .. "' " .. s.split(", ").ToString())
+    }
+
+    # varString split()
+    list<varString> tvsl = ["one, two, three", "one", "  one\ttwo  "]
+    FOR s IN tvsl
+      IO.print("varString split '" .. s .. "' " .. s.split().ToString())
+    }
+
+    # varString split(arg)
+    list<varString> vsl = ["ònë:twò:thrëe", ":ònë", "ònë", "ònë:", ":", "ònë::twò"]
+    FOR s IN vsl
+      IO.print("varString split '" .. s .. "' " .. s.split(":").ToString())
+    }
+
+    vsl = ["ònë, twò, thrëe", "ònë", "ònë, twò, "]
+    FOR s IN vsl
+      IO.print("varString split '" .. s .. "' " .. s.split(", ").ToString())
+    }
+
+    # byteString split()
+    list<byteString> tbl = ["one, two, three", "one", "  one\ttwo  "]
+    FOR s IN tbl
+      IO.print("byteString split '" .. s.ToString() .. "' " .. s.split().ToString())
+    }
+
+    # byteString split(arg)
+    list<byteString> bsl = ["one:two:three", ":one", "one", "one:", ":", "one::two"]
+    FOR s IN bsl
+      IO.print("byteString split '" .. s.ToString() .. "' " .. s.split(":").ToString())
+    }
+    bsl = ["one, two, three", "one", "one, two, "]
+    FOR s IN bsl
+      IO.print("byteString split '" .. s.ToString() .. "' " .. s.split(", ").ToString())
+    }
+
+    # varByteString split()
+    list<varByteString> tvbl = ["one, two, three", "one", "  one\ttwo  "]
+    FOR s IN tvbl
+      IO.print("varByteString split '" .. s.ToString() .. "' " .. s.split().ToString())
+    }
+
+    # varByteString split(arg)
+    list<varByteString> vbsl = ["one:two:three", ":one", "one", "one:", ":", "one::two"]
+    FOR s IN vbsl
+      IO.print("varByteString split '" .. s.ToString() .. "' " .. s.split(":").ToString())
+    }
+    vbsl = ["one, two, three", "one", "one, two, "]
+    FOR s IN vbsl
+      IO.print("varByteString split '" .. s.ToString() .. "' " .. s.split(", ").ToString())
+    }
+  }
+
+  PROC testLatinConvert()
+    IO.ByteWriter bw = NEW()
+    bw.writeByte(102)   # 'f'
+    bw.writeByte(243)   # 'ó'
+    bw.writeByte(214)   # 'Ö'
+    byteString latin = bw.toByteString()
+    IO.print("converted: " .. latin.latin1ToString())
+  }
+
+  PROC testReverse()
+    IO.print("'" .. "foobar".reverse() .. "'")
+    IO.print("'" .. "föøçár".reverse() .. "'")
+  }
+
+  PROC testGetChar()
+    byteString b = "föøçár"
+    FOR i IN 0 TO 9
+      IO.print(i .. ": " .. b.getCharSize(i) .. " = " .. b.getChar(i)
+               .. " (" .. b.getByte(i) .. " == " .. b.get(i) .. ")")
+    }
+  }
+
+  PROC testStringReader()
+    IO.StringReader reader = NEW("föøçár")
+    WHILE TRUE
+      int c = reader.readChar()
+      IF c == IO.eof
+        BREAK
+      }
+      IO.write(c .. " - ")
+    }
+    IO.print()
+  }
+
+  PROC testEscape()
+    IO.print("föøçár".escape())
+    IO.print("f\\öøçár".escape())
+    IO.print("f\\\\öøçár".escape())
+    IO.print("\\öøçár".escape())
+    IO.print("öøçár\\".escape())
+    IO.print("f\"öøçár".escape())
+    IO.print("\"öøçár\"".escape())
+  }
+
+  PROC testReplace()
+    string in = "föøçár"
+    IO.print(in.replace('f', 'F'))
+    IO.print(in.replace('r', 'R'))
+    IO.print(in.replace('ö', 'O'))
+
+    in = "fföøfçáörr"
+    IO.print(in.replaceAll('f', 'F'))
+    IO.print(in.replaceAll('r', 'R'))
+    IO.print(in.replaceAll('ö', 'O'))
+  }
+
+  PROC testStrip()
+    IO.print("-" .. (" foo bar ".trim()) .. "-")
+    IO.print("-" .. ("foo bar".trim()) .. "-")
+    IO.print("-" .. (" ".trim()) .. "-")
+    IO.print("-" .. (" \r\n".trim()) .. "-")
+  }
+
+  PROC testPadding()
+    IO.print("foo".padLeft(0, '-'))
+    IO.print("foo".padLeft(3, '-'))
+    IO.print("foo".padLeft(4, '-'))
+    IO.print("foo".padLeft(8, '-'))
+    IO.print("".padLeft(3, '-'))
+
+    IO.print("foo".padRight(0, '-'))
+    IO.print("foo".padRight(3, '-'))
+    IO.print("foo".padRight(4, '-'))
+    IO.print("foo".padRight(8, '-'))
+    IO.print("".padRight(3, '-'))
+  }
+
+  PROC testCompare()
+    string ss
+    IO.print("equal: " .. ("foo".Equal("foo")))
+    IO.print("not equal: " .. ("foo".Equal("bar")))
+    IO.print("compare >: " .. ("foo".Compare("bar")))
+    IO.print("compare ==: " .. ("bar".Compare("bar")))
+    IO.print("compare <: " .. ("bar".Compare("foo")))
+
+    IO.print("equal(NIL): " .. ("foo".Equal(NIL)))
+    IO.print("NIL?.(NIL): " .. (ss?.Equal(NIL)))
+    IO.print("NIL?.(not-NIL): " .. (ss?.Equal("foo")))
+
+    byteString bb
+    byteString foo = "foo"
+    byteString bar = "bar"
+    IO.print("equal: \(foo.Equal(foo))")
+    IO.print("not equal: \(foo.Equal(bar))")
+    IO.print("compare >: \(foo.Compare(bar))")
+    IO.print("compare ==: \(bar.Compare(bar))")
+    IO.print("compare <: \(bar.Compare(foo))")
+
+    IO.print("equal(NIL): " .. (foo.Equal(NIL)))
+    IO.print("NIL?.(NIL): " .. (bb?.Equal(NIL)))
+    IO.print("NIL?.(not-NIL): " .. (bb?.Equal(foo)))
+  }
+
+  PROC testPredef()
+    string s
+    IO.print("string type: \(s.Type())")
+    byteString b
+    IO.print("byteString type: \(b.Type())")
+  }
+
+  PROC testNil()
+    string a
+    string b
+    IO.print("nilnil: " .. a .. b)
+    a = "foo"
+    IO.print("foonil: " .. a .. b)
+    IO.print("nilfoo: " .. b .. a)
+  }
+
+  PROC testStringExpr()
+    string name = "Peter"
+    int number = 77
+    IO.print("name is \(name)")
+    IO.print("name is \(name), number is \(number)!")
+    IO.print("name is \(name), number is \(number + 11)!")
+    IO.print("name is \(name .. " Pan"), number is \(number)!")
+
+    list<int> list = [1, 2, 3]
+    IO.print("name is \(name) list is \(list)")
+    dict<string, int> dict = ["one": 1, "two": 2]
+    IO.print("dict is \(dict).")
+
+    int d = 8
+    IO.print("number is \(.5d number)")
+    IO.print("number is \(.4d -number)")
+    IO.print("number is \(5d number + 8)")
+    IO.print("number is \(d - number)")
+    IO.print("number is \(d * number)")
+  }
+
+  PROC testFromArray()
+    array<int> a = ['a', 'b', 'c']
+    string s = NEW(a)
+    IO.print(s)
+
+    array<int16> ai = ['-', '-', 'x', 'y', 'z']
+    s = NEW(ai, 2)
+    IO.print(s)
+
+    array<nat32> an = ['-', 'a', 'á', 'ë', '-']
+    s = NEW(an, 1, 3)
+    IO.print(s)
+  }
+
+  PROC testToArray()
+    IO.print("abcd".toArray().ToString())
+    IO.print("\u1111\u2222\u3333".toArray().ToString())
+    string s
+    IO.print(s.toArray())
+    TRY
+      IO.print("\xf8abcd".toArray().ToString())
+    CATCH E.IllegalByte e
+      IO.print("Correctly too long byte sequence")
+    }
+    TRY
+      IO.print("\xc0".toArray().ToString())
+    CATCH E.IllegalByte e
+      IO.print("Correctly found truncated 2-byte sequence")
+    }
+    TRY
+      IO.print("\xe0a".toArray().ToString())
+    CATCH E.IllegalByte e
+      IO.print("Correctly found truncated 3-byte sequence")
+    }
+    TRY
+      IO.print("\xf0ab".toArray().ToString())
+    CATCH E.IllegalByte e
+      IO.print("Correctly found truncated 4-byte sequence")
+    }
+  }
+
+}

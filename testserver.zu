@@ -1,0 +1,46 @@
+# Zimbu example program: Run the HTTP server
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+int tick
+
+FUNC Main() int
+  HTTP.Server server = NEW(8888)
+  string exe = ARG.exeName
+  server.setFileRoot(exe.slice(0, IO.tailSepIndex(exe)) .. "pages")
+
+  HTTP.FileServlet fs = NEW("index.html")
+  fs.addPath("/")
+  fs.addPath("/index.html")
+  fs.addPath("/index.htm")
+  server.addServlet(fs)
+
+  HTTP.StringServlet ss = NEW("This is zimbu.html")
+  ss.addPath("/zimbu.html")
+  server.addServlet(ss)
+
+  FUNC varzPage(HTTP.Context ctx) string
+    string page = "<html><body>"
+    page ..= "tick: " .. tick
+    page ..= "</body></html>"
+    RETURN page
+  }
+
+  HTTP.FunctionServlet fcs = NEW(varzPage)
+  fcs.addPath("/varz")
+  server.addServlet(fcs)
+
+  server.start()
+  IO.print("Server started")
+
+  WHILE TRUE  # TODO: server.running()
+    TIME.sleepSec(1)
+    tick++
+    IO.write(" " .. tick)
+    IO.flush()
+  }
+
+  RETURN 0
+}

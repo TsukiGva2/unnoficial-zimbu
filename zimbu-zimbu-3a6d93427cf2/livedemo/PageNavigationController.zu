@@ -1,0 +1,70 @@
+#
+# Zimbu live demo: navigation controller
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT Examples.zut
+
+CLASS PageNavigationController
+
+  SHARED
+    # TODO: add more pages
+    int currentPage
+    array<tuple<func< => string>, ZUT.HtmlFunc>> pages =
+        [
+          [Examples.program1, Examples.help1],
+          [Examples.program2, Examples.help2],
+          [Examples.program3, Examples.help3],
+        ]
+  }
+
+  # Handle a key typed in the text area: build the code, now or later.
+  FUNC $restore(ZUT.Event e) bool
+    ZUT.Element textarea = ZUT.getElementById("program")
+    textarea.setValue(pages[currentPage][0]())
+
+    # trigger compiling
+    textarea.fireEvent(ZUT.EventType.keyUp, ' ')
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $next(ZUT.Event e) bool
+    IF currentPage < pages.Size() - 1
+      ++currentPage
+      $showPage()
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $previous(ZUT.Event e) bool
+    IF currentPage > 0
+      --currentPage
+      $showPage()
+    }
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  PROC $showPage()
+    ZUT.Element textarea = ZUT.getElementById("program")
+    textarea.setValue(pages[currentPage][0]())
+    ZUT.Element help = ZUT.getElementById("helpText")
+    help.fill(pages[currentPage][1])
+
+    ZUT.Element prev = ZUT.getElementById("previousButton")
+    prev.setDisabled(currentPage == 0)
+    ZUT.Element next = ZUT.getElementById("nextButton")
+    next.setDisabled(currentPage + 1 == pages.Size())
+
+    # trigger compiling
+    textarea.fireEvent(ZUT.EventType.keyUp, ' ')
+  }
+}

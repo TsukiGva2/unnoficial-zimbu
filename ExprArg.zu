@@ -1,0 +1,48 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ExprArg class: arguments for expressions.
+#
+# Copyright 2010 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT "Declaration.zu"
+IMPORT "Type.zu"
+
+CLASS ExprArg @items=public                   # TODO: restrict visibility
+  Declaration $dest      # destination, including desired type of result
+
+  bool   $stringConvert  # convert int/bool/status to string
+  bool   $exactMatch     # no conversion between class and object, func and
+                         # funcRef, etc.
+  int    $undef          # count undefined types
+
+  bool   $top            # Toplevel expression: RHS of assignment or function
+                         # argument.
+
+  NEW(Declaration dest, bool stringConvert)
+    $dest = dest
+    $stringConvert = stringConvert
+  }
+
+  # Create a new object without a destination type set.
+  NEW(bool stringConvert)
+    $stringConvert = stringConvert
+  }
+
+  FUNC $destType() Type
+    IF $dest == NIL
+      RETURN NIL
+    }
+    RETURN $dest.type
+  }
+
+  FUNC $copy() ExprArg
+    ExprArg r = NEW($dest, $stringConvert)
+    r.exactMatch = $exactMatch
+    r.undef = $undef
+    r.top = $top
+    RETURN r
+  }
+}

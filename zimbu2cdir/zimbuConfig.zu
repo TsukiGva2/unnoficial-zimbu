@@ -1,0 +1,284 @@
+#
+# Configuration program for the Zimbu compiler.
+#
+# This is a separate, small program, that is run on "make bootstrap".
+# It generates the zimbuConfig.out file.
+# Must be run in the top zimbu directory.
+#
+# Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+IMPORT.PROTO "zimbuConfig.proto"  # Defines the Zimbu.Config class.
+
+FUNC Main() int
+  Zimbu.Config zimbuConfig = NEW()
+
+  string found
+  FOR dir IN ["/usr/lib",
+              "/usr/lib64",
+              "/lib",
+              "/lib64",
+              "/usr/local/lib",
+              "/usr/lib/i386-linux-gnu",
+              "/usr/lib/x86_64-linux-gnu"]
+    FOR s IN ["tcmalloc_minimal", "tcmalloc"]
+      IF IO.isReadable(dir .. "/lib" .. s .. ".so")
+        found = s
+        BREAK
+      }
+    }
+    IF found != NIL
+      BREAK
+    }
+  }
+
+  IF found != NIL
+    zimbuConfig.setMallocArg("-l" .. found)
+  ELSE
+    IO.print("tcmalloc_minimal library NOT FOUND")
+    IO.print("install the tcmalloc_minimal library to make Zimbu programs faster")
+  }
+
+  ###### thread and socket library
+  string   threadArg            # extra compiler argument for threads
+  string   socketArg            # extra compiler argument for sockets
+  string   mathArg              # extra compiler argument for floating point
+  threadArg = "-lpthread"
+  mathArg = "-lm"
+
+  # The MingW thread argument was suggested by edcdave.
+  # It requires pthreads-win32.
+  # The socketArg uses the winsock library.
+>>>
+#if defined(__MINGW32__)
+  %threadArg% = Zstr("-lpthreadGC2");
+  %socketArg% = Zstr("-lws2_32");
+#endif
+<<<
+  zimbuConfig.setThreadArg(threadArg)
+  IF socketArg != NIL
+    zimbuConfig.setSocketArg(socketArg)
+  }
+  zimbuConfig.setMathArg(mathArg)
+
+  ###### resolve() and fork()
+  bool     haveResolve          # whether IO.resolve() is available
+  bool     haveFork             # whether fork() is available
+  bool     haveSigaction        # whether sigaction() is available
+  bool     gcWithThreads        # whether GC can be used with threads
+>>>
+#ifdef __MINGW32__
+  %haveResolve% = 0;
+  %haveFork% = 0;
+  %haveSigaction% = 0;
+  %gcWithThreads% = 0;
+#else
+  %haveResolve% = 1;
+  %haveFork% = 1;
+  %haveSigaction% = 1;
+  %gcWithThreads% = 1;
+#endif
+<<<
+  zimbuConfig.setHaveResolve(haveResolve)
+  zimbuConfig.setHaveFork(haveFork)
+  zimbuConfig.setHaveSigaction(haveSigaction)
+  zimbuConfig.setGcWithThreads(gcWithThreads)
+
+  ###### MingW
+  bool  isMingw
+>>>
+#ifdef __MINGW32__
+  %isMingw% = 1;
+#endif
+<<<
+  zimbuConfig.setIsMingw(isMingw)
+
+  ###### Type that holds int, float and pointer
+  int shortSize
+  int intSize
+  int longSize
+  int longLongSize
+  int unsShortSize
+  int unsIntSize
+  int unsLongSize
+  int unsLongLongSize
+  int ptrSize
+  int floatSize
+  int doubleSize
+  int voidPtrSize
+>>>
+  %shortSize% = sizeof(short);
+  %intSize% = sizeof(int);
+  %longSize% = sizeof(long);
+  %longLongSize% = sizeof(long long);
+  %unsShortSize% = sizeof(unsigned short);
+  %unsIntSize% = sizeof(unsigned int);
+  %unsLongSize% = sizeof(unsigned long);
+  %unsLongLongSize% = sizeof(unsigned long long);
+  %floatSize% = sizeof(float);
+  %doubleSize% = sizeof(double);
+  %voidPtrSize% = sizeof(void*);
+<<<
+  zimbuConfig.setInt16Name("short")
+  IF shortSize != 2
+    IO.print("WARNING: int16 size is actually " .. (shortSize * 8) .. " bits")
+  }
+
+  # Prefer using "int", because it's 32 bits on most systems.
+  IF intSize == 4
+    zimbuConfig.setInt32Name("int")
+  ELSEIF longSize == 4
+    zimbuConfig.setInt32Name("long")
+  ELSE
+    zimbuConfig.setInt32Name("int")
+    IO.print("WARNING: int32 size is actually " .. (intSize * 8) .. " bits")
+  }
+
+  string intType = "long long"
+  string printIntFormat
+  string scanfHexFormat
+  string printNatFormat
+>>>
+#ifdef __MINGW32__
+<<<
+  printIntFormat = "%I64d"
+  scanfHexFormat = "%I64x"
+  printNatFormat = "%I64u"
+>>>
+#else
+<<<
+  printIntFormat = "%lld"
+  scanfHexFormat = "%llx"
+  printNatFormat = "%llu"
+>>>
+#endif
+<<<
+  # Prefer using "long long" for 64 bits, because it works on most systems.
+  # Required for when distributing the produced C files.
+  IF longLongSize == 8
+    # use defaults set above
+  ELSEIF longSize == 8
+    intType = "long"
+    printIntFormat = "%ld"
+    scanfHexFormat = "%lx"
+    printIntFormat = "%ld"
+  ELSEIF intSize == 8
+    intType = "int"
+    printIntFormat = "%d"
+    scanfHexFormat = "%x"
+  ELSE
+    IO.print("WARNING: int size is actually " .. (longLongSize * 8) .. " bits")
+  }
+  zimbuConfig.setInt64Name(intType)
+  zimbuConfig.setPrintIntFormat(printIntFormat)
+  zimbuConfig.setScanfHexFormat(scanfHexFormat)
+
+  zimbuConfig.setNat16Name("unsigned short")
+  IF unsShortSize != 2
+    IO.print("WARNING: nat16 size is actually "
+                                             .. (unsShortSize * 8) .. " bits")
+  }
+
+  IF unsIntSize == 4
+    zimbuConfig.setNat32Name("unsigned int")
+  ELSEIF unsLongSize == 4
+    zimbuConfig.setNat32Name("unsigned long")
+  ELSE
+    zimbuConfig.setNat32Name("unsigned int")
+    IO.print("WARNING: nat32 size is actually " .. (unsIntSize * 8) .. " bits")
+  }
+
+  string natType = "unsigned long long"
+  IF unsLongLongSize == 8
+    # Use the defaults
+  ELSEIF unsLongSize == 8
+    natType = "unsigned long"
+    printNatFormat = "%lu"
+  ELSEIF unsIntSize == 8
+    natType = "unsigned int"
+    printNatFormat = "%u"
+  ELSE
+    IO.print("WARNING: nat size is actually "
+                                          .. (unsLongLongSize * 8) .. " bits")
+  }
+  zimbuConfig.setNat64Name(natType)
+  zimbuConfig.setPrintNatFormat(printNatFormat)
+
+  zimbuConfig.setFloatName("double")
+  IF doubleSize != 8
+    IO.print("WARNING: float size is actually "
+                                               .. (doubleSize * 8) .. " bits")
+  }
+  zimbuConfig.setFloat32Name("float")
+  IF floatSize != 4
+    IO.print("WARNING: float32 size is actually "
+                                                .. (floatSize * 8) .. " bits")
+  }
+
+  string intPtrName
+>>>
+#ifdef __INTPTR_TYPE__
+<<<
+  intPtrName = "__INTPTR_TYPE__"
+>>>
+#else
+# ifdef __SIZEOF_POINTER__
+#  if __SIZEOF_POINTER__ == __SIZEOF_INT__
+<<<
+  intPtrName = "int"
+>>>
+#  else
+#   if __SIZEOF_POINTER__ == __SIZEOF_LONG__
+<<<
+  intPtrName = "long"
+>>>
+#   else
+<<<
+  intPtrName = "long long"
+>>>
+#   endif
+#  endif
+# else
+<<<
+  intPtrName = "long"
+>>>
+# endif
+#endif
+<<<
+  zimbuConfig.setIntPtrName(intPtrName)
+
+  ###### Executable name
+  string   exeSuffix            # suffix used for an executable
+  string   exePrefix            # prefix used for an executable without an
+                                # absolute path on Unix: "./"
+  exeSuffix = ""
+  exePrefix = "./"
+>>>
+#if defined(__MINGW32__) || defined(_MSC_VER)
+  %exeSuffix% = Zstr(".exe");  /* set to ".exe" for MS-Windows */
+  %exePrefix% = Zstr("");      /* set to "" for MS-Windows */
+#endif
+<<<
+  zimbuConfig.setExeSuffix(exeSuffix)
+  zimbuConfig.setExePrefix(exePrefix)
+
+  IO.File writer = IO.fileWriter("zimbuConfig.out")
+  string config = zimbuConfig.ToString()
+  writer.write(config)
+
+  IO.print("Generated zimbuConfig.out:")
+  IO.print(config)
+
+  RETURN 0
+}

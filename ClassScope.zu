@@ -1,0 +1,130 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ClassScope class.
+#
+# A Scope used for the toplevel of a class and interface.  The SHARED section
+# is in a SharedScope.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "Scope.zu"
+IMPORT "Template.zu"
+
+CLASS ClassScope EXTENDS Scope @items=public
+
+  # Object members defined in a class. These symbols are part of every object.
+  # The SHARED members are in $declDict.
+  multiDict<string, Declaration> $objectMembers
+
+  # Template with the types used in this class.
+  Template $template
+
+  # Return TRUE when at the toplevel class scope, not in SHARED section inside
+  # a class or in a method.
+  FUNC $isTopClassScope() bool @define
+    RETURN TRUE
+  }
+
+  # Can symbols be used before defined?
+  FUNC $isForwardDeclare() bool @define
+    RETURN TRUE
+  }
+
+  # Are variables initialized when declared?
+  # FALSE when a method does the initialization.
+  FUNC $isInitVar() bool @define
+    RETURN FALSE
+  }
+
+  # Can there be non-declaration statements in this Scope?
+  FUNC $hasStatements() bool @define
+    RETURN FALSE
+  }
+
+  # Get the list of object declarations.
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @replace
+    RETURN $objectMembers
+  }
+
+  # Add an object member.
+  PROC $addObjectMember(Declaration decl) @replace
+    $addObjectDecl(decl.name, decl.zuiDecl, decl)
+  }
+
+  # Inner part of Scope.addObjectDecl() for object members.
+  PROC $addObjectDecl(string name, Zui.Declaration zuiDecl,
+                                                  Declaration decl) @replace
+    IF $objectMembers == NIL
+      $objectMembers = NEW(TRUE)
+    }
+    IF $objectMembers.has(name)
+      # If a symbol was already added for this zuiDecl, remove it.
+      list<Declaration> l = $objectMembers.get(name)
+      FOR i IN 0 UNTIL l.Size()
+        IF l[i].zuiDecl IS zuiDecl
+          l.remove(i)
+          BREAK
+        }
+      }
+    }
+
+    # The last added symbol must be first in the list for generateMethod()
+    # to work for overloaded methods
+    $objectMembers.insert(name, decl)
+  }
+
+  # Remove object member |decl| from the class.
+  PROC $removeObjectMember(Declaration decl)
+    IF $objectMembers != NIL
+      list<Declaration> l = $objectMembers.get(decl.name)
+      FOR i IN 0 UNTIL l.Size()
+        IF l[i] IS decl
+          l.remove(i)
+          IF l.Size() == 0
+            $objectMembers.removeAll(decl.name)
+          }
+          BREAK
+        }
+      }
+    }
+  }
+
+  PROC $initPass(Scope outer)
+    $fillFromOuter(outer)
+
+    # Don't copy the return symbol from the outer scope.
+    $returnType = NIL
+  }
+
+  # If this class has templates, add them to the scope.
+  # E.g. <Titem>  adds the actual type for Titem.
+  PROC $addTemplateTypes()
+    IF $template != NIL
+      FOR decl IN $template.decls
+        IF decl != NIL
+          $addMember(decl)
+        }
+      }
+    }
+  }
+
+  # If this class has templates, remove them from the scope.
+  # This undoes $addTemplateTypes()
+  PROC $removeTemplateTypes()
+    IF $template != NIL
+      FOR decl IN $template.decls
+        IF decl != NIL
+          $removeMember(decl)
+        }
+      }
+    }
+  }
+
+}

@@ -1,0 +1,215 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Builtin module Z, the part written in Zimbu.  See ./ZLoader.zu for methods
+# directly generated as C code.
+#
+
+#= Items built into the compiler.
+#
+#*license
+#* Copyright 2010 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE ZModule @public @items=public
+
+  #= Class that stores the line/column position in a file.
+  #- The filename is expected to be relative to the current directory or an
+  #- absolute path.  This is not enforced.
+  CLASS Pos @items=public
+    string  $filename  #= name of the file
+    int     $lnum      #= first line is 1
+    int     $col       #= first column is 1
+    string  $text      #= optional text
+
+    #= Create a position for file |filename|, line 1 column 1.
+    NEW(string filename) @backtrace=no
+      $filename = filename
+      $lnum = 1
+      $col = 1
+    }
+
+    #= Create a position for file |filename|, line |lnum| column |col|.
+    NEW(string filename, int lnum, int col) @backtrace=no
+      $filename = filename
+      $lnum = lnum
+      $col = col
+    }
+
+    #= Return a copy of this Pos.
+    FUNC $copy() Pos
+      Pos p = NEW($filename)
+      p.lnum = $lnum
+      p.col = $col
+      p.text = $text
+      RETURN p
+    }
+
+    #= Copy the values of this Pos to |dest|.
+    PROC $copy(Pos dest)
+      dest.filename = $filename
+      dest.lnum = $lnum
+      dest.col = $col
+      dest.text = $text
+    }
+
+    #= Advance this position to the next line, first column.
+    PROC $nextLine()
+      $lnum++
+      $col = 1
+    }
+
+    #= Adjust the position for advancing over string |s|.
+    PROC $advance(string s)
+      int idx
+      WHILE TRUE
+        int i = s.find('\n', idx)
+        IF i < 0
+          BREAK
+        }
+        $col = 1
+        ++$lnum
+        idx = i + 1
+      }
+      $col += s.slice(idx).Size()
+    }
+
+    #= Return a string with the file name, line and column.
+    #- Example: "zimbu.zu line 234 col 23"
+    #- This is a standard format that is understood by programs that parse
+    #- compiler errors.
+    FUNC $ToString() string
+      IO.StringWriter w = NEW()
+      IF $filename == NIL
+        w.write("[unknown file]")
+      ELSE
+        w.write($filename)
+      }
+      w.write(" line ")
+      w.write($lnum)
+      w.write(" col ")
+      w.write($col)
+      RETURN w.ToString()
+    }
+  }
+
+  #= Return the current position in the code.
+  #- This is generated at compile time.
+  #
+  #- Example:
+  #% THROW NEW("something wrong here", Z.pos())
+  FUNC pos() Z.Pos
+    ###### Only for generating documentation, code is in ZLoader.zu.
+    RETURN NIL
+  }
+
+  #= Return the code position of the calling method.
+  #- When Z.have("backtrace") is FALSE then NIL is returned.
+  #
+  #- Not yet available for Javascript, NIL is returned.
+  #-
+  #- Example:
+  #% PROC getAtIndex(int idx)
+  #%   if idx < 0
+  #%     THROW NEW("idx invalid", Z.callerPos())
+  #%   }
+  #% }
+  FUNC callerPos() Z.Pos
+    ###### Only for generating documentation, code is in ZLoader.zu.
+    RETURN NIL
+  }
+
+  #= Return the stack backtrace, the list of code positions that brought us to
+  #= the current position.
+  #- The position where Z.backtrace() is invoked is the first position, index
+  #- zero in the list.  The last position is a call from Main().
+  #
+  #- When Z.have("backtrace") is FALSE then NIL is returned.
+  #- When used in a method with @backtrace=no a compilation error is
+  #- produced.
+  #
+  #- Not yet available for Javascript, NIL is returned.
+  #
+  #- Example:
+  #% FOR p IN Z.backtrace()
+  #%   IO.print(p.ToString() .. ": " .. p.text)
+  #% }
+  FUNC backtrace() list<Z.Pos>
+    ###### Only for generating documentation, code is in ZLoader.zu.
+    RETURN NIL
+  }
+
+  #= Return the stack backtrace, just like backtrace(), but skip the first
+  #= |skip| entries.
+  #- To omit the position this function is called use Z.backtrace(1).
+  FUNC backtrace(int skip) list<Z.Pos>
+    ###### Only for generating documentation, code is in ZLoader.zu.
+    RETURN NIL
+  }
+
+  #= Return TRUE when |feature| is supported.
+  #- Known features are:
+  #
+  #- "backtrace"  - Wether stack backtrace is available
+  #
+  #- "resolve"    - Wether IO.resolve() is available
+  #
+  #- "fork"       - Wether fork() is available
+  #
+  #- "sigaction"  - Wether sigaction() is available
+  #
+  #- "portable"   - Whether compiling with --portable
+  #
+  #- "keepunused" - Whether compiling with --keepunused
+  #
+  #- "managed"    - Whether memory is being managed
+  #
+  #- "mswindows"  - Whether running on MS-Windows
+  #
+  #- Example:
+  #% GENERATE_IF Z.have("resolve")
+  #%   fname = IO.resolve(fname)
+  #% }
+  FUNC have(string feature) bool
+    ###### Only for generating documentation, code is in ZLoader.zu.
+    RETURN FALSE
+  }
+
+  #= Argument to Finish(): why it was called.
+  ENUM FinishReason
+    unused  #= The garbage collector detected object is unused and is about to
+            #= be freed.  Can postpone freeing the object by returning FAIL.
+    exit    #= The program is about to exit.  Cannot postpone this, the return
+            #= value is ignored.
+    leave   #= Leaving the scope in which the not-allocated object was
+            #= declared.  Also when the scope is left because of an exception.
+            #= Cannot postpone this, the return value is ignored.
+    cleared #= The variable was overwritten with NIL or a new object.
+            #= Cannot postpone this, the return value is ignored.
+    called  #= Called explicitly.  Returning OK will prevent Finish() from
+            #= being called automatically.
+    exitclean  #= The program is about to exit and it was compiled with
+               #= --exitclean.  After "exit" is used.
+  }
+
+  #= The language currently being generated: "C" or "JS"
+  #- For example, to generate code for JavaScript only:
+  #% GENERATE_IF Z.lang == "JS"
+  #% >>>
+  #%   javascript code
+  #% <<<
+  #% }
+  string lang
+
+  #= Set to TRUE when exiting the program.
+  #- Useful in a Finish method.
+  #
+  #- Example:
+  #% IF $done || Z.exiting
+  #%   $cleanup()
+  #% }
+  bool exiting
+
+}

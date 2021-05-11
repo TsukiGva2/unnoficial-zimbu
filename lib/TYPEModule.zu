@@ -1,0 +1,83 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module TYPE - type support
+#
+
+#= Methods for the type type.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE TYPEModule @public
+
+  #= The builtin type type.
+  #- It stores the properties of a type.
+  #
+  #- type can also be used in a SWITCH statement:
+  #% SWITCH anyVar.Type()
+  #%   CASE T.int
+  #%     IO.print("anyVar is an int")
+  #%   CASE T.string
+  #%     IO.print("anyVar is a string")
+  #% }
+  CLASS STARTtype @public
+    # For Zudocu: start of type class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return a string representation of the type.
+  #- E.g. "string", "enum Color", "object of Foo".
+  FUNC ToString(type this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return the size of the type.
+  #- This always returns the same value, which is the size of the type itself.
+  #- It does NOT return the size of the type it stores the properties of.
+  FUNC Size(type this) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return the type of the type.
+  #- This always results in the same type with the properties of a type.
+  FUNC Type(type this) type @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #= Return -1 or 1 when |other| differs from this type, zero when |other| is
+  #= equal to this type.
+  #
+  #- Whenter 1 or -1 is returned is consistent but unpredictable.  This makes
+  #- it possible to sort types, but the resulting order is undefined.
+  FUNC Compare(type this, type other) int @public
+    ###### Only for generating documentation.
+    RETURN 0
+  }
+
+  #= Return TRUE when |other| is equal to this type, FALSE otherwise.
+  FUNC Equal(type this, type other) bool @public
+    ###### Only for generating documentation.
+    RETURN FALSE
+  }
+
+  #= Return the name of the item.
+  #- E.g. "MyModule", "FooClass", "theVar".
+  #- When the object is NIL this returns "NIL".
+  FUNC name(type this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+
+  #! For Zudocu: end of type class.
+  CLASS ENDtype
+  }
+
+}

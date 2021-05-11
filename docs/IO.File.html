@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>IO.File class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='IO.html'>up:&nbsp;IO</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> IO.File
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> File for reading and writing.
+</p>
+<p class='ptext'> Use IO.fileWriter() and IO.fileReader() to create one.
+<p class='ptext'> NOTE: this is going to be split up in InputFile and OutputFile.
+</p>
+&nbsp;<br><div>Implements <A href='IO.I_ByteReader.html'>IO.I_ByteReader</A></div><div>Implements <A href='IO.I_CharReader.html'>IO.I_CharReader</A></div>&nbsp;<br><table><tr><td align='right'><small><span class='type'>unknown</span></small>&nbsp;</td><td class='nowrap'><A href='IO.File.html#$fd'><b>$fd</b></A><span class='attribute'><small> @directory</small></span>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readByte'><b>$readByte</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads and returns one byte.  When at end of file returns IO.eof.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readChar'><b>$readChar</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads one UTF-8 character.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAll'><b>$readAll</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the whole file and returns it as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAllBytes'><b>$readAllBytes</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the whole file and returns it as a byteString.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAll'><b>$readAll</b></a>(<small>size</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the file up to <b>size</b> bytes and returns it as a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readLine'><b>$readLine</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads and returns one line, excluding the terminating NL.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readLineRaw'><b>$readLineRaw</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads and returns one line, including the terminating NL.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAllLines'><b>$readAllLines</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the whole file and returns a list with all lines.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAllLinesRaw'><b>$readAllLinesRaw</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the whole file and returns a list with all lines.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAllLines'><b>$readAllLines</b></a>(<small>count</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the file and returns a list with up to <b>count</b> lines.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$readAllLinesRaw'><b>$readAllLinesRaw</b></a>(<small>count</small>) <small><span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Reads the file and returns a list with up to <b>count</b> lines.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$write'><b>$write</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> to the file.  Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$writeByte'><b>$writeByte</b></a>(<small>byte</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes byte <b>byte</b> to the file.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$writeAllLines'><b>$writeAllLines</b></a>(<small>lines</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>lines</b> to the file.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$flush'><b>$flush</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Flushes buffered output.  Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$close'><b>$close</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Closes the file, reading/writing will no longer be possible.
+ Returns FAIL when flushing output failed.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.File.html#$Finish'><b>$Finish</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @file</small></span>&nbsp;</td>
+<td> Destructor: closes the file if not closed already.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td colspan=3>Inherited from <A href='IO.Writer.html'>IO.Writer</A>:</td></tr>
+
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> converted to a string.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> as a decimal number.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> as "TRUE" or "FALSE".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> as "FAIL" or "OK".
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$write'><b>$write</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> depending on its actual type.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$writeChar'><b>$writeChar</b></a>(<small>char</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>char</b> as a UTF-8 byte sequence.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>text</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>text</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>number</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>number</b> and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>flag</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>flag</b> as "TRUE" or "FALSE" and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>ok</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>ok</b> as "FAIL" or "OK" and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small>arg</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes <b>arg</b> depending on its actual type and appends a newline.
+ Returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$print'><b>$print</b></a>(<small></small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Writes a newline and returns FAIL or OK.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='IO.Writer.html#$format'><b>$format</b></a>(<small>fmt, arguments</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Formats the string and writes it with a newline appended.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table>Known subclasses:<br><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<div><A href='IO.Socket.html'>IO.Socket</A></div></td></tr></table>
+&nbsp;<br></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'>unknown</span>&nbsp;<A name='$fd'><b>$fd</b></A><span class='attribute'> @directory</span></p><p class='pheader'><span class='keyword'>FUNC</span> <A name='$Finish'><b>$Finish</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @default</span><span class='attribute'> @file</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Destructor: closes the file if not closed already.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$close'><b>$close</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Closes the file, reading/writing will no longer be possible.
+ Returns FAIL when flushing output failed.
+</p>
+<p class='ptext'> When called twice the second one will always return FAIL.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$flush'><b>$flush</b></A>() <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Flushes buffered output.  Returns FAIL or OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAll'><b>$readAll</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the whole file and returns it as a string.
+</p>
+<p class='ptext'> This is done in binary mode, there are no checks for valid UTF-8
+ characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAll'><b>$readAll</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> size) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the file up to <b>size</b> bytes and returns it as a string.
+</p>
+<p class='ptext'> This is done in binary mode, there are no checks for valid UTF-8
+ characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAllBytes'><b>$readAllBytes</b></A>() <span class='type'><A class='typehref' href='BYTES.byteString.html'>byteString</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the whole file and returns it as a byteString.
+</p>
+<p class='ptext'> This is done in binary mode, there are no checks for valid UTF-8
+ characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAllLines'><b>$readAllLines</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the whole file and returns a list with all lines.
+</p>
+<p class='ptext'> This is like calling readLine() until reaching end of file.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAllLines'><b>$readAllLines</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> count) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the file and returns a list with up to <b>count</b> lines.
+</p>
+<p class='ptext'> This is like calling readLine() until reaching end of file or reading
+ <b>count</b> lines.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAllLinesRaw'><b>$readAllLinesRaw</b></A>() <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the whole file and returns a list with all lines.
+</p>
+<p class='ptext'> This is like calling readLineRaw() until reaching end of file.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readAllLinesRaw'><b>$readAllLinesRaw</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> count) <span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads the file and returns a list with up to <b>count</b> lines.
+</p>
+<p class='ptext'> This is like calling readLineRaw() until reaching end of file or reading
+ <b>count</b> lines.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readByte'><b>$readByte</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads and returns one byte.  When at end of file returns IO.eof.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readChar'><b>$readChar</b></A>() <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads one UTF-8 character.
+</p>
+<p class='ptext'> Throws E.IllegalByte when encountering an invalid UTF-8 byte.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readLine'><b>$readLine</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads and returns one line, excluding the terminating NL.
+</p>
+<p class='ptext'> Drops the CR characters that precede the NL but keeps CR characters
+ halfway the line.
+<p class='ptext'> When at end of file returns NIL.
+<p class='ptext'> This is done in binary mode, there are no checks for valid UTF-8
+ characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$readLineRaw'><b>$readLineRaw</b></A>() <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Reads and returns one line, including the terminating NL.
+</p>
+<p class='ptext'> When at end of file returns NIL.
+<p class='ptext'> This is done in binary mode, there are no checks for valid UTF-8
+ characters.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$write'><b>$write</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> text) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @default</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>text</b> to the file.  Returns FAIL or OK.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeAllLines'><b>$writeAllLines</b></A>(<span class='type'><A class='typehref' href='LIST.list.html'>list</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>&gt;</span> lines) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes <b>lines</b> to the file.
+</p>
+<p class='ptext'> Puts a line break after each line.
+<p class='ptext'> Returns FAIL when not all the lines could be written.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$writeByte'><b>$writeByte</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> byte) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @default</span><span class='attribute'> @replace</span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Writes byte <b>byte</b> to the file.
+</p>
+<p class='ptext'> Only the lower 8 bits of <b>byte</b> are used, the rest is ignored.
+ Returns FAIL when the byte could not be written.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,2933 @@
+Errors.EarlyInit: FALSE
+TestClass.earlyValue: 0
+ListTest.SomeVal.EarlyInit()
+Errors.EarlyInit: FALSE
+TestClass.earlyValue: 1
+Errors.EarlyInit: FALSE
+TestClass.earlyValue: 2
+Errors.EarlyInit: TRUE
+Another.Init()
+TestClass.someValue: 3
+Errors.Init: FALSE
+ListTest.SomeVal.Init()
+TestClass.someValue: 4
+Errors.Init: FALSE
+TestClass.someValue: 5
+Errors.Init: TRUE
+testdir/TryCatch.zu
+Stack backtrace (last called first):
+testdir/TryCatch.zu line 32 col 7: TryCatch.Class4.showStack()
+testdir/TryCatch.zu line 38 col 5: TryCatch.test1()
+testdir/TryCatch.zu line 14 col 5: TryCatch.test()
+testprog.zu line 287 col 3: Main()
+TRY 1 start
+TRY 1 caught: should not be called
+TRY 1 clean up
+TRY 2 start
+TRY 2 caught: should not be called
+TRY 3 start
+TRY 3 else
+TRY 4 start
+TRY 4 else
+TRY 4 clean up
+TRY 5 start
+TRY 5 else
+TRY 6 outer start
+TRY 6 start
+TRY 6 clean up
+TRY 6 outer caught: should not be called
+TRY 7 start
+TRY 7 caught: should not be called
+TRY 7 finally
+TRY 7 outer caught: catch this
+TRY 8 start
+TRY 8 caught: should not be called
+TRY 8 outer caught: catch this
+First line in testfile: # A Zimbu program for doing basic compiler tests.
+finally cleaning up
+return in try
+tryWithCatch caught: testdir/TryCatch.zu line col 14: Exception: Accessing NIL list
+Stack backtrace (last called first):
+testdir/TryCatch.zu line 182 col 14: TryCatch.tryWithCatch()
+testdir/TryCatch.zu line 163 col 5: TryCatch.test2()
+testdir/TryCatch.zu line 15 col 5: TryCatch.test()
+testprog.zu line 287 col 3: Main()
+testdir/TryCatch.zu line col 20: Exception: Accessing NIL list - tryNested caught
+with val finally
+throwOne caught this is an error
+throwOne caught this is an interrupt
+test3 not caught: EXIT 123
+For: one
+After the inner break
+For: three
+After the loop
+After the outer break
+For: five
+After the inner continue
+For: six
+After the inner continue
+For: seven
+For: eight
+After the continue loop
+After the outer continue
+f is 4
+test6 caught SEGV: testdir/TryCatch.zu line col 12: Exception: signal SEGV
+Stack backtrace (last called first):
+testdir/TryCatch.zu line 304 col 12: TryCatch.breakMe()
+testdir/TryCatch.zu line 311 col 15: TryCatch.test6()
+testdir/TryCatch.zu line 22 col 5: TryCatch.test()
+testprog.zu line 287 col 3: Main()
+test6 caught SEGV again: testdir/TryCatch.zu line col 12: Exception: signal SEGV
+Stack backtrace (last called first):
+testdir/TryCatch.zu line 304 col 12: TryCatch.breakMe()
+testdir/TryCatch.zu line 318 col 15: TryCatch.test6()
+testdir/TryCatch.zu line 22 col 5: TryCatch.test()
+testprog.zu line 287 col 3: Main()
+SYS says hello
+testing IO
+Some in testdir
+Arg -1 == 'NIL'
+Arg 0 == 'argone'
+Arg 1 == 'argtwo'
+Arg 2 == '-a'
+Arg 3 == 'NIL'
+not true is FALSE and not false is TRUE
+Status: OK
+Status: FAIL
+fail is FAIL and !fail is OK
+567 one two three
+sum: 45
+Great value-3-4-five
+123 nothing 5
+Something object: another nothing and boo
+eof
+Koken type: eof, value: token
+next method: Next, member: Next
+next-next member: NextNext, method: NextNext
+Input lnum = 88 and 76
+nx: 4 == 4 and 3 == 3
+42 is 12 plus 30
+Global
+15: called getNone
+15: called getNone
+got 32
+class Node 3
+Node name is not set
+blue
+black
+red
+blue
+i = 0
+this is right
+yes is TRUE and no is FALSE
+hello world!
+C code
+yes, it is 42
+61
+int.Size() = 8@
+== Hello IS Hello == othern IS othern == nodem 
+testdir/ListTest.zu
+[7, 7, 7, 7, 7, 7, 7]
+[1, 2, 3, 4, 5, 6, 7]
+["five", "five", "five", "five", "five"]
+hello there and hello there
+111 222 333 444 888 999
+ remove 999 remove 888 remove 444 remove 333 remove 222 remove 111
+3 items: jopjipjap
+After clear: 0
+slice: ["3", "4"]
+stringList: ["1", "2"]  partList: ["3", "4"]
+["a", "b", "c", "4"]
+a b c 4 
+a b c 4 
+[4, 3, 2, 1]
+4 3 2 1 
+ListItem one=1
+ListItem two=2
+Found: 2
+enum value: one
+enum value: two
+enum value: three
+string char: 49
+string char: 50
+string char: 51
+string char: 228
+string char: 98
+string char: 231
+string char: 100
+string char: 233
+string char: 102
+byteString char: 49
+byteString char: 50
+byteString char: 51
+byteString char: 195
+byteString char: 164
+byteString char: 98
+byteString char: 195
+byteString char: 167
+byteString char: 100
+byteString char: 195
+byteString char: 169
+byteString char: 102
+Unsorted: ["zoo", "bar", "foo", "aap"]
+Sorted: ["aap", "bar", "foo", "zoo"]
+Sorted again: ["aap", "bar", "foo", "zoo"]
+Sorted reverse: ["zoo", "foo", "bar", "aap"]
+joined: zoo foo bar aap
+joined with +: zoo + foo + bar + aap
+Unsorted: [one, two, twO, onemore]
+Sorted: [one, onemore, twO, two]
+Sorted again: [one, onemore, twO, two]
+Reverse sorted: [two, twO, onemore, one]
+[]
+[123]
+[123, 123, 123, 123, 123]
+["one", "one", "one"]
+[foo, foo, foo]
+empty + empty: []
+empty + some: [5, 6]
+some + empty: [5, 6]
+some + some: [5, 6, 1, 3]
+empty + empty: []
+empty + some: ["5", "6"]
+some + empty: ["5", "6"]
+some + some: ["5", "6", "1", "3"]
+empty + NIL: []
+empty + empty: []
+empty + some: [5, 6]
+some + empty: [5, 6]
+some + some: [5, 6, 1, 3]
+empty + NIL: []
+empty + empty: []
+empty + some: ["5", "6"]
+some + empty: ["5", "6"]
+some + some: ["5", "6", "1", "3"]
+Removed 1, remains: [2]
+Removed 2, remains: []
+Removed 2, remains: [1]
+Removed 1, remains: []
+Removed 2, remains: [1, 3]
+Removed 3, remains: [1]
+Removed one, remains: ["two"]
+Removed two, remains: []
+Removed two, remains: ["one"]
+Removed one, remains: []
+Removed two, remains: ["one", "three"]
+Removed three, remains: ["one"]
+Removed two, remains: ["one", "three"]
+Removed three, remains: ["one"]
+Cleared two, remains: ["one", "three"]
+Removed xxx, remains: ["one", "three"]
+Removed three, remains: ["one"]
+Inserted: [1, 2, 3]
+Inserted: ["one", "two", "three"]
+cleared int: [2, 3]
+cleared string: ["2", "3"]
+String list: 0-1-2
+Number list: 0-1-2
+one == one
+two == two
+three == three
+three == three
+two == two
+one == one
+1 == 1
+3 == 3
+["ONE", "two", "LAST"]
+["nul", "twee", "LAST"]
+caught out of range 3
+caught out of range -4
+caught set out of range 3
+caught set out of range -4
+one two three
+one/two/three
+1 2 3
+1-2-3
+a b c
+a = b = c
+["one", "two"] ["three", "four"]
+["one", "two"],["three", "four"]
+list with iobjects: [Top one, Bar two]
+list type: list<object of Top.I>
+Found top: 0 and bar: 1
+prefilled list with iobjects: [Top one, Top one, Top one, Top one, Top one]
+NIL list: NIL
+Colors list: [orange, black, blue]
+positiveMax: 7
+empty Max: 1
+one Max: 8
+total: 10
+empty total: 0
+one total: 8
+odd: [1, 3, 5]
+empty odd: []
+empty result odd: []
+mapTo: ["1:", "-8:", "3:", "4:"]
+keyMapTo: ["0: 1", "1: -8", "2: 3", "3: 4"]
+reduceTo: 'values: 1 -8 3 4'
+int list: 11, 278, 196641, 30064771116, 
+int8 list: 11, 22, 33, 44, 
+int16 list: 11, 278, 33, 44, 
+int32 list: 11, 278, 196641, 44, 
+nat list: 11, 278, 196641, 30064771116, 
+byte list: 11, 22, 33, 44, 
+nat16 list: 11, 278, 33, 44, 
+nat32 list: 11, 278, 196641, 44, 
+float list: 1.1, 1.2e-05, 199999, 1.4e+100, 
+float32 list: 1.1, 1.2e-05, 199999, inf, 
+int list copy: [11, 278, 196641, 30064771116]
+int8 list copy: [11, 22, 33, 44]
+int16 list copy: [11, 278, 33, 44]
+int32 list copy: [11, 278, 196641, 44]
+nat list copy: [11, 278, 196641, 30064771116]
+nat8 list copy: [11, 22, 33, 44]
+nat16 list copy: [11, 278, 33, 44]
+nat32 list copy: [11, 278, 196641, 44]
+float list copy: [1.1, 1.2e-05, 199999, 1.4e+100]
+float32 list copy: [1.1, 1.2e-05, 199999, inf]
+1234567890123-123-12345-123456789
+1234567890123-123-12345-123456789
+12345-12345
+[11, 1234567890124, 196643, 30064771119]
+[11, 124, 35, 47]
+[11, 12346, 35, 47]
+[11, 123456790, 196643, 47]
+[11, 1234567890124, 196643, 30064771119]
+[11, 124, 35, 47]
+[11, 12346, 35, 47]
+[11, 123456790, 196643, 47]
+[1.1, 12346, 200001, 1.4e+100]
+[1.1, 12346, 200001, inf]
+[9, 1234567890122, 196641, 30064771117]
+[9, 122, 33, 45]
+[9, 12344, 33, 45]
+[9, 123456788, 196641, 45]
+[9, 1234567890122, 196641, 30064771117]
+[9, 122, 33, 45]
+[9, 12344, 33, 45]
+[9, 123456788, 196641, 45]
+[-0.9, 12344, 199999, 1.4e+100]
+[-0.9, 12344, 199999, inf]
+9+1234567890122+196641+30064771117
+9+122+33+45
+9+12344+33+45
+9+123456788+196641+45
+9*1234567890122*196641*30064771117
+9*122*33*45
+9*12344*33*45
+9*123456788*196641*45
+-0.9_12344_199999_1.4e+100
+-0.9_12344_199999_inf
+[-888, 1, 7777, 999999]
+[999999, 7777, 1, -888]
+[-88, 1, 7, 99]
+[99, 7, 1, -88]
+[-888, 1, 77, 99]
+[99, 77, 1, -888]
+[-888, 1, 77, 9999]
+[9999, 77, 1, -888]
+[1, 888, 7777, 999999]
+[999999, 7777, 888, 1]
+[1, 7, 99, 201]
+[201, 99, 7, 1]
+[1, 77, 99, 60123]
+[60123, 99, 77, 1]
+[1, 77, 888, 9999]
+[9999, 888, 77, 1]
+[1, 888, 7777, 989999]
+[989999, 7777, 888, 1]
+[1, 77, 888, 9899]
+[9899, 888, 77, 1]
+i ext i8: [111, -222, 33, -127]
+i ext i16: [111, -222, 33, -127, 44, -12723]
+i ext i32: [111, -222, 33, -127, 44, -12723, 55, -1234322723]
+n ext n8: [111, 222, 33, 244]
+n ext n16: [111, 222, 33, 244, 44, 31211]
+n ext n32: [111, 222, 33, 244, 44, 31211, 55, 31211234]
+i ext n8: [111, -222, 33, 244]
+i ext n16: [111, -222, 33, 244, 44, 31211]
+i ext n32: [111, -222, 33, 244, 44, 31211, 55, 31211234]
+f ext f32: [1.111, -2.222, 3.33, -4.444]
+i concat i8: [111, -222, 33, -127]
+i concat i16: [111, -222, 44, -12723]
+i concat i32: [111, -222, 55, -1234322723]
+n concat n8: [111, 222, 33, 244]
+n concat n16: [111, 222, 44, 31211]
+n concat n32: [111, 222, 55, 31211234]
+i concat n8: [111, -222, 33, 244]
+i concat n16: [111, -222, 44, 31211]
+i concat n32: [111, -222, 55, 31211234]
+f concat f32: [1.111, -2.222, 3.33, -4.444]
+i ins: [111, 23433, -222]
+i8 ins: [33, 23, -127]
+i16 ins: [44, 2345, -12723]
+i32 ins: [55, -2345, -1234322723]
+n ins: [111, 233, 222222]
+n8 ins: [33, 123, 244]
+n16 ins: [44, 2345, 31211]
+n32 ins: [55, 2345, 31211234]
+f ins: [1.11, 3.333, 2.222]
+f32 ins: [3.33, 5.555, 4.444]
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+1 ! -1
+18446744073709551615: 18446744073709551615
+255: 255
+65535: 65535
+4294967295: 4294967295
+0: 1
+1: 2
+2: 3
+0: 1.1
+1: 2.2
+2: 3.3
+0: one
+1: two
+2: three
+one
+two
+three
+0: one
+1: two
+2: three
+equal list: TRUE
+equal list: TRUE
+not equal list: FALSE
+equal list: TRUE
+not equal list: FALSE
+DeferTest
+Busy
+child: 8 parent
+child: 8 eight
+7 seven
+FAIL
+103
+102
+101
+100
+print string
+fooMore.doIt(arg)
+foo.doIt()
+function call
+doIt()
+deferAndThrow()
+caught exception after DEFER
+in testExceptionInDefer()
+last DEFER
+first DEFER
+in testDeferWithCatch()
+caught exception
+after CATCH
+DEFER 3
+DEFER 2
+DEFER 1
+dict type: dict<string, string>
+dict has list: FALSE
+[:]
+["one": "www"]
+["one": "111"]
+key xxx intentionally not found
+[:]
+["one": 1, "two": 2]
+[1: "one", 2: "two"]
+one is 1
+two is 2
+1 is one
+2 is two
+copy: ["one": 1, "two": 2]
+copy isOrdered: FALSE
+empty: [:]
+not empty: ["five": 5]
+dict add correctly fails for existing key
+empty again: [:]
+NIL dict: NIL
+dictList type: dict<string, string>
+dictList has list: TRUE
+[:]
+["one": "www"]
+["one": "111"]
+key xxx intentionally not found
+[:]
+["one": 1, "two": 2]
+[1: "one", 2: "two"]
+one is 1
+two is 2
+1 is one
+2 is two
+copy: ["one": 1, "two": 2]
+copy isOrdered: TRUE
+empty: [:]
+not empty: ["five": 5]
+dict add correctly fails for existing key
+empty again: [:]
+keys(): ["IS", "ELSE", "FUNC", "ENUM", "EXIT", "EXTENDS", "BITS", "DO", "BREAK", "CONTINUE", "CLASS", "IN", "IO", "FINAL", "EQUAL", "ISA", "IMPLEMENTS", "DEFINE", "ISNOTA", "FOR", "IF", "INTERFACE", "ELSEIF", "DEFAULT", "IMPORT", "FALSE", "CASE", "FAIL", "ANY", "ARG", "ISNOT"]
+values(): [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+dictList keys(): ["ANY", "ARG", "BITS", "BREAK", "CASE", "CLASS", "CONTINUE", "DEFAULT", "DEFINE", "DO", "ELSE", "ELSEIF", "ENUM", "EQUAL", "EXIT", "EXTENDS", "FAIL", "FALSE", "FINAL", "FOR", "FUNC", "IF", "IMPLEMENTS", "IMPORT", "IN", "INTERFACE", "IO", "IS", "ISA", "ISNOT", "ISNOTA"]
+dictList values(): [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+sorted dict[hello] = 1
+sorted dict[in] = 2
+sorted dict[verylongname to check with double byte length field verylongname to check with double byte length field verylongname to check with double byte length field] = 4
+sorted dict[world] = 3
+dict[hello] = 1
+dict[verylongname to check with double byte length field verylongname to check with double byte length field verylongname to check with double byte length field] = 4
+dict[in] = 2
+dict[world] = 3
+sorted value: 1
+sorted value: 2
+sorted value: 3
+sorted value: 4
+value: 1
+value: 4
+value: 2
+value: 3
+dictList[hello] = 1
+dictList[in] = 2
+dictList[verylongname to check with double byte length field verylongname to check with double byte length field verylongname to check with double byte length field] = 4
+dictList[world] = 3
+value: 1
+value: 2
+value: 3
+value: 4
+dict[a a] = 1
+dict[a b] = 2
+dict[a c] = 3
+value: 1
+value: 2
+value: 3
+dictList[a a] = 1
+dictList[a b] = 2
+dictList[a c] = 3
+value: 1
+value: 2
+value: 3
+dict size: 50000
+dictList size: 50000
+iobject dict: TRUE
+iobject keys: TRUE
+iobject values: TRUE
+keys and values: ["key: {nr: 5}", "key: {nr: 7}", "value: 55", "value: 77"]
+by index: 77
+iobject item dict: [55: {nr: 5}, 77: {nr: 7}]
+iobject keys: [55, 77]
+iobject values: [{nr: 5}, {nr: 7}]
+keys and values: ["key: 55", "key: 77", "value: {nr: 5}", "value: {nr: 7}"]
+by index: {nr: 7}
+iobject inited dict: [3: {nr: 3}, 5: {nr: 5}, 8: {nr: 8}, 13: {nr: 3}, 15: {nr: 5}, 18: {nr: 8}, 23: {nr: 3}, 25: {nr: 5}, 28: {nr: 8}, 33: {nr: 3}, 35: {nr: 5}, 38: {nr: 8}, 43: {nr: 3}, 45: {nr: 5}, 48: {nr: 8}, 53: {nr: 3}, 55: {nr: 5}, 58: {nr: 8}]
+a: 1
+b: 6
+["a": 1, "b": 6]
+1: one
+4: two
+[1: "one", 4: "two"]
+a: 1
+b: 6
+["a": 1, "b": 6]
+1: one
+4: two
+[1: "one", 4: "two"]
+Removed one: 1
+nothing left: [:]
+Removed one: 1
+nothing left: [:]
+Removed one: ONE
+nothing left: [:]
+Removed one: 1
+nothing left: [:]
+Removed one: 1
+nothing left: [:]
+Removed one: ONE
+nothing left: [:]
+Colors dict: [1: orange, 33: black, 9: blue]
+Colors dict: [black: "black", red: "red"]
+black: black
+red: red
+Colors dict: [33: black, 1: orange, 9: blue]
+Colors dict: [red: "red", black: "black"]
+Colors keys: [red, black]
+red: red
+black: black
+Filling the dict
+Filling the dict
+11-22-33-44-55
+[1: 11, 2: 22, -134: 33, 268435455: 55, 65535: 44]
+11-22-33-44
+[-112: 33, 1: 11, 2: 22, 127: 44]
+11-22-33-44-55
+[32512: 44, 1: 11, 2: 22, -134: 33, 26843: 55]
+11-22-33-44-55
+[2130706432: 44, 1: 11, 2: 22, -134: 33, 268435455: 55]
+11-22-33-44-55
+[1: 11, 2: 22, 134: 33, 268435455: 55, 65535: 44]
+11-22-33-44
+[112: 33, 1: 11, 2: 22, 127: 44]
+11-22-33-44-55
+[32512: 44, 1: 11, 2: 22, 134: 33, 26843: 55]
+11-22-33-44-55
+[2130706432: 44, 1: 11, 2: 22, 134: 33, 268435455: 55]
+11-22-33-44-55
+[0.0002: 22, 1.23: 11, -1.34e+79: 33, 26843.5: 55, 65535: 44]
+11-22-33-44
+[0.0002: 22, 1.34: 11, -11.2: 33, 1.27e+34: 44]
+[33: -134, 22: -2, 55: 268435455, 11: 1, 44: 65535]
+[33: -127, 22: -2, 11: 1, 44: 126]
+[33: -32512, 22: -2, 55: 26843, 11: 1, 44: 32512]
+[33: -32512, 22: -2, 55: 268435455, 11: 1, 44: 2130706432]
+[33: 134, 22: 22, 55: 268435455, 11: 1, 44: 65535]
+[33: 127, 22: 22, 55: 251, 11: 1, 44: 255]
+[33: 32512, 22: 22, 55: 26843, 11: 1, 44: 65535]
+[33: 32512, 22: 22, 55: 268435455, 11: 1, 44: 4294967295]
+mapped: [1: 14, 2: 25, 3: 36]
+keyMapped: [1: 15, 2: 27, 3: 39]
+mapTo: [1: "15:", 2: "27:", 3: "39:"]
+keyMapTo: [1: "1: 15", 2: "2: 27", 3: "3: 39"]
+mapped: [2: 25, 3: 36, 1: 14]
+keyMapped: [2: 27, 3: 39, 1: 15]
+mapTo: [2: "27:", 3: "39:", 1: "15:"]
+keyMapTo: [2: "2: 27", 3: "3: 39", 1: "1: 15"]
+1: one
+2: two
+four: 4
+three: 3
+FAIL: 5
+1.234: 6
+55: {nr: 8}
+44: {nr: 7}
+one
+two
+three
+1: one
+2: two
+3: three
+three
+one
+two
+33: three
+11: one
+22: two
+equal dict: TRUE
+equal dict: TRUE
+not equal dict: FALSE
+equal dict: TRUE
+not equal dict: FALSE
+not equal dict: FALSE
+testdir/DotNilTest.zu
+zero size: 0 - 0 - 0 - 0 - 0
+zero size multiDict: 0
+zero size set: 0
+zero size sortedList: 0
+values size: 0
+mlist is NIL
+olist is NIL
+string size: 0
+string ToString: NIL
+string toVarString: NIL
+string asByteString: NIL
+toInt: 0, with def: 23
+binToInt: 0, with def: 24
+hexToInt: 0, with def: 25
+quotedToInt: 0, with def: 33
+quotedBinToInt: 0, with def: 34
+quotedHexToInt: 0, with def: 35
+toUpper: NIL
+toLower: NIL
+toUpperAscii: NIL
+toLowerAscii: NIL
+find char: -1
+find char: -1
+find string: -1
+findLast char: -1
+findLast string: -1
+startsWith: FALSE
+endsWith: FALSE
+slice one: NIL
+slice two: NIL
+split: NIL
+split arg: NIL
+split any: NIL
+escape: NIL
+replace: NIL
+replaceAll: NIL
+trim: NIL
+padLeft: NIL
+padRight: NIL
+reverse: NIL
+Compare NIL: 0
+Compare foo: -1
+byteString size: 0
+byteString ToString: NIL
+byteString latin1ToString: NIL
+byteString toVarString: NIL
+byteString toVarByteString: NIL
+byteString asByteString: NIL
+get: 0
+getByte: 0
+getChar: 0
+getCharSize: 0
+find char: -1
+find char: -1
+find string: -1
+findLast char: -1
+findLast string: -1
+startsWith: FALSE
+endsWith: FALSE
+slice one: NIL
+slice two: NIL
+split: NIL
+split arg: NIL
+varString size: 0
+varString ToString: NIL
+varString toVarString: NIL
+varString asVarByteString: NIL
+toInt: 0, with def: 53
+binToInt: 0, with def: 54
+hexToInt: 0, with def: 55
+quotedToInt: 0, with def: 43
+quotedBinToInt: 0, with def: 44
+quotedHexToInt: 0, with def: 45
+toUpper: NIL
+toLower: NIL
+toUpperAscii: NIL
+toLowerAscii: NIL
+find char: -1
+find char: -1
+find string: -1
+findLast char: -1
+findLast string: -1
+startsWith: FALSE
+endsWith: FALSE
+Caught NIL varString add()
+slice one: NIL
+slice two: NIL
+split: NIL
+split arg: NIL
+split any: NIL
+varByteString size: 0
+varByteString ToString: NIL
+varByteString toVarString: NIL
+varByteString asVarString: NIL
+varByteString toByteString: NIL
+varByteString toVarByteString: NIL
+find char: -1
+find char: -1
+find string: -1
+findLast char: -1
+findLast string: -1
+startsWith: FALSE
+endsWith: FALSE
+slice one: NIL
+slice two: NIL
+Caught NIL varByteString add()
+split: NIL
+split arg: NIL
+NIL Bar values: []
+NIL Foo values: []
+not-NIL Foo values: []
+fromtext: # AllTypes-1 size: 184 bytes
+one_bool: TRUE
+one_enum: two
+one_int: 8
+one_int32: 32
+one_int64: 123456789012
+one_message: {
+  # AMessage-2 size: 8 bytes
+  name: "name"
+  number: 42
+}
+one_string: "asdf"
+req_bool: FALSE
+req_enum: three
+req_int: 12
+req_int32: 132
+req_int64: 234567890123
+req_message: {
+  # AMessage-3 size: 11 bytes
+  name: "reqname"
+  number: 43
+}
+req_string: "foo"
+rep_bool: FALSE
+rep_bool: TRUE
+rep_enum: one
+rep_enum: two
+rep_enum: three
+rep_enum: unknown
+rep_int: 18
+rep_int: 19
+rep_int32: 133
+rep_int32: 134
+rep_int64: 345678901234
+rep_int64: 456789012345
+rep_message: {
+  # AMessage-4 size: 11 bytes
+  name: "repname"
+  number: 44
+}
+rep_message: {
+  # AMessage-5 size: 12 bytes
+  name: "reppname"
+  number: 45
+}
+rep_string: "foobar"
+rep_string: "barfoo"
+
+valid: TRUE
+tobin/frombin: # AllTypes-1 size: 184 bytes
+one_bool: TRUE
+one_enum: two
+one_int: 8
+one_int32: 32
+one_int64: 123456789012
+one_message: {
+  # AMessage-2 size: 8 bytes
+  name: "name"
+  number: 42
+}
+one_string: "asdf"
+req_bool: FALSE
+req_enum: three
+req_int: 12
+req_int32: 132
+req_int64: 234567890123
+req_message: {
+  # AMessage-3 size: 11 bytes
+  name: "reqname"
+  number: 43
+}
+req_string: "foo"
+rep_bool: FALSE
+rep_bool: TRUE
+rep_enum: one
+rep_enum: two
+rep_enum: three
+rep_enum: unknown
+rep_int: 18
+rep_int: 19
+rep_int32: 133
+rep_int32: 134
+rep_int64: 345678901234
+rep_int64: 456789012345
+rep_message: {
+  # AMessage-4 size: 11 bytes
+  name: "repname"
+  number: 44
+}
+rep_message: {
+  # AMessage-5 size: 12 bytes
+  name: "reppname"
+  number: 45
+}
+rep_string: "foobar"
+rep_string: "barfoo"
+
+valid all: TRUE
+not valid bool: FALSE
+valid bool: TRUE
+not valid enum: FALSE
+valid enum: TRUE
+not valid int: FALSE
+valid int: TRUE
+not valid int32: FALSE
+valid int32: TRUE
+not valid int64: FALSE
+valid int64: TRUE
+not valid msg: FALSE
+valid msg: TRUE
+not valid string: FALSE
+valid string: TRUE
+line 1: Missing : after field name
+line 2: Missing : after field name
+line 1: Missing space after field name
+line 1: Invalid number or missing line break
+line 1: Expected TRUE or FALSE
+line 1: Invalid bool value or missing line break
+line 1: Missing start double quote for string
+line 2: Missing end double quote of string
+line 1: Missing line break after string
+line 1: Truncated file
+line 1: Missing { for start of message
+line 1: Missing line break after {
+line 5: Missing } for end of message
+line 4: Missing line break after }
+ignored field: # AllTypes-1 size: 2 bytes
+one_int: 34
+
+# Top-1 size: 18 bytes
+name: "top 1"
+bot: {
+  # Bot-2 size: 9 bytes
+  name: "bot 1"
+  top: {
+    # reference: Top-1
+  }
+}
+
+testdir/ReturnTest.zu
+s: no, b: FAIL
+s: yes, b: OK
+Min: -4, Max: 77
+a: 1, f: 2
+[0, 2, 0]
+[0, 0, 2]
+["one": 0, "two": 2]
+["one": 0, "two": 2, "three": 1]
+["one": 0, "two": 2]
+["one": 0, "two": 2, "three": 2]
+["one": 0, "two": 2]
+["one": 0, "two": 2, "three": 2]
+s: yes, Foo.nr: 8
+1 - 2
+really - 4
+s: no, st: FAIL
+4 - TRUE - yes - [1, 2]
+1 - 2
+1 - 2
+2 - 1
+2, 1, 3
+1, 3, 2
+3, 2, 1
+3, yes, 2, no
+2, no, 3, yes
+child: name, nr: 8
+parent nr: 4
+Ints: 11, 1234, 123456, 44
+foo.a: 4
+foo2.a: 8
+bar.a: 4, bar.b: 9
+bar2.a: 1, bar2.b 2
+a is 7
+Foo2.count is 1
+Bar2.count7 is 8
+a is 8
+Foo2.count is 1
+Bar2.count7 is 9
+f3.a is 1
+b3.a is 2
+b3.b is 3
+f4.a is 11
+f4.s is two
+b4.a is 12
+b4.b is 13
+b4.s is three
+{number: 1234, bar: {name: "Peter", job: "theonly"}, members: ["one", "two", "three"]}
+{number: 1234, bar: {name: "Peter", job: "mechanic"}, members: ["one", "two", "three"]}
+{number: 0, bar: NIL, members: ["empty"]}
+testdir/TimeTest.zu
+2013/02/10 15:58:24
+Sun, 2013 Feb 10 15:58:24
+Sunday, 2013 February 10 15:58:24
+1360508304000000
+1360508304000000
+2013/02/10 15:58:24
+2013/02/10 15:58:00
+testdir/Bits.zu
+bit one
+bit two
+bit "three"
+count is 5; unsigned is 1
+flags.one: FALSE, flags.two: TRUE, flags.three: FALSE, flags.four: TRUE
+flags.color: green and also: green
+color is still green
+count is -6; unsigned is 3
+OR: TRUE/TRUE/TRUE
+AND: FALSE/FALSE/TRUE
+a: 5, b: 6, c: 4
+5 >> 1 = 2
+8 >> 2 = 2
+8 << 1 = 16
+1 << 4 = 16
+echoInt(5, -)
+doNothing()
+func ref: 8
+getInt(9, blah)
+here found: TRUE
+incremented 2 to 6
+&nr is NIL
+node name is by reference, different object
+testdir/IntTest.zu
+-234
+-234
+T.int.min: -9223372036854775808
+T.int.max: 9223372036854775807
+T.int8.min: -128
+T.int8.max: 127
+T.int16.min: -32768
+T.int16.max: 32767
+T.int32.min: -2147483648
+T.int32.max: 2147483647
+0
+1
+10
+123
+1'234
+12'345
+123'456
+1'234'567
+-1
+-10
+-123
+-1'234
+-12'345
+-123'456
+-1'234'567
+0
+3
+b
+7f
+ff
+ffff
+fffffff
+7fffffff
+000
+03
+0000000b
+007f
+0ff
+0000000000000000ffff
+fffffff
+7fffffff
+ABCD
+00ABCD
+Yes: -0TRUE-9TRUE-0TRUE-9TRUE-aTRUE-ATRUE-fTRUE-FTRUE- TRUE-\tTRUE-\nTRUE-\x7fTRUE-\u00a0TRUE- TRUE-\tTRUE-\nTRUE-\x7fTRUE-\xa0TRUE-aTRUE-zTRUE-ATRUE-ZTRUE-aTRUE-zTRUE-ATRUE-ZTRUE
+No: -aFALSE--FALSE-gFALSE-GFALSE-zFALSE-ZFALSE--FALSE-_FALSE-!FALSE-aFALSE-~FALSE-¡FALSE-!FALSE-aFALSE-~FALSE-¡FALSE-0FALSE--FALSE-.FALSE-/FALSE-AFALSE-ZFALSE-aFALSE-zFALSE
+-123
+-123
+-123
+-123
+-0123
+-00000000123
+123
+123
+123
+0123
+00123
+000000000123
+ef
+00ef
+00001234
+12345678
+40 / 5 / 2 = 4 (4)
+40 / 5 * 2 = 16 (16)
+40 / 5 % 3 = 2 (2)
+123
+123
+9223372036854775807
+9223372036854775808
+floor(): 1 , -1
+ceil(): 1 , -1
+round(): 1 , -1
+trunc(): 1 , -1
+abs(): 1 , 1
+exp(): 2.71828 , 20.0855
+log(): 0 , 1.09861
+log10(): 0 , 0.477121
+sqrt(): 1 , 1.73205
+pow(): 1 , 0.333333
+sin(): 0.841471
+sinh(): 1.1752
+tan(): 1.55741
+tanh(): 0.761594
+cos(): 0.540302
+cosh(): 1.54308
+acos(): 0
+asin(): 1.5708
+atan(): 0.785398
+atan2(): 2.35619
+8
+1234
+int
+1
+123
+int8
+2
+1234
+int16
+4
+1234
+int32
+4.Compare(4): 0
+4.Compare(8): -1
+8.Compare(4): 1
+max.Compare(max): 0
+max.Compare(min): 1
+min.Compare(min): 0
+min.Compare(max): -1
+4.Equal(4): TRUE
+8.Equal(4): FALSE
+testdir/NatTest.zu
+T.nat.min: 0
+T.nat.max: 18446744073709551615
+T.byte.min: 0
+T.byte.max: 255
+T.nat16.min: 0
+T.nat16.max: 65535
+T.nat32.min: 0
+T.nat32.max: 4294967295
+255
+255UL
+65535
+65535UL
+4294967295
+4294967295UL
+18374686479671623680
+18374686479671623680UL
+-72057594037927936
+123
+123
+123
+0123
+00123
+000000000123
+ef
+00ef
+00001234
+12345678
+0
+3
+b
+7f
+ff
+ffff
+fffffff
+7fffffff
+000
+03
+0000000b
+007f
+0ff
+0000000000000000ffff
+fffffff
+7fffffff
+ABCD
+00ABCD
+floor(): 1
+ceil(): 1
+round(): 1
+trunc(): 1
+abs(): 1
+exp(): 2.71828 , 20.0855
+log(): 0 , 1.09861
+log10(): 0 , 0.477121
+sqrt(): 1 , 1.73205
+pow(): 1 , 0.333333
+sin(): 0.841471
+sinh(): 1.1752
+tan(): 1.55741
+tanh(): 0.761594
+cos(): 0.540302
+cosh(): 1.54308
+acos(): 0
+asin(): 1.5708
+atan(): 0.785398
+atan2(): 2.35619
+8
+1234
+nat
+1
+123
+ 123
+009f
+0f
+byte
+2
+1234
+nat16
+4
+1234
+nat32
+4.Compare(4): 0
+4.Compare(8): -1
+8.Compare(4): 1
+max.Compare(max): 0
+max.Compare(min): 1
+min.Compare(min): 0
+min.Compare(max): -1
+4.Equal(4): TRUE
+8.Equal(4): FALSE
+testdir/BoolTest.zu
+1
+FALSE
+FALSE
+FALSE
+0
+0
+bool
+1
+TRUE
+TRUE
+TRUE
+1
+1
+bool
+TRUE.Compare(FALSE): 1
+FALSE.Compare(FALSE): 0
+FALSE.Compare(TRUE): -1
+TRUE.Compare(TRUE): 0
+TRUE.Equal(FALSE): FALSE
+FALSE.Equal(FALSE): TRUE
+FALSE.Equal(TRUE): FALSE
+TRUE.Equal(TRUE): TRUE
+testdir/StatusTest.zu
+1
+FAIL
+FAIL
+FAIL
+0
+0
+status
+1
+OK
+OK
+OK
+1
+1
+status
+OK.Compare(FAIL): 1
+FAIL.Compare(FAIL): 0
+FAIL.Compare(OK): -1
+OK.Compare(OK): 0
+OK.Equal(FAIL): FALSE
+FAIL.Equal(FAIL): TRUE
+FAIL.Equal(OK): FALSE
+OK.Equal(OK): TRUE
+testdir/MatchFunction.zu
+int
+int8
+int16
+int32
+nat
+byte
+nat16
+nat32
+nat
+int
+float
+int-int
+nat-nat
+int-nat
+nat-int
+nat-nat
+nat-int
+int-nat
+testdir/IteratorTest.zu
+1+
+2+
+3+
+1/
+2/
+3/
+1,
+2,
+3,
+1 again
+2 peek
+2 really
+3 peek
+3 peek
+FOR over container
+?: Cone
+?: Ctwo
+?: Cthree
+0: Cone
+1: Ctwo
+2: Cthree
+testdir/Inherit.zu
+Top name: t/t
+Top number: 11/11
+Child name: c/c
+Child number: 22/23
+Leaf name: l/l!
+Leaf number: 33/34
+Top name: t/t
+Top number: 11/11
+Top name: top name/top name
+Top number: 111/111
+Child name: c/c
+Child number: 22/23
+Child name: child name/child name
+Child number: 222/223
+Leaf name: l/l!
+Leaf number: 33/34
+Leaf name: leaf name/leaf name!
+Leaf number: 333/334
+Childy name: child name/child name
+Childy number: 222/223
+Leafy name: leaf name/leaf name!
+Leafy number: 333/334
+got something
+I eat like a generic Animal.
+I eat like a wolf!
+I eat like a fish!
+I eat like a goldfish!
+I eat like a generic Animal.
+I eat like a generic Animal.
+I eat like a wolf!
+I eat like a fish!
+I eat like a goldfish!
+I eat like a generic Animal.
+One Nanny One one
+One Daddy One one
+Two Nanny Two two
+Two Daddy Two two
+Generic Nanny Three three
+Three Daddy Three three
+One: 1
+Two: 2
+Visiting car
+Visiting front left wheel
+Visiting front right wheel
+Visiting back left wheel
+Visiting back right wheel
+Visiting body
+Visiting engine
+Visited car
+Starting my car
+Kicking my front left wheel
+Kicking my front right wheel
+Kicking my back left wheel
+Kicking my back right wheel
+Moving my body
+Starting my engine
+Started car
+one
+two
+three
+one
+two
+three
+Class1.getNumber: 5
+Class1.getNumber: 7
+Class2.getNumber: 17
+ClassOne.number: 9
+m0: MiddleClass0
+m1: MiddleClass1
+middlei: MiddleClass1
+m1: MiddleClass1
+m2: MiddleClass2
+b1: BottomClass1
+middlei: BottomClass1
+b1: BottomClass1
+b2: BottomClass2
+middlei: BottomClass2
+b2: BottomClass2
+middlei: MiddleClass1
+m1: MiddleClass1
+topi: MiddleClass1
+middlei: BottomClass1
+b1: BottomClass1
+topi: BottomClass1
+middlei: BottomClass2
+b2: BottomClass2
+topi: BottomClass2
+5
+equal: TRUE
+not equal: FALSE
+on stack equal: TRUE
+on stack not equal: FALSE
+child: {nr: 88}
+parent: {nr: 99}
+testdir/Garbage.zu
+foobarfoobarfoo
+r = 102
+got an object
+my collected
+got a bad object
+MyObject finished; exiting == FALSE
+bad collected
+got a slow object
+BadObject.Finish; exiting == FALSE
+slow collected
+Finish 1
+after GC one
+Finish 2
+after GC two
+after GC three
+0: 1
+1: 2
+2: 3
+3: 4
+total keymapped list: 10
+5: 1
+5: 2
+5: 3
+5: 4
+total mapped array: 10
+0: 1
+1: 2
+2: 3
+3: 4
+total keymapped array: 10
+6: one
+6: two
+6: three
+map concatenated array: onetwothree
+0: one
+1: two
+2: three
+keymap concatenated array: onetwothree
+8: 1
+8: 2
+8: 3
+total mapped dict: 6
+1: 1
+2: 2
+3: 3
+total keymapped dict: 6
+testdir/IOtests.zu
+status: FAIL, size: 0, time: 0
+read string: 111/110/101/-1/-1/
+write string: 0/1/2/3/4/
+1  2  3  4  5  
+1  
+
+5  4  3  2  1  
+5  
+
+hello 49 50 51 52 53 54 55 56 57 10 
+empty dir list: []
+full dir list: ["One", "Two"]
+empty dir list: []
+deleted directory: TRUE
+isPathSep(): FALSE, TRUE, FALSE
+pastHeadIndex(foo) = 0
+pastHeadIndex(foo/bar) = 0
+pastHeadIndex(/foo/) = 1
+pastHeadIndex(//foo/bar) = 2
+pastHeadIndex(/) = 1
+pastHeadIndex(///) = 3
+tailIndex(foo) = 0
+tailIndex(foo/bar) = 4
+tailIndex(foo/) = 4
+tailIndex(//foo/bar) = 6
+tailIndex(/) = 1
+tailSepIndex(foo) = 0
+tailSepIndex(foo/bar) = 3
+tailSepIndex(foo/) = 3
+tailSepIndex(/foo) = 1
+tailSepIndex(//foo/bar) = 5
+tailSepIndex(/) = 1
+nextPartIndex(bar/foo, 0) = 4
+nextPartIndex(foo/bar, 4) = -1
+nextPartIndex(/bar/bar/foo/, 1) = 5
+nextPartIndex(/bar/bar/foo/, 5) = 9
+nextPartIndex(/foo, 0) = 1
+nextPartIndex(/, 0) = 1
+concatPath(bar, foo) = bar/foo
+concatPath(bar/, foo) = bar/foo
+concatPath(bar, /foo) = bar/foo
+concatPath(bar/, /foo) = bar/foo
+Unix exe: pa.th/zimbu2c
+MS-Windows exe: pa.th/zimbu2c.exe
+MS-Windows exe: other.exe
+plugin: ./plugin
+lib/ioloader.zu: ./lib/ioloader.zu
+: .
+plugin/xyz: ./plugin/xyz
+zxcf: ./zxcf
+resolve(zimbu.zu) = zimbu.zu
+resolve(plugin/proto) = plugin/proto
+resolve(plugin/proto/) = plugin/proto/
+resolve(./plugin/proto) = ./plugin/proto
+resolve(burp) = burp
+resolve(testdir/iotests.zu) = testdir/iotests.zu
+resolve(/tmp/ZimbuTestDir/foobar) = /foo/bar
+resolve(/tmp/ZimbuTestDir/foobar/boo) = /foo/bar/boo
+resolve(/tmp/ZimbuTestDir/barbar) = /foo/bar
+resolve(/tmp/ZimbuTestDir/barbar/boo) = /foo/bar/boo
+resolve(/tmp/ZimbuTestDir/barbar) = /tmp/ZimbuTestDir/barbar
+Exe location: ./zimbu
+testdir/Loop.zu
+12345
+123456
+12344
+01234
+135
+13
+135
+531
+53
+531
+int list: 1, string list: one
+int list: 2, string list: two
+int list: 3, string list: three
+dict: Thu, list: 1
+dict: Tue, list: 2
+dict: Wed, list: 3
+dict: Mon, list: 4
+dict: Thu, list: 1
+dict: Tue, list: 2
+dict: Wed, list: 3
+dict: Mon, list: 4
+English: Mon, Dutch: ma, German: Mo
+English: Tue, Dutch: di, German: Di
+English: Wed, Dutch: wo, German: Mi
+English: Thu, Dutch: do, German: Do
+English: Fri, Dutch: fr, German: Fr
+testdir/Alias.zu
+itemWrapper.Size(): 0
+size now: 1
+item: nothing
+testdir/Typedef.zu
+size: 8, weight: 9
+size is 8
+size is 23
+size is 9
+size is 41
+["two", 2]
+[two, 2]
+["one", 1]
+["one", "two"]
+["here", "there"]
+[1, 2, 3, 10, 20, 30]
+["foo": 1, "bar": 2, "k1": 11, "k2": 22]
+123
+6
+green
+7
+testdir/TypeTest.zu
+int type size: TRUE
+float type size: TRUE
+object type size: TRUE
+int: int
+int8: int8
+float: float
+string: string
+foo: object of Foo
+int type type: type
+int is int: TRUE
+int is float: FALSE
+Foo is float: FALSE
+Foo is Foo: TRUE
+int vs int: 0
+int vs float: 1
+float vs int: -1
+Foo vs float: 1
+Foo vs Foo: 0
+testdir/DynTest.zu
+1
+dyn string
+TRUE
+FAIL
+0
+SomeClass == 765
+{one: 8765, two: "two", three: [3, 3, 3]}
+{three: [3, 2, 1], two: "twotoo", four: {one: 8765, two: "two", three: [3, 3, 3]}, one: 4321}
+12.345
+int = 1 - int
+string = dyn string - string
+bool = TRUE - bool
+status = FAIL - status
+bits MyBits = 0 - MyBits
+object of SomeClass = SomeClass == 0 - SomeClass
+enum SomeEnum = blue - SomeEnum
+tuple<int, float, string> = [33, 4.321, "hello"] - tuple-int-float-string
+float = 1e+11 - float
+int8 = 127 - int8
+int16 = 12734 - int16
+int32 = 1234567 - int32
+int = 646464 - int
+nat = 12345 - nat
+byte = 234 - byte
+nat16 = 2345 - nat16
+nat32 = 234567 - nat32
+Caugnt string/int: testdir/DynTest.zu line col 11: Exception: Type mismatch; expected int but found string
+Caugnt enum/enum: testdir/DynTest.zu line col 11: Exception: Type mismatch; expected enum Color but found enum Time
+234
+mc: object of MyClass
+[]
+[234]
+777
+Class: object of MyClass
+888
+son: object of Son
+333
+Child Class: object of Son
+Caugnt class/class: testdir/DynTest.zu line col 12: Exception: Type mismatch; expected object of MyClass but found object of Other
+[33, "hello"]
+[33, "hello"]
+tuple<int, string>
+[1, FAIL, "ok", 1.234]
+list of dyn: list<dyn>
+[TRUE, 9, "there"]
+["one": 1, "key": "end", "yes": FALSE]
+[1, FAIL, "ok", 1.234, [TRUE, ["list": [recursive-list], "one": 1, "key": "end", "yes": FALSE], "there"]]
+[TRUE, ["list": [1, FAIL, "ok", 1.234, [recursive-array]], "one": 1, "key": "end", "yes": FALSE], "there"]
+["list": [1, FAIL, "ok", 1.234, [TRUE, [recursive-dict], "there"]], "one": 1, "key": "end", "yes": FALSE]
+[1, FAIL, "ok", 1.234, [TRUE, ["list": [recursive-list], "one": 1, "key": "end", "yes": FALSE], "there"]]
+[TRUE, ["list": [1, FAIL, "ok", 1.234, [recursive-array]], "one": 1, "key": "end", "yes": FALSE], "there"]
+["list": [1, FAIL, "ok", 1.234, [TRUE, [recursive-dict], "there"]], "one": 1, "key": "end", "yes": FALSE]
+[[9, "nine"], 2, TRUE, "two", [9, "nine"]]
+[1, ["two": 2], 3, ["two": 2]]
+["7": [4, "four"], "8": 8, "9": [4, "four"]]
+nested: ["one", 2, FAIL, [1, "one", 1.1, OK]]
+18 == 18
+concat dyn: one two
+int size: 8
+dyn bytes size: 8
+int8 size: 1
+int16 size: 2
+int32 size: 4
+nat size: 8
+nat8 size: 1
+nat16 size: 2
+dyn nat16 size: 2
+nat32 size: 4
+float size: 8
+float32 size: 4
+string size: 3
+byteString size: 3
+dyn byteString size: 3
+type size: TRUE
+object size: 6
+array size: 4
+list size: 3
+dyn list size: 3
+dict size: 2
+11 == 11: TRUE
+11 != 11: FALSE
+12 == 12: TRUE
+12 != 12: FALSE
+127 == 127: TRUE
+127 != 127: FALSE
+-1 == nat.max: TRUE
+-1 != nat.max: FALSE
+dyn == int: TRUE
+dyn != int: FALSE
+int == dyn: TRUE
+int != dyn: FALSE
+float == float32: TRUE
+float != float32: FALSE
+float == float32: FALSE
+float != float32: TRUE
+dyn == float: TRUE
+dyn != float: FALSE
+float == dyn: TRUE
+float != dyn: FALSE
+int == float: TRUE
+int == float: TRUE
+float == int: TRUE
+float != int: FALSE
+yes == yes: TRUE
+yes != yes: FALSE
+string == dyn: TRUE
+string != dyn: FALSE
+dyn == string: TRUE
+dyn != string: FALSE
+yes == no: FALSE
+yes != no: TRUE
+no == yes: FALSE
+no != yes: TRUE
+o.yes == o.no: FALSE
+o.yes 1= o.no: TRUE
+o.yes == o.yes: TRUE
+o.yes != o.yes: FALSE
+o.yes == o.no: FALSE
+o.yes != o.no: TRUE
+o.yes == o.yes: TRUE
+o.yes != o.yes: FALSE
+11 > 11: FALSE
+11 >= 11: TRUE
+11 < 11: FALSE
+11 <= 11: TRUE
+11 > 12: FALSE
+11 >= 12: FALSE
+11 < 12: TRUE
+11 <= 12: TRUE
+[TRUE: "three", 11: "one", "22": "two"]
+has 11: TRUE
+has 12: FALSE
+has 22: TRUE
+has 23: FALSE
+has TRUE: TRUE
+has FALSE: FALSE
+dyn int hex: 000c
+dyn int8 hex: 000d
+dyn int16 hex: 000e
+dyn int32 hex: 000f
+dyn nat hex: 0010
+dyn nat8 hex: 0011
+dyn nat16 hex: 0012
+dyn nat32 hex: 0013
+dyn status hex: 1
+dyn bool hex: 1
+dyn float hex:  1.234e+00
+dyn string hex:   123456
+testdir/EnumTest.zu
+Color not initialized: red
+red > green: FALSE
+red < green: TRUE
+Color type: enum Color
+Color from string: green
+testdir/FloatTest.zu
+Size(): 8
+22
+1.01
+1.12346 len: 11
+1.12345679e+00
+1.1234567890E+00
+1.12345679
+1.1234567890
+1.1234568
+1.123456789
+1.23457e+08
+1.23456789e+08
+1.2345678910E+08
+123456789.09999999
+123456789.09999999
+1.2345679e+08
+123456789.1
+exp: 1.12e+10
+negative is -1.1234e+99
+negative exp is -1.1234e-23
+T.float.max: inf
+overflow: inf
+does overflow: TRUE
+pi: 3.14159
+e: 2.71828
+4.57 == 4.57
+-2.33 == -2.33
+3.864 == 3.864
+1.12 == 1.12
+f1 == f2: FALSE
+f1 != f2: TRUE
+f1 > f2: FALSE
+f1 >= f2: FALSE
+f1 < f2: TRUE
+f1 <= f2: TRUE
+f2 == f1: FALSE
+f2 != f1: TRUE
+f2 > f1: TRUE
+f2 >= f1: TRUE
+f2 < f1: FALSE
+f2 <= f1: FALSE
+f1 == f1: TRUE
+f1 != f1: FALSE
+f1 > f1: FALSE
+f1 >= f1: TRUE
+f1 < f1: FALSE
+f1 <= f1: TRUE
+f1 == i1: TRUE
+f1 != i1: FALSE
+f1 > i1: FALSE
+f1 >= i1: TRUE
+f1 < i1: FALSE
+f1 <= i1: TRUE
+i1 == f1: TRUE
+i1 != f1: FALSE
+i1 > f1: FALSE
+i1 >= f1: TRUE
+i1 < f1: FALSE
+i1 <= f1: TRUE
+constants + 7.1, 7.2, 7.3
+constants - 1.3, 1.8, 1.9
+constants * 6.6, 3.6, 3.72
+constants / 1.65, 2.5, 2.58333
+floor(): 1 , -2
+ceil(): 2 , -1
+round(): 2 , -2
+trunc(): 1 , -1
+abs(): 1.5 , 1.5
+exp(): 4.48169
+log(): 0.405465
+log10(): 0.176091
+sqrt(): 1.22474
+pow(): 0.544331
+sin(): 0.997495
+sinh(): 2.12928
+tan(): 14.1014
+tanh(): 0.905148
+cos(): 0.0707372
+cosh(): 2.35241
+acos(): 1.0472
+asin(): 0.523599
+atan(): 0.982794
+atan2(): 2.35619
+float32: 1.5
+size: 4
+abs: 1.234
+NAN is nan
+f == NAN: TRUE
+f != NAN: FALSE
+NAN == f: TRUE
+NAN != f: FALSE
+f == f: FALSE
+f != f: TRUE
+f.isInfinite(): FALSE
+f.isNan(): TRUE
+INF is inf
+f == INF: TRUE
+f != INF: FALSE
+f == NINF: FALSE
+f != NINF: TRUE
+f.isInfinite(): TRUE
+f.isNan(): FALSE
+NINF is -inf
+f == INF: FALSE
+f != INF: TRUE
+f == NINF: TRUE
+f != NINF: FALSE
+f.isInfinite(): TRUE
+f.isNan(): FALSE
+8
+1.234
+float
+4
+1.234
+float32
+4.Compare(4): 0
+4.Compare(8): -1
+8.Compare(4): 1
+INF.Compare(INF): 0
+INF.Compare(NINF): 1
+NINF.Compare(NINF): 0
+NINF.Compare(INF): -1
+4.Equal(4): TRUE
+8.Equal(4): FALSE
+zero = 0, four = 4
+size: 5
+[0, 2, 3, 0, 4]
+[0, 2, 68, 85, 4]
+[0, 2, 68, 8, 9]
+array type: array<int>
+NIL array: NIL
+one = 1, five = 5
+[NIL, "1", NIL, NIL, "a", "b"]
+["x", "y", NIL, NIL, "a", "b"]
+zero = 0, three = 3
+[0, NIL, 8, 9, NIL]
+zero = 0, three = 3
+[{nr: 0}, {NIL}, {nr: 8}, {nr: 9}, {NIL}]
+[{nr: 0}, {NIL}, {nr: 8}, {nr: 9}, {nr: 11}]
+[{nr: 0}, {NIL}, {nr: 8}, {nr: 5}, {NIL}]
+[{nr: 0}, {NIL}, {nr: 8}, {nr: 5}, {NIL}, {NIL}, {NIL}, {nr: 7}]
+[{nr: 0}, {NIL}, {nr: 8}]
+zero = 0, one = 1, four = 4
+size: 5
+size now: 20
+zero = 0, one = 1, four = 4
+[0, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[0, 1, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[1, 2, 4]
+[97, 98, 99]
+["one", "two", "four"]
+Colors array: [black, orange, black, black, black, blue]
+black: black
+blue: blue
+red: red
+orange: orange
+asdf: black
+int array: 11, 278, 196641, 30064771116, 
+int8 array: 11, 22, 33, 44, 
+int16 array: 11, 278, 33, 44, 
+int32 array: 11, 278, 196641, 44, 
+nat array: 11, 278, 196641, 30064771116, 
+byte array: 11, 22, 33, 44, 
+nat16 array: 11, 278, 33, 44, 
+nat32 array: 11, 278, 196641, 44, 
+float array: 11, 278, 196641, 3.00648e+10, 
+float32 array: 11, 278, 196641, 3.00648e+10, 
+mapped: [4, 5, 6]
+keyMapped: [4, 6, 8]
+mapTo: ["4:", "6:", "8:"]
+keyMapTo: ["0: 4", "1: 6", "2: 8"]
+0: 1
+1: 2
+2: 3
+0: 1.1
+1: 2.2
+2: 3.3
+0: one
+1: two
+2: three
+one
+two
+three
+0: one
+1: two
+2: three
+equal array: TRUE
+equal array: TRUE
+not equal array: FALSE
+equal array: TRUE
+not equal array: FALSE
+index of 2: 2 has: TRUE
+index of 9: -1 has: FALSE
+index of 1: 1 has: TRUE
+index of 8: -1 has: FALSE
+index of 0.1: 1 has: TRUE
+index of 3.33: 3 has: TRUE
+index of 17: -1 has: FALSE
+index of one: 0 has: TRUE
+index of none: -1 has: FALSE
+index of 3: 3 has: TRUE
+index of 8: -1 has: FALSE
+index of one: 0 has: TRUE
+index of 1: 1 has: TRUE
+index of TRUE: 2 has: TRUE
+index of none: -1 has: FALSE
+caught index set 2
+caught index set -1
+caught index get 2
+caught index get -1
+testdir/Visibility.zu
+to ISA Tone
+to ISNOTA Ttwo
+to ISA Ttwo
+to ISNOTA Tone
+double list: ["one", "two", "three", "one", "two", "three"]
+compare() called 3 times
+left or right
+one
+one
+one
+one bar
+one bar
+one bar
+one and right
+one or right
+one xor right
+counter: 1
+result: 3
+counter: 3
+result: 6
+counter: 6
+added: 4
+added: 11
+1
+2
+4
+Total of 8 + [1, 2, 4]: 15
+1
+2
+4
+Total of 8 + [1, 2, 4]: 15
+Adding 5 to 15
+Closure: 2
+Closure: 5
+Closure: 2
+Closure: 6
+Closure: 3
+Closure: 2
+Closure: 5
+Closure: 2
+Closure: 6
+Closure: 3
+0 is even
+1 is odd
+2 is even
+3 is odd
+4 is even
+5 is odd
+6 is even
+7 is odd
+8 is even
+9 is odd
+There are 5 even numbers
+object callback: hello world
+goodbye world
+object callback: hello world
+hello world
+goodbye world
+foobar
+foobar2
+foobar3
+cb: hello
+cb: hello 123
+FooBack: world
+FooParent: and world
+FooChild: or world
+testdir/CheckTest.zu
+check failed intentionally: CHECK.true() failed
+testdir/CompareTest.zu
+aaa == aaa: TRUE
+aaa != aaa: FALSE
+aaa == bbb: FALSE
+aaa != bbb: TRUE
+aaa > aaa: FALSE
+aaa >= aaa: TRUE
+aaa < aaa: FALSE
+aaa <= aaa: TRUE
+aaa > bbb: FALSE
+aaa >= bbb: FALSE
+aaa < bbb: TRUE
+aaa <= bbb: TRUE
+testdir/Template.zu
+Foo<string>
+123
+Bar key: hello, value: 1234
+Bar key: akey, value: 999
+["one", "two"]
+[1, 2]
+[OK, FAIL]
+12
+ab
+testdir/Lambda.zu
+hello nothing
+hello cat
+hello dog
+number 123
+number 999
+number 1122/foo
+4321
+lambda
+5
+5
+5
+name: this number: 123
+name: other number: 333
+name: that number: 111
+name: name number: 111
+name: name number: 999
+name: nothing number: 999
+name: some number: 999
+name: nothing number: 111
+number: 0 names: [] values: []
+number: 1 names: [NIL] values: ["one"]
+number: 2 names: [NIL, NIL, NIL] values: ["one", "two", "three"]
+number: 3 names: ["one", "two", "three"] values: ["one", "two", "three"]
+number: 4 names: [NIL, "two", "three"] values: ["one", "two", "three"]
+number: 5 names: ["four", "five"] values: ["4", "5"]
+Declarative table: {rows: [{border_bottom: TRUE, onclick: -proc/func-, items: ["one", "two", "three"]}, {border_bottom: FALSE, onclick: NIL, items: ["four", "five", "six"]}], title: "Hello", columns: -1, border: {color: "white", size: 2}, headers: ["empty"]}
+one: blaaah, two: two, another: another, number: new 5
+2 is at 1
+2 is at 0
+remains: ["one", "two", "four"]
+Caught: testdir/PieceTest.zu line col 9: Exception: item not found
+remains: ["one", "four"]
+Getting the iterator
+Max: 10
+Max again: 10
+max is 22
+min is 1
+average is 9
+total is 26
+original: [1, 22, 3]
+Remove 22
+after remove: [1, 3]
+after clear: [1]
+at start: TRUE = one
+middle: TRUE = two = two / two
+end: TRUE / three
+no more: FALSE
+Caught peek: testdir/BoxTest.zu line col 21: Exception: Calling peek() while there is no next item
+after remove: ["bar", "hup"]
+Caught remove: testdir/BoxTest.zu line col 7: Exception: Calling remove() not after next() or previous()
+after remove: bar and hup
+removed last: ["bar"]
+after remove: ["bar", "hup"]
+Caught remove 2: testdir/BoxTest.zu line col 7: Exception: Calling remove() not after next() or previous()
+after last remove: ["hup"]
+after add first: ["foo", "first", "bar", "hup"]
+after add second: ["foo", "first", "second", "bar", "hup"]
+after add last: ["foo", "first", "second", "bar", "hup", "last"]
+after add another: ["foo", "first", "second", "bar", "hup", "last", "another"]
+after insert before: ["before", "foo", "bar", "hup"]
+after insert two: ["before", "two", "foo", "bar", "hup"]
+after insert three: ["before", "two", "three", "foo", "bar", "hup"]
+after insert almost: ["before", "two", "three", "foo", "bar", "almost", "hup"]
+after insert zero: ["zero", "before", "foo", "bar", "hup"]
+before: ["aa", "bb", "cc", "dd", "ee"]
+after: ["aa", "cc", "dd"]
+foo?.b: FALSE
+foo?.s: NIL
+foo?.i: 0
+foo?.fb: NIL
+foo?.b: TRUE
+foo?.s: yes
+foo?.i: 42
+foo?.fb: string
+is asdf: asdf
+is asdf: asdf
+is bar: bar
+testdir/NotManaged.zu
+{nr: 8}
+{nr: 1}
+{nr: 12}
+{nr: 123}
+1234
+999
+{nr: 999, name: "yes"}
+[1, 2, 3]
+[]
+[11]
+[4, 5, 6]
+[:]
+["one": 1]
+["a": 1, "b": 2, "c": 3]
+[NIL, 0, 0]
+["yes", 1, 2]
+["no", 3, 4]
+compare() called 3 times
+blah
+bytes
+[]
+[1, 2, 3]
+["one", "two", "three"]
+["one", "other", "three"]
+{foo: {nr: 0, name: NIL}, bar: {nr: 8}}
+[1, 2, 3, 4]
+{nri: 8, nr: 12}
+{nri: 8, nr: 123}
+[]
+[1, 2, 3]
+["one", "two", "three"]
+["one", "other", "three"]
+{foo: {nr: 0, name: NIL}, bar: {nr: 8}}
+["noot", "aap"]
+[]
+[1, 2, 3]
+["one", "two", "three"]
+["one", "other", "three"]
+{foo: {nr: 0, name: NIL}, bar: {nr: 8}}
+global Bar: {nr: 8}
+shared Bar: {nr: 7}
+onstack Bar: {nr: 6}
+object2iobject: {nr: 6}
+iobject2noalloc: {nr: 7}
+iobject2noalloc: {nr: 8}
+Finishing overwritten for cleared
+Finishing nilled for cleared
+testFinish() done
+Finishing peter for leave
+testFinish2
+Finishing pan for leave
+testFinish2 after IF
+Finishing loop 1 for leave
+Finishing loop 2 for leave
+Finishing loop 3 for leave
+testFinish2 after FOR
+still going
+Finishing break 1 for leave
+Finishing break 2 for leave
+testFinish2 after FOR with BREAK
+Finishing top for leave
+testFinish4
+Finishing throw object for leave
+Finishing throw iobject for leave
+Exception caught
+Finishing overwritten parent for cleared
+Finishing nilled iobject for cleared
+testFinishIobject
+Finishing parent for leave
+Finishing child for leave
+testFinishInChild
+Finishing child as parent for leave
+Finishing child for leave
+testdir/NotManaged.zu done
+Finishing not peter for unused
+Finishing throw iobject later for unused
+Finishing parent later for unused
+testdir/SetTest.zu
+1: ["one"]
+3: ["one", "two", "three"]
+2: ["one", "three"]
+s has one: TRUE
+s has four: FALSE
+key exists
+key not found
+copy: ["one", "three"]
+keys: ["one", "three"]
+empty: []
+3: ["a", "b", "c"]
+1: [1]
+3: [1, 2, 3]
+2: [1, 3]
+s has one: TRUE
+s has four: FALSE
+key exists
+key not found
+copy: [1, 3]
+keys: [1, 3]
+empty: []
+bool set: [FALSE, TRUE]
+status set: [FAIL, OK]
+Foo set: [one]
+Colors set: [black, blue, orange]
+addSet: [1, 2, 3, 4, 5]
+addSet: caught lib/SETModule.zu line col 9: Exception: key already present: 3
+addList: [1, 2, 3, 4, 5]
+addList: caught lib/SETModule.zu line col 9: Exception: key already present: 3
+setSet: [1, 2, 3, 4, 5]
+removeSet: [1, 3, 5]
+removeNotInSet: [2, 4]
+setList: [1, 2, 3, 4, 5]
+union: [1, 2, 3, 4, 5]
+orig set: [1, 2, 3]
+intersection: [3]
+orig set: [1, 2, 3]
+difference: [1, 2]
+orig set: [1, 2, 3]
+testdir/SharedTest.zu
+TRUE
+one
+two
+3
+6
+9
+12
+123
+124
+125
+testdir/SortedListTest.zu
+1: ["one"]
+3: ["and", "one", "three"]
+3: ["one", "six", "three"]
+2: ["one", "three"]
+2: ["one", "three"]
+l has one: TRUE
+l has six: FALSE
+2: ["one", "three"]
+3: ["one", "three", "three"]
+copy: ["one", "three", "three"]
+empty: []
+3: ["b", "c", "x"]
+Items: [5, 9, 11, 22]
+sorted int list: [4, 7, 8, 9]
+mapped: [4, 5, 6]
+keyMapped: [4, 6, 8]
+mapTo: ["4:", "6:", "8:"]
+keyMapTo: ["0: 4", "1: 6", "2: 8"]
+total: 10
+total: 18
+reduceTo: 'values: 1 2 3 4'
+one
+two
+three
+0: one
+1: two
+2: three
+testdir/MultiDictTest.zu
+1: ["one": ["1"]]
+6: ["one": ["1"], "two": ["2", "2"], "three": ["3", "4", "5"]]
+three occurences: 3
+three entry: ["3", "4", "5"]
+foo occurences: 0
+4: ["one": ["1"], "three": ["3", "4", "5"]]
+4: ["one": ["1"], "three": ["3", "4", "5"]]
+md has one: TRUE
+md has four: FALSE
+md has one/1: TRUE
+md has one/9: FALSE
+key four not found
+key three item 99 not found
+4: ["one": ["1"], "three": ["1", "2", "3"]]
+copy: ["one": ["1"], "three": ["1", "2", "3"]]
+keys: ["one", "three"]
+empty: [:]
+3: ["zzz": ["z"], "aaa": ["a", "b"]]
+3: ["zzz": ["z"], "aaa": ["a", "b"]]
+3: ["zzz": ["z"], "aaa": ["a", "b"]]
+1: ["one": ["1"]]
+6: ["one": ["1"], "three": ["3", "4", "5"], "two": ["2", "2"]]
+three occurences: 3
+three entry: ["3", "4", "5"]
+foo occurences: 0
+4: ["one": ["1"], "three": ["3", "4", "5"]]
+4: ["one": ["1"], "three": ["3", "4", "5"]]
+md has one: TRUE
+md has four: FALSE
+md has one/1: TRUE
+md has one/9: FALSE
+key four not found
+key three item 99 not found
+4: ["one": ["1"], "three": ["1", "2", "3"]]
+copy: ["one": ["1"], "three": ["1", "2", "3"]]
+keys: ["one", "three"]
+empty: [:]
+3: ["zzz": ["z"], "aaa": ["a", "b"]]
+3: ["aaa": ["a", "b"], "zzz": ["z"]]
+3: ["aaa": ["a", "b"], "zzz": ["z"]]
+3: ["aaa": ["a", "b"], "zzz": ["z"]]
+["one": ["1"]]
+["one": ["1"], "two": ["2"]]
+["one": ["1"], "two": ["2", "22"]]
+["one": ["1"], "two": ["2", "22", "22"]]
+["two": ["2"]]
+["two": ["2"], "one": ["1"]]
+["two": ["2", "22"], "one": ["1"]]
+["two": ["2", "22", "22"], "one": ["1"]]
+a: [1]
+b: [6, 16]
+["a": [1], "b": [6, 16]]
+1: ["one"]
+4: ["two", "six"]
+["1": ["one"], "4": ["two", "six"]]
+b: [6, 16]
+a: [1]
+["b": [6, 16], "a": [1]]
+4: ["two", "six"]
+1: ["one"]
+["4": ["two", "six"], "1": ["one"]]
+["1": ["one!", "twoo!"], "2": ["three!"]]
+["1": ["one!", "twoo!", " more!"], "2": ["three!", " more!"]]
+["1": [4, 5, 6], "2": [6, 6]]
+["1": ["4+", "5+", "6+"], "2": ["6+", "6+"]]
+["one": ["one: 11", "one: 22"], "three": ["three: 33"]]
+["one": ["one+11", "one+22"], "three": ["three+33"]]
+["2": ["three!"], "1": ["one!", "twoo!"]]
+["2": ["three!", " more!"], "1": ["one!", "twoo!", " more!"]]
+["2": [6, 6], "1": [4, 5, 6]]
+["2": ["6+", "6+"], "1": ["4+", "5+", "6+"]]
+["three": ["three: 33"], "one": ["one: 11", "one: 22"]]
+["three": ["three+33"], "one": ["one+11", "one+22"]]
+one
+two
+three
+1: one
+1: two
+3: three
+["one", "two"]
+["three"]
+1: ["one", "two"]
+3: ["three"]
+three
+one
+two
+3: three
+1: one
+1: two
+["three"]
+["one", "two"]
+3: ["three"]
+1: ["one", "two"]
+testdir/StringTest.zu
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+string-string-
+varString-varString-
+varString-varString-
+varString-varString-
+varString-varString-
+varString-varString-
+varString-varString-
+varString-varString-
+byteString-byteString-
+byteString-byteString-
+byteString-byteString-
+byteString-byteString-
+byteString-byteString-
+byteString-byteString-
+varByteString-varByteString-
+varByteString-varByteString-
+varByteString-varByteString-
+varByteString-varByteString-
+varByteString-varByteString-
+varByteString-varByteString-
+/some string/
+/    some string/
+/some string    /
+/some string/
+/some string/
+/some str/
+/e string/
+/  some str/
+/  e string/
+/some str  /
+/e string  /
+/somet.../
+/some..reat/
+/...great/
+/some byt/
+/som...ring/
+the desk is red
+the desk {is} red
+the desk is red
+the desk is 0013 long
+the chair is red
+the fiets is blue
+there is no INVALID argument
+Caught exception: Invalid argument name: foo
+two spaces TWO SPACES IN {}foo}
+Caught exception: Two spaces inside {}
+this doesn't end MISSING }
+Caught exception: Missing }
+the desk is red
+toInt(): 1234/-5678/9012
+bad: x0
+123
+quotedToInt(): 1234/-5678/9012
+bad: x10'101
+111
+binToInt(): 170/255/51
+bad: -10101, bad: x1010
+222
+333
+quotedBinToInt(): 170/255/51
+bad: -10101, bad: x1010
+444
+555
+hexToInt(): 4660/65535/10
+bad: -13, bad: x3
+666
+777
+quotedHexToInt(): 4660/65535/10
+bad: -13, bad: x3
+888
+999
+1234: 1234, 1000000: 1000000
+0b01010101: 85, 0B1001010101: 597
+0X1A2B3C: 1715004, 0x1a2b3c: 1715004
+upper: ABBA DABBA
+lower: abba dabba
+toLower of AbCdEf: abcdef; toLower of empty string: ''
+Upper: 'āNöTHêR HêLLO'  ''
+Lower: 'ānöthêr hêllo'  ''
+Upper: 'āNöTHêR HêLLO'  ''
+Lower: 'ānöthêr hêllo'  ''
+Upper: 'āNöTHêR HêLLO'  ''
+Lower: 'ānöthêr hêllo'  ''
+Upper NIL: NIL
+UpperAscii NIL: NIL
+Lower NIL: NIL
+LowerAscii NIL: NIL
+string fuubar.find(fuu): 0
+string fuubar.find(bar): 3
+string fuubar.find(foo): -1
+string barfuubar.findLast(fuu): 3
+string barfuubar.findLast(bar): 6
+string barfuubar.findLast(a): 7
+string barfuubar.findLast(foo): -1
+string fúubär.find(fúu): 0
+string fúubär.find(bär): 3
+string fúubar.find(foo): -1
+string bärfúubär.findLast(fuu): 3
+string bärfúubär.findLast(bär): 6
+string bärfuubär.findLast(ä): 7
+string bärfuubär.findLast(foo): -1
+varString fúubär.find(fúu): 0
+varString fúubär.find(bär): 3
+varString fúubar.find(foo): -1
+varString bärfúubär.findLast(fuu): 3
+varString bärfúubär.findLast(bär): 6
+varString bärfuubär.findLast(ä): 7
+varString bärfuubär.findLast(foo ): -1
+byteString fúubär.find(fúu): 0
+byteString fúubär.find(bär): 4
+byteString fúubar.find(foo): -1
+byteString bärfúubär.findLast(fuu): 4
+byteString bärfúubär.findLast(bär): 8
+byteString bärfuubär.findlast(ä): 9
+byteString bärfuubär.findLast(foo): -1
+varByteString fúubär.find(fúu): 0
+varByteString fúubär.find(bär): 4
+varByteString fúubar.find(foo): -1
+varByteString bärfúubär.findLast(fuu): 4
+varByteString bärfúubär.findLast(bär): 8
+varByteString bärfuubär.findlast(ä): 9
+varByteString bärfuubär.findLast(foo): -1
+string fuubar.find(fuu, 0): 0
+string fuubar.find(fuu, 1): 6
+string fuubar.find(fuu, 5): 6
+string fuubar.find(fuu, 6): 6
+string fuubar.find(fuu, 7): -1
+string fuubar.find(fuu, 8): -1
+string fuubar.find(fuu, 9): -1
+string fuubar.startsWith(fuu): TRUE
+string fuubar.startsWith(bar): FALSE
+string bar.startsWith(fuubar): FALSE
+string empty.startsWith(empty): TRUE
+string fuubar.endsWith(fuu): FALSE
+string fuubar.endsWith(bar): TRUE
+string bar.endsWith(fuubar): FALSE
+string empty.endsWith(empty): TRUE
+string svfuubar.startsWith(fuu): TRUE
+string svfuubar.startsWith(svbar): FALSE
+string svbar.startsWith(svfuubar): FALSE
+string svempty.startsWith(svempty): TRUE
+string svfuubar.endsWith(fuu): FALSE
+string svfuubar.endsWith(svbar): TRUE
+string svbar.endsWith(svfuubar): FALSE
+string svempty.endsWith(svempty): TRUE
+varString vsfuubar.startsWith(fuu): TRUE
+varString vsfuubar.startsWith(vsbar): FALSE
+varString vsbar.startsWith(vsfuubar): FALSE
+varString vsempty.startsWith(vsempty): TRUE
+varString vsfuubar.endsWith(fuu): FALSE
+varString vsfuubar.endsWith(vsbar): TRUE
+varString vsbar.endsWith(vsfuubar): FALSE
+varString vsempty.endsWith(vsempty): TRUE
+byteString bfuubar.startsWith(fuu): TRUE
+byteString bfuubar.startsWith(bbar): FALSE
+byteString bbar.startsWith(bfuubar): FALSE
+byteString bempty.startsWith(bempty): TRUE
+byteString bfuubar.endsWith(fuu): FALSE
+byteString bfuubar.endsWith(bbar): TRUE
+byteString bbar.endsWith(bfuubar): FALSE
+byteString bempty.endsWith(bempty): TRUE
+varByteString vbfuubar.startsWith(fuu): TRUE
+varByteString vbfuubar.startsWith(vbbar): FALSE
+varByteString vbbar.startsWith(vbfuubar): FALSE
+varByteString vbempty.startsWith(vbempty): TRUE
+varByteString vbfuubar.endsWith(fuu): FALSE
+varByteString vbfuubar.endsWith(vbbar): TRUE
+varByteString vbbar.endsWith(vbfuubar): FALSE
+varByteString vbempty.endsWith(vbempty): TRUE
+0:0 4:4 6:6 -1:-1
+0:0 -1:-1 6:6 -1:-1
+3:3 0:0 6:6 -1:-1
+1:1 0:0 6:6 -1:-1
+0:0 4:4 6:6 -1:-1
+0:0 -1:-1 6:6 -1:-1
+3:3 0:0 6:6 -1:-1
+1:1 0:0 6:6 -1:-1
+0:0 3:3 6:6 -1:-1
+0:0 -1:-1 6:6 -1:-1
+3:1 0:0 6:6 -1:-1
+1:1 0:0 6:6 -1:-1
+0:0 4:4 6:6 -1:-1
+0:0 -1:-1 6:6 -1:-1
+3:3 0:0 6:6 -1:-1
+1:1 0:0 6:6 -1:-1
+0:0 4:4 6:6 -1:-1
+0:0 -1:-1 6:6 -1:-1
+3:3 0:0 6:6 -1:-1
+1:1 0:0 6:6 -1:-1
+slice(3, -1): 32 = 32
+slice(0, 0): 1
+slice(0, 1): 12
+slice(0, 4): 12345
+slice(0, 5): 12345
+slice(0, 99): 12345
+slice(1, 99): 2345
+slice(4, 99): 5
+slice(5, 99): 
+slice(6, 99): 
+slice(3, -1): 45
+slice(3, -2): 4
+slice(3, -3): 
+slice(3, -5): 
+slice(3, -6): 
+slice(-2, -1): 45
+slice(-1, -1): 5
+slice(-4, -4): 2
+slice(-5, -5): 1
+slice(-6, -6): 
+tt.slice(0) 0123456789
+tt.slice(4) 456789
+tt.slice(9) 9
+tt.slice(10) 
+tt.slice(11) 
+tt.slice(-1) 9
+tt.slice(-2) 89
+tt.slice(-10) 0123456789
+tt.slice(-11) 0123456789
+sv0: ''
+sv1: 'ö'
+sv2: 'öt'
+sv3: 'öth'
+sv4: 'öthê'
+svlong: 'öthêr hêllo'
+slice(3, -1): 32 = 32
+slice(0, 0): á
+slice(0, 1): áβ
+slice(0, 4): áβçðè
+slice(0, 5): áβçðè
+slice(0, 99): áβçðè
+slice(1, 99): βçðè
+slice(4, 99): è
+slice(5, 99): 
+slice(6, 99): 
+slice(3, -1): ðè
+slice(3, -2): ð
+slice(3, -3): 
+slice(3, -5): 
+slice(3, -6): 
+slice(-2, -1): ðè
+slice(-1, -1): è
+slice(-4, -4): β
+slice(-5, -5): á
+slice(-6, -6): 
+svtt.slice(0) 0123456789
+svtt.slice(4) 456789
+svtt.slice(9) 9
+svtt.slice(10) 
+svtt.slice(11) 
+svtt.slice(-1) 9
+svtt.slice(-2) 89
+svtt.slice(-10) 0123456789
+svtt.slice(-11) 0123456789
+vs0: ''
+vs1: 'ö'
+vs2: 'öt'
+vs3: 'öth'
+vs4: 'öthê'
+vslong: 'öthêr hêllo'
+slice(3, -1): 32 = 32
+slice(0, 0): á
+slice(0, 1): áβ
+slice(0, 4): áβçðè
+slice(0, 5): áβçðè
+slice(0, 99): áβçðè
+slice(1, 99): βçðè
+slice(4, 99): è
+slice(5, 99): 
+slice(6, 99): 
+slice(3, -1): ðè
+slice(3, -2): ð
+slice(3, -3): 
+slice(3, -5): 
+slice(3, -6): 
+slice(-2, -1): ðè
+slice(-1, -1): è
+slice(-4, -4): β
+slice(-5, -5): á
+slice(-6, -6): 
+vstt.slice(0) 0123456789
+vstt.slice(4) 456789
+vstt.slice(9) 9
+vstt.slice(10) 
+vstt.slice(11) 
+vstt.slice(-1) 9
+vstt.slice(-2) 89
+vstt.slice(-10) 0123456789
+vstt.slice(-11) 0123456789
+b0: ''
+b1: 't'
+b2: 'th'
+b3: 'the'
+b4: 'ther'
+blong: 'ther hello from me'
+slice(3, -1): 32 = 32
+slice(0, 0): 1
+slice(0, 1): 12
+slice(0, 4): 12345
+slice(0, 5): 12345
+slice(0, 99): 12345
+slice(1, 99): 2345
+slice(4, 99): 5
+slice(5, 99): 
+slice(6, 99): 
+slice(3, -1): 45
+slice(3, -2): 4
+slice(3, -3): 
+slice(3, -5): 
+slice(3, -6): 
+slice(-2, -1): 45
+slice(-1, -1): 5
+slice(-4, -4): 2
+slice(-5, -5): 1
+slice(-6, -6): 
+btt.slice(0) 0123456789
+btt.slice(4) 456789
+btt.slice(9) 9
+btt.slice(10) 
+btt.slice(11) 
+btt.slice(-1) 9
+btt.slice(-2) 89
+btt.slice(-10) 0123456789
+btt.slice(-11) 0123456789
+vb0: ''
+vb1: 't'
+vb2: 'th'
+vb3: 'the'
+vb4: 'ther'
+vblong: 'ther hello from me'
+slice(3, -1): 32 = 32
+slice(0, 0): 1
+slice(0, 1): 12
+slice(0, 4): 12345
+slice(0, 5): 12345
+slice(0, 99): 12345
+slice(1, 99): 2345
+slice(4, 99): 5
+slice(5, 99): 
+slice(6, 99): 
+slice(3, -1): 45
+slice(3, -2): 4
+slice(3, -3): 
+slice(3, -5): 
+slice(3, -6): 
+slice(-2, -1): 45
+slice(-1, -1): 5
+slice(-4, -4): 2
+slice(-5, -5): 1
+slice(-6, -6): 
+vbtt.slice(0) 0123456789
+vbtt.slice(4) 456789
+vbtt.slice(9) 9
+vbtt.slice(10) 
+vbtt.slice(11) 
+vbtt.slice(-1) 9
+vbtt.slice(-2) 89
+vbtt.slice(-10) 0123456789
+vbtt.slice(-11) 0123456789
+s.Size() 5: 5
+sl.Size() 130: 130
+sv.Size() 5: 5
+svl.Size() 130: 130
+vs.Size() 5: 5
+b.Size() 5: 5
+bl.Size() 130: 130
+vb.Size() 5: 5
+s.Size() 11: 11: 'hello world'
+sv.Size() 11: 11: 'hëllo wórld'
+vs.Size() 13: 13: 'ānöther hêllo'
+vs2.Size() 11: 11: 'hëllo wórld'
+ānöther hêllo cöncaténated
+concatenated string: 'hëllo wórld agaîn'
+b.Size() 11: 11: 'hello world'
+vb.Size() 13: 13: 'another hello'
+vb2.Size() 11: 11: 'hello world'
+another hello concatenated
+concatenated byteString: 'hello world again'
+hello 3
+hello FAIL
+hello TRUE
+hello 3
+hello FAIL
+hello TRUE
+1 8 3 
+1 8 3 8
+1 8 3 8 5 
+1 8 3 8 5 8
+1 8 3 8 5 8 7 
+1 8 3 8 5 8 7 8
+1 8 3 8 5 8 7 8 9 
+1 8 3 8 5 8 7 8 9 8
+1 8 3 8 5 8 7 8 9 8 11 
+1 8 3 8 5 8 7 8 9 8 11 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 
+1 8 3 8 5 8 7 8 9 8 11 8 13 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8 19 
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8 19 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8 19 8 21 
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8 19 8 21 8
+1 8 3 8 5 8 7 8 9 8 11 8 13 8 15 8 17 8 19 8 21 8 23 
+varString as string: 'ānöthêr hêllo'
+'é ştr'
+varByteString as byteString: 'another hello'
+'e var'
+zs.Size() 3: 3: 'foo'
+zs.Size() 6: 6: 'foobar'
+vs.Size() 21: 21: 'ānöther hêllo fröm mĕ'
+zb.Size() 3: 3: 'foo'
+zb.Size() 6: 6: 'foobar'
+vb.Size() 21: 21: 'another hello from me'
+string split 'one, two, three' ["one,", "two,", "three"]
+string split 'one' ["one"]
+string split '  one	two  ' ["one", "two"]
+string splitAnyOf 'foo/bar: yes' ["foo", "bar", "yes"]
+string splitAnyOf '  foo /:+  bar  ' ["foo", "bar"]
+string splitAnyOf 'foo/:+bar' ["foo", "bar"]
+string split 'one:two:three' ["one", "two", "three"]
+string split ':one' ["", "one"]
+string split 'one' ["one"]
+string split 'one:' ["one", ""]
+string split ':' ["", ""]
+string split 'one::two' ["one", "", "two"]
+string split 'one, two, three' ["one", "two", "three"]
+string split 'one' ["one"]
+string split 'one, two, ' ["one", "two", ""]
+string split 'ònë:twò:thrëe' ["ònë", "twò", "thrëe"]
+string split ':ònë' ["", "ònë"]
+string split 'ònë' ["ònë"]
+string split 'ònë:' ["ònë", ""]
+string split ':' ["", ""]
+string split 'ònë::twò' ["ònë", "", "twò"]
+string split 'ònë, twò, thrëe' ["ònë", "twò", "thrëe"]
+string split 'ònë' ["ònë"]
+string split 'ònë, twò, ' ["ònë", "twò", ""]
+varString split 'one, two, three' ["one,", "two,", "three"]
+varString split 'one' ["one"]
+varString split '  one	two  ' ["one", "two"]
+varString split 'ònë:twò:thrëe' ["ònë", "twò", "thrëe"]
+varString split ':ònë' ["", "ònë"]
+varString split 'ònë' ["ònë"]
+varString split 'ònë:' ["ònë", ""]
+varString split ':' ["", ""]
+varString split 'ònë::twò' ["ònë", "", "twò"]
+varString split 'ònë, twò, thrëe' ["ònë", "twò", "thrëe"]
+varString split 'ònë' ["ònë"]
+varString split 'ònë, twò, ' ["ònë", "twò", ""]
+byteString split 'one, two, three' ["one,", "two,", "three"]
+byteString split 'one' ["one"]
+byteString split '  one	two  ' ["one", "two"]
+byteString split 'one:two:three' ["one", "two", "three"]
+byteString split ':one' ["", "one"]
+byteString split 'one' ["one"]
+byteString split 'one:' ["one", ""]
+byteString split ':' ["", ""]
+byteString split 'one::two' ["one", "", "two"]
+byteString split 'one, two, three' ["one", "two", "three"]
+byteString split 'one' ["one"]
+byteString split 'one, two, ' ["one", "two", ""]
+varByteString split 'one, two, three' ["one,", "two,", "three"]
+varByteString split 'one' ["one"]
+varByteString split '  one	two  ' ["one", "two"]
+varByteString split 'one:two:three' ["one", "two", "three"]
+varByteString split ':one' ["", "one"]
+varByteString split 'one' ["one"]
+varByteString split 'one:' ["one", ""]
+varByteString split ':' ["", ""]
+varByteString split 'one::two' ["one", "", "two"]
+varByteString split 'one, two, three' ["one", "two", "three"]
+varByteString split 'one' ["one"]
+varByteString split 'one, two, ' ["one", "two", ""]
+converted: fóÖ
+'raboof'
+'ráçøöf'
+0: 1 = 102 (102 == 102)
+1: 2 = 246 (195 == 195)
+2: -1 = -1 (182 == 182)
+3: 2 = 248 (195 == 195)
+4: -1 = -1 (184 == 184)
+5: 2 = 231 (195 == 195)
+6: -1 = -1 (167 == 167)
+7: 2 = 225 (195 == 195)
+8: -1 = -1 (161 == 161)
+9: 1 = 114 (114 == 114)
+102 - 246 - 248 - 231 - 225 - 114 - 
+föøçár
+f\\öøçár
+f\\\\öøçár
+\\öøçár
+öøçár\\
+f\"öøçár
+\"öøçár\"
+Föøçár
+föøçáR
+fOøçár
+FFöøFçáörr
+fföøfçáöRR
+ffOøfçáOrr
+-foo bar-
+-foo bar-
+--
+--
+foo
+foo
+-foo
+-----foo
+---
+foo
+foo
+foo-
+foo-----
+---
+equal: TRUE
+not equal: FALSE
+compare >: 1
+compare ==: 0
+compare <: -1
+equal(NIL): FALSE
+NIL?.(NIL): TRUE
+NIL?.(not-NIL): FALSE
+equal: TRUE
+not equal: FALSE
+compare >: 1
+compare ==: 0
+compare <: -1
+equal(NIL): FALSE
+NIL?.(NIL): TRUE
+NIL?.(not-NIL): FALSE
+string type: string
+byteString type: byteString
+nilnil: NILNIL
+foonil: fooNIL
+nilfoo: NILfoo
+name is Peter
+name is Peter, number is 77!
+name is Peter, number is 88!
+name is Peter Pan, number is 77!
+name is Peter list is [1, 2, 3]
+dict is ["one": 1, "two": 2].
+number is 00077
+number is -0077
+number is    85
+number is -69
+number is 616
+abc
+xyz
+aáë
+[97, 98, 99, 100]
+[4369, 8738, 13107]
+NIL
+Correctly too long byte sequence
+Correctly found truncated 2-byte sequence
+Correctly found truncated 3-byte sequence
+Correctly found truncated 4-byte sequence
+["foo", 2]
+[foo, 2]
+[foobar, 5]
+["foobar", 5]
+["X", 8]
+[[1, "one", foo!, bar!], [2, "two", third, fourth]]
+[5, "foo"]
+5
+5 - foo
+[3, "bar"]
+3 - bar
+1+2+now
+1/2/now
+1@2@now
+closure cf: hello
+closure ff: hello world
+in the nameless func
+nameless func f: hello
+nameless proc
+["another one", "another two", "another three"]
+[101, 102, 103]
+["one": "ONE", "two": "TWO", "three": "THREE"]
+Array[0] = ONE
+Array[1] = TWO
+Array[2] = THREE
+Array[0] = 11
+Array[1] = 12
+Array[2] = 13
+Array[0] = item one
+Array[1] = item two
+Array[2] = item three
+[1: "one", 2: "two", 3: "three"]
+[1: "1 => one", 2: "2 => two", 3: "3 => three"]
+["one[0]", "two[1]", "three[2]"]
+als[0] = 0:one
+als[1] = 1:two
+als[2] = 2:three
+func: direct call
+func: direct call with argument
+3 ?:
+Globals not managed
+[asdf]
+[]
+[0, 99, 0]
+[1, 2, 3]
+[11]
+[4, 5, 6]
+[4, 55, 6]
+[:]
+["one": 1]
+["a": 1, "b": 2, "c": 3]
+["a": 1, "b": 2, "c": 3, "d": 4]
+["yes", 1, 2]
+["no", 3, 4]
+["no", 33, 44]
+blah
+byteString
+8 ?:
+going to exit now
+cleaning up for exit
+near the end
+call Finish on exit; exiting == TRUE
+Finishing at exit for exit
+Finishing child at exit for exit

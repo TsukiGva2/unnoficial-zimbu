@@ -1,0 +1,48 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module FLOAT80 - float80 support
+#
+
+#= Methods for the builtin float80 type.
+#
+#*license
+#* Copyright 2014 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE FLOAT80Module @public
+
+  #= The builtin type float80.
+  #- NOT IMPLEMENTED YET, for the time being this works just like "float".
+  #
+  #- NOTE: When compiled to Javascript a float80 is stored as a float, since
+  #- Javascript only supports float numbers.
+  CLASS STARTfloat80 @public
+    # For Zudocu: start of float80 class.
+    # This is not an actual class to make generating code easier.
+  }
+
+  #= Return the number of bytes in a float80.
+  #- Returns 10, 12 or 16, since a float80 is 80 bits plus padding.
+  FUNC Size(float80 this) int @public
+    ###### Only for generating documentation.
+    RETURN 10
+  }
+
+  #= Return the number in a short form.
+  #- For example, 1.234.ToString() returns "1.234".
+  #
+  #- This uses 6 decimal places and uses the exponent notation when that is
+  #- shorter.
+  FUNC ToString(float80 this) string @public
+    ###### Only for generating documentation.
+    RETURN NIL
+  }
+
+  #! For Zudocu: end of float80 class.
+  CLASS ENDfloat80
+  }
+
+}

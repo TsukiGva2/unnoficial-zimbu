@@ -1,0 +1,184 @@
+# Demo for Zimbu: Live build and run Zimbu code.
+# This defines the UI, the code that runs in the browser.
+# Loaded by livedemo.zu.
+
+# Get the protocol buffer definition for BuildRequest and BuildResult.
+IMPORT.PROTO "buildzimbu.proto"
+
+IMPORT "$PLUGIN/proto/Message.zu"  # defines Message
+
+MODULE LiveDemoPage  # TODO: IMPLEMENTS ZWT.Page
+  ZWT.Textarea textarea
+  ZWT.TextBlock compilearea
+  ZWT.Label outputarea
+
+  ZWT.Style textStyle = NEW()
+                .setFontSize(14).setFontName("arial,sans-serif")
+                .setWrap(ZWT.Style.Wrap.preservewrap)
+  ZWT.Style blue = textStyle.copy().setColor(NEW(ZWT.ColorName.blue))
+
+  # The method that ZWT calls to display the page.
+  PROC init()
+    # Use a Table to make columns.
+    ZWT.Table topPanel = NEW()
+    ZWT.root().add(topPanel)
+
+    topPanel.setWidget(0, 0, createLeftHeader())
+    topPanel.setWidget(0, 1, createNavigation())
+
+    ZWT.VerticalPanel leftPanel = NEW()
+    addTextArea(leftPanel)
+    addCompileArea(leftPanel)
+    addOutputArea(leftPanel)
+    topPanel.setWidget(1, 0, leftPanel)
+
+    ZWT.VerticalPanel rightPanel = NEW()
+    addHelp(rightPanel)
+    rightPanel.setStyle(NEW().setPadding(10))
+    topPanel.setWidget(1, 1, rightPanel)
+    topPanel.setCellStyle(1, 1, NEW().setVerAlign(ZWT.VerAlign.top))
+  }
+
+  # Create the headers.
+  FUNC createLeftHeader() ZWT.Widget
+    ZWT.Label label = NEW("Type your Zimbu code here:")
+    label.setStyle(blue.copy().setMarginLeft(3))
+    RETURN label
+  }
+
+  # Create buttons for navigating through the tutorial.
+  FUNC createNavigation() ZWT.Widget
+    ZWT.Table table = NEW()
+
+    ZWT.Button p = NEW("Previous", previous)
+    ZWT.Button r = NEW("Restore code", restore)
+    ZWT.Button n = NEW("Next", next)
+    p.setStyle(NEW().setMarginLeft(20))
+    r.setStyle(NEW().setMarginRight(80).setMarginLeft(80))
+    n.setStyle(NEW().setBGColor(NEW(70, 145, 255)).setColor(NEW(255, 255, 255)))
+
+    table.setWidget(0, 0, p)
+    table.setWidget(0, 1, r)
+    table.setWidget(0, 2, n)
+
+    p.setActive(FALSE)
+    n.setActive(FALSE)
+
+    RETURN table
+  }
+
+  string cleanCode = "FUNC Main() int\n"
+                  .. "  IO.print(\"Hello World\")\n"
+                  .. "  RETURN 0\n"
+                  .. "}"
+
+  # Create the textarea where the user types Zimbu code.
+  PROC addTextArea(ZWT.VerticalPanel panel)
+    textarea = ZWT.Textarea.NEW(cleanCode)
+    textarea.setStyle(NEW()
+        .setWidth(450)
+        .setHeight(250))
+    textarea.setSpellCheck(FALSE)
+    # Set the method to be called after a key was typed.
+    textarea.setKeyUpHandler(keyHandler)
+    panel.add(textarea)
+  }
+
+  # Create the compilearea, where the compilation output is displayed.
+  PROC addCompileArea(ZWT.VerticalPanel panel)
+    compilearea = NEW("(compilation messages go here)")
+    compilearea.setStyle(textStyle)
+    compilearea.addStyle(NEW().setMarginTop(10))
+    panel.add(compilearea)
+  }
+
+  # Create the outputarea, where the program output is displayed.
+  PROC addOutputArea(ZWT.VerticalPanel panel)
+    ZWT.TextBlock header = NEW("program output:")
+    header.setStyle(blue)
+    header.addStyle(NEW().setMarginTop(10).setMarginBot(5))
+    panel.add(header)
+
+    outputarea = NEW("(nothing yet)")
+    outputarea.setStyle(textStyle.copy().setFontName("Consolas,monospace"))
+    panel.add(outputarea)
+  }
+
+  PROC previous(ZWT.Event e)
+    ZWT.alert("Previous button: " .. e.type.ToString() .. " event")
+  }
+
+  PROC restore(ZWT.Event e)
+    textarea.setText(cleanCode)
+  }
+
+  PROC next(ZWT.Event e)
+    ZWT.alert("Next button: " .. e.type.ToString() .. " event")
+  }
+
+  # Create the compilearea, where the compilation output is displayed.
+  PROC addHelp(ZWT.VerticalPanel panel)
+    ZWT.Label text = NEW(
+           "The entrance point to a Zimbu program is the Main function.\n"
+        .. "The Main function always returns an int, which is the exit code\n"
+        .. "of the program.\n"
+        .. "\n"
+        .. "IO.print() is the print() method of the IO module.\n"
+        .. "It writes the string argument to stdout with a line break.\n"
+        .. "\n"
+        .. "The IO module contains I/O functionality.  You do not need to\n"
+        .. "import it, the compiler knows where it is.\n"
+        .. "\n"
+        .. "The Main function ends with a }.  In other languages END\n"
+        .. "is used, but that makes the code more difficult to read.\n"
+        .. "The unbalanced } is a trade mark of Zimbu.\n")
+    text.setStyle(textStyle)
+    panel.add(text)
+  }
+
+############################################################################
+# Code for building the program: on a key press send a request to the server
+# and await a response.
+
+  # state variables
+  bool busy     # TRUE when request was sent and no response received yet.
+  bool doBuild  # TRUE when key typed, need to send build request.
+
+  # Handle a key typed in the text area: build the code, now or later.
+  PROC keyHandler(ZWT.Event e)
+    IF !busy
+      sendRequest()   # not busy, send build request now
+    ELSE
+      doBuild = TRUE  # busy, build again after current build is done
+    }
+  }
+
+  # Send the text of the textarea to the server.
+  PROC sendRequest()
+    busy = TRUE
+
+    # Create a new BuildRequest message and set the code string.
+    Livedemo.BuildRequest request = NEW()
+    request.setCode(textarea.getText())
+    doBuild = FALSE
+
+    # Invoke the method on the server.
+    Livedemo.BuildService.callBuildAndRun(request, handleResponse)
+  }
+
+  # Handle the response from a build request.
+  PROC handleResponse(RPC.Control control, Message message)
+    Livedemo.BuildResult response = message
+
+    # Display the compilation output and the program output.
+    compilearea.setText(response.getCompilerMessages())
+    outputarea.setText(response.getRunOutput())
+
+    # If a key was typed in the mean time send a request again.
+    IF doBuild
+      sendRequest()
+    ELSE
+      busy = FALSE
+    }
+  }
+}

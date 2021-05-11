@@ -1,0 +1,11 @@
+# Small test program: Verify that this does not compile.
+
+# Name must start with lower case.
+PROC Foo()
+  IO.print("no")
+}
+
+FUNC Main() int
+  Foo()
+  RETURN 0
+}

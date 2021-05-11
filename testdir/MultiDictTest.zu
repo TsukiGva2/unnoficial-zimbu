@@ -1,0 +1,331 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for multiDict type
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE MultiDictTest @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/MultiDictTest.zu")
+    test1()
+    test1Ordered()
+    test2()
+    test2Ordered()
+    test3()
+    test3Ordered()
+    testMap()
+    testMapOrdered()
+    testForEach()
+    testForEachOrdered()
+  }
+
+  PROC test1()
+    multiDict<string, string> md = NEW()
+    md.add("one", "1")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    md.add("two", "2")
+    md.add("two", "2")
+    md.add("three", "3")
+    md.add("three", "4")
+    md.add("three", "5")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    IO.print("three occurences: " .. md.count("three"))
+    IO.print("three entry: " .. md.get("three").ToString())
+    IO.print("foo occurences: " .. md.count("foo"))
+
+    md.removeAll("two")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    md.clear("two")
+    md.add("six", "6")
+    md.remove("six", "6")
+    md.clear("six")
+    md.clear("six")
+    IO.print(md.Size() .. ": " .. md.ToString())
+
+    IO.print("md has one: " .. md.has("one"))
+    IO.print("md has four: " .. md.has("four"))
+
+    IO.print("md has one/1: " .. md.has("one", "1"))
+    IO.print("md has one/9: " .. md.has("one", "9"))
+
+    TRY
+      md.removeAll("four")
+    CATCH E.KeyNotFound e
+      IO.print("key four not found")
+    }
+
+    TRY
+      md.remove("three", "99")
+    CATCH E.ItemNotFound e
+      IO.print("key three item 99 not found")
+    }
+
+    md.clear("four")
+
+    md.set("three", ["1", "2", "3"])
+    IO.print(md.Size() .. ": " .. md.ToString())
+
+    IO.print("copy: " .. md.copy().ToString())
+    IO.print("keys: " .. md.keys().ToString())
+
+    md.clear()
+    IO.print("empty: " .. md.ToString())
+
+    # Init from list of dicts
+    md = [["aaa": "a"], ["aaa": "b"], ["zzz": "z"]]
+    IO.print(md.Size() .. ": " .. md.ToString())
+    # NEW with dict of list
+    md = NEW(["aaa": ["a", "b"], "zzz": ["z"]])
+    IO.print(md.Size() .. ": " .. md.ToString())
+    # Init from dict of list
+    md = ["aaa": ["a", "b"], "zzz": ["z"]]
+    IO.print(md.Size() .. ": " .. md.ToString())
+  }
+
+  PROC test1Ordered()
+    multiDict<string, string> md = NEW(TRUE)
+    md.add("one", "1")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    md.add("three", "3")
+    md.add("three", "4")
+    md.add("three", "5")
+    md.add("two", "2")
+    md.add("two", "2")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    IO.print("three occurences: " .. md.count("three"))
+    IO.print("three entry: " .. md.get("three").ToString())
+    IO.print("foo occurences: " .. md.count("foo"))
+
+    md.removeAll("two")
+    IO.print(md.Size() .. ": " .. md.ToString())
+    md.clear("two")
+    md.add("six", "6")
+    md.remove("six", "6")
+    md.clear("six")
+    md.clear("six")
+    IO.print(md.Size() .. ": " .. md.ToString())
+
+    IO.print("md has one: " .. md.has("one"))
+    IO.print("md has four: " .. md.has("four"))
+
+    IO.print("md has one/1: " .. md.has("one", "1"))
+    IO.print("md has one/9: " .. md.has("one", "9"))
+
+    TRY
+      md.removeAll("four")
+    CATCH E.KeyNotFound e
+      IO.print("key four not found")
+    }
+
+    TRY
+      md.remove("three", "99")
+    CATCH E.ItemNotFound e
+      IO.print("key three item 99 not found")
+    }
+
+    md.clear("four")
+
+    md.set("three", ["1", "2", "3"])
+    IO.print(md.Size() .. ": " .. md.ToString())
+
+    IO.print("copy: " .. md.copy().ToString())
+    IO.print("keys: " .. md.keys().ToString())
+
+    md.clear()
+    IO.print("empty: " .. md.ToString())
+
+    # Init from list of dicts
+    md = [["aaa": "a"], ["aaa": "b"], ["zzz": "z"]]
+    IO.print(md.Size() .. ": " .. md.ToString())
+    md = NEW([["aaa": "a"], ["aaa": "b"], ["zzz": "z"]], TRUE)
+    IO.print(md.Size() .. ": " .. md.ToString())
+    # NEW with dict of list
+    md = NEW(O["aaa": ["a", "b"], "zzz": ["z"]])
+    IO.print(md.Size() .. ": " .. md.ToString())
+    # Init from dict of list
+    md = O["aaa": ["a", "b"], "zzz": ["z"]]
+    IO.print(md.Size() .. ": " .. md.ToString())
+  }
+
+  CLASS Foo
+    string $name
+
+    NEW(string name)
+      $name = name
+    }
+
+    FUNC $Equal(Foo other) bool @public
+      RETURN $name == other.name
+    }
+
+    FUNC $ToString() string @public
+      RETURN "\"" .. $name .. "\""
+    }
+  }
+
+  PROC test2()
+    multiDict<string, Foo> md = NEW()
+    md.add("one", NEW("1"))
+    IO.print(md.ToString())
+    md.add("two", NEW("2"))
+    IO.print(md.ToString())
+    md.add("two", NEW("22"))
+    IO.print(md.ToString())
+    md.add("two", NEW("22"))
+    IO.print(md.ToString())
+  }
+
+  PROC test2Ordered()
+    multiDict<string, Foo> md = NEW(TRUE)
+    md.add("two", NEW("2"))
+    IO.print(md.ToString())
+    md.add("one", NEW("1"))
+    IO.print(md.ToString())
+    md.add("two", NEW("22"))
+    IO.print(md.ToString())
+    md.add("two", NEW("22"))
+    IO.print(md.ToString())
+  }
+
+  BITS TheBits
+    bool $one
+    int5 $nr
+  }
+
+  PROC test3()
+    # BITS as dictionary item
+    multiDict<string, TheBits> bitsItems = NEW()
+    bitsItems.add("a", one)
+    bitsItems.add("b", nr=3)
+    bitsItems.add("b", nr=8)
+    FOR i IN bitsItems.keys()
+      IO.print(i .. ": " .. bitsItems.get(i).ToString())
+    }
+    IO.print(bitsItems.ToString())
+
+    # BITS as dictionary Key
+    multiDict<TheBits, string> bitsKeys = NEW()
+    bitsKeys.add(one, "one")
+    bitsKeys.add(nr=2, "two")
+    bitsKeys.add(nr=2, "six")
+    FOR i IN bitsKeys.keys()
+      IO.print(i.ToString() .. ": " .. bitsKeys.get(i).ToString())
+    }
+    IO.print(bitsKeys.ToString())
+  }
+
+  PROC test3Ordered()
+    # BITS as dictionary item
+    multiDict<string, TheBits> bitsItems = NEW(TRUE)
+    bitsItems.add("b", nr=3)
+    bitsItems.add("a", one)
+    bitsItems.add("b", nr=8)
+    FOR i IN bitsItems.keys()
+      IO.print(i .. ": " .. bitsItems.get(i).ToString())
+    }
+    IO.print(bitsItems.ToString())
+
+    # BITS as dictionary Key
+    multiDict<TheBits, string> bitsKeys = NEW(TRUE)
+    bitsKeys.add(nr=2, "two")
+    bitsKeys.add(one, "one")
+    bitsKeys.add(nr=2, "six")
+    FOR i IN bitsKeys.keys()
+      IO.print(i.ToString() .. ": " .. bitsKeys.get(i).ToString())
+    }
+    IO.print(bitsKeys.ToString())
+  }
+
+  PROC testMap()
+    multiDict<int, string> md = [1: ["one", "twoo"], 2: ["three"]]
+    md.map({ s => s .. "!" })
+    IO.print(md.ToString())
+
+    md.mapList({ l => l.add(" more!") })
+    IO.print(md.ToString())
+
+    multiDict<int, int> mdi = md.mapTo({ s => s.Size() })
+    IO.print(mdi.ToString())
+
+    md = mdi.mapListTo(LAMBDA (l)
+        list<string> r = NEW()
+        FOR i IN l
+          r.add(i .. "+")
+        }
+        RETURN r
+      })
+    IO.print(md.ToString())
+
+    multiDict<string, int> id = ["one": [11, 22], "three": [33]]
+    multiDict<string, string> sd = id.keyMapTo({ k, n => k .. ": " .. n })
+    IO.print(sd.ToString())
+
+    multiDict<string, string> ssd = id.keyMapListTo(
+      LAMBDA (k, l)
+        list<string> r = NEW()
+        FOR i IN l
+          r.add(k .. "+" .. i)
+        }
+        RETURN r
+      })
+    IO.print(ssd.ToString())
+  }
+
+  PROC testMapOrdered()
+    multiDict<int, string> md = O[2: ["three"], 1: ["one", "twoo"]]
+    md.map({ s => s .. "!" })
+    IO.print(md.ToString())
+
+    md.mapList({ l => l.add(" more!") })
+    IO.print(md.ToString())
+
+    multiDict<int, int> mdi = md.mapTo({ s => s.Size() })
+    IO.print(mdi.ToString())
+
+    md = mdi.mapListTo(LAMBDA (l)
+        list<string> r = NEW()
+        FOR i IN l
+          r.add(i .. "+")
+        }
+        RETURN r
+      })
+    IO.print(md.ToString())
+
+    multiDict<string, int> id = O["three": [33], "one": [11, 22]]
+    multiDict<string, string> sd = id.keyMapTo({ k, n => k .. ": " .. n })
+    IO.print(sd.ToString())
+
+    multiDict<string, string> ssd = id.keyMapListTo(
+      LAMBDA (k, l)
+        list<string> r = NEW()
+        FOR i IN l
+          r.add(k .. "+" .. i)
+        }
+        RETURN r
+      })
+    IO.print(ssd.ToString())
+  }
+
+  PROC testForEach()
+    multiDict<int, string> isd = [3: ["three"], 1: ["one", "two"]]
+    VAR d1 = isd.forEach({ s => IO.print(s) })
+    VAR d2 = d1.forKeyEach({ k, s => IO.print(k .. ": " .. s) })
+    VAR d3 = d2.forEachList({ l => IO.print(l.ToString()) })
+    d3.forKeyEachList({ key, l => IO.print(key .. ": " .. l.ToString()) })
+  }
+
+  PROC testForEachOrdered()
+    multiDict<int, string> isd = O[3: ["three"], 1: ["one", "two"]]
+    VAR d1 = isd.forEach({ s => IO.print(s) })
+    VAR d2 = d1.forKeyEach({ k, s => IO.print(k .. ": " .. s) })
+    VAR d3 = d2.forEachList({ l => IO.print(l.ToString()) })
+    d3.forKeyEachList({ key, l => IO.print(key .. ": " .. l.ToString()) })
+  }
+
+}

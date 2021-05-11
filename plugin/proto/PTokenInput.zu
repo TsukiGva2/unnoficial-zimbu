@@ -1,0 +1,69 @@
+# The Zimbu compiler written in Zimbu
+#
+# Token input for a proto buffer.
+# Works a lot like the PTokenInput of the compiler, but with different kind of
+# tokens.
+#
+# This is used for the pluginproto program.  It must be usable in other
+# programs as well, thus do not add any dependencies on the write code.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../../Input.zu"  # use the input class from the compiler
+
+IMPORT "PToken.zu"
+IMPORT "PTokenize.zu"
+
+#= Wraps around an Input.  Input does the character level stuff, PTokenInput
+#= the token level stuff.
+CLASS PTokenInput @items=directory
+  Input        $input
+  list<PToken> $tokenStack     # pushed back tokens
+
+  # Create an Input for an opened file |fd| with name |fname|.
+  # |fname| is to be used for error messages.
+  NEW(IO.File fd, string fname, string indent)
+    $input = NEW(fd, fname, indent)
+    $tokenStack = NEW()
+  }
+
+  # Low level input function.
+  # Gets one character at a time, removing CR characters.
+  # Uses pushed character if there is one.
+  # Returns File.eof when there is nothing more to read.
+  FUNC $get() int
+    RETURN $input.get()
+  }
+
+  # Push |c| back, a following get() will use it.
+  PROC $push(int c)
+    $input.push(c)
+  }
+
+  # When there is a previously pushed back token, return it.
+  # Otherwise read a token from the file and return it.
+  FUNC $getToken() PToken
+    IF $tokenStack.Size() > 0
+      RETURN $tokenStack.remove()
+    }
+    RETURN PTokenize.get(THIS)
+  }
+
+  # Push |token| back, a following getToken() will use it.
+  PROC $pushToken(PToken token)
+    $tokenStack.add(token)
+  }
+
+  # Return the next token to be read without actually reading it.
+  FUNC $peekToken() PToken
+    IF $tokenStack.Size() > 0
+      RETURN $tokenStack[$tokenStack.Size() - 1]
+    }
+    PToken token = PTokenize.get(THIS)
+    $tokenStack.add(token)
+    RETURN token
+  }
+}

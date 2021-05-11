@@ -1,0 +1,211 @@
+# Test $Init()
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE InitTest @public
+
+  PROC test() @public
+    test1()
+    test2()
+    test3()
+    test4()
+    testObjectInit()
+  }
+
+  CLASS Foo
+    int $a
+
+    PROC $Init()
+      $a = 4
+    }
+
+    NEW() @default
+    }
+
+    NEW(int a)
+      $a = a
+    }
+  }
+
+  CLASS Bar EXTENDS Foo
+    int $b
+
+    PROC $Init()
+      $b = 9
+    }
+
+    NEW() @replace
+    }
+
+    NEW(int a, int b)
+      $a = a
+      $b = b
+    }
+  }
+
+  PROC test1()
+    Foo foo = NEW()
+    IO.print("foo.a: " .. foo.a)
+    Foo foo2 = NEW(8)
+    IO.print("foo2.a: " .. foo2.a)
+
+    Bar bar = NEW()
+    IO.print("bar.a: " .. bar.a .. ", bar.b: " .. bar.b)
+    Bar bar2 = NEW(1, 2)
+    IO.print("bar2.a: " .. bar2.a .. ", bar2.b " .. bar2.b)
+  }
+
+  CLASS Bar2 EXTENDS Foo2
+    int $b
+
+    FUNC $getA() int @replace
+      RETURN count7++
+    }
+
+    SHARED
+      int count7 = 7
+    }
+  }
+
+  CLASS Foo2
+    int $a
+
+    PROC $Init()
+      $a = $getA()
+    }
+
+    FUNC $getA() int @default
+      RETURN count++
+    }
+
+    SHARED
+      int count = 1
+    }
+  }
+
+  # Test that $Init() in parent class calls method in the child class.
+  # Also check that default NEW() calls $Init().
+  PROC test2()
+    Bar2 b2 = NEW()
+    IO.print("a is " .. b2.a)
+    IO.print("Foo2.count is " .. Foo2.count)
+    IO.print("Bar2.count7 is " .. Bar2.count7)
+    b2.Init()
+    IO.print("a is " .. b2.a)
+    IO.print("Foo2.count is " .. Foo2.count)
+    IO.print("Bar2.count7 is " .. Bar2.count7)
+  }
+
+  int initVal
+
+  CLASS Foo3
+    int $a = ++initVal
+  }
+
+  CLASS Bar3 EXTENDS Foo3
+    int $b = ++initVal
+  }
+
+  PROC test3()
+    Foo3 f3 = NEW()
+    IO.print("f3.a is " .. f3.a)
+    Bar3 b3 = NEW()
+    IO.print("b3.a is " .. b3.a)
+    IO.print("b3.b is " .. b3.b)
+  }
+
+
+  CLASS Foo4
+    int $a = ++initVal
+    string $s = "one"
+
+    PROC $Init()
+      $s = "two"
+    }
+  }
+
+  CLASS Bar4 EXTENDS Foo4
+    int $b = ++initVal
+
+    PROC $Init()
+      $s = "three"
+    }
+  }
+
+  PROC test4()
+    initVal = 10
+    Foo4 f4 = NEW()
+    IO.print("f4.a is " .. f4.a)
+    IO.print("f4.s is " .. f4.s)
+    Bar4 b4 = NEW()
+    IO.print("b4.a is " .. b4.a)
+    IO.print("b4.b is " .. b4.b)
+    IO.print("b4.s is " .. b4.s)
+  }
+
+  CLASS InitMe
+    int          $number
+    InitToo      $bar
+    list<string> $members
+
+    NEW()
+      $members = ["empty"]
+    }
+  }
+
+  CLASS InitToo
+    string $name
+    string $job
+  }
+
+  FUNC getOne() string
+    RETURN "one"
+  }
+
+  PROC testObjectInit()
+    int i = 1234
+    string the = "the"
+
+    InitMe init = {
+        # simple field, constant
+        number: i,
+        # object, nested initializer
+        bar: {
+            name: "Peter",
+            job: the .. "only",
+        },
+        # list
+        members: [
+         getOne(),
+         "two",
+         "three",
+        ],
+    }
+
+    IO.print(init.ToString())  # does the opposite
+    IO.print(globalInit.ToString())
+
+    InitMe empty = {}
+    IO.print(empty.ToString())
+  }
+
+  InitMe globalInit = {
+      # simple field, constant
+      number: 1234,
+      # object, nested initializer
+      bar: {
+          name: "Peter",
+          job: "mechanic",
+      },
+      # list
+      members: [
+       getOne(),
+       "two",
+       "three",
+      ],
+  }
+
+}

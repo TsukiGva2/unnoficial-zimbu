@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>SYS module - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>MODULE</span> SYS
+<span class='attribute'><small> @directory</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> Various system related stuff
+</p>
+<p class='ptext'> Still very much under development.
+<p class='ptext'></p>
+<table><tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='SYS.E_Process.html'><b>E_Process</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Exception thrown for an error related to a Process.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>CLASS</span>&nbsp;</td><td class='nowrap'><A href='SYS.Process.html'><b>Process</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Class for handling processes.
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>BITS</span>&nbsp;</td><td class='nowrap'><A href='SYS.IOFlags.html'><b>IOFlags</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Flags to pass to Process.setIO().
+</td>
+</tr>
+<tr><td align='right'><span class='keyword'>ENUM</span>&nbsp;</td><td class='nowrap'><A href='SYS.Signal.html'><b>Signal</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Signals that can be received and send to a <b>Process</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='SYS.html#shell'><b>shell</b></a>(<small>command</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute <b>command</b> with the shell.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.html#shellBackground'><b>shellBackground</b></a>(<small>command</small>) <small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Execute <b>command</b> with the shell in the background.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.html#getEnv'><b>getEnv</b></a>(<small>name</small>) <small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Get the value of environment variable <b>name</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='SYS.html#openInBrowser'><b>openInBrowser</b></a>(<small>page</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Open web address <b>page</b> in a browser.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>FUNC</span> <A name='getEnv'><b>getEnv</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> name) <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Get the value of environment variable <b>name</b>.
+</p>
+<p class='ptext'> If <b>name</b> does not exist NIL is returned.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='openInBrowser'><b>openInBrowser</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> page) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Open web address <b>page</b> in a browser.
+</p>
+<p class='ptext'> <b>page</b> should be the full path, such as "http://www.zimbu.org".
+ Or "file:///tmp/loveletter.pdf".
+ For ZWT you need to use something like "http://localhost:8884/".
+<p class='ptext'> Does not wait for the browser to finish, uses SYS.shellBackground().
+<p class='ptext'> Uses $BROWSER when it is set.
+<p class='ptext'> Otherwise, on Mac OS the "open URL" command is used.
+ On MS-Windows the default browser is used. On other systems
+ the following commands are tried: "google-chrome", "firefox", "safari",
+ "opera" and "ie".  The first one that can be found in $PATH is used.
+ When none is found or execution fails then FAIL is returned.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='shell'><b>shell</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> command) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute <b>command</b> with the shell.
+</p>
+<p class='ptext'> Just like the C library system() function.
+<p class='ptext'> Returns the exit code, usually zero for success.
+ Returns -1 if the shell could not be executed.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='shellBackground'><b>shellBackground</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> command) <span class='type'><A class='typehref' href='INT.int.html'>int</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Execute <b>command</b> with the shell in the background.
+</p>
+<p class='ptext'> Like shell(), but does not wait for the command to finish.
+<p class='ptext'> Returns FAIL if the shell could not be executed.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2010 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

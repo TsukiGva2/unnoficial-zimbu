@@ -1,0 +1,8 @@
+MODULE Testing
+  # CSS / Url
+  TEMPLATE inCssUrl(ZUT.Url text) ZUT.Css @public
+    p {
+     color: [=text];
+    }
+  }
+}

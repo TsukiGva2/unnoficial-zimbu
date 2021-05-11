@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>HTTP.Response class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='HTTP.html'>up:&nbsp;HTTP</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> HTTP.Response
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The HTTP response fields.
+</p>
+<table><tr><td align='right'><small><span class='type'><A class='typehref' href='INT.int.html'>int</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Response.html#$code'><b>$code</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> 200 (OK), 404 (not found), etc.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Response.html#$msg'><b>$msg</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> human readable message related to "code"
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Response.html#$headerItems'><b>$headerItems</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Items to be added to the response header.
+</td>
+</tr>
+<tr><td align='right'><small><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span></small>&nbsp;</td><td class='nowrap'><A href='HTTP.Response.html#$body'><b>$body</b></A><span class='attribute'><small> @public</small></span>&nbsp;</td><td> Body of the response, e.g., the HTML page.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr><tr><td align='right'></td><td class='nowrap'><A href='HTTP.Response.html#NEW'><b>NEW</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create default header with OK code and HTML type.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Response.html#$setLength'><b>$setLength</b></a>(<small>length</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set header item "Content-Length" to <b>length</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Response.html#$setType'><b>$setType</b></a>(<small>type</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set header item "Content-Type" to <b>type</b>.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$body'><b>$body</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Body of the response, e.g., the HTML page.
+</p>
+<p class='ptext'> TODO: this should be byteString.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='INT.int.html'>int</A></span>&nbsp;<A name='$code'><b>$code</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> 200 (OK), 404 (not found), etc.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='DICT.dict.html'>dict</A>&lt;<A class='typehref' href='STRING.string.html'>string</A>, <A class='typehref' href='STRING.string.html'>string</A>&gt;</span>&nbsp;<A name='$headerItems'><b>$headerItems</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Items to be added to the response header.
+</p>
+</td></tr></table><p><span class='type'><A class='typehref' href='STRING.string.html'>string</A></span>&nbsp;<A name='$msg'><b>$msg</b></A><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> human readable message related to "code"
+</p>
+<p class='ptext'> Must not contain a line break.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create default header with OK code and HTML type.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setLength'><b>$setLength</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> length)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set header item "Content-Length" to <b>length</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setType'><b>$setType</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> type)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set header item "Content-Type" to <b>type</b>.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

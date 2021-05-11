@@ -1,0 +1,10 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  RETURN 0
+}
+
+MODULE Test
+  IO.print("fail")
+}
+

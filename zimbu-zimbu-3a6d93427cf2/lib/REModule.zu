@@ -1,0 +1,486 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module RE
+#
+
+#= Classes and methods for regular expression support.
+#
+#- Still very much under development.
+#
+#*license
+#* Copyright 2015 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE REModule @public
+
+  #! The REloader changes "REModule.Regex" to "regex", as this is how it
+  #! is used globally.
+
+  #= The builtin type regex.
+  #
+  #- Example:
+  #% regex re = RE("pat.*ern")
+  #% IF re.matches("in here")
+  #
+  #- The regular expression syntax is equal to what is used in Javascript, see
+  #- @https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions@this page@
+  #
+  #- The number of matching groups is limited to 20.  Using more groups may
+  #- cause the pattern to fail.
+  #
+  #- When using backslashes in the pattern a raw string avoids the need to
+  #- double them:
+  #% regex re = RE("\\bword\\b")
+  #% regex re = RE(R"\bword\b")
+  CLASS Regex @public
+    string    $pattern    @private #!
+    Options   $options    @private #!
+    C(pcre *) $pcre       @private #!
+    C(pcre *) $pcreGlobal @private #!
+
+    #= Create a new regex from |pattern|.
+    NEW(string pattern) @public
+      $pattern = pattern
+    }
+
+    #= Create a new regex from |pattern| with |options|.
+    NEW(string pattern, Options options) @public
+      $pattern = pattern
+      $options = options
+    }
+
+    #!
+    PROC $compile(bool global) @private
+      GENERATE_IF Z.lang == "C"
+        # For C we use $pcre for global and not global.
+        IF $pcre == NIL
+>>> uses(pcre)
+          Tc *p;
+          Ti len = ZstringSizePtr(%$pattern%, &p);
+          const char *err;
+          int  errOff;
+          int opt = (%$options.ignoreCase% ? PCRE_CASELESS : 0) + (%$options.multiLine% ? PCRE_MULTILINE : 0);
+          %$pcre% = pcre_compile((char *)p, opt, &err, &errOff, NULL);
+<<<
+        }
+      GENERATE_ELSE
+        IF (global ? $pcreGlobal : $pcre) == NIL
+          IF $options == 0
+            IF global
+>>>
+              %$pcreGlobal% = new RegExp(%$pattern%, 'g');
+<<<
+            ELSE
+>>>
+              %$pcre% = new RegExp(%$pattern%);
+<<<
+            }
+          ELSE
+>>>
+            var opt = (%$options.ignoreCase% ? 'i' : '') + (%$options.multiLine% ? 'm' : '');
+<<<
+            IF global
+>>>
+              %$pcreGlobal% = new RegExp(%$pattern%, opt + 'g');
+<<<
+            ELSE
+>>>
+              %$pcre% = new RegExp(%$pattern%, opt);
+<<<
+            }
+          }
+        }
+      }
+    }
+
+    #= Returns TRUE when there is a match in |text|.
+    FUNC $matches(string text) bool @public
+      IF text == NIL
+        RETURN FALSE
+      }
+      $compile(FALSE)
+      IF $pcre == NIL
+        RETURN FALSE
+      }
+
+      GENERATE_IF Z.lang == "C"
+        bool match
+>>> uses(pcre)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        %match% = pcre_exec(%$pcre%, NULL, (char *)p, len, 0, 0, NULL, 0) >= 0;
+<<<
+      GENERATE_ELSE
+>>>
+        %match% = %$pcre%.test(%text%);
+<<<
+      }
+
+      RETURN match
+    }
+
+    #= Returns the matching string in |text| or NIL if there is no match.
+    #% RE("ab+").match("an abbrev")  # result: "abb"
+    FUNC $match(string text) string @public
+      IF text == NIL
+        RETURN NIL
+      }
+      $compile(FALSE)
+      IF $pcre == NIL
+        RETURN NIL
+      }
+
+      GENERATE_IF Z.lang == "C"
+        bool match
+        int start, end
+>>> uses(pcre)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        int ovec[63];
+        if (pcre_exec(%$pcre%, NULL, (char *)p, len, 0, 0, ovec, 63) >= 0) {
+          %match% = 1;
+          %start% = ovec[0];
+          %end% = ovec[1];
+        }
+<<<
+        IF match
+          RETURN text.asByteString().slice(start, end - 1).asString()
+        }
+      GENERATE_ELSE
+>>>
+        var match = %$pcre%.exec(%text%);
+        if (match) {
+          return match[0];
+        }
+<<<
+      }
+
+      RETURN NIL
+    }
+
+    #= Returns the matching string in |text| and the strings in |text| matched
+    #= by () groups.
+    #% RE("a(b+)").matchGroups("an abbrev")  # result: ["abb", "bb"]
+    #- If there is no match an empty list is returned.
+    FUNC $matchGroups(string text) list<string> @public
+      IF text == NIL
+        RETURN NIL
+      }
+      $compile(FALSE)
+      list<string> res = []
+      IF $pcre == NIL
+        RETURN res
+      }
+
+      GENERATE_IF Z.lang == "C"
+        int start, end
+>>> uses(pcre)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        int ovec[63];
+        int mcount = pcre_exec(%$pcre%, NULL, (char *)p, len, 0, 0, ovec, 63);
+        int i;
+        for (i = 0; i < mcount; ++i) {
+          %start% = ovec[2 * i];
+          %end% = ovec[2 * i + 1];
+<<<
+          res.add(text.asByteString().slice(start, end - 1).asString())
+>>>
+        }
+<<<
+      GENERATE_ELSE
+        string s
+>>>
+        var match = %$pcre%.exec(%text%);
+        if (match) {
+          for (var i = 0; i < match.length; ++i) {
+            %s% = match[i];
+<<<
+            res.add(s)
+>>>
+          }
+        }
+<<<
+      }
+
+      RETURN res
+    }
+
+    #= Returns the index of where the regexp matches in |text| or -1 if there
+    #= is no match.
+    #% RE("ab+").matchStart("an abbrev")  # result: 3
+    FUNC $matchStart(string text) int @public
+      IF text == NIL
+        RETURN -1
+      }
+      $compile(FALSE)
+      IF $pcre == NIL
+        RETURN -1
+      }
+
+      int start = -1
+      GENERATE_IF Z.lang == "C"
+>>> uses(pcre, utf8size)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        int ovec[63];
+        if (pcre_exec(%$pcre%, NULL, (char *)p, len, 0, 0, ovec, 63) >= 0) {
+          %start% = Zutf8size(p, ovec[0]);
+        }
+<<<
+      GENERATE_ELSE
+>>>
+        %start% = %text%.search(%$pcre%);
+<<<
+      }
+      RETURN start
+    }
+
+    #= Returns all the matching strings in |text| as a list.
+    #% RE("ab+").matchAll("ab in abbrev")  # result: ["ab", "abb"]
+    #- If there is no match an empty list is returned.
+    FUNC $matchAll(string text) list<string> @public
+      $compile(TRUE)
+      list<string> res = []
+
+      GENERATE_IF Z.lang == "C"
+        IF $pcre == NIL
+          RETURN res
+        }
+        int start, end
+>>> uses(pcre)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        int ovec[63];
+        int offset = 0;
+        while (1) {
+          int mcount = pcre_exec(%$pcre%, NULL, (char *)p, len, offset, 0, ovec, 63);
+          if (mcount < 0) break;
+          %start% = ovec[0];
+          %end% = ovec[1];
+<<<
+          res.add(text.asByteString().slice(start, end - 1).asString())
+>>>
+          offset = ovec[1];
+        }
+<<<
+      GENERATE_ELSE
+        IF $pcreGlobal == NIL
+          RETURN res
+        }
+        string s
+>>>
+        var match = %text%.match(%$pcreGlobal%);
+        if (match) {
+          for (var i = 0; i < match.length; ++i) {
+            %s% = match[i];
+<<<
+            res.add(s)
+>>>
+          }
+        }
+<<<
+      }
+
+      RETURN res
+    }
+
+    #= Replaces the first match in |text| with |replace|.
+    #% result = RE("ab+").replace("an abbrev", "AB")  # result: "an ABrev"
+    #- If there is no match |text| is returned unmodified.
+    #
+    #- Using $ in |replace| has a special meaning.  $& is the matched text, $1
+    #- the first match group, $2 the second match group, etc.  Use $$ to get a
+    #- $.  See
+    #- @https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/replace@this page@
+    #- for the details
+    FUNC $replace(string text, string replace) string @public
+      $compile(FALSE)
+      string res = text
+      IF $pcre == NIL
+        RETURN res
+      }
+
+      GENERATE_IF Z.lang == "C"
+        bool match
+        int start, end
+        string groups  # actually C array
+        int groupCount
+>>> uses(pcre)
+        Tc *p;
+        Ti len = ZstringSizePtr(%text%, &p);
+        int ovec[63];
+        int mcount = pcre_exec(%$pcre%, NULL, (char *)p, len, 0, 0, ovec, 63);
+        if (mcount >= 0) {
+          %match% = 1;
+          %start% = ovec[0];
+          %end% = ovec[1];
+          %groups% = (Tc*)ovec;
+          %groupCount% = mcount;
+        }
+<<<
+        IF match
+          IO.StringWriter w = NEW()
+          w.write(text.asByteString().slice(0, start - 1).asString())
+          $writeReplace(w, text, groups, groupCount, replace)
+          w.write(text.asByteString().slice(end).asString())
+          res = w.ToString()
+        }
+      GENERATE_ELSE
+        string s
+>>>
+        %res% = %text%.replace(%$pcre%, %replace%);
+<<<
+      }
+
+      RETURN res
+    }
+
+    #= Replaces all matches in |text| with |replace|.
+    #% result = RE("[ae]").replaceAll("an abbrev", "X")  # result: "Xn XbbrXv"
+    #- If there is no match |text| is returned unmodified.
+    #
+    #- Using $ in |replace| has a special meaning.  $& is the matched text, $1
+    #- the first match group, $2 the second match group, etc.  Use $$ to get a
+    #- $.  See
+    #- @https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/replace@this page@
+    #- for the details
+    FUNC $replaceAll(string text, string replace) string @public
+      $compile(TRUE)
+      string res = text
+
+      GENERATE_IF Z.lang == "C"
+        IF $pcre == NIL
+          RETURN res
+        }
+        bool match
+        int start, end
+        int offset
+        IO.StringWriter w
+        string groups  # actually C array.
+        int groupCount
+        WHILE TRUE
+>>> uses(pcre)
+          Tc *p;
+          Ti len = ZstringSizePtr(%text%, &p);
+          int ovec[63];
+          int mcount = pcre_exec(%$pcre%, NULL, (char *)p, len, %offset%, 0, ovec, 63);
+          if (mcount >= 0) {
+            %match% = 1;
+            %start% = ovec[0];
+            %end% = ovec[1];
+            %groups% = (Tc*)ovec;
+            %groupCount% = mcount;
+          } else {
+            %match% = 0;
+          }
+<<<
+          IF match
+            IF w == NIL
+              w = NEW()
+            }
+            w.write(text.asByteString().slice(offset, start - 1).asString())
+            $writeReplace(w, text, groups, groupCount, replace)
+            offset = end
+          ELSE
+            IF w != NIL
+              w.write(text.asByteString().slice(offset).asString())
+            }
+            BREAK
+          }
+        }
+        IF w != NIL
+          res = w.ToString()
+        }
+      GENERATE_ELSE
+        IF $pcreGlobal == NIL
+          RETURN res
+        }
+>>>
+        %res% = %text%.replace(%$pcreGlobal%, %replace%);
+<<<
+      }
+
+      RETURN res
+    }
+
+    #! Handle $ in the replacement string
+    PROC $writeReplace(IO.StringWriter w, string text,
+            string groups, int groupCount, string replace)
+      int start, end
+>>>
+      Tc *tp;
+      Ti tlen = ZstringSizePtr(%text%, &tp);
+      Tc *rp;
+      Ti rlen = ZstringSizePtr(%replace%, &rp);
+      int *ovec = (int *)%groups%;
+      int done = 0;
+      int i;
+      for (i = 0; i < rlen; ++i) {
+        if (rp[i] == '$' || (rp[i] == '\\' && rp[i + 1] == '$')) {
+          if (done < i) {
+            %start% = done;
+            %end% = i;
+<<<
+            w.write(replace.asByteString().slice(start, end - 1).asString())
+>>>
+            done = i;
+          }
+          if (rp[i] == '\\') ++i;
+          if (rp[i + 1] == '`') {
+            done = i + 2;
+            %start% = 0;
+            %end% = ovec[0];
+          } else if (rp[i + 1] == '\'') {
+            done = i + 2;
+            %start% = ovec[1];
+            %end% = tlen;
+          } else if (rp[i + 1] == '&') {
+            done = i + 2;
+            %start% = ovec[0];
+            %end% = ovec[1];
+          } else if (rp[i + 1] >= '1' && rp[i + 1] <= '9') {
+            int nr = rp[++i] - '0';
+            if (isdigit(rp[i + 1])) {
+              nr = nr * 10 + rp[++i] - '0';
+            }
+            done = i + 1;
+            if (nr >= %groupCount%) {
+              %start% = -1;
+            } else {
+              %start% = ovec[nr * 2];
+              %end% = ovec[nr * 2 + 1];
+            }
+          } else if (rp[i + 1] == '$') {
+            done = ++i;
+            %start% = -1;
+          } else {
+            %start% = -1;
+          }
+          if (%start% >= 0) {
+<<<
+            w.write(text.asByteString().slice(start, end - 1).asString())
+>>>
+          }
+        }
+      }
+      if (done < rlen) {
+        %start% = done;
+        %end% = rlen;
+<<<
+        w.write(replace.asByteString().slice(start, end - 1).asString())
+>>>
+      }
+<<<
+    }
+  }
+
+  #= Flags that can be used when creating a regex.
+  BITS Options
+    bool :ignoreCase   #= lower and upper case letters are considered equal
+    bool :multiLine    #= ^ and $ match after/before a newline character
+  }
+
+}

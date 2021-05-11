@@ -1,0 +1,7 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  int MY
+  RETURN 0
+}
+

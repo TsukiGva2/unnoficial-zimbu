@@ -1,0 +1,147 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ZuiWriteC module: Write C code from .zui file info.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT.PROTO "../zui.proto"
+
+IMPORT "../Builtin.zu"
+IMPORT "../Config.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../Generate.zu"
+IMPORT "../Output.zu"
+IMPORT "../Resolve.zu"
+IMPORT "../SContext.zu"  # TODO: remove
+IMPORT "../Scope.zu"
+IMPORT "../TopScope.zu"
+IMPORT "../UsedFile.zu"
+IMPORT "../ZuiFile.zu"
+IMPORT "WriteC.zu"  # TODO: remove
+
+MODULE ZuiWriteC @items=public @public
+
+  #= Write all C code for |mainFile| to |outFile|.
+  PROC write(UsedFile mainFile, TopScope topScope, IO.File outFile)
+    Output.Group outputs = NEW()
+
+    # Mark items used from Main().
+    WriteC gen = NEW()
+    mainFile.markMainUsed(gen, topScope)
+
+    SContext ctx = NEW(topScope, mainFile.scope(), gen, outputs)
+
+    generateFile(mainFile, ctx, "", outputs)
+
+    # Write the collected C code into the output file.
+    outFile.write("/*\n")
+    outFile.write(" * Generated from Zimbu file "
+                                       .. mainFile.zimbuFile.filename .. "\n")
+    outFile.write(" */\n")
+    writeHeads(gen, outputs, ctx, outFile)
+  }
+
+  # Write C code for |usedFile| to |outputs|.
+  PROC generateFile(UsedFile usedFile, SContext ctx,
+                                          string indent, Output.Group outputs)
+    ZuiFile zuiFile = usedFile.zimbuFile.zuiFile
+    string leader = indent .. "ZuiWriteC: " .. usedFile.zimbuFile.filename
+    LOG.info("\(leader): Generating C code...")
+
+    outputs.startWriting()
+
+    # At the toplevel only: Write code for builtin files.
+    IF usedFile.isTopFile
+      Builtin.generateBuiltins(usedFile, ctx)
+    }
+
+    # Write all the code for imported files.
+    generateImports(zuiFile, usedFile, ctx, outputs)
+
+    # Separate the inits of imports and inits of this file.
+    Scope fileScope = usedFile.zimbuFile.fileScope
+    ctx.gen.afterImports(fileScope, outputs)
+
+    # Write the body of this file.
+    generateBody(zuiFile, usedFile, ctx, outputs)
+
+    # Finish the inits of this file.
+    ctx.gen.afterGenerate(usedFile, outputs, ctx)
+
+    LOG.info("\(leader): Done.")
+  }
+
+  # TODO: omit usedFile and ctx
+  PROC generateImports(ZuiFile zuiFile, UsedFile usedFile,
+                                           SContext ctx, Output.Group outputs)
+    # Go through the IMPORT nodes of this scope.
+    IF zuiFile.contents.hasImport()
+      FOR import IN zuiFile.contents.getImportList()
+        Generate.generateImport(usedFile, import, ctx)
+      }
+    }
+  }
+
+  # TODO: omit usedFile and ctx
+  PROC generateBody(ZuiFile zuiFile, UsedFile usedFile,
+                                           SContext ctx, Output.Group outputs)
+    # TODO: use zuiFile
+    Generate.generate(usedFile.scope(), ctx)
+  }
+
+  # Write C code from |heads| into |outFile|.
+  PROC writeHeads(WriteC gen, Output.Group outputs,
+                                           SContext ctx, IO.File outFile)
+    gen.writeIncludes(ctx.topScope, outFile)
+
+    outFile.write("/*\n * TYPEDEFS\n */\n")
+    gen.writeTypedefs(outFile)
+    outputs.typeOut.writeToFile(outFile)
+
+    outFile.write("/*\n * STRUCTS\n */\n")
+    gen.writeDecl(ctx, outFile)
+    outputs.structOut.writeToFile(outFile)
+
+    outFile.write("/*\n * DECLARE FUNCTIONS AND GLOBALS\n */\n")
+    outputs.declOut.writeToFile(outFile)
+    outFile.write("int ZglobInit(int round);\n")
+    gen.writeBodies(outFile)
+
+    outFile.write("/*\n * FUNCTION BODIES\n */\n")
+    outputs.bodyOut.writeToFile(outFile)
+
+    outFile.write("/*\n * INIT IMT\n */\n")
+    outFile.write("void ZimtInit(void) {\n")
+    outFile.write("  struct {} dy;\n")
+    outputs.imtInitOut.writeToFile(outFile)
+    outFile.write("}\n\n")
+
+    outFile.write("/*\n * INIT GLOBALS\n */\n")
+    outFile.write("int ZglobInit(int round) {\n")
+    outFile.write("  int done = 1;\n")
+    IF !Config.noBacktrace || gen.isDeclUsed(Declaration.try)
+      outFile.write("  ZenvInit();\n")
+    }
+    IF !Config.noBacktrace
+      outFile.write(gen.stackDeeper("  "))
+      outFile.write(gen.initStackFrame("  ", TRUE, NIL))
+    }
+
+    outputs.earlyInitOut.writeToFile(outFile)
+    outputs.initOut.writeToFile(outFile)
+
+    IF !Config.noBacktrace
+      outFile.write("  ")
+      outFile.write(gen.stackBack())
+    }
+    outFile.write("  return done;\n")
+    outFile.write("}\n\n")
+
+    outFile.write("/*\n * MAIN\n */\n")
+    outputs.mainOut.writeToFile(outFile)
+  }
+
+}

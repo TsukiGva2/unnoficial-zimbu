@@ -1,0 +1,119 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# ModuleType class.
+#
+# A Type used for a MODULE.
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "Declaration.zu"
+IMPORT "MethodType.zu"
+IMPORT "ModuleScope.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "Type.zu"
+
+CLASS ModuleType EXTENDS Type @items=public
+  # The scope contains the module members: $scope.declDict
+  ModuleScope  $scope
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @replace @default
+    ModuleType ret = NEW($ttype, $name)
+    $copyModuleValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyModuleValues(ModuleType ret)
+    $copyTypeValues(ret)
+    ret.scope = $scope
+  }
+
+  # Find any member with name |name|.
+  # When |symUse| is NIL don't check access rights.
+  FUNC $findMember(string name, SymUse symUse) Declaration @replace
+    list<Declaration> decls = Declaration.findAll($scope.declDict, name)
+    IF decls == NIL
+      RETURN NIL
+    }
+    IF decls.Size() == 1 || symUse == NIL
+      RETURN $verifyAccess(decls[0], symUse)
+    }
+
+    # There are multiple matches, find one that is visible.  If not then give
+    # an error message that clearly explains the problem.
+    bool doError = symUse.doError
+    symUse.doError = FALSE  # don't give access error here
+    Declaration res
+    FOR decl IN decls
+      res = $verifyAccess(decl, symUse)
+      IF res != NIL
+        BREAK
+      }
+    }
+    symUse.doError = doError
+    IF res == NIL && symUse.doError
+      symUse.pos.error("no " .. name .. " is visible in this scope")
+      Declaration.reportError("One is defined here", decls[0], symUse.ctx)
+    }
+    RETURN res
+  }
+
+  # Remove member |decl|.
+  PROC $removeMember(Declaration decl)
+    $scope.removeMember(decl)
+  }
+
+  # Add a member that is a library function, use |produceProc| to produce
+  # the C code.  Only used on lib_module.
+  FUNC $addLibMethod(string name,
+                     proc<Declaration.C, Zui.MethodCall, SContext> produceProc,
+                     list<Declaration.C> argList,
+                     Type returnType
+                    ) Type
+    MethodType method = NEW(Type.Enum.builtinMethod, "builtin method")
+    Declaration.C decl = NEW(name)
+    decl.type = method
+
+    method.produce = produceProc
+    method.arguments = argList
+    method.returnType = returnType
+
+    $scope.addMethod(decl)
+    RETURN method
+  }
+
+  # Find methods with name |method| that match the arguments |argList|.
+  # Skip |skip.method|.
+  PROC $findMatchingMethods(string method,
+                           bool objectMethod,
+                           list<Declaration.C> argList,
+                           MethodType.Skip skip,
+                           MethodType.FindFuncOptions options,
+                           int &undef,
+                           multiDict<int, Declaration> funcs,
+                           SContext ctx
+                          ) @replace
+    IF !objectMethod && $scope != NIL && $scope.declDict != NIL
+      MethodType.findMatchingFunctionsInList(
+                     $scope.declDict.get(method, NIL),
+                            method, argList, skip, options, undef, funcs, ctx)
+    }
+  }
+
+  # Get the dictionary with member Declarations.
+  FUNC $getDeclDict() multiDict<string, Declaration> @replace
+    IF $scope != NIL
+      RETURN $scope.declDict
+    }
+    RETURN NIL
+  }
+
+}

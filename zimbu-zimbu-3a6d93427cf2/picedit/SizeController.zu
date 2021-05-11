@@ -1,0 +1,64 @@
+# Picture Editor: Picture display size controller
+#
+# Copyright 2016 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+
+IMPORT DisplayState.zu
+
+CLASS SizeController
+
+  FUNC $fit(ZUT.Event event) bool
+    DisplayState.init()
+
+      ZUT.Element pane = ZUT.getElementById("rightPane")
+      int height = pane.getHeight()
+      int width = pane.getWidth()
+      IF DisplayState.originalHeight <= height
+          && DisplayState.originalWidth <= width
+        # Image fits as-is
+        $one2one(event)
+      ELSE
+        float scaley = height / DisplayState.originalHeight
+        float scalex = width / DisplayState.originalWidth
+        IF scaley < scalex
+          $scale(scaley)
+        ELSE
+          $scale(scalex)
+        }
+      }
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  PROC $scale(float scale)
+    int height = (DisplayState.originalHeight * scale).toInt()
+    int width = (DisplayState.originalWidth * scale).toInt()
+    ZUT.Element image = ZUT.getElementById("image")
+    image.setAttribute("height", height.ToString())
+    image.setAttribute("width", width.ToString())
+  }
+
+  FUNC $one2one(ZUT.Event event) bool
+    DisplayState.init()
+
+    ZUT.Element image = ZUT.getElementById("image")
+    image.setAttribute("height", "")
+    image.setAttribute("width", "")
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+  FUNC $twoTimes(ZUT.Event event) bool
+    DisplayState.init()
+
+    ZUT.Element image = ZUT.getElementById("image")
+    image.setAttribute("height", (DisplayState.originalHeight * 2).ToString())
+    image.setAttribute("width", (DisplayState.originalWidth * 2).ToString())
+
+    # Do not bubble up.
+    RETURN FALSE
+  }
+
+}

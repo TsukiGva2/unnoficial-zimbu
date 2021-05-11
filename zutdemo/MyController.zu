@@ -1,0 +1,28 @@
+#
+# ZUT (Zimbu Templates) demo controller
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.ZUT "HelloMessage.zut"
+
+CLASS MyController
+
+  FUNC $clicked(ZUT.Event event) bool
+    STATIC bool done
+    IF !done
+      done = TRUE
+      IO.print()
+      IO.print("--- stdout --")
+    }
+    IO.print("You clicked!")
+
+    string id = ZUT.getAttribute(event.element, "data-id")
+    callback<ZUT.HtmlFunc, string> cb = NEW(HelloMessage.show, "Hello World!")
+    ZUT.fillElement(id, cb)
+
+    RETURN FALSE
+  }
+}

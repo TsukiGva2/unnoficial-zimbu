@@ -1,0 +1,5 @@
+# Small test program: Verify that this does not compile.
+FUNC Main() int
+  dict<string, int> d = ["one", 1, "two", 2]
+  RETURN 0
+}

@@ -1,0 +1,204 @@
+#
+# Test for the Zimbu compiler written in Zimbu.
+#
+# Test file for returning more than one value.
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE ReturnTest @public
+
+  PROC test() @public
+    IO.print("testdir/ReturnTest.zu")
+    testSome()
+    testFuncRef()
+    testWithDecl()
+    testMultiAssign()
+    testConversion()
+  }
+
+  FUNC tryIt(bool what) string, status
+    IF what
+      RETURN "no", FAIL
+    }
+    RETURN "yes", OK
+  }
+
+  FUNC minMax(list<int> values) int /* minimum */, int /* maximum */
+    int min = values[0]
+    int max = values[0]
+    FOR value IN values
+      IF value < min
+        min = value
+      ELSEIF value > max
+        max = value
+      }
+    }
+    RETURN min, max
+  }
+
+  FUNC doIt() int /* one */, int /* two */
+    RETURN 1, 2
+  }
+
+  FUNC doItByte() int /* one */, byte /* two */
+    RETURN 1, 2
+  }
+
+  FUNC doItFloat() int /* one */, float /* two */
+    RETURN 1, 2
+  }
+
+  FUNC doStringFoo() string, Foo
+    RETURN "yes", NEW(8)
+  }
+
+  CLASS Foo
+    int $nr
+
+    NEW(int nr)
+      $nr = nr
+    }
+  }
+
+  PROC testSome()
+    string s
+    status b
+    s, b = tryIt(TRUE)
+    IO.print("s: " .. s .. ", b: " .. b)
+    s, b = tryIt(FALSE)
+    IO.print("s: " .. s .. ", b: " .. b)
+
+    int min
+    int max
+    min, max = minMax([1, 8, -4, 77])
+    IO.print("Min: " .. min .. ", Max: " .. max)
+
+    int a
+    Foo f = NEW(3)
+    a, f.nr = doIt()
+    IO.print("a: " .. a .. ", f: " .. f.nr)
+
+    list<int> l = [0, 0, 0]
+    a, l[1] = doIt()
+    IO.print(l)
+
+    list<byte> lb = [0, 0, 0]
+    a, lb[2] = doItByte()
+    IO.print(lb)
+
+    dict<string, int> d = ["one": 0, "two": 1]
+    a, d["two"] = doIt()
+    IO.print(d)
+    d["three"], a = doIt()
+    IO.print(d)
+
+    dict<string, byte> db = ["one": 0, "two": 1]
+    a, db["two"] = doItByte()
+    IO.print(db)
+    a, db["three"] = doItByte()
+    IO.print(db)
+
+    dict<string, float> df = ["one": 0, "two": 1]
+    a, df["two"] = doItFloat()
+    IO.print(df)
+    a, df["three"] = doItFloat()
+    IO.print(df)
+
+    s, f = doStringFoo()
+    IO.print("s: " .. s .. ", Foo.nr: " .. f.nr)
+  }
+
+
+  FUNC doIt2() int, int
+    RETURN 1, 2
+  }
+
+  FUNC doIt2s(string s) string, int
+    RETURN s, 4
+  }
+
+  PROC testFuncRef()
+    func< => int, int> f = doIt2
+    int a
+    int b
+    a, b = f()
+    IO.print(a .. " - " .. b)
+
+    func<string => string, int> f2 = doIt2s
+    string s
+    s, b = f2("really")
+    IO.print(s .. " - " .. b)
+  }
+
+  FUNC doIt4() int, IO.File, string, list<int>
+    RETURN 4, NIL, "yes", [1, 2]
+  }
+
+  PROC testWithDecl()
+    string s, status st = tryIt(TRUE)
+    IO.print("s: " .. s .. ", st: " .. st)
+
+    int a, IO.File b, string c, list<int> d = doIt4()
+    IO.print(a .. " - " .. (b == NIL) .. " - " .. c .. " - " .. d.ToString())
+
+    a, b, c, d = doIt4()
+
+    int a2, b2
+    a2, b2 = doIt2()
+    IO.print(a2 .. " - " .. b2)
+  }
+
+  PROC testMultiAssign()
+    int a = 1
+    int b = 2
+    IO.print(a .. " - " .. b)
+    a, b = b, a
+    IO.print(a .. " - " .. b)
+
+    int c = 3
+    IO.print(a .. ", " .. b .. ", " .. c)
+    a, b, c = b, c, a
+    IO.print(a .. ", " .. b .. ", " .. c)
+    a, b, c = [b, c, a]
+    IO.print(a .. ", " .. b .. ", " .. c)
+
+    string s1 = "yes"
+    string s2 = "no"
+    IO.print(a .. ", " .. s1 .. ", " .. b .. ", " .. s2)
+    a, s1, b, s2 = b, s2, a, s1
+    IO.print(a .. ", " .. s1 .. ", " .. b .. ", " .. s2)
+  }
+
+  CLASS Parent
+    int $nr
+  }
+
+  CLASS Child EXTENDS Parent
+    string $name
+  }
+
+  FUNC getChild() Child, Parent, int
+    Child c = NEW()
+    c.name = "name"
+    c.nr = 8
+    Parent p = NEW()
+    p.nr = 4
+    RETURN c, p, 4
+  }
+
+  FUNC getInts() byte, int16, nat32, int
+    RETURN 11, 1234, 123456, 44
+  }
+
+  PROC testConversion()
+    Parent c, Parent p, int i = getChild()
+    IO.print("child: " .. c.<Child>.name .. ", nr: " .. c.nr)
+    IO.print("parent nr: " .. p.nr)
+
+    int i1, int i2, int i3, int i4 = getInts()
+    IO.print("Ints: " .. i1 .. ", " .. i2 .. ", " .. i3 .. ", " .. i4)
+  }
+}

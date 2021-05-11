@@ -1,0 +1,172 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Stuff for Array that is not target language specific.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ContainerStuff.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "Generate.zu"
+IMPORT "MethodType.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "SContext.zu"
+IMPORT "Type.zu"
+IMPORT "WriteCommon.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+
+MODULE ArrayStuff @items=public                   # TODO: restrict visibility
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression object = name.getLeft()
+    VAR objectExt = ZuiExpressionExt.get(object)
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    VAR callExt = ZuiMethodCallExt.get(call)
+    IF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+#      ELSEIF type.arraySize.Size() == 0
+#        callExt.undefined = 2
+      ELSE
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+
+        Zui.Expression arg = argList[0]
+        Generate.genFuncArg(arg, methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+      }
+      retType = type
+    ELSEIF methodName == "set"
+      # set(offset, items)
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 2, 2, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+
+        Zui.Expression arg = argList[0]
+        Generate.genExpr(arg, ctx, Type.anInt)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+
+        arg = argList[1]
+        Generate.genExpr(arg, ctx)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+      }
+      retType = type
+    ELSEIF methodName == "resize"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+
+        Zui.Expression arg = argList[0]
+        Generate.genExpr(arg, ctx, Type.anInt)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+      }
+      retType = type
+    ELSEIF methodName == "size" || methodName == "Size"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+      }
+      retType = Type.anInt
+    ELSEIF methodName == "ToString"
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        Generate.genExpr(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        IF argList.Size() == 1
+          Generate.genExpr(argList[0], ctx, Type.aString)
+          callExt.undefined += ZuiExpressionExt.get(argList[0]).undefined
+        }
+
+        # Mark ToString method as used.
+        WriteCommon.oneToStringArgument(type.itemType, call, TRUE, ctx)
+      }
+      retType = Type.aString
+    ELSEIF methodName == "Type"
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        callExt.undefined = 3
+      ELSEIF type.itemType != NIL
+        type.typeUsed(ctx)
+      }
+      retType = Type.aType
+    ELSEIF methodName == "find" || methodName == "has"
+      # TODO: myarray.find(expr, startIdx)
+      IF Generate.checkArgCount(call, 1, 1, ctx) == FAIL
+        callExt.undefined = 3
+      ELSE
+        # myarray.find(expr)
+        # myarray.has(expr)
+        Generate.generateVarname(object, ctx, type)
+        callExt.undefined = objectExt.undefined
+        Zui.Expression arg = call.getArgument(0)
+        Generate.genExpr(arg, ctx, type.itemType)
+        callExt.undefined += ZuiExpressionExt.get(arg).undefined
+        retType = methodName == "has" ? Type.aBool : Type.anInt
+      }
+    ELSE
+      callExt.undefined = 5
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  # Array functions common to all languages.  These are defined in
+  # lib/ARRAYModule.zu
+  FUNC commonMethodCall(ContainerType type,
+                        Zui.MethodCall call,
+                        SContext ctx,
+                        Type destType,
+                        Type &retTypeRef
+                        ) status
+    Type retType
+
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getId().getName()
+    Zui.Expression objExpr = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "mapTo" || methodName == "keyMapTo"
+      retType = ContainerStuff.generateMapCall(
+                        type, call, methodName, ctx, destType, "MARRAYModule")
+    ELSEIF  methodName == "forEach" || methodName == "forKeyEach"
+      retType = ContainerStuff.generateForEachCall(
+                         type, call, methodName, ctx, destType, "MARRAYModule")
+    ELSE
+      RETURN FAIL
+    }
+    IF destType != NIL && retType == NIL
+      retType = Type.anUnknown
+    }
+    retTypeRef = retType
+    RETURN OK
+  }
+
+}

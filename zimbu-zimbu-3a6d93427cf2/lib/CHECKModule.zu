@@ -1,0 +1,176 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module CHECK
+#
+
+#= Methods for runtime checks.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE CHECKModule @items=public @public
+
+  #! Handle an optional message.
+  FUNC maybeMsg(string msg) string
+    IF msg == NIL
+      RETURN ""
+    }
+    RETURN ": " .. msg
+  }
+
+  #= Throws an exception when |actual| is FALSE.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  #
+  #- Examples:
+  #%    CHECK.true(value > 0)
+  #%    CHECK.true(hasWord())
+  #%    CHECK.true(hasWord(), "word should be there")
+  PROC true(bool actual, string msg = NIL) @backtrace=no
+    IF !actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.true() failed\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |actual| is TRUE.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  #
+  #- Examples:
+  #%    CHECK.false(value > 0)
+  #%    CHECK.false(hasWord())
+  #%    CHECK.false(hasWord(), "word should not be there")
+  PROC false(bool actual, string msg = NIL) @backtrace=no
+    IF actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.false() failed\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |p| is NIL
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC notNil<Tp>(Tp p, string msg = NIL) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.notNil() failed\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |p| is not NIL
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC isNil<Tp>(Tp p, string msg = NIL) @backtrace=no
+    IF p != NIL
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.isNil() failed\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |p| is an empty string.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  #- Also checks for a NIL value of |p|.
+  PROC notEmpty(string p, string msg = NIL) @backtrace=no
+    IF p == NIL
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.notEmpty() failed: NIL string\(maybeMsg(msg))")
+    }
+    IF p == ""
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.notEmpty() failed: empty string\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC equal(int expected, int actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC equal(nat expected, nat actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  #
+  #- The exception message has the full text of |expected| and |actual|.
+  PROC equal(string expected, string actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: '\(expected)', actual: '\(actual)'\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  #
+  #- The message has a shortened difference instead of the full text, with
+  #- square brackets indicating the difference.
+  PROC equalShort(string expected, string actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      string expectedDiff, string actualDiff = TEST.shortDiff(expected, actual)
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: '\(expectedDiff)', actual: '\(actualDiff)'\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC equal(bool expected, bool actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC equal(status expected, status actual, string msg = NIL) @backtrace=no
+    IF expected != actual
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: expected: \(expected), actual: \(actual)\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |expected| and |actual| are not equal.
+  #- Both the types and the values must be equal.
+  #
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC equal(dyn expected, dyn actual, string msg = NIL) @backtrace=no
+    IF expected.Type() != actual.Type()
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed: types differ; expected: \(expected.Type()), actual: \(actual.Type())\(maybeMsg(msg))")
+    }
+    # TODO: check value if possible
+    string expectedString = expected.ToString()
+    string actualString = actual.ToString()
+    IF expectedString != actualString
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.equal() failed, expected: '\(expectedString)', actual: '\(actualString)'\(maybeMsg(msg))")
+    }
+  }
+
+  #= Throws an exception when |n| < |min| and when |n| > |max|.
+  #- Adds |msg| to the exception message if it is present and not NIL.
+  PROC inRange(int n, int min, int max, string msg = NIL) @backtrace=no
+    IF n < min
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.inRange() failed: \(n) < \(min)\(maybeMsg(msg))")
+    }
+    IF n > max
+      THROW E.Check.NEW(Z.callerPos(),
+            "CHECK.inRange() failed: \(n) > \(max)\(maybeMsg(msg))")
+    }
+  }
+
+}

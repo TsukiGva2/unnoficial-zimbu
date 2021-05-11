@@ -1,0 +1,170 @@
+#
+# Test driver for testing the Zimbu compiler on many programs.
+#
+# This compiles all the programs in these directories:
+#    testdir/progs/*.zu  compilation OK, run OK
+#    testdir/progsbad/*.zu  compilation FAIL
+#    testdir/progsfail/*.zu  compilation OK, run FAIL
+#
+# Copyright 2012 Bram Moolenaar  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# The License can be found it in the LICENSE file, or you may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+IMPORT "Config.zu"
+
+int exitValue
+
+FUNC Main() int
+  IF ARG.Size() != 1
+    IO.print("Usage: testrunner {zimbu_command}")
+    EXIT 1
+  }
+
+  # Run auto-configuration.  Fills in values for the Config module.
+  IF Config.run() != OK
+    IO.print("Config failed, cannot compile a program")
+    EXIT 1
+  }
+
+  # programs in testdir/progs compile and run OK.
+  doit("testdir/progs/", TRUE, TRUE)
+
+  # programs in testdir/progsbad fail compiliation
+  doit("testdir/progsbad/", FALSE, FALSE)
+
+  # programs in testdir/progsfail compile OK, run FAILs.
+  doit("testdir/progsfail/", TRUE, FALSE)
+
+  RETURN exitValue
+}
+
+PROC doit(string dirname, bool compiles, bool runs)
+  FOR fname IN IO.dirList(dirname)
+    IF fname.endsWith(".zu")
+      string zuName = dirname .. fname
+      string progName = zuName.slice(0, -4)
+      string exeName = progName .. Config.exeSuffix
+      string buildName = progName .. ".build"
+      string inName = progName .. ".in"
+      string outName = progName .. ".out"
+      string okName = progName .. ".ok"
+      string writtenName = progName .. ".written"
+      string writtenOkName = progName .. ".written.ok"
+
+      # The program name on MS-Windows must use backslashes.
+      IF Config.exeSuffix != ""
+        exeName = substitute(exeName, "/", "\\")
+      }
+
+      IO.print("Compiling " .. zuName)
+      string cmd = ARG.get(0) .. " \"" .. zuName
+                                         .. "\" > \"" .. buildName .. "\""
+      IF cmd.startsWith(".\\\\")
+        # We don't need the .\\ on MS-Windows here.
+        cmd = cmd.slice(3)
+      }
+      int retval = SYS.shell(cmd)
+      IF retval == 0
+        # Even when the command failed the exit value may be zero, check that
+        # the C file was actually generated.
+        IO.FileInfo cfile = IO.fileInfo(exeName)
+        IF cfile.status == FAIL || cfile.size == 0
+          retval = 1
+        }
+      }
+
+      IF compiles && retval != 0
+        IO.print("Error: " .. zuName .. " does not compile:")
+        IO.write(IO.readFile(buildName))
+        IO.print("--------")
+        exitValue = 1
+      ELSEIF !compiles && retval == 0
+        IO.print("Error: " .. zuName .. " DOES compile")
+        exitValue = 1
+      }
+
+      IF compiles && retval == 0
+        string readIn = ""
+        IO.FileInfo infile = IO.fileInfo(inName)
+        IF infile.status != FAIL
+          readIn = " < \"" .. inName .. "\""
+        }
+        IO.print("Running " .. exeName)
+        retval = SYS.shell(exeName .. readIn .. " > \"" .. outName .. "\"")
+
+        IF runs && retval != 0
+          IO.print("Error: " .. exeName .. " does not run")
+          exitValue = 1
+        ELSEIF !runs && retval == 0
+          IO.print("Error: " .. exeName .. " DOES run")
+          exitValue = 1
+        }
+        IF runs != (retval == 0)
+          IO.print("output:")
+          IO.write(IO.readFile(outName))
+          IO.print("--------")
+        ELSE
+          # Compare the .ok file to the .out file, if there is an .ok file.
+          IO.FileInfo oKfile = IO.fileInfo(okName)
+          IF oKfile.status != FAIL
+            string ok = IO.readFile(okName)
+            string out = IO.readFile(outName)
+            # Ignore CR for line endings.
+            ok = substitute(ok, "\r", "")
+            out = substitute(out, "\r", "")
+            IF ok != out
+              IO.print("Expected output:")
+              IO.print(ok)
+              IO.print("Actual output:")
+              IO.print(out)
+              IO.print("---------")
+              exitValue = 1
+            }
+          }
+
+          # Compare the .written.ok file to the .written file, if there is an
+          # .written.ok file
+          IO.FileInfo writtenokfile = IO.fileInfo(writtenOkName)
+          IF writtenokfile.status != FAIL
+            string ok = IO.readFile(writtenOkName)
+            string out = IO.readFile(writtenName)
+            # Ignore CR for line endings.
+            ok = substitute(ok, "\r", "")
+            out = substitute(out, "\r", "")
+            IF ok != out
+              IO.print("Expected written:")
+              IO.print(ok)
+              IO.print("Actual written:")
+              IO.print(out)
+              IO.print("---------")
+              exitValue = 1
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# TODO: this should be a builtin function.
+FUNC substitute(string s, string match, string sub) string
+  string r = s
+  WHILE TRUE
+    int i = r.find(match)
+    IF i < 0
+      BREAK
+    }
+    r = r.slice(0, i - 1) .. sub .. r.slice(i + match.Size())
+  }
+  RETURN r
+}

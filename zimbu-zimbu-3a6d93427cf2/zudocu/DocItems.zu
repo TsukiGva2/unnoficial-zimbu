@@ -1,0 +1,305 @@
+#
+# Part of Zudocu.
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO ../parser/zui.proto
+IMPORT.ZUT DocPage.zut
+
+IMPORT Parent.zu
+
+CLASS DocItems @items=public
+  ZUT.Html             $header
+  ZUT.Html             $summary
+  ZUT.Html             $details
+  list<list<ZUT.Html>> $extra   # extra items from #*section
+  bool                 $hide    # when TRUE hide this item (not public)
+  bool                 $noIndex # when TRUE don't list this item in the index
+
+  # Fill in the fields from |comment|, which is below the item when |useStart|
+  # is TRUE.
+  NEW(Parent parent, string comment, bool useStart)
+    IF comment != NIL
+      $create(parent, comment, useStart)
+    }
+  }
+
+  # Fill in the fields from |stmt|.
+  NEW(Parent parent, Zui.Statement stmt, bool dummy)
+    IF stmt.hasDeclaration()
+      Zui.Declaration decl = stmt.getDeclaration()
+      IF decl.hasCommentBefore()
+        $create(parent, decl.getCommentBefore(), FALSE)
+      }
+    }
+  }
+
+
+  # Fill in the fields from |decl|.commentBefore and |decl|.commentAfter
+  NEW(Parent parent, Zui.Declaration decl)
+    # Use the next comment first, then the previous comment.  That means the
+    # previous overrules the next when both contain something useful.
+    # But the "hide" flag is used from both.
+    bool   nextHide
+    ZUT.Html nextSummary
+    ZUT.Html nextDetails
+    bool   hasNext
+    IF decl.hasCommentAfter()
+      $create(parent, decl.getCommentAfter(), TRUE)
+      # Remember the values, they will be cleared when the previous comment
+      # exists but has no useful text after an empty line.
+      nextHide = $hide
+      nextSummary = $summary
+      nextDetails = $details
+      hasNext = nextSummary != NIL || nextDetails != NIL
+      $header = NIL  # ignore header after the item
+    }
+    IF decl.hasCommentBefore()
+      $summary = NIL
+      $details = NIL
+      $create(parent, decl.getCommentBefore(), FALSE)
+      $hide = $hide || nextHide
+      IF $summary == NIL || (decl.getPreferCommentAfter() && hasNext)
+        $summary = nextSummary
+      }
+      IF $details == NIL || (decl.getPreferCommentAfter() && hasNext)
+        $details = nextDetails
+      }
+    }
+  }
+
+  # Fill in $summary and $details from |comment|.
+  # When |useStart| is TRUE then use the start of the comment, up to an empty
+  # line.  When |useStart| is FALSE use the end of the comment, restart at
+  # every empty line.
+  PROC $create(Parent parent, string comment, bool useStart)
+    string   s = comment
+    bool     headerBreak
+    bool     summaryBreak
+    ZUT.Html detailsBreak
+    bool     detailsInExample
+    ZUT.Html extraBreak
+    int      extraIdx
+
+    WHILE TRUE
+      int idx = s.find('#')
+      int end = s.find('\n')
+      IF end >= 0 && (end < idx || idx < 0)
+        # Line without comment.  When using start don't look at the rest.
+        # When using end discard what we found previously.
+        IF useStart
+          BREAK
+        }
+        $summary = NIL
+        $details = NIL
+        detailsBreak = NIL
+        $extra = NIL
+        extraBreak = NIL
+        $hide = FALSE
+        $noIndex = FALSE
+      }
+      IF idx < 0
+        BREAK  # no comment, done
+      }
+      IF end >= idx
+        IF   s[idx + 1] == ':'  #  #:  part of the header
+          || s[idx + 1] == '='  #  #=  part of the summary
+          || s[idx + 1] == '*'  #  #*  part of the footer
+          || s[idx + 1] == '-'  #  #-  part of the details
+          || s[idx + 1] == '%'  #  #%  example in <pre>
+          #  #+  argument or return value TODO
+          #  #.>  literal HTML
+          #  #.?  not in index
+          $hide = FALSE
+
+          ZUT.Html html
+          IF s[idx + 2] == '>'
+            # HTML line, use literally.
+            html = NEW().addUNESCAPED(s.slice(idx + 3, end))
+          ELSEIF s[idx + 1] == '%'
+            # Escape HTML, no bolding
+            html = $processComment(NIL, s.slice(idx + 2, end))
+          ELSEIF s[idx + 2] == '?'
+            $noIndex = TRUE
+            # Escape HTML, make words in bars bold.
+            html = $processComment(parent, s.slice(idx + 3, end))
+          ELSE
+            # Escape HTML, make words in bars bold.
+            html = $processComment(parent, s.slice(idx + 2, end))
+          }
+
+          SWITCH s[idx + 1]
+            CASE ':'
+              IF $header == NIL
+                $header = html
+              ELSEIF headerBreak
+                $header.add(DocPage.textStart())
+                $header.add(html)
+              ELSE
+                $header.add(html)
+              }
+              headerBreak = FALSE
+            CASE '='
+              IF $summary == NIL
+                $summary = html
+              ELSEIF summaryBreak
+                $summary.add(DocPage.textStart())
+                $summary.add(html)
+              ELSE
+                $summary.add(html)
+              }
+              summaryBreak = FALSE
+            CASE '-'
+              IF $details == NIL
+                $details = html
+              ELSE
+                IF detailsInExample
+                  $details.addUNESCAPED("</pre>\n")
+                }
+                $details.add(html)
+              }
+              detailsBreak = DocPage.textStart()
+              detailsInExample = FALSE
+            CASE '%'
+              IF $details == NIL
+                $details = NEW().addUNESCAPED("<pre class='example'>")
+              ELSEIF !detailsInExample
+                $details.addUNESCAPED("<pre class='example'>")
+              }
+              $details.add(html)
+              detailsBreak = NEW().addUNESCAPED("</pre>\n")
+              detailsBreak.add(DocPage.textStart())
+              detailsBreak.addUNESCAPED("\n")
+              detailsInExample = TRUE
+            CASE '*'
+              IF $extra == NIL
+                $extra = NEW()
+                extraIdx = 0
+              }
+              IF $extra.Size() <= extraIdx
+                $extra.add([html])
+              ELSEIF s[idx + 2] != ' '
+                $extra.add([html])
+                ++extraIdx
+              ELSE
+                $extra[extraIdx].add(html)
+              }
+              extraBreak = DocPage.textStart()
+          }
+        ELSEIF s[idx + 1] == '!'  #  #!  hidden item
+          $hide = TRUE
+        ELSE
+          headerBreak = TRUE
+          summaryBreak = TRUE
+          IF detailsBreak != NIL
+            $details.add(detailsBreak)
+            detailsBreak = NIL
+            detailsInExample = FALSE
+          }
+          IF extraBreak != NIL
+            $extra[extraIdx].add(extraBreak)
+            extraBreak = NIL
+          }
+        }
+      }
+      s = s.slice(end + 1)
+    }
+    IF detailsInExample && detailsBreak != NIL
+      $details.add(detailsBreak)
+    }
+  }
+
+  # Escape HTML in |text| and make words in bars bold.
+  # TODO: this only works for latin1, not utf-8.
+  FUNC $processComment(Parent parent, string text) ZUT.Html
+    ZUT.Html html = NEW()
+    int len = text.Size()
+    int idx
+    int startIdx
+    WHILE idx < len
+      int c = text[idx]
+      IF parent != NIL
+        IF c == '|'
+          # Text inside |bars|, used for reference to an argument.
+          int bar2
+          bar2 = idx + 1
+          WHILE bar2 < len && text[bar2] != '|' && text[bar2] != ' '
+            ++bar2
+          }
+          IF text[bar2] == '|'
+            IF idx > startIdx
+              html.addText(text.slice(startIdx, idx - 1))
+            }
+            startIdx = bar2 + 1
+            html.addUNESCAPED("<b>")
+            html.addText(text.slice(idx + 1, bar2 - 1))
+            html.addUNESCAPED("</b>")
+            idx = startIdx
+          }
+        ELSEIF c == '`'
+          # Text inside `backticks`, used for code.
+          int bar2
+          bar2 = idx + 1
+          WHILE bar2 < len && text[bar2] != '`'
+            ++bar2
+          }
+          IF text[bar2] == '`'
+            IF idx > startIdx
+              html.addText(text.slice(startIdx, idx - 1))
+            }
+            startIdx = bar2 + 1
+            html.addUNESCAPED("<span class='commentcode'>")
+            html.addText(text.slice(idx + 1, bar2 - 1))
+            html.addUNESCAPED("</span>")
+            idx = startIdx
+          }
+        ELSEIF c == '@'
+          int end
+          end = idx + 1
+          WHILE end < len && "@ ()\n".find(text[end]) < 0
+            ++end
+          }
+          # Exclude a trailing dot: Create a @Flag.
+          IF text[end - 1] == '.'
+            --end
+          }
+
+          IF end < len && text[end] == '@'
+            #  @http://some/page@link this@
+            int third
+            third = end + 1
+            WHILE third < len && text[third] != '@'
+              ++third
+            }
+            IF text[third] == '@'
+              IF idx > startIdx
+                html.addText(text.slice(startIdx, idx - 1))
+              }
+              startIdx = third + 1
+              html.add(DocPage.simpleRef(text.slice(idx + 1, end - 1),
+                                        text.slice(end + 1, third - 1)))
+              idx = startIdx
+            }
+          ELSEIF end > idx + 1
+            # @Item  link
+            IF idx > startIdx
+              html.addText(text.slice(startIdx, idx - 1))
+            }
+            startIdx = end
+            html.add(DocPage.getHref(parent, text.slice(idx + 1, end - 1), NIL))
+            idx = startIdx
+          }
+        }
+      }
+      ++idx
+    }
+    IF idx > startIdx
+      html.addText(text.slice(startIdx, idx - 1))
+    }
+    RETURN html
+  }
+
+}

@@ -1,0 +1,11 @@
+# Small test program: Verify that this does not compile.
+
+FUNC Main() int
+  TYPE tuple<string, int> NameNumber
+  NameNumber tup = ["two", 2]
+  TYPE tuple<string, int> Other
+  Other oth = ["one", 1]
+  tup = oth # type mismatch
+
+  RETURN 0
+}

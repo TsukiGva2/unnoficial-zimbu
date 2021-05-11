@@ -1,0 +1,59 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# E module loader: Exceptions
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "../Builtin.zu"
+IMPORT "../Declaration.zu"
+IMPORT "../DeclStore.zu"
+IMPORT "../SContext.zu"
+
+MODULE ELoader @public @items=public
+  Declaration moduleDecl
+
+  # Prepare for using the builtin E module.
+  FUNC prepare() Builtin
+    DeclStore.wantPName("MEModule", "FthrowIntKeyNotFound")
+    DeclStore.wantPName("MEModule", "FthrowStringKeyNotFound")
+    DeclStore.wantPName("MEModule", "FthrowIntKeyExists")
+    DeclStore.wantPName("MEModule", "FthrowStringKeyExists")
+    DeclStore.wantPName("MEModule", "FthrowWrongType")
+    DeclStore.wantPName("MEModule", "FthrowWrongTypeEx")
+    DeclStore.wantPName("MEModule", "FthrowExit")
+    DeclStore.wantPName("MEModule", "FthrowException")
+    DeclStore.wantPName("MEModule", "FthrowException2")
+    DeclStore.wantPName("MEModule", "FthrowInit")
+    DeclStore.wantPName("MEModule", "FthrowBadValue")
+    DeclStore.wantPName("MEModule", "FthrowIllegalByte")
+    DeclStore.wantPName("MEModule", "FthrowThread")
+    DeclStore.wantPName("MEModule", "FthrowDyn")
+    DeclStore.wantPName("MEModule", "FthrowInternal")
+    DeclStore.wantPName("MEModule", "FthrowDeadly")
+    DeclStore.wantPName("MEModule", "FthrowNil")
+    DeclStore.wantPName("MEModule", "FthrowOutOfRange")
+    DeclStore.wantPName("MEModule", "FthrowOutOfMemory")
+    DeclStore.wantPName("MEModule", "FthrowOutOfMemorySize")
+    DeclStore.wantPName("MEModule", "FthrowIOError")
+    DeclStore.wantPName("MEModule", "FunhandledException")
+    DeclStore.wantPName("MEModule", "FwriteToStderr")
+
+    Builtin b = NEW()
+    b.moduleName = "EModule"
+    b.fileName = "EModule.zu"
+    b.setup = setup
+    RETURN b
+  }
+
+  # Invoked when the E module is used, after it was processed first time.
+  PROC setup(Builtin builtin, SContext ctx)
+    IF moduleDecl == NIL
+      # Add this module to the list of predefined symbols.
+      moduleDecl = Builtin.addLibModule("E", builtin)
+    }
+  }
+}

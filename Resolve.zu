@@ -1,0 +1,3764 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Resolve class and module: Methods are invoked from Generate for each node
+# where symbols need to be resolved.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "ArrayStuff.zu"
+IMPORT "BitsType.zu"
+IMPORT "BitsValueType.zu"
+IMPORT "CallbackType.zu"
+IMPORT "ClassType.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Conversion.zu"
+IMPORT "Declaration.zu"
+IMPORT "DeclStore.zu"
+IMPORT "DictStuff.zu"
+IMPORT "EnumType.zu"
+IMPORT "EnumValueType.zu"
+IMPORT "ExprEval.zu"
+IMPORT "ExprArg.zu"
+IMPORT "ForLoopInfo.zu"
+IMPORT "Generate.zu"
+IMPORT "ListStuff.zu"
+IMPORT "MethodScope.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "MethodType.zu"
+IMPORT "ModuleScope.zu"
+IMPORT "ModuleType.zu"
+IMPORT "MultipleType.zu"
+IMPORT "NoAllocType.zu"
+IMPORT "Output.zu"
+IMPORT "SContext.zu"
+IMPORT "Scope.zu"
+IMPORT "SymUse.zu"
+IMPORT "TryScope.zu"
+IMPORT "Type.zu"
+IMPORT "TupleType.zu"
+IMPORT "UsedFile.zu"
+IMPORT "ValueType.zu"
+IMPORT "WriteCommon.zu"
+IMPORT "ZimbuFile.zu"
+IMPORT "ZuiDeclarationExt.zu"
+IMPORT "ZuiExpressionExt.zu"
+IMPORT "ZuiMethodCallExt.zu"
+IMPORT "ZuiStatementExt.zu"
+IMPORT "ZuiTryStatementExt.zu"
+IMPORT "genC/WriteC.zu"
+
+CLASS Resolve EXTENDS WriteCommon @items=public   # TODO: restrict visibility
+
+  NEW()
+    $virtualFuncMap = NEW()
+  }
+
+  # Return the name to be used for "THIS".  When |insideNew| for a NEW()
+  # method, otherwise for any other method.
+  FUNC $thisName(bool insideNew) string
+    # return arbitrary value
+    RETURN "this"
+  }
+
+  # Write statement and line end, usually ";\n".
+  PROC $statementLineEnd(Output out)
+  }
+
+  # Write code for the end of a scope.
+  # |willJump| is true when there is a jump next, no need to jump out of the
+  # scope here.
+  # |statements| can be NIL.
+  PROC $writeScopeEnd(bool writeLabel, bool willJump,
+               list<Zui.Statement> statements, Zui.Position pos, SContext ctx)
+  }
+
+  # Write code to jump to the end of the scope.
+  PROC $writeJumpToLabel(SContext ctx)
+  }
+
+  # Return TRUE if an abstract method method is not to be generated.
+  FUNC $skipAbstractMethod() bool
+    RETURN FALSE  # in case writing JS code later
+  }
+
+  # Return TRUE if a method from the parent is to be written in a child class.
+  FUNC $doWriteParentMethod(Declaration decl) bool
+    RETURN TRUE  # in case writing C code later
+  }
+
+  # Generate the interface member lookup table, when needed.
+  PROC $interfaceMemberTable(Declaration decl, Declaration itf, SContext ctx)
+  }
+
+  # Write interface member lookup tables for a class.
+  PROC $writeIMTTables(Declaration decl, set<string> imtDone, SContext ctx)
+  }
+
+  # Write object declaration table for a class.
+  PROC $writeToTable(Declaration decl, SContext ctx)
+    # TODO: Only used when object.ToString() is used.
+    ClassType thisClass = decl.type.getClassType(ctx)
+    int undef
+    findToStringMethod(decl, Declaration.itemToString,
+                                          thisClass, decl.zuiPos, &undef, ctx)
+  }
+
+  # End of writing declaration table for a class.
+  PROC $writeIMTend(SContext ctx)
+  }
+
+  # Return the code-specific entry in |zimbuFile|.
+  FUNC $getCS(ZimbuFile zimbuFile) ZimbuFile.CodeSpecific
+    LOG.internal("Resolve.getCS() should not be called")
+    RETURN NIL
+  }
+
+  # Produce head of the Main() function.
+  PROC $mainHead(MethodType method, SContext ctx)
+  }
+
+  # Produce the start of the body of the Main() function.
+  PROC $mainMiddle(SContext ctx)
+  }
+
+  # Produce end of the Main() function.
+  PROC $mainEnd(SContext ctx)
+  }
+
+  # Write any collected virtual methods.
+  PROC $writeVirtual(SContext ctx)
+  }
+
+  # Allocate a new object.
+  PROC $writeAlloc(string typeName, Declaration finishMethod,
+                                                     Output out, SContext ctx)
+    ctx.addUsedItem(Declaration.alloc)
+  }
+
+  # Write a call to $Init()
+  PROC $writeObjectInit(Declaration initDecl, ClassType classType,
+                                               Declaration dest, SContext ctx)
+  }
+
+  # Write a call to clear a not allocated item.
+  PROC $writeNoAllocClear(string typeName, Declaration initMethod,
+                      Declaration finishMethod, string destName, SContext ctx)
+  }
+
+  # Write a call to clear a not allocated object.
+  PROC $writeNoAllocClear(string typeName, Declaration initMethod,
+                     Declaration finishMethod, Declaration dest, SContext ctx)
+  }
+
+  # Allocate a new string from an array.
+  PROC $writeNewString(Zui.MethodCall call, int &undef, SContext ctx)
+    IF Generate.checkArgCount(call, 1, 3, ctx) == OK
+      list<Zui.Expression> args = call.getArgumentList()
+      Generate.genExpr(args[0], ctx, Type.anArray)
+      undef += ZuiExpressionExt.get(args[0]).undefined
+      IF args.Size() >= 2
+        Generate.genExpr(args[1], ctx, Type.anInt)
+        undef += ZuiExpressionExt.get(args[1]).undefined
+      }
+      IF args.Size() == 3
+        Generate.genExpr(args[2], ctx, Type.anInt)
+        undef += ZuiExpressionExt.get(args[2]).undefined
+      }
+    }
+  }
+
+  # Allocate a new array for |type|.
+  PROC $writeArrayAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    ctx.addUsedItem(Declaration.array)
+    ctx.addUsedItem(Declaration.newArray)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 1
+      Generate.genExpr(args[0], ctx, Type.anInt)
+      undef += ZuiExpressionExt.get(args[0]).undefined
+    ELSEIF args.Size() != 0
+      ctx.error("Expected one argument", call.getPos())
+    }
+  }
+
+  # Allocate a new list for |type|.
+  PROC $writeListAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    ctx.addUsedItem(Declaration.newList)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 2
+      Generate.genExpr(args[0], ctx, Type.anInt)
+      Generate.genExpr(args[1], ctx, type.itemType)
+      undef += ZuiExpressionExt.get(args[0]).undefined
+                                     + ZuiExpressionExt.get(args[1]).undefined
+    ELSEIF args.Size() != 0
+      ctx.error("Expected zero or two arguments", call.getPos())
+    }
+  }
+
+  # Write the code to declare a callback type.
+  PROC $writeCallbackDecl(CallbackType type, Zui.Position pos, SContext ctx)
+  }
+
+  # Allocate a new callback for |type|.
+  PROC $writeCallbackAlloc(CallbackType type, string noAllocName,
+                           Generate.CallbackInfo cbInfo,
+                           Zui.MethodCall call, int &undef, SContext ctx)
+    list<Zui.Expression> args = call.getArgumentList()
+    int argOffset = cbInfo != NIL ? 0 : 1
+    IF args.Size() != type.arguments.Size() + argOffset
+      IF ZuiMethodCallExt.get(call).undefined == 0
+        ctx.error("Expected " .. (type.arguments.Size() + argOffset)
+                        .. " arguments, found " .. args.Size(), call.getPos())
+      }
+      undef += 10
+    ELSE
+      Zui.Expression methodExpr = cbInfo != NIL ? call.getName() : args[0]
+      VAR methodExprExt = ZuiExpressionExt.get(methodExpr)
+
+      methodExprExt.undefined = 0
+      IF cbInfo == NIL
+        Generate.genExpr(methodExpr, ctx, type.calledMethodType.getMethodRef())
+      ELSE
+        bool isIobject
+        IF methodExpr.getType() == Zui.ExprType.eMEMBER
+          Zui.Expression left = methodExpr.getLeft()
+          Type leftType = genExpr(left, ctx)
+          IF leftType != NIL && leftType.getTtype() == Type.Enum.iobject
+            isIobject = TRUE
+            # $iobjectFuncUse(cbInfo.methodType, leftType, left, ctx)
+            SymUse symUse = NEW(methodExpr.getPos(), ctx)
+            Generate.markMethodsUsed(cbInfo.methodType,
+                           leftType.getClassType(ctx), cbInfo.methodType.name,
+                                                                  symUse, ctx)
+          }
+        }
+        IF !isIobject
+          $namelessFuncUse(cbInfo.methodType, ctx)
+        }
+      }
+      undef += methodExprExt.undefined
+      FOR i IN argOffset UNTIL args.Size()
+        Generate.genExpr(args[i], ctx, type.arguments[i - 1].type)
+        undef += ZuiExpressionExt.get(args[i]).undefined
+      }
+      ctx.addUsedItem(type.calledMethodType)
+    }
+  }
+
+  # Allocate a new closure for |type|.
+  PROC $writeClosureAlloc(CallbackType type, MethodType method, bool typeCast,
+                                                     int &undef, SContext ctx)
+    $namelessFuncUse(type.calledMethodType, ctx)
+    FOR l IN [method.useArguments, method.autoArguments]
+      FOR arg IN l
+        IF arg.type ISA MethodRefType
+          # PROC foo(USE funcName): generate callback decl for funcName
+          Generate.generateMethodUse(undef, arg.type.getMethod(),
+                                                    arg.type.getMethod(), ctx)
+          ctx.addUsedItem(Declaration.funcRef)
+        }
+      }
+    }
+  }
+
+  # Write the code to declare a tuple type.
+  PROC $writeTupleDecl(TupleType tupleType, Zui.Position pos, SContext ctx)
+    FOR decl IN tupleType.types
+      int undef
+      getArgumentType(decl.type, pos, &undef, ctx)
+    }
+
+    Type.aDyn.addDependsOn(Declaration.itemToString)
+    IF tupleType.toStringDecl != NIL
+      tupleType.toStringDecl.addDependsOn(Declaration.itemToString)
+    }
+  }
+
+  PROC $writeTupleAlloc(TupleType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 0
+      # NEW() without setting values
+    ELSEIF args.Size() != type.types.Size()
+      ctx.error("Expected " .. (type.types.Size() + 1)
+                        .. " arguments, found " .. args.Size(), call.getPos())
+      undef += 10
+    ELSE
+      FOR i IN 0 UNTIL args.Size()
+        Generate.genExpr(args[i], ctx, type.types[i].type)
+        undef += ZuiExpressionExt.get(args[i]).undefined
+      }
+    }
+  }
+
+  PROC $callTupleToString(Zui.MethodCall call,
+                                 Type type, Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, type)
+    type.getEffType().<TupleType>.usingToString(ctx)
+  }
+
+  PROC $callTypeToString(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aType)
+    ctx.addUsedItem(Declaration.typeToString)
+  }
+
+  PROC $callTypeName(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aType)
+    ctx.addUsedItem(Declaration.typeNameFunc)
+  }
+
+  # Write field of an iobject for assignment.
+  PROC $writeDerefLhs(Output out)
+  }
+
+  # Write the statement for a NEW() method that allocates the object, or, when
+  # |init| is not NIL, calls $Init().
+  PROC $writeNewThis(MethodType method, Declaration initMethod,
+                     Declaration finishMethod, Zui.Position pos, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+    ctx.addUsedItem(Declaration.alloc)
+    IF finishMethod != NIL
+      ctx.addUsedItem(Declaration.hasFinish)
+    }
+  }
+
+  # Write the first argument of a NEW() method call.
+  # When |useThis| is TRUE "THIS".
+  # When |className| is not NIL clear the |dest| not allocated variable.  Then
+  # |initMethod| is the Init() method to use, can be NIL.
+  # Otherwise "NULL".
+  PROC $writeNewArg(bool useThis, string className, Declaration dest,
+                    Declaration initMethod, Declaration finishMethod,
+                    bool hasArg, SContext ctx)
+  }
+
+  # Write the return statement for a NEW() method.
+  PROC $writeNewReturn(Zui.Position pos, SContext ctx)
+  }
+
+  # Write the name of |decl| with type |type|, surrounding it with what is
+  # required to access it.
+  # When |read| is TRUE the symbol is read from, not assigned to or called.
+  PROC $writeSymName(Declaration decl, Type type, bool read, SContext ctx)
+    ctx.addUsedItem(decl)
+  }
+
+  # Write the name of the variable |decl|.
+  PROC $writeVarName(Declaration decl, SContext ctx)
+  }
+
+  # Generate using a nameless function as an expression, the Tcb used.
+  PROC $namelessFuncUse(Declaration decl, SContext ctx)
+    ctx.addUsedItem(decl)
+  }
+
+  # Using a nameless function as an expression, the Tcb is used.
+  PROC $namelessFuncReference(Declaration decl, SContext ctx)
+    ctx.addUsedItem(decl)
+  }
+
+  # Generate the type cast for a proc_ref or func_ref.
+  PROC $refCast(Type type, Zui.Position pos, SContext ctx)
+  }
+
+  # Generate a type cast for a reference.
+  PROC $refCast(SContext ctx)
+  }
+
+  # Generate an object initializer.
+  PROC $objectInit(Zui.Expression initExpr, Declaration dest, SContext ctx)
+    Type destType = dest?.type
+    VAR initExprExt = ZuiExpressionExt.get(initExpr)
+    ClassType classType = destType?.getClassType(ctx)
+    IF classType == NIL
+      initExprExt.undefined = 10
+    ELSE
+      initExprExt.undefined = Generate.generateEmptyNewCall(initExpr.getPos(),
+                                                                destType, ctx)
+      initExprExt.resultType = destType
+
+      SymUse symUse = NEW(initExpr.getPos(), ctx)
+      ctx.addUsedItem(destType)
+      FOR init IN initExpr.getInitItemList()
+        string name = init.getName()
+        Zui.Expression expr = init.getValue()
+        Declaration decl = classType.findObjectMember(name, symUse,
+                                                           searchParent, TRUE)
+        IF decl == NIL
+          initExprExt.undefined += 2
+        ELSE
+          Generate.genExprDoConv(expr, ctx, decl.type)
+          initExprExt.undefined += ZuiExpressionExt.get(expr).undefined
+          ctx.addUsedItem(decl)
+        }
+      }
+    }
+  }
+
+  # Generate the return type of a method from the declaration.
+  # Adds undefined count to decl.undefined.
+  # Return a symbol for the type.
+  FUNC $methodReturnType(Zui.Declaration decl, bool isNew, bool isInit,
+                                                          SContext ctx) Type
+    Zui.MethodType method = decl.getType().getMethodDecl()
+    Type retType
+    IF isNew || isInit
+      retType = ctx.scope.classType
+    ELSEIF method.hasReturnType()  # func
+      list<Declaration> types
+      IF method.sizeReturnType() > 1
+        types = NEW()
+      }
+
+      FOR t IN method.getReturnTypeList()
+        Zui.Expression expr = t.getName()
+        IF expr.getType() == Zui.ExprType.eTHIS
+          # Returning THIS, the object itself.
+          retType = ctx.scope.classType
+        ELSE
+          retType = Generate.generateDeclType(expr, ctx,
+                            isDecl + dotI + markUsed, NEW(decl.getPos(), ctx))
+          ZuiDeclarationExt.get(decl).undefined +=
+                                          ZuiExpressionExt.get(expr).undefined
+        }
+        IF types != NIL
+          IF retType == NIL
+            # When one of the types is unknown the whole type should be
+            # assumed unknown, so that where the method is called is resolved
+            # again.
+            types = NIL
+          ELSE
+            types.add(retType.getValueType(ctx))
+          }
+        }
+      }
+
+      IF types != NIL
+        retType = MultipleType.NEW(types, "ret")
+      }
+    }
+    RETURN retType
+  }
+
+  # Write the stack frame offset table.
+  PROC $methodLeader(MethodType method, Output out, SContext ctx)
+  }
+
+  # Write the head of the method: function name, "(" and optionally "THIS".
+  PROC $methodStart(Declaration decl, bool hasArguments, SContext ctx)
+  }
+
+  # Write the init at the very start of a function.
+  # RetType is the returned type for a FUNC.
+  PROC $methodBodyStart(MethodType method, bool isNew, bool isInit,
+                                               Zui.Position pos, SContext ctx)
+    IF ctx.scope.isClassScope() && ctx.scope.thisName != NIL && !isNew
+      ctx.addUsedItem(Declaration.throwThisNil)
+    }
+
+    IF ctx.scope.isClassScope() && ctx.scope.thisName != NIL
+      # Add "THIS" to the stack frame.
+      # Use the "THIS" name for C, that's the only place where it is used.
+      Generate.putRefInMethodScope(WriteC.cThisName, ctx.scope.classType, ctx)
+    }
+
+    # The return variable in not on the stack frame, it is used when it's not
+    # safe to run the GC.
+
+    # An argument may be a reference.
+    IF ctx.scope.declDict != NIL
+      Generate.checkRefScope(ctx.scope.declDict, ctx)
+    }
+    IF ctx.scope.<MethodScope>.objectMembers != NIL
+      Generate.checkRefScope(ctx.scope.<MethodScope>.objectMembers, ctx)
+    }
+  }
+
+  # Write the start of a method call.
+  PROC $writeMethodCall(Declaration funcDecl, bool moreArgs, SContext ctx)
+  }
+
+  # object.Type()
+  PROC $callObjectType(Zui.MethodCall call, ClassType class, Type object,
+                                            Zui.Expression expr, SContext ctx)
+    Generate.generateVarname(expr, ctx, object)
+    ZuiMethodCallExt.get(call).undefined += ZuiExpressionExt.get(expr).undefined
+  }
+
+  # object.ToString()
+  PROC $callObjectToString(Zui.MethodCall call, ClassType class, Type object,
+                                            Zui.Expression expr, SContext ctx)
+    Generate.generateVarname(expr, ctx, object)
+    ZuiMethodCallExt.get(call).undefined += ZuiExpressionExt.get(expr).undefined
+  }
+
+  # Add a DEFER'ed function to the defer list
+  PROC $addDefer(Zui.MethodCall call, Generate.CallbackInfo cbInfo,
+                                                                 SContext ctx)
+    ctx.scope.methodScope.hasDefer = TRUE
+    ctx.addUsedItem(cbInfo.methodType)
+    int undef
+    $writeCallbackAlloc(cbInfo.callback, NIL, cbInfo, call, &undef, ctx)
+    ZuiMethodCallExt.get(call).undefined += undef
+  }
+
+  # Call to a function reference.
+  FUNC $functionRefCall(Zui.MethodCall call, Declaration decl,
+                                  string funcName, Type destType, SContext ctx
+                       ) Type
+    ctx.addUsedItem(decl)
+    IF decl.type.getMethod() == NIL
+      RETURN NIL
+    }
+    RETURN decl.type.getMethod().returnType
+  }
+
+  # Call to a method reference.
+  FUNC $methodRefCall(Zui.MethodCall call,
+                      Type mtype,
+                      Type object,
+                      Zui.Expression objExpr,
+                      string pName,
+                      Type destType,
+                      SContext ctx) Type
+    Generate.generateVarname(objExpr, ctx, object)
+    ZuiMethodCallExt.get(call).undefined +=
+                                       ZuiExpressionExt.get(objExpr).undefined
+
+    MethodType mt = mtype.getMethod()
+    string methodName = call.getName().getRight().getId().getName()
+    Generate.generateArgumentsCheck(call, methodName, ctx, mt, destType)
+    ctx.out.write(")")
+
+    # TODO: handle callback with extra arguments
+    IF mt != NIL && mt.returnType != NIL
+      RETURN mt.returnType
+    }
+    RETURN NIL
+  }
+
+  # "object.method(args)"
+  # Keep in sync with WriteC.objectCall()!
+  FUNC $objectCall(Zui.MethodCall call,
+                   bool i_object_arg,
+                   list<Declaration.C> arglist,
+                   Declaration mdecl,
+                   Type objectType,
+                   Zui.Expression objExpr,
+                   string pName,
+                   Type destType,
+                   SContext ctx) Type
+    Zui.Expression nameExpr = call.getName()   # method
+    string methodName = nameExpr.getRight().getId().getName()
+    MethodType methodType
+    IF mdecl.type ISA CallbackType
+      # The method is actually a callback:
+      methodType = mdecl.type.<CallbackType>.methodType
+    ELSE
+      methodType = mdecl.type
+    }
+    Type retType = methodType.returnType
+
+    # Default is to use the argument type list of the method.
+    # But when generating a virtual function we use the types of the arguments
+    # passed in.
+    list<Declaration.C> useArglist = methodType.getArgList()
+
+    VAR callExt = ZuiMethodCallExt.get(call)
+    IF !(ctx.scope.isClassScope() && ctx.scope.classType.isAbstract())
+      Type class = objectType.getClassType(ctx)
+      IF class == NIL
+        callExt.undefined += 10
+        RETURN retType
+      }
+
+      string funcName = class.pName
+      IF objectType.ttype == Type.Enum.iobject
+        funcName ..= "_I"
+      }
+      funcName ..= "__M" .. methodName .. "_I"
+
+      # The "left" always needs to be evaluated.
+      Generate.generateVarnameParent(objExpr, ctx, objectType)
+      callExt.undefined += ZuiExpressionExt.get(objExpr).undefined
+
+      # For C we need to call the right function and pass "THIS".
+      # But we don't write anything for an abtract class.
+      IF objectType.ttype == Type.Enum.object && !i_object_arg
+        # object.method(arg) -> method_name(object, arg)
+        ctx.addUsedItem(mdecl)
+      ELSEIF objectType.ttype == Type.Enum.iobject && !i_object_arg
+        # object.method(arg)
+        #      -> ((ret (*)(args))(object->table[method_idx]))
+        #                                                 (object->ptr, arg)
+        int udef
+        $usingIobjectMethod(mdecl, arglist, objectType, &udef,
+                                 methodName, nameExpr.getPos(), funcName, ctx)
+        callExt.undefined += udef
+      ELSE
+        # One of the arguments is of i_object type.
+        # object.method(arg) -> method_func(object, arg)
+        # Define a function that does the work:
+        # RetType method_func(objectType *object, argType arg) {
+        #   int idx = object->type * NTYPES + arg->type;
+        #   if (some_table[idx])  /* arg used as i_object */
+        #     return func_table[idx](object, arg)
+        #   return func_table[idx](object, arg->ptr)
+        # }
+        # TODO: doesn't work for PARENT.method()
+        list<Declaration.C> newArglist = NEW()
+        IF arglist != NIL
+          FOR i IN 0 UNTIL arglist.Size()
+            Declaration.C d = arglist[i]
+            IF d != NIL
+              IF d.type.ttype == Type.Enum.unknown
+                  || d.type.ttype == Type.Enum.nilval
+                  || (d.type ISA ContainerType
+                                    && d.type.<ContainerType>.itemType == NIL)
+                  || d.type.isValueType()
+                # The argument is NEW(), NIL or [], use the argument type
+                # of the found method.
+                # For value types also use the argument type of the found
+                # method.  E.g., for a "9" (natval) may use an "int" type.
+                d = useArglist[i]
+              ELSE
+                # The method argument type is not passed below, but will be
+                # used inside the Virtual function, evaluate it to mark items
+                # as used.
+                ctx.gen.writeArgExpr(call.getArgument(i),
+                                                      ctx, useArglist[i].type)
+              }
+            }
+            newArglist.add(d)
+          }
+        }
+
+        funcName ..= objectArgName(arglist, methodType, ctx)
+        int udef
+        Declaration.C funcDecl = $generateVirtualFunc(funcName, objectType,
+                        methodName, nameExpr.getPos(), &udef, newArglist, ctx)
+        callExt.undefined += udef
+        IF funcDecl != NIL
+          retType = funcDecl.type
+          ctx.addUsedItem(funcDecl)
+        }
+
+        # Must generate the arguments for the virtual function, same types as
+        # the arguments that are passed in (thus no iobject -> object
+        # conversion).
+        useArglist = newArglist
+      }
+    }
+
+    Generate.generateArgumentsCheck(call, methodName, ctx, useArglist,
+                                                         methodType, destType)
+    RETURN retType
+  }
+
+  # Mark a method on an iobject as being used.
+  PROC $usingIobjectMethod(Declaration mdecl,
+                   list<Declaration.C> arglist,
+                   Type objectType,
+                   int &udef,
+                   string methodName,
+                   Zui.Position pos,
+                   string baseFuncName,
+                   SContext ctx)
+    ctx.addUsedItem(mdecl)
+
+    # Need to mark all methods that implement this interface as used.
+    # Make a call to generateVirtualFunc() for that.
+    string funcName = baseFuncName .. objectArgName(arglist, mdecl.type, ctx)
+    Declaration.C funcDecl = $generateVirtualFunc(funcName, objectType,
+                                          methodName, pos, udef, arglist, ctx)
+
+    # If this scope is generated then all methods that implement the call
+    # must be generated.
+    IF funcDecl != NIL
+      ctx.addUsedItem(funcDecl)
+    }
+
+    # If another implementation or method is added to the interface we
+    # must come back here.
+    objectType.getClassType(ctx).scope.addScopeDependency(ctx.scope)
+  }
+
+  # Remember which functions have been generated, don't do one twice.
+  # Key is a concatenation of class, argument, etc.
+  dict<string, Declaration.C> $virtualFuncMap
+
+  # Generate a function that takes an object or i_object and a list of
+  # arguments and figures out the method to be invoked.
+  # |nameExpr| is the method name.
+  # Returns the Declaration to keep track of the virtual method.
+  # NIL if there is something wrong.
+  FUNC $generateVirtualFunc(string funcKey,
+                            Type varType,
+                            string methodName,
+                            Zui.Position pos,
+                            int &undef,
+                            list<Declaration.C> callArglist,
+                            SContext ctx
+                           ) Declaration
+    IF $virtualFuncMap.has(funcKey)
+      RETURN $virtualFuncMap.get(funcKey)
+    }
+    Type retType
+    Declaration.C funcDecl = NEW(funcKey)
+
+    # Make a list with list of possible symbols for THIS and each argument.
+    # altList[0] for A0 THIS  
+    # altList[1] for A1 arg 1
+    # altList[1] for A2 arg 2
+    # etc.
+    list<list<Declaration>> altList = getDeclAltList(
+                            varType, methodName, pos, undef, callArglist, ctx)
+    IF altList == NIL
+      RETURN NIL
+    }
+
+    list<int> indexes = NEW()
+    FOR l IN altList
+      indexes.add(0)
+    }
+
+    # Find out for what arguments with more than one possible type, the type
+    # makes us pick another method.  If the type doesn't matter, just use the
+    # first one.  This avoids adding a switch where all alternatives are
+    # equal.
+    FOR tryIdx IN 0 UNTIL altList.Size()
+      IF altList[tryIdx].Size() > 1
+        # For every possible combination of types for arguments other than
+        # tryIdx see if the picked method changes if we use a different type
+        # for tryIdx.
+        bool pickedAnother = FALSE
+        indexes.map({ i => 0 })
+        WHILE !pickedAnother
+          # Gather the arguments for this combination.
+          indexes[tryIdx] = 0
+          list<Declaration.C> argtry = NEW()
+          FOR idx IN 1 UNTIL altList.Size()
+            Declaration.C decl = NEW("")
+            decl.type = altList[idx][indexes[idx]].type
+            argtry.add(decl)
+          }
+
+          # Try every type of altList[tryIdx], see if the picked method
+          # changes
+          Type pickedMethod
+          FOR tryIdxVal IN 0 UNTIL altList[tryIdx].Size()
+            indexes[tryIdx] = tryIdxVal
+            IF tryIdx > 0 && tryIdxVal > 0
+              # Change the argument at tryIdx to tryIdxVal
+              argtry[tryIdx - 1].type = altList[tryIdx][tryIdxVal].type
+            }
+            Declaration object = altList[0][indexes[0]]
+            Declaration mdecl
+            mdecl = Generate.findMethodArglist(object.type, methodName,
+                                  TRUE, argtry, NIL, ctx, TRUE,
+                                  searchParent + allowInvisible,
+                                  ctx.doError(), pos, "", undef)
+            IF mdecl == NIL
+              # can't find method, error given elsewhere
+              pickedAnother = TRUE
+              BREAK
+            }
+            IF pickedMethod == NIL
+              pickedMethod = mdecl.type
+            ELSEIF mdecl.type ISNOT pickedMethod
+              pickedAnother = TRUE
+              BREAK
+            }
+          }
+          IF pickedAnother
+            BREAK
+          }
+
+          # Next combination of arguments other than tryIdx.
+          bool didinc
+          FOR i IN 0 UNTIL indexes.Size()
+            IF i != tryIdx && altList[i].Size() > 1
+              IF indexes[i] + 1 < altList[i].Size()
+                ++indexes[i]
+                didinc = TRUE
+                BREAK
+              }
+              indexes[i] = 0
+            }
+          }
+          IF !didinc
+            BREAK
+          }
+        }
+
+        IF !pickedAnother
+          # type of this argument doesn't matter, set its size to one.
+          altList[tryIdx].remove(1, -1)
+        }
+      }
+    }
+
+    # If there is only one matching function we can skip all the conditions
+    # and just write that one.
+    # TODO: can skip a lot of stuff now that we figure out haveTwoMethods
+    # early.
+    bool haveTwoMethods
+    FOR l IN altList
+      IF l.Size() > 1
+        haveTwoMethods = TRUE
+        ctx.addUsedItem(Declaration.throwCstringBadValue)
+        BREAK
+      }
+    }
+
+    # For every permutation find a matching function.
+    # E.g. A0 is an i_object with 2 possible classes, A2 is an i_object with
+    # three possible classes
+    #        switch (A0->type) {
+    #          case 0:
+    #                  switch (A2->type) {
+    #                    case 0:
+    #                             return func_obj0_obj0(A0->ptr, A1, A2->ptr);
+    #                    case 1:
+    #                             return func_obj0_itf(A0->ptr, A1, A2);
+    #                    case 2:
+    #                             return func_obj0_itf(A0->ptr, A1, A2);
+    #                  }
+    #          case 1:
+    #                  switch (A2->type) {
+    #                    case 0:
+    #                             return func_obj1_obj0(A0->ptr, A1, A2->ptr);
+    #                    case 1:
+    #                             return func_obj1_obj1(A0->ptr, A1, A2->ptr);
+    #                    case 2:
+    #                             return func_obj1_obj2(A0->ptr, A1, A2->ptr);
+    #                  }
+    #        }
+    #
+    # Every possible class must have a matching method, either with that class
+    # or with an interface.
+
+    indexes.map({ i => 0 })
+    Type foundRetType
+
+    # depth indicates what to do when a matching func is found:
+    # 0: write "switch" for A0
+    # 1: write "case" for A0
+    # 2: write "switch" for A1
+    # 3: write "case" for A1
+    # etc.
+    int depth
+
+    WHILE TRUE
+      list<Declaration.C> argtry = NEW()
+      FOR idx IN 1 UNTIL altList.Size()
+        Declaration.C decl = NEW("")
+        decl.type = altList[idx][indexes[idx]].type
+        argtry.add(decl)
+      }
+
+      Declaration object = altList[0][indexes[0]]
+      Declaration mdecl
+      mdecl = Generate.findMethodArglist(object.type, methodName, TRUE,
+                  argtry, NIL, ctx, TRUE, searchParent + allowInvisible,
+                  FALSE, pos, "", undef)
+      Type mtype = mdecl?.type
+      IF mtype == NIL
+        ++undef
+      ELSE
+        IF mtype.ttype == Type.Enum.func && mtype.<MethodType>.returnType != NIL
+          # TODO: check the return types of all methods are equal.
+          retType = mtype.<MethodType>.returnType
+          IF foundRetType != NIL
+                            && !Type.matchingTypes(foundRetType, retType, ctx)
+            ++undef
+          }
+          foundRetType = retType
+        }
+        depth = 2 * altList.Size()
+
+        # The method is really only used if the class is also used.
+        funcDecl.addDependsOnCond(mdecl, object.type.getClassType(ctx))
+      }
+
+      # Advance to the next class for the argument.
+      int idx = altList.Size()
+      WHILE idx > 0
+        idx--
+        IF depth > idx * 2
+          depth--
+        }
+        IF altList[idx].Size() > 1
+          indexes[idx]++
+          IF indexes[idx] < altList[idx].Size()
+            BREAK
+          }
+          indexes[idx] = 0
+          IF depth > idx * 2
+            depth--
+          }
+        ELSE
+          depth--
+        }
+      }
+      IF depth <= 0
+        BREAK
+      }
+    }
+
+    # Most likely newPosString() is invoked, mark it as used.
+    newPosString(pos, ctx)
+
+    funcDecl.type = retType
+    $virtualFuncMap[funcKey] = funcDecl
+    RETURN funcDecl
+  }
+
+  # Write code for "object.member.(expr)(arg)".
+  # |method| has the arguments.
+  # |method.getName()| is "object.member.(expr)"
+  # |method.getName().getLeft()| is "object.member"
+  # |method.getName().getRight()| is "expr"
+  FUNC $memberExpr(Zui.MethodCall method, Generate.CallbackInfo cbInfo,
+                                             SContext ctx, Type destType) Type
+    Zui.Expression nameExpr = method.getName()
+    IF cbInfo != NIL
+      ctx.error("Not supported for DEFER (memberExpr)", nameExpr)
+    }
+    VAR methodExt = ZuiMethodCallExt.get(method)
+
+    # Evaluate "(expr)"
+    ctx.scope.wantBacktrace = TRUE
+    Type type = genExpr(nameExpr.getRight(), ctx)
+    methodExt.typeObj = type
+
+    # Evaluate "object.member"
+    Type classType
+    IF type != NIL && type ISA MethodType
+      classType = type.<MethodType>.classType
+    }
+    genExpr(nameExpr.getLeft(), ctx, classType)
+
+    # Evaluate "(arg)"
+    MethodType methodType = destType ISA MethodType ? destType : NIL
+    Generate.generateArgumentsCheck(method, "{expr}", ctx,
+                               methodType?.getArgList(), methodType, destType)
+    methodExt.undefined = ZuiExpressionExt.get(nameExpr.getLeft()).undefined
+                       + ZuiExpressionExt.get(nameExpr.getRight()).undefined
+    IF methodExt.typeObj != NIL
+      RETURN methodExt.typeObj.getReturnType()
+    }
+    ++methodExt.undefined
+    RETURN NIL
+  }
+
+  # Write a function argument "argName" with type declaration.
+  # |first| is true for the first argument.
+  PROC $argWithType(bool first, Type type, Zui.Position pos,
+                                                 string argName, SContext ctx)
+  }
+
+  # Write a varargs argument for |args[startIndex]| .. |args[args.Size() - 1]|
+  # |decl| has the type of the method varargs.
+  # Return the number of undefined symbols.
+  FUNC $writeVarargs(Zui.MethodCall call, Type type, TupleType tupleType,
+                  list<Zui.Expression> args, int startIndex, SContext ctx) int
+    ctx.addUsedItem(Declaration.array)
+    ctx.addUsedItem(Declaration.newArray)
+    int undef
+    FOR idx IN startIndex UNTIL args.Size()
+      Zui.Expression expr = args[idx]
+      IF expr.getType() == Zui.ExprType.eASSIGN
+        # for "name = value" generate "value".
+        expr = expr.getRight()
+      }
+      ctx.gen.writeArgExpr(expr, ctx, type)
+      undef += ZuiExpressionExt.get(expr).undefined
+    }
+    RETURN undef
+  }
+
+  # Return TRUE when forward declarations are to be written.
+  FUNC $doWriteDecl() bool
+    RETURN FALSE
+  }
+
+  # expr.left[expr.right]
+  FUNC $subscript(Zui.Expression expr, SContext ctx, Type destType) Type
+    Zui.Expression left = expr.getLeft()
+    Zui.Expression right = expr.getRight()
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    VAR leftExt = ZuiExpressionExt.get(left)
+    VAR rightExt = ZuiExpressionExt.get(right)
+    Type ret
+
+    # Get type of "expr".
+    Type type = genExpr(left, ctx)
+    IF type == NIL
+      exprExt.undefined = 10
+    ELSE
+      # Flatten typedef
+      type = type.getEffType()
+
+      IF type.ttype == Type.Enum.array
+          || type.ttype == Type.Enum.list
+          || type.ttype == Type.Enum.dict
+        genExpr(left, ctx, type)
+        IF type.ttype != Type.Enum.dict || type.<ContainerType>.keyType == NIL
+          genExpr(right, ctx, Type.anInt)
+        ELSE
+          genExpr(right, ctx, type.<ContainerType>.keyType)
+        }
+        IF type.ttype == Type.Enum.dict && type.<ContainerType>.keyType != NIL
+          DictStuff.keyTypeUsed(type.<ContainerType>.keyType, ctx)
+        }
+        exprExt.undefined = leftExt.undefined + rightExt.undefined
+        ret = type.<ContainerType>.itemType
+        IF ret == NIL
+          exprExt.undefined++
+        }
+      ELSEIF type.ttype == Type.Enum.string
+             || type.ttype == Type.Enum.varString
+             || type.ttype == Type.Enum.byteString
+             || type.ttype == Type.Enum.varByteString
+             || type.ttype == Type.Enum.stringval
+        IF type.ttype == Type.Enum.string
+          ctx.addUsedItem(Declaration.stringGetChar)
+        ELSEIF type.ttype == Type.Enum.byteString
+          ctx.addUsedItem(Declaration.byteStringGetByte)
+        }
+        ctx.scope.wantBacktrace = TRUE
+        genExpr(left, ctx,
+                       type.ttype == Type.Enum.stringval ? Type.aString : type)
+        genExpr(right, ctx, Type.anInt)
+        exprExt.undefined = leftExt.undefined + rightExt.undefined
+        ret = Type.anInt
+      ELSEIF type.ttype == Type.Enum.tuple
+          || type.ttype == Type.Enum.multiple
+        # tupleVar[3] or multiRetFunc()[3]
+        bool dummy
+        rightExt.undefined = 0
+        int idx = ExprEval.evalInt(right, ctx, TRUE, &dummy)
+        exprExt.undefined = leftExt.undefined + rightExt.undefined
+        IF type.ttype == Type.Enum.tuple
+          IF idx >= type.<TupleType>.types.Size()
+            ++exprExt.undefined
+          ELSE
+            ret = type.<TupleType>.types[idx].type
+          }
+        ELSE
+          IF idx >= type.<MultipleType>.types.Size()
+            ++exprExt.undefined
+          ELSE
+            ret = type.<MultipleType>.types[idx].type
+          }
+        }
+      ELSE
+        exprExt.undefined = 7
+      }
+    }
+    IF destType != NIL
+      exprExt.leftExprType = type
+    }
+    RETURN ret
+  }
+
+  FUNC $dictGet(ContainerType type, Zui.Expression dictExpr,
+                                                       Zui.Expression keyExpr,
+                         Zui.Expression defExpr, SContext ctx, Type destType
+                 ) Type
+    genExpr(dictExpr, ctx)
+    DictStuff.genKeyArg(type, keyExpr, ctx)
+    IF type.keyType != NIL
+      DictStuff.keyTypeUsed(type.keyType, ctx)
+    }
+    IF defExpr != NIL
+      Generate.genExprDoConv(defExpr, ctx, type.itemType)
+    }
+    IF type.itemType != NIL
+      RETURN type.itemType
+    }
+    RETURN destType
+  }
+
+  # Bits assignment of |rhs| to |lhs|, of type |bitsMember|.
+  # Return the number of undefined symbols in |lhs|.
+  FUNC $bitsAssign(Zui.Expression lhs, Zui.Expression rhs,
+                                     ValueType bitsMember, SContext ctx) int
+    Generate.generateVarname(lhs, ctx, NIL)
+    Type retType = bitsMember
+    IF retType.ttype == Type.Enum.nat
+      retType = Type.anInt
+    }
+    Generate.genExpr(rhs, ctx, retType)
+    RETURN ZuiExpressionExt.get(lhs).undefined
+  }
+
+  # A bool field in a BITS.
+  PROC $bitsMemberBool(Zui.Expression left, ValueType memberType,
+                                                               SContext ctx)
+    Generate.genExpr(left, ctx)
+  }
+
+  # An int (or nat) member of a BITS
+  PROC $bitsMemberInt(Zui.Expression left, ValueType memberType,
+                                                                 SContext ctx)
+    Generate.genExpr(left, ctx)
+  }
+
+  # Generate var[idx].  |type| is the type of "var".
+  # |expr| is the whole thing.
+  FUNC $varnameSubscript(Type type, Zui.Expression expr, bool lvalue,
+                                             SContext ctx, Type destType) Type
+    VAR exprExt = ZuiExpressionExt.get(expr)
+
+    # Generate "var".
+    Zui.Expression left = expr.getLeft()
+    genExpr(left, ctx)
+    exprExt.undefined += ZuiExpressionExt.get(left).undefined
+
+    Zui.Expression right = expr.getRight()
+    Type.Enum ttype = type?.getTtype()
+    IF ttype == Type.Enum.tuple
+      bool dummy
+      TupleType tupleType = type.getEffType()
+      int idx = ExprEval.evalInt(right, ctx, TRUE, &dummy)
+      IF idx < 0 || idx >= tupleType.types.Size()
+        ++exprExt.undefined
+        RETURN NIL
+      }
+      RETURN tupleType.types[idx].type
+    }
+
+    Type effType = type?.getEffType()
+    Type keyType = Type.anInt
+    IF ttype == Type.Enum.dict
+      ContainerType containerType = effType
+      IF containerType.keyType != NIL
+        keyType = containerType.keyType
+      }
+    }
+    genExpr(right, ctx, keyType)
+    exprExt.undefined += ZuiExpressionExt.get(right).undefined
+    ctx.addUsedItem(Declaration.throwCstringOutOfRange)
+
+    IF effType != NIL && effType ISA ContainerType
+      RETURN effType.<ContainerType>.itemType
+    }
+    RETURN Type.anInt  # index in string results in a number
+  }
+
+  # Generate a tuple member by index.
+  FUNC $tupleItem(TupleType type, Zui.Expression left, int idx,
+                                                            SContext ctx) Type
+    genExpr(left, ctx, type)
+    RETURN type.types[idx].type
+  }
+
+  PROC $tupleItem(string tempName, int idx, Zui.Position pos, SContext ctx)
+  }
+
+  PROC $multiReturnItem(Declaration tempDecl, int i,
+                                   Zui.Position pos, Output out, SContext ctx)
+  }
+
+  # Generate accessing an iobject member |objDecl| of an interface |itfType|.
+  PROC $iobjectMember(Declaration objDecl, Type itfType,
+                      Zui.Expression expr, bool dotnil,
+                      SContext ctx, Type destType, bool genVarname)
+    Zui.Expression left = expr.getLeft()
+    IF genVarname
+      Generate.generateVarnamePart(left, FALSE, ctx, destType)
+    ELSE
+      genExpr(left, ctx, destType)
+    }
+    ZuiExpressionExt.get(expr).undefined = ZuiExpressionExt.get(left).undefined
+    IF dotnil
+      ctx.addUsedItem(Declaration.objectMemberDotnil)
+    ELSEIF left.getType() != Zui.ExprType.eID
+      # Evaluation may have side effects, call a function to do it only once.
+      ctx.addUsedItem(Declaration.objectMember)
+    }
+  }
+
+  # Generate accessing an iobject member |objDecl| of an interface |itfType|.
+  PROC $iobjectCallbackMember(Declaration methodDecl,
+                       Declaration objDecl, Type itfType,
+                      Zui.Expression expr, bool dotnil,
+                      SContext ctx, Type destType, bool genVarname)
+    $iobjectMember(objDecl, itfType, expr, dotnil, ctx, destType, genVarname)
+  }
+
+  # Generate accessing an iobject method |objDecl| of an interface |itfType|.
+  # The result is a reference to the method.
+  PROC $iobjectFuncUse(Declaration objDecl, Type itfType,
+                                            Zui.Expression expr, SContext ctx)
+  }
+
+  # Binary operator with int or float values.
+  FUNC $numberOp(Zui.Expression expr, SContext ctx) Type
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF expr.getType() == Zui.ExprType.eBIT_AND
+                                     || expr.getType() == Zui.ExprType.eBIT_OR
+      Type leftType = genExpr(expr.getLeft(), ctx.copyNoOut())
+      IF leftType?.ttype == Type.Enum.bitsValue
+        # bits | bits, bits & bits
+        genExpr(expr.getLeft(), ctx, leftType)
+        genExpr(expr.getRight(), ctx, leftType)
+        ZuiExpressionExt.setUndefined(expr)
+        exprExt.leftExprType = leftType
+        RETURN leftType
+      }
+    }
+    Type leftType = genExpr(expr.getLeft(), ctx.copyNoOut())
+    Type rightType = genExpr(expr.getRight(), ctx.copyNoOut())
+    Type destType = Type.anInt
+    IF leftType?.isFloatType() || rightType?.isFloatType()
+      destType = Type.aFloat
+    }
+    genExpr(expr.getLeft(), ctx, destType)
+    genExpr(expr.getRight(), ctx, destType)
+    ZuiExpressionExt.setUndefined(expr)
+    exprExt.leftExprType = destType
+    RETURN destType
+  }
+
+  # String assignment "..="
+  FUNC $stringConcat(Zui.Expression expr, string cast, SContext ctx) string
+    ctx.addUsedItem(Declaration.stringConcat)
+    genExpr(expr, ctx, Type.aString)
+    RETURN ""
+  }
+
+  # VarByteString assignment "..="
+  # Return number of undefined symbols.
+  FUNC $varStringConcatAssign(Zui.Assignment assign, SContext ctx) int
+    ctx.addUsedItem(Declaration.varStringConcatAssign)
+    Generate.generateLVarname(assign.getLhs(), TRUE, ctx, NIL)
+    genExpr(assign.getRhs(), ctx, Type.aByteString)
+    RETURN ZuiExpressionExt.get(assign.getLhs()).undefined
+                             + ZuiExpressionExt.get(assign.getRhs()).undefined
+  }
+
+  # String concatenation operator.
+  PROC $concatStringOp(Zui.Expression expr, SContext ctx, Type destType)
+    # The .. operator supports automatic conversion to string or byteString.
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    ctx.scope.wantBacktrace = TRUE
+    Generate.genExprDoConv(expr.getLeft(), ctx, destType)
+    Generate.genExprDoConv(expr.getRight(), ctx, destType)
+    ZuiExpressionExt.setUndefined(expr)
+    IF exprExt.undefined == 0
+      ctx.addUsedItem(Declaration.stringConcat)
+    }
+  }
+
+  # A sequence of string concatenation operators.
+  PROC $concatStringOp(list<Zui.Expression> concats,
+                                                  SContext ctx, Type destType)
+    # Only used when generating.
+  }
+
+  # VarByteString concatenation operator.  May actually produce byteString for
+  # left and/or right side.
+  PROC $concatVarStringOp(Zui.Expression expr, SContext ctx, Type destType)
+    # For C we have to pick one of four methods.
+    Type valType = (destType.ttype == Type.Enum.varByteString)
+                                             ? Type.aByteString : Type.aString
+    string types
+
+    Type.Enum left = Generate.resultType(expr.getLeft(), ctx)
+    Type leftType
+    IF left == Type.Enum.stringval || left == valType.ttype
+      leftType = valType
+      types = "V"
+    ELSE
+      leftType = destType
+      types = "B"
+    }
+
+    Type.Enum right = Generate.resultType(expr.getRight(), ctx)
+    Type rightType
+    IF right == Type.Enum.stringval || right == valType.ttype
+      rightType = valType
+      types ..= "V"
+    ELSE
+      rightType = destType
+      types ..= "B"
+    }
+
+    IF types == "VV"
+      ctx.addUsedItem(Declaration.concatVarStringVV)
+    ELSEIF types == "BV"
+      ctx.addUsedItem(Declaration.concatVarStringBV)
+    ELSEIF types == "VB"
+      ctx.addUsedItem(Declaration.concatVarStringVB)
+    ELSE
+      ctx.addUsedItem(Declaration.concatVarStringBB)
+    }
+
+    # The .. operator supports automatic conversion to varString or
+    # varByteString.
+    ctx.scope.wantBacktrace = TRUE
+    Generate.genExprDoConv(expr.getLeft(), ctx, leftType)
+    Generate.genExprDoConv(expr.getRight(), ctx, rightType)
+    ZuiExpressionExt.setUndefined(expr)
+  }
+
+  # Generate code for a literal number.
+  PROC $generateInt(Zui.Expression expr, SContext ctx)
+    ZuiExpressionExt.get(expr).undefined = 0
+  }
+
+  # Generate code for a literal float number.
+  PROC $generateFloat(Zui.Expression expr, SContext ctx)
+    ZuiExpressionExt.get(expr).undefined = 0
+  }
+
+  # Generate code for a literal string.
+  PROC $stringValue(string value, SContext ctx)
+  }
+
+  # Generate code for a byteString from a stringLiteral |expr|.
+  # Also handle a op_concat expr that concats strings.
+  PROC $byteStringValue(Zui.Expression expr, SContext ctx)
+    Generate.generateBytesExpr(expr, ctx.out)
+  }
+
+  # Generate code to set varByteString |dest| from a stringLiteral |expr|.
+  PROC $varByteStringSetString(Zui.Expression expr, Declaration dest, SContext ctx)
+    Generate.generateBytesExpr(expr, ctx.out)
+  }
+
+  # Binary plus operator.
+  # Need to figure out if this is a mathematical addition or BITS
+  # manipulation, depends on the left and right side.
+  FUNC $plusOp(Zui.Expression expr, SContext ctx, Type.Enum destType) Type
+    Type ret = Type.aNil
+    IF destType != Type.Enum.int && destType != Type.Enum.float
+      # Figure out the types of the left and right, so that we can decide
+      # the type of the result.
+      Type l = genExpr(expr.getLeft(), ctx.copyNoOut())
+      Type r = genExpr(expr.getRight(), ctx.copyNoOut())
+
+      # If the destination type is unknown and we are not sure what the
+      # left and right types are, the result type is also unknown.
+      # This is needed for using "field + field" as a BITS argument.
+      IF destType == Type.Enum.unknown
+          && (l == NIL || l.ttype == Type.Enum.unknown
+           || r == NIL || r.ttype == Type.Enum.unknown)
+        ret = Type.anUnknown
+        ZuiExpressionExt.setUndefined(expr)
+        ZuiExpressionExt.get(expr).undefined += 1
+      }
+    }
+    IF ret.getTtype() == Type.Enum.nilval
+      ret = $numberOp(expr, ctx)
+    }
+    RETURN ret
+  }
+
+  # post/pre increment/decrement
+  PROC $incrdecrOp(Zui.Expression expr, SContext ctx)
+    Zui.Expression right = expr.getRight()
+    IF right.getType() == Zui.ExprType.eINT
+                                       || right.getType() == Zui.ExprType.eNAT
+      ctx.error("Cannot increment/decrement constant", expr)
+    }
+    genExpr(right, ctx, Type.anInt)
+    ZuiExpressionExt.get(expr).undefined = ZuiExpressionExt.get(right).undefined
+  }
+
+  # ISA and ISNOTA
+  PROC $isaOp(Zui.Expression expr, SContext ctx)
+    genExpr(expr.getLeft(), ctx)
+    # Do not mark the type as used. When it turns out to be unused the result
+    # is always FALSE or TRUE, since no object of that type can exist.
+    Generate.generateDeclType(expr.getRight(), ctx, isDecl,
+                                                      NEW(expr.getPos(), ctx))
+    ZuiExpressionExt.setUndefined(expr)
+  }
+
+  # When |type| refers to an object that might later turn out to be an
+  # iobject, add a dependency for that type on the current scope.
+  PROC $addObjectDependency(Type type, SContext ctx) @local
+    IF type != NIL && type.ttype == Type.Enum.object
+      ClassType ct = type.getClassType(ctx)
+      IF ct != NIL
+        ct.scope.addScopeDependency(ctx.scope)
+      }
+    }
+  }
+
+  # isCompare == FALSE: ==, !=, =~, !~, IS and ISNOT
+  # isCompare == TRUE: >, >=, <, <=
+  PROC $booleanOp(Zui.Expression expr, bool isCompare, SContext ctx)
+    Zui.Expression left = expr.getLeft()
+    Zui.Expression right = expr.getRight()
+    Zui.ExprType exprType = expr.getType()
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF exprType == Zui.ExprType.eMATCH || exprType == Zui.ExprType.eNOMATCH
+      ctx.error("Sorry, =~ and !~ are not implemented yet", expr)
+    }
+    exprExt.undefined = 0
+
+    bool useIdentity = exprType == Zui.ExprType.eIS
+                    || exprType == Zui.ExprType.eISNOT
+    IF !isCompare && (left.getType() == Zui.ExprType.eNIL
+                                       || right.getType() == Zui.ExprType.eNIL
+                      || useIdentity)
+      Type typeLeft = genExpr(left, ctx, Type.aNil)
+      Type typeRight = genExpr(right, ctx, Type.aNil)
+      IF typeLeft != NIL && ((typeLeft.isNoAlloc() && !useIdentity)
+                                       || typeLeft.ttype == Type.Enum.iobject)
+        exprExt.leftExprType = typeLeft
+      ELSEIF typeRight != NIL && ((typeRight.isNoAlloc() && !useIdentity)
+                                      || typeRight.ttype == Type.Enum.iobject)
+        exprExt.leftExprType = typeRight
+      ELSE
+        # When an object is used it may change to an iobject when a
+        # child is added and we need to come back here.
+        $addObjectDependency(typeLeft, ctx)
+        $addObjectDependency(typeRight, ctx)
+        exprExt.leftExprType = Type.aNil
+      }
+    ELSE
+      # Figure out the type of left and right hand side.
+      Type typeLeft = genExpr(left, ctx)
+      Type typeRight = genExpr(right, ctx)
+      IF typeLeft == NIL || typeRight == NIL
+        exprExt.undefined++
+      ELSE
+        Type.Enum leftTtype = typeLeft.getTtype()
+        Type.Enum rightTtype = typeRight.getTtype()
+        IF leftTtype == Type.Enum.dyn || rightTtype == Type.Enum.dyn
+          ctx.addUsedItem(isCompare ? Declaration.dynCompare
+                                                       : Declaration.dynEqual)
+        }
+        Type useType
+        IF leftTtype == Type.Enum.string
+            || leftTtype == Type.Enum.varString
+            || leftTtype == Type.Enum.byteString
+            || leftTtype == Type.Enum.varByteString
+            || leftTtype == Type.Enum.stringval
+            || leftTtype == Type.Enum.dyn
+          useType = typeLeft
+        ELSEIF rightTtype == Type.Enum.string
+            || rightTtype == Type.Enum.varString
+            || rightTtype == Type.Enum.byteString
+            || rightTtype == Type.Enum.varByteString
+            || rightTtype == Type.Enum.stringval
+            || rightTtype == Type.Enum.dyn
+          useType = typeRight
+        }
+        IF useType != NIL
+          # If either one is a string use string compare.
+          # If either one is a dyn use dyn compare.
+          IF leftTtype == Type.Enum.stringval
+            IF rightTtype == Type.Enum.stringval
+              useType = Type.aString
+            ELSE
+              useType = typeRight
+            }
+          }
+          IF useType.ttype != Type.Enum.dyn || leftTtype == Type.Enum.dyn
+            Generate.genExprDoConv(left, ctx, useType)
+            exprExt.leftExprType = useType
+            exprExt.rightExprType = typeRight
+          }
+          IF useType.ttype != Type.Enum.dyn || rightTtype == Type.Enum.dyn
+            Generate.genExprDoConv(right, ctx, useType)
+            exprExt.rightExprType = useType
+            exprExt.leftExprType = typeLeft
+          }
+        ELSE
+          # TODO: refuse types where "op" doesn't make sense.
+          IF leftTtype == Type.Enum.byRef && rightTtype != Type.Enum.byRef
+            # left is byRef, right is not: deref left type to get right type.
+            typeLeft = genExpr(left, ctx, typeRight)
+            leftTtype = typeLeft.getTtype()
+            genExpr(right, ctx, typeRight)
+            exprExt.rightExprType = typeRight
+          ELSE 
+            typeLeft = genExpr(left, ctx, typeLeft)
+            leftTtype = typeLeft.getTtype()
+            IF typeLeft.isNumberType() && typeRight.isNumberType()
+              # left and right are numbers, just produce the number and let
+              # the C compiler handle it.
+              exprExt.rightExprType = typeRight
+            ELSE
+              # produce the right side with the type of the left side.
+              exprExt.rightExprType = typeLeft
+            }
+            genExpr(right, ctx, exprExt.rightExprType)
+          }
+          exprExt.leftExprType = typeLeft
+          IF leftTtype == Type.Enum.unknown
+            exprExt.undefined++
+          ELSEIF leftTtype == Type.Enum.array
+                  || leftTtype == Type.Enum.list
+                  || leftTtype == Type.Enum.dict
+              ctx.addUsedItem(isCompare ? Declaration.itemCompare
+                                                    : Declaration.itemEqual)
+          ELSEIF leftTtype == Type.Enum.object
+            # Generate a call to left.Equal(right)
+            Generate.generateEqualCall(expr, isCompare, ctx)
+          }
+        }
+      }
+    }
+    exprExt.undefined += ZuiExpressionExt.get(left).undefined
+                                       + ZuiExpressionExt.get(right).undefined
+  }
+
+  # (expr_left && expr_right)
+  # (expr_left || expr_right)
+  PROC $andorOp(Zui.Expression expr, SContext ctx)
+    genExpr(expr.getLeft(), ctx, Type.aBool)
+    genExpr(expr.getRight(), ctx, Type.aBool)
+    ZuiExpressionExt.setUndefined(expr)
+  }
+
+  # ( expr )
+  FUNC $parens(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    Type ret = genExprConv(expr.getRight(), ctx, exprArg)
+    ZuiExpressionExt.setUndefined(expr)
+    RETURN ret
+  }
+
+  # cond ? expr_left : expr_right
+  FUNC $altOp(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    genExpr(expr.getCond(), ctx, Type.aBool)
+    genExprConv(expr.getLeft(), ctx, exprArg)
+    Type typeR = genExprConv(expr.getRight(), ctx, exprArg)
+    ZuiExpressionExt.setUndefined(expr)
+    RETURN typeR
+  }
+
+  # expr_left ?: expr_right
+  FUNC $ifnilOp(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    Type typeL = genExprConv(expr.getLeft(), ctx, exprArg)
+    Type typeR = genExprConv(expr.getRight(), ctx, exprArg)
+    ZuiExpressionExt.setUndefined(expr)
+
+    # TODO: if destType is NIL check typeL and typeR are the same type
+    IF typeR == NIL || !typeR.typeDefined()
+      typeR = typeL
+    }
+    IF typeR != NIL
+      IF typeR.isValueType()
+        ++ZuiExpressionExt.get(expr).undefined
+      }
+      RETURN typeR
+    }
+
+    RETURN NIL
+  }
+
+  # Write code to generate a new byteString for |sym|.
+  PROC $newVarByteString(string noAllocName, SContext ctx)
+  }
+
+  # Class obj = [x, y, z]  ->  Class.NEW([x, y, z])
+  # Return type of item.
+  FUNC $listInitStart(Zui.Expression expr, Declaration dest,
+                                             SContext ctx, Type destType) Type
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF destType == NIL
+      exprExt.undefined += 10
+      RETURN NIL
+    }
+    MethodType newFromList = destType.findNewFromContainerMethod(
+                                            expr, Type.Enum.list, "list", ctx)
+    IF newFromList == NIL
+      exprExt.undefined += 5
+      RETURN NIL
+    }
+    IF dest != NIL
+      $writeNoAllocInit(dest, ctx)
+      dest.type.<NoAllocType>.setIobjectType(destType.getClassType(ctx), ctx)
+    }
+    ctx.addUsedItem(newFromList)
+    RETURN newFromList.getArgList()[0].type.<ContainerType>.itemType
+  }
+
+  # Write the initialization for a not allocated type, when the destination is
+  # an object.
+  PROC $writeNoAllocInit(Declaration dest, SContext ctx)
+    ClassType class = dest.type.getClassType(ctx)
+    Declaration initMethod = Generate.findUsefulInit(class.scope)
+    IF initMethod != NIL
+      ctx.addUsedItem(initMethod)
+    }
+  }
+
+  PROC $listInitTail(SContext ctx)
+  }
+
+  # Class obj = [x: 1, y: 2]  ->  Class.NEW([x: 1, y: 2])
+  # Return type of dict.
+  FUNC $dictInitStart(Zui.Expression expr, Declaration dest,
+                                    SContext ctx, Type destType) ContainerType
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF destType == NIL
+      exprExt.undefined += 10
+      RETURN NIL
+    }
+    MethodType newFromDict = destType.findNewFromContainerMethod(
+                                            expr, Type.Enum.dict, "dict", ctx)
+    IF newFromDict == NIL
+      exprExt.undefined += 5
+      RETURN NIL
+    }
+    IF dest != NIL
+      $writeNoAllocInit(dest, ctx)
+    }
+    ctx.addUsedItem(newFromDict)
+    RETURN newFromDict.getArgList()[0].type.<ContainerType>
+  }
+
+  PROC $dictInitTail(SContext ctx)
+  }
+
+  # [item, item]
+  # Return type of item.
+  FUNC $newArrayInit(Zui.Expression expr, string noAllocName,
+                                             Type destType, SContext ctx) Type
+    ctx.addUsedItem(Declaration.array)
+    ctx.addUsedItem(Declaration.newArray)
+    RETURN initFromList(expr, destType, ctx)
+  }
+
+  # [item, item]
+  # Return the item type.
+  FUNC $newListInit(Zui.Expression expr, string noAllocName,
+                                             Type destType, SContext ctx) Type
+    ctx.addUsedItem(Declaration.list)
+    RETURN initFromList(expr, destType, ctx)
+  }
+
+  # [key1 : value1, key2 : value2]
+  # Return type of dict in ret.
+  PROC $newDictInit(Zui.Expression expr, string noAllocName,
+                              SContext ctx, ContainerType type, Type destType)
+    ctx.addUsedItem(Declaration.dict)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    exprExt.undefined = 0
+    IF expr.sizeDictItem() > 0
+      bool didFirst
+      FOR pair IN expr.getDictItemList()
+        IF !didFirst
+          didFirst = TRUE
+          # Get the types from the first item.
+          Type keyType
+          Type valType
+          IF destType != NIL && destType.getTtype() == Type.Enum.dict
+            ContainerType dt = destType.getEffType()
+            keyType = dt.keyType
+            valType = dt.itemType
+          }
+          type.keyType = genExpr(pair.getKey(), ctx, keyType)
+          type.itemType = genExpr(pair.getValue(), ctx, valType)
+        ELSE
+          genExpr(pair.getKey(), ctx, type.keyType == NIL ? NIL : type.keyType)
+          genExpr(pair.getValue(), ctx,
+                                   type.itemType == NIL ? NIL : type.itemType)
+          exprExt.undefined += ZuiExpressionExt.get(pair.getKey()).undefined
+                             + ZuiExpressionExt.get(pair.getValue()).undefined
+        }
+      }
+    }
+  }
+
+  # tuple = [item, item]
+  PROC $newTupleInit(Zui.Expression expr, string noAllocName,
+                                             TupleType destType, SContext ctx)
+    FOR idx IN 0 UNTIL destType.types.Size()
+      Zui.Expression item = expr.getListItem(idx)
+      Generate.genExprDoConv(item, ctx, destType.types[idx].type)
+      ZuiExpressionExt.get(expr).undefined +=
+                                          ZuiExpressionExt.get(item).undefined
+    }
+  }
+
+  # Write code to generate a new dict for |type|.
+  PROC $writeDictAlloc(ContainerType type, string noAllocName,
+                                            Zui.MethodCall call, SContext ctx)
+    ctx.addUsedItem(Declaration.dict)
+    IF call.sizeArgument() == 1
+      Zui.Expression arg = call.getArgument(0)
+      Generate.genExpr(arg, ctx, Type.aBool)
+      ZuiMethodCallExt.get(call).undefined +=
+                                           ZuiExpressionExt.get(arg).undefined
+    }
+  }
+
+  FUNC $arrayMethodCall(ContainerType type, Zui.MethodCall call,
+                                                   SContext ctx, Type destType
+                      ) Type
+    RETURN ArrayStuff.generateMethodCall(type, call, ctx, destType)
+  }
+
+  FUNC $listMethodCall(ContainerType type, Zui.MethodCall call,
+                                                   SContext ctx, Type destType
+                      ) Type
+    RETURN ListStuff.generateMethodCall(type, call, ctx, destType)
+  }
+
+  FUNC $dictMethodCall(ContainerType type, Zui.MethodCall call,
+                                                 SContext ctx, Type destType
+                      ) Type
+    RETURN DictStuff.generateMethodCall(type, call, ctx, destType)
+  }
+
+  # Toplevel expression.  Handle conversion from the result type of the
+  # expression to what is expected, indicated by exprArg.destType().
+  # When |exprArg.stringConvert| is TRUE do int/bool/status to string
+  # conversion.
+  FUNC $expr(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    Type type = Generate.genExprChecked(expr, ctx, exprArg)
+    RETURN $conversion(expr, type, NIL, ctx, exprArg)
+  }
+
+  # Convert from |type|, which is the result of |expr|, to |exprArg|.
+  # Return the possibly converted type.
+  FUNC $conversion(Zui.Expression expr, Type type,
+                           Output exprOut, SContext ctx, ExprArg exprArg) Type
+    Type typeConverted = exprConversion(expr, type, ctx, exprArg)
+
+    IF exprArg.destType() != NIL
+                              && exprArg.destType().ttype != Type.Enum.unknown
+      VAR exprExt = ZuiExpressionExt.get(expr)
+      IF exprExt.conversion == Conversion.iobject2iobject
+          && exprExt.retClass != NIL
+          && exprExt.undefined == 0
+        ClassType destClass = exprArg.destType().getClassType(ctx)
+        IF destClass != NIL
+          # When writing C the imtt is going to be used here.
+          destClass.imttUsed(ctx)
+        }
+      ELSEIF exprExt.conversion == Conversion.object2iobject
+        ClassType destClass = exprArg.destType().getClassType(ctx)
+        IF exprExt.retClass != NIL && destClass != NIL
+          $object2iobject(exprExt.retClass, destClass,
+                                             NIL, expr.getPos(), ctx.out, ctx)
+        }
+      ELSEIF exprExt.conversion == Conversion.iobject2object
+        # Mark Z.Pos.NEW() as used.
+        newPosString(expr.getPos(), ctx)
+      }
+    }
+
+    IF typeConverted != NIL && typeConverted.ttype == Type.Enum.object
+      # An object may change to iobject when subclass is found, must come
+      # back here then.
+      ClassType ct = typeConverted.getClassType(ctx)
+      IF ct != NIL && ct.scope != NIL
+        ct.scope.addScopeDependency(ctx.scope)
+      }
+    }
+
+    RETURN typeConverted
+  }
+
+  # Write the start of conversion from class symClass to interface destClass.
+  # Return the string to finish the conversion, the caller must write code for
+  # symClass in between.
+  # |dest| is used in case of the destination being not allocated.
+  FUNC $object2iobject(ClassType symClass, ClassType destClass,
+                  string destName, Zui.Position pos, Output out, SContext ctx
+                      ) string
+    # Remember which interface was used so that we only produce an IMT table
+    # when it's used.
+    symClass.usingInterface(destClass, ctx)
+    RETURN ""
+  }
+
+  # Set the type of the i_object.
+  # Invoked after writing an assignment.
+  FUNC $iobjectType(Zui.Expression lhs, Type type, Type exprType,
+                                                             SContext ctx) int
+    Generate.generateVarname(lhs, ctx, NIL)
+    int undef = ZuiExpressionExt.get(lhs).undefined
+    int idx = type.getClassType(ctx).childIndex(
+                                            exprType.getClassType(ctx), FALSE)
+    IF idx < 0
+      IF ctx.doError()
+        ctx.error("Type mismatch, expression result does not match the destination class", lhs)
+      ELSE
+        undef++
+      }
+    }
+    RETURN undef
+  }
+
+  # Write lines to "myOuts" to include the header files for an
+  # imported file.
+  PROC $writeIncludeImport(ZimbuFile import, Scope scope, Output.Group myOuts)
+    LOG.internal("Resolve.writeIncludeImport() should not be called")
+  }
+
+  # Write after imports, before inits of the file itself.
+  PROC $afterImports(Scope scope, Output.Group outs)
+  }
+
+  # Write after inits of the file itself.
+  PROC $afterGenerate(UsedFile usedFile, Output.Group outs, SContext ctx)
+    Scope scope = usedFile.scope()
+    IF scope.declDict != NIL
+      FOR declList IN scope.declDict.values()
+        FOR decl IN declList
+          IF decl.type ISA ClassType
+            # Only do a class if it is not a template
+            ClassType ct = decl.type.<ClassType>
+            IF ct.templateList == NIL && decl.pName != NIL
+              ct.scope.addReadySym("Ready", decl)
+              ct.scope.addReadySym("EarlyReady", decl)
+            }
+          ELSEIF decl.type ISA ModuleType
+            ModuleType mt = decl.type.<ModuleType>
+            mt.scope.addReadySym("Ready", decl)
+            mt.scope.addReadySym("EarlyReady", decl)
+          }
+        }
+      }
+    }
+  }
+
+  # Return TRUE if |zimbuFile| needs to be written.
+  FUNC $needWrite(ZimbuFile zimbuFile) bool
+    RETURN FALSE
+  }
+
+  # Write class declaration.
+  PROC $writeClassDef(string name, string comment, Output typeOut)
+  }
+
+  # Write class declaration. |structOut| has the body.
+  PROC $writeClassDecl(ClassType classType, Output.Group outs,
+                                               Output structOut, SContext ctx)
+  }
+
+  # Write the value used for NIL.
+  PROC $nil(Declaration dest, SContext ctx)
+  }
+
+  # Write the value used for INF.
+  PROC $inf(SContext ctx)
+  }
+
+  # Write the value used for NINF.
+  PROC $ninf(SContext ctx)
+  }
+
+  # Write the value used for NAN.
+  PROC $nan(SContext ctx)
+  }
+
+  # Write an expression and wrap it, when needed, for the ?. operator.
+  FUNC $wrapExpr(Zui.Expression expr, SContext ctx, Type destType) Type
+    RETURN $wrapExprConv(expr, ctx, NEW(destType, FALSE))
+  }
+
+  # Write an expression and wrap it, when needed, for the ?. operator.
+  FUNC $wrapExprConv(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+    RETURN Generate.genExprConv(expr, ctx, exprArg)
+  }
+
+  # Generate argument expression.
+  FUNC $genArg(Zui.Expression arg, SContext ctx, Type destType) Type
+    IF destType == NIL
+      RETURN Generate.genExpr(arg, ctx)
+    }
+    RETURN Generate.genExpr(arg, ctx, destType)
+  }
+
+  # We may need to do something for reference counting when passing a
+  # local variable by reference: &var.
+  PROC $writeArgExpr(Zui.Expression arg, SContext ctx, Type destType)
+    Generate.genTopExprDoConv(arg, ctx, destType)
+  }
+
+  # Write "|varnameOut|->|name|" or ".|name|", access object member.
+  # |objType| is the type of varnameOut.
+  # |retType| is the type of the result.
+  # |pos| is where |varnameOut| was produced.
+  PROC $member(Output varnameOut, Zui.Position pos,
+           Type objType, Type retType, bool dotnil, string name, SContext ctx)
+  }
+
+  # Write type cast for the function that implements ToString().
+  PROC $toStringFuncCast(SContext ctx)
+  }
+
+  # Generate an argument for calling method |what| on an iobject.
+  PROC $iobjectUseFunc(string what, Zui.Position pos, int &undef,
+                              Type objectType, Declaration func, SContext ctx)
+    IF func != NIL
+      # Mark the methods that could be called as used.
+      string funcName = objectType.getClassType(ctx).pName .. "_I__M"
+                                                               .. what .. "_I"
+      $usingIobjectMethod(func, [], objectType,
+                          undef, what, pos,
+                          funcName, ctx)
+    }
+  }
+
+  # Return TRUE if some variables are to be declared in the method scope.  For
+  # C these are variables that can be garbage collected (pointers).
+  FUNC $varsInMethodScope() bool
+    RETURN TRUE
+  }
+
+  # Write the declaration and init of a variable.
+  PROC $declaration(Declaration.C decl,
+                    Type valueType,      # value type of decl
+                    Zui.Statement stmt,
+                    bool isShared,       # SHARED declaration
+                    Output initExprOut,  # output from the init expr
+                    bool initIsConstant,
+                    SContext ctx)
+  }
+
+  # Write the declaration of a variable.
+  PROC $vardecl(Declaration.C decl, SContext ctx)
+    IF decl.type.ttype == Type.Enum.class || decl.type.ttype == Type.Enum.object
+      VAR classType = decl.type.getClassType(ctx)
+      IF classType != NIL
+        decl.addDependsOn(classType)
+      }
+    }
+  }
+
+  # Write the type of a variable or return value.
+  # Also notes the type as used.
+  # When |useSpace| is TRUE add a space before the "*" or after the type.
+  # Use that for declarations, use FALSE for type casts.
+  PROC $vartype(Type type, bool useSpace, Zui.Position pos, SContext ctx)
+    # If an object changes to an iobject when a child class is found we must
+    # come back here.
+    $addObjectDependency(type, ctx)
+
+    IF type?.ttype == Type.Enum.dyn
+      ctx.addUsedItem(Type.aDyn)
+    }
+  }
+
+  # An enum declaration.
+  PROC $enum(Zui.Declaration zuiDecl, EnumType enumType, SContext ctx)
+    Zui.EnumType enumDecl = zuiDecl.getType().getEnumDecl()
+    IF enumType.members == NIL && enumDecl.hasItem()
+      int n = 0
+      FOR item IN enumDecl.getItemList()
+        Generate.checkItemName(item, "enum value", ctx)
+        string name = item.getName()
+        IF enumType.findMember(name, NIL) != NIL
+          ctx.error("Duplicate ENUM value: " .. name, item.getPos())
+        ELSE
+          enumType.addMember(name, n++)
+        }
+      }
+    }
+  }
+
+  # Function to get the name of an enum value for |type|.
+  # Return what is to be put after the argument.
+  FUNC $enumName(EnumValueType type, SContext ctx) string
+    ctx.addUsedItem(type.enumType)
+    RETURN ""
+  }
+
+  # Function to get the num value from an enum value name.
+  # Return what is to be put after the argument.
+  FUNC $enumFromString(EnumType type, SContext ctx) string
+    ctx.addUsedItem(type)
+    RETURN ""
+  }
+
+  # A bits declaration.
+  PROC $bits(Zui.Declaration zuiDecl, BitsType bitsType, SContext ctx)
+  }
+
+  # Function to turn a number into a byteString of one byte.
+  PROC $intAsByteString(Zui.Expression expr, SContext ctx)
+    IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+      # 123.asByteString() has no var name
+      ZuiExpressionExt.get(expr).undefined = 0
+    ELSE
+      Type type = genExpr(expr, ctx)
+      IF type == NIL || type.ttype == Type.Enum.unknown
+        Generate.generateVarname(expr, ctx, Type.anInt)
+      }
+    }
+  }
+
+  # Function to turn a number into a character.
+  PROC $intAsString(Zui.Expression expr, SContext ctx)
+    ctx.addUsedItem(Declaration.asString)
+    IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+      # 123.asString() has no var name
+      ZuiExpressionExt.get(expr).undefined = 0
+    ELSE
+      ctx.scope.wantBacktrace = TRUE
+      Type type = genExpr(expr, ctx)
+      IF type == NIL || type.ttype == Type.Enum.unknown
+        Generate.generateVarname(expr, ctx, Type.anInt)
+      }
+    }
+  }
+
+  PROC $stringFormat(Zui.Expression expr, Zui.Expression arg, SContext ctx)
+    genExpr(expr, ctx, Type.aString)
+    genExpr(arg, ctx, Type.aString)
+    ZuiExpressionExt.get(expr).undefined += ZuiExpressionExt.get(arg).undefined
+  }
+
+  # Function to turn an int into a string.
+  PROC $intToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+      # 123.ToString() has no var name
+      exprExt.undefined = 0
+    ELSEIF type.ttype == Type.Enum.bits
+      Type ret = genExpr(expr, ctx)
+      IF ret.getTtype() != Type.Enum.bitsValue
+        ++exprExt.undefined
+      }
+    ELSE
+      genExpr(expr, ctx, type)
+    }
+    IF format != NIL
+      genExpr(format, ctx, Type.aString)
+      exprExt.undefined += ZuiExpressionExt.get(format).undefined
+    }
+  }
+
+  # Function to turn a nat into a string.
+  PROC $natToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    IF expr.getType() == Zui.ExprType.eINT
+                                        || expr.getType() == Zui.ExprType.eNAT
+      exprExt.undefined = 0  # 123.ToString() has no var name
+    ELSE
+      genExpr(expr, ctx, type)
+    }
+    IF format != NIL
+      genExpr(format, ctx, Type.aString)
+      exprExt.undefined += ZuiExpressionExt.get(format).undefined
+    }
+  }
+
+  PROC $floatSize(Zui.Expression expr, Type type, SContext ctx)
+  }
+
+  # Function to turn a float into a string.
+  # When |format| is not NIL it's a string describing the format.
+  PROC $floatToString(Zui.Expression expr, Zui.Expression format,
+                                                      Type type, SContext ctx)
+    VAR exprExt = ZuiExpressionExt.get(expr)
+    exprExt.undefined = 0
+    IF expr.getType() != Zui.ExprType.eINT
+                                        && expr.getType() != Zui.ExprType.eNAT
+      genExpr(expr, ctx, type)
+    }
+    IF format != NIL
+      genExpr(format, ctx, Type.aString)
+      exprExt.undefined += ZuiExpressionExt.get(format).undefined
+    }
+  }
+
+  # float.isNan()
+  PROC $isNan(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aFloat)
+  }
+
+  # float.isInfinite()
+  PROC $isInfinite(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aFloat)
+  }
+
+  # Float function.
+  PROC $floatMethod(string name, Zui.Expression expr, Zui.Expression arg,
+                                                                 SContext ctx)
+    genExpr(expr, ctx, Type.aFloat)
+    IF arg != NIL
+      genExpr(arg, ctx, Type.aFloat)
+      ZuiExpressionExt.get(expr).undefined +=
+                                           ZuiExpressionExt.get(arg).undefined
+    }
+  }
+
+  # Function for int.Type(), nat.Type(), etc.
+  PROC $callType(Type type, Zui.Position pos, SContext ctx)
+  }
+
+  # Function for enum.Type()
+  PROC $callEnumType(EnumType type, Zui.Position pos, SContext ctx)
+    IF type.usedEnumName == NIL
+      type.usedEnumName = NEW("usedEnumName")
+    }
+    ctx.addUsedItem(type.usedEnumName)
+  }
+
+  # Function for bits.Type()
+  PROC $callBitsType(BitsType type, Zui.Position pos, SContext ctx)
+    IF type.usedBitsName == NIL
+      type.usedBitsName = NEW("usedBitsName")
+    }
+    ctx.addUsedItem(type.usedBitsName)
+  }
+
+  # Function for tuple<>.Type()
+  PROC $callTupleType(TupleType type, Zui.Position pos, SContext ctx)
+  }
+
+  # Function for dyn.Type()
+  PROC $callDynType(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aDyn)
+  }
+
+  # Function for dyn.ToString()
+  PROC $callDynToString(Zui.Expression expr, SContext ctx)
+    ctx.addUsedItem(Declaration.itemToString)
+    genExpr(expr, ctx, Type.aDyn)
+  }
+
+  # Function for dyn.Size()
+  PROC $callDynSize(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aDyn)
+    ctx.addUsedItem(Declaration.dynSize)
+  }
+
+  # Function for type.Size()
+  PROC $callTypeSize(Type type, SContext ctx)
+  }
+
+  # Function for Module.Type()
+  PROC $callModuleType(ModuleType mt, SContext ctx)
+    mt.typeUsed = TRUE
+  }
+
+  # Function for Class.Type()
+  PROC $callClassType(ClassType ct, SContext ctx)
+    ctx.addUsedItem(ct)
+  }
+
+  # Function to turn the size of an int.
+  PROC $intSize(Type type, SContext ctx)
+  }
+
+  # Function to turn the size of a bool.
+  PROC $boolSize(SContext ctx)
+  }
+
+  # Function to turn the size of a status.
+  PROC $statusSize(SContext ctx)
+  }
+
+  # Function to check if a number is a digit character.
+  PROC $isDigit(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to check if a number is a hex digit character.
+  PROC $isHexDigit(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to check if a number is an alphabetic character.
+  PROC $isAlpha(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to check if a number is a lower case character.
+  PROC $isLower(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to check if a number is an upper case character.
+  PROC $isUpper(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to turn a number into a lower case character.
+  PROC $intToLowerAscii(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function to turn a number into an upper case character.
+  PROC $intToUpperAscii(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.anInt)
+  }
+
+  # Function make number positive.
+  PROC $intAbs(Zui.Expression expr, SContext ctx)
+    Type t = genExpr(expr, ctx)
+    IF !t.isNatType()
+      genExpr(expr, ctx, Type.anInt)
+    }
+  }
+
+  # int.Compare() / nat.Compare / float.Compare
+  PROC $writeCompare(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                      Type type, SContext ctx)
+    genExpr(var_expr, ctx, type)
+    genExpr(args[0], ctx, type)
+    ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+  }
+
+  # int.Equal() / nat.Equal() / float.Equal()
+  PROC $writeEqual(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                      Type type, SContext ctx)
+    # works the same as int.Compare()
+    $writeCompare(var_expr, args, type, ctx)
+  }
+
+  # Function to turn a bool into a string.
+  PROC $boolToString(Zui.Expression expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    genExpr(expr, ctx, Type.aBool)
+    IF args.Size() == 1
+      genExpr(args[0], ctx, Type.aString)
+      ZuiExpressionExt.get(expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+    }
+  }
+
+  # Function to turn a bool into a string.
+  PROC $statusToString(Zui.Expression expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    genExpr(expr, ctx, Type.aStatus)
+    IF args.Size() == 1
+      genExpr(args[0], ctx, Type.aString)
+      ZuiExpressionExt.get(expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+    }
+  }
+
+  PROC $stringToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    IF radix == 10
+      ctx.addUsedItem(Declaration.ptrToInt)
+      ctx.addUsedItem(Declaration.stringToInt)
+    ELSEIF radix == 2
+      ctx.addUsedItem(Declaration.stringBinToInt)
+    ELSE
+      ctx.addUsedItem(Declaration.stringHexToInt)
+    }
+    ctx.scope.wantBacktrace = TRUE
+    genExpr(expr, ctx, Type.aString)  # find undefined symbols
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anInt)  # find undefined symbols
+    }
+  }
+
+  PROC $varStringToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    IF radix == 10
+      ctx.addUsedItem(Declaration.ptrToInt)
+      ctx.addUsedItem(Declaration.varStringToInt)
+    ELSEIF radix == 2
+      ctx.addUsedItem(Declaration.varStringBinToInt)
+    ELSE
+      ctx.addUsedItem(Declaration.varStringHexToInt)
+    }
+    ctx.scope.wantBacktrace = TRUE
+    genExpr(expr, ctx, Type.aVarString)  # find undefined symbols
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anInt)  # find undefined symbols
+    }
+  }
+
+  PROC $stringQuotedToInt(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                           list<Zui.Expression> args, SContext ctx, int radix)
+    IF radix == 10
+      ctx.addUsedItem(Declaration.stringQuotedToInt)
+    ELSEIF radix == 2
+      ctx.addUsedItem(Declaration.stringQuotedBinToInt)
+    ELSE
+      ctx.addUsedItem(Declaration.stringQuotedHexToInt)
+    }
+    ctx.scope.wantBacktrace = TRUE
+    genExpr(expr, ctx, Type.aString)  # find undefined symbols
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anInt)  # find undefined symbols
+    }
+  }
+
+  PROC $varStringQuotedToInt(Zui.Position pos, Zui.Expression expr,
+              bool dotnil, list<Zui.Expression> args, SContext ctx, int radix)
+    IF radix == 10
+      ctx.addUsedItem(Declaration.varStringQuotedToInt)
+    ELSEIF radix == 2
+      ctx.addUsedItem(Declaration.varStringQuotedBinToInt)
+    ELSE
+      ctx.addUsedItem(Declaration.varStringQuotedHexToInt)
+    }
+    ctx.scope.wantBacktrace = TRUE
+    genExpr(expr, ctx, Type.aVarString)  # find undefined symbols
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anInt)  # find undefined symbols
+    }
+  }
+
+  PROC $stringToFloat(Zui.Position pos, Zui.Expression expr, bool dotnil,
+                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringToFloat)
+    ctx.scope.wantBacktrace = TRUE
+    genExpr(expr, ctx, Type.aString)  # find undefined symbols
+    IF args.Size() > 0
+      genExpr(args[0], ctx, Type.anIntRef)  # find undefined symbols
+    }
+  }
+
+  # Convert string ASCII to lower case.
+  PROC $stringToLowerAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.stringToLowerAscii)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert string ASCII to upper case.
+  PROC $stringToUpperAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.stringToUpperAscii)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert a string to lower case.
+  PROC $stringToLower(Zui.Expression expr, bool dotnil, SContext ctx, Type type)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert a string to upper case.
+  PROC $stringToUpper(Zui.Expression expr, bool dotnil, SContext ctx, Type type)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert varString ASCII to lower case.
+  PROC $varStringToLowerAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.varStringToLowerAscii)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert varString ASCII to upper case.
+  PROC $varStringToUpperAscii(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.varStringToUpperAscii)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert a varString to lower case.
+  PROC $varStringToLower(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Convert a varString to upper case.
+  PROC $varStringToUpper(Zui.Expression expr, bool dotnil,
+                                                      SContext ctx, Type type)
+    genExpr(expr, ctx, type)  # find undefined symbols
+  }
+
+  # Common for the following "findChar" methods.
+  PROC $stringFindChar(Zui.Expression var_expr, bool dotnil,
+                    list<Zui.Expression> args, SContext ctx, Type dest) @local
+    VAR var_exprExt = ZuiExpressionExt.get(var_expr)
+    IF args.Size() == 2
+      ctx.addUsedItem(Declaration.stringFindChar2)
+      genExpr(var_expr, ctx, dest)
+      genExpr(args[0], ctx, Type.anInt)
+      var_exprExt.undefined += ZuiExpressionExt.get(args[0]).undefined
+      genExpr(args[1], ctx, Type.anInt)
+      var_exprExt.undefined += ZuiExpressionExt.get(args[1]).undefined
+    ELSE                                      # s.find(int c)
+      ctx.addUsedItem(Declaration.stringFindChar)
+      genExpr(var_expr, ctx, dest)
+      genExpr(args[0], ctx, Type.anInt)
+      var_exprExt.undefined += ZuiExpressionExt.get(args[0]).undefined
+    }
+  }
+
+  # string.find(int c)
+  PROC $stringFindChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aString)
+  }
+
+  # varString.find(int c)
+  PROC $varStringFindChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2
+             ? Declaration.varStringFindChar2 : Declaration.varStringFindChar)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aVarString)
+  }
+
+  # byteString.get(idx)  byteString.getByte(idx)
+  PROC $byteStringGetByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringGetByte)
+    genExpr(var_expr, ctx, Type.aByteString)
+    genExpr(args[0], ctx, Type.anInt)
+    ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+  }
+
+  # byteString.getChar(idx)
+  PROC $byteStringGetChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringGetChar)
+    genExpr(var_expr, ctx, Type.aByteString)
+    genExpr(args[0], ctx, Type.anInt)
+    ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+  }
+
+  # byteString.getCharSize(idx)
+  PROC $byteStringGetCharSize(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringGetCharSize)
+    genExpr(var_expr, ctx, Type.aByteString)
+    genExpr(args[0], ctx, Type.anInt)
+    ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+  }
+
+  # byteString.find(int c)
+  PROC $byteStringFindByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.byteStringFindByte2
+                                     : Declaration.byteStringFindByte)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aByteString)
+  }
+
+  # varByteString.find(int c)
+  PROC $varByteStringFindByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.varByteStringFindByte2
+                                     : Declaration.varByteStringFindByte)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aVarByteString)
+  }
+
+  # string.findLast(int c)
+  PROC $stringFindLastChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.stringFindLastChar2
+                                     : Declaration.stringFindLastChar)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aString)
+  }
+
+  # varString.findLast(int c)
+  PROC $varStringFindLastChar(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.varStringFindLastChar2
+                                     : Declaration.varStringFindLastChar)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aVarString)
+  }
+
+  # byteString.findLast(int c)
+  PROC $byteStringFindLastByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.byteStringFindLastByte2
+                                     : Declaration.byteStringFindLastByte)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aByteString)
+  }
+
+  # varByteString.findLast(int c)
+  PROC $varByteStringFindLastByte(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(args.Size() == 2 ? Declaration.varByteStringFindLastByte2
+                                     : Declaration.varByteStringFindLastByte)
+    $stringFindChar(var_expr, dotnil, args, ctx, Type.aVarByteString)
+  }
+
+  # Common for the following methods: find(), findLast(), startsWith() and
+  # endsWith().
+  PROC $stringSameArg(Zui.Expression var_expr, list<Zui.Expression> args,
+                                               SContext ctx, Type dest) @local
+    genExpr(var_expr, ctx, dest)
+    genExpr(args[0], ctx, dest)
+    VAR var_exprExt = ZuiExpressionExt.get(var_expr)
+    var_exprExt.undefined += ZuiExpressionExt.get(args[0]).undefined
+    IF args.Size() == 2
+      genExpr(args[1], ctx, Type.anInt)
+      var_exprExt.undefined += ZuiExpressionExt.get(args[1]).undefined
+    }
+  }
+
+  # string.Compare(other)
+  PROC $stringCompare(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringCompare)
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # string.Equal(other)
+  PROC $stringEqual(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringEqual)
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # byteString.Compare(other)
+  PROC $byteStringCompare(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringCompare)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # byteString.Equal(other)
+  PROC $byteStringEqual(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringEqual)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # string.find()
+  PROC $stringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    IF args.Size() == 2
+      ctx.addUsedItem(Declaration.stringFind2)
+    ELSE
+      ctx.addUsedItem(Declaration.stringFind)
+    }
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # string.findLast()
+  PROC $stringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringFindLast)
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # varString.find()
+  PROC $varStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringFind)
+    $stringSameArg(var_expr, args, ctx, Type.aVarString)
+  }
+
+  # varString.findLast()
+  PROC $varStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringFindLast)
+    $stringSameArg(var_expr, args, ctx, Type.aVarString)
+  }
+
+  # byteString.find()
+  PROC $byteStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringFind)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # byteString.findLast()
+  PROC $byteStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringFindLast)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # varByteString.find()
+  PROC $varByteStringFind(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varByteStringFind)
+    $stringSameArg(var_expr, args, ctx, Type.aVarByteString)
+  }
+
+  # varByteString.findLast()
+  PROC $varByteStringFindLast(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varByteStringFindLast)
+    $stringSameArg(var_expr, args, ctx, Type.aVarByteString)
+  }
+
+  # string.startsWith()
+  PROC $stringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringStartsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # string.endsWith()
+  PROC $stringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringEndsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aString)
+  }
+
+  # varString.startsWith()
+  PROC $varStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringStartsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aVarString)
+  }
+
+  # varString.endsWith()
+  PROC $varStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringEndsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aVarString)
+  }
+
+  # byteString.startsWith()
+  PROC $byteStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringStartsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # byteString.endsWith()
+  PROC $byteStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringEndsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aByteString)
+  }
+
+  # varByteString.startsWith()
+  PROC $varByteStringStartsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringStartsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aVarByteString)
+  }
+
+  # varByteString.endsWith()
+  PROC $varByteStringEndsWith(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringEndsWith)
+    $stringSameArg(var_expr, args, ctx, Type.aVarByteString)
+  }
+
+  # generic slice()
+  PROC $stringSlice(Zui.Expression var_expr, bool dotnil,
+                               Zui.MethodCall call, SContext ctx, Type dest)
+    ctx.addUsedItem(Declaration.stringSlice)
+    genExpr(var_expr, ctx, dest)
+    VAR callExt = ZuiMethodCallExt.get(call)
+    callExt.undefined = 0
+    Generate.generateSliceArgs(call, dotnil, ctx)
+    ZuiExpressionExt.get(var_expr).undefined += callExt.undefined
+  }
+
+  # string slice()
+  PROC $stringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aString)
+  }
+
+  # varString slice()
+  PROC $varStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringSlice)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aVarString)
+  }
+
+  # byteString slice()
+  PROC $byteStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringSlice)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aByteString)
+  }
+
+  # varByteString slice()
+  PROC $varByteStringSlice(Zui.Expression var_expr, bool dotnil,
+                                          Zui.MethodCall call, SContext ctx)
+    ctx.addUsedItem(Declaration.varByteStringSlice)
+    $stringSlice(var_expr, dotnil, call, ctx, Type.aVarByteString)
+  }
+
+  PROC $varAdd(Zui.Expression var_expr, list<Zui.Expression> args, SContext ctx,
+                                               Type valtype, Type vartype)
+    # Check the type of the argument.
+    Type type = genExpr(args[0], ctx.copyNoOut(), valtype)
+    IF type == NIL
+      type = genExpr(args[0], ctx.copyNoOut())
+    }
+    IF type == NIL
+      ZuiExpressionExt.get(var_expr).undefined += 5
+    ELSE
+      genExpr(var_expr, ctx, vartype)
+      IF type.ttype == valtype.ttype || type.ttype == Type.Enum.stringval
+        ctx.addUsedItem(Declaration.varStringAddVal)
+        genExpr(args[0], ctx, valtype)
+      ELSE
+        genExpr(args[0], ctx, vartype)
+      }
+      ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+    }
+  }
+
+  # varString add()
+  PROC $varStringAdd(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    $varAdd(var_expr, args, ctx, Type.aString, Type.aVarString)
+  }
+
+  # varByteString add()
+  PROC $varByteStringAdd(Zui.Expression var_expr, list<Zui.Expression> args,
+                                                                 SContext ctx)
+    $varAdd(var_expr, args, ctx, Type.aByteString, Type.aVarByteString)
+  }
+
+  # string split()
+  PROC $stringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.stringSplit)
+    anySplit(var_expr, dotnil, args, ctx, Type.aString, Type.aString)
+  }
+
+  # varString split()
+  PROC $varStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varStringSplit)
+    anySplit(var_expr, dotnil, args, ctx, Type.aVarString, Type.aString)
+  }
+
+  # byteString split()
+  PROC $byteStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.byteStringSplit)
+    anySplit(var_expr, dotnil, args, ctx, Type.aByteString, Type.aByteString)
+  }
+
+  # varByteString split()
+  PROC $varByteStringSplit(Zui.Expression var_expr, bool dotnil,
+                                      list<Zui.Expression> args, SContext ctx)
+    ctx.addUsedItem(Declaration.varByteStringSplit)
+    anySplit(var_expr, dotnil, args, ctx, Type.aVarByteString, Type.aByteString)
+  }
+
+  # Get the length of a string.
+  PROC $stringSize(Zui.Expression expr, SContext ctx, Type type)
+    genExpr(expr, ctx, type)
+  }
+
+  # Get the length of a varString.
+  PROC $varStringSize(Zui.Expression expr, SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.varStringSize)
+    genExpr(expr, ctx, type)
+  }
+
+  # Get the length of a byteString.
+  PROC $byteStringSize(Zui.Expression expr, SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.byteStringSize)
+    genExpr(expr, ctx, type)
+  }
+
+  # Get the length of a varByteString.
+  PROC $varByteStringSize(Zui.Expression expr, SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.varByteStringSize)
+    genExpr(expr, ctx, type)
+  }
+
+  # Get the hash value of a byteString or string.
+  PROC $byteStringHash(Zui.Expression expr, SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.byteStringHash)
+    genExpr(expr, ctx, type)
+  }
+
+  # Get the hash value of a varByteString or varString.
+  PROC $varByteStringHash(Zui.Expression expr, SContext ctx, Type type)
+    ctx.addUsedItem(Declaration.varByteStringHash)
+    genExpr(expr, ctx, type)
+  }
+
+  # Convert a string to a varString
+  PROC $string2varString(Zui.Expression expr, SContext ctx, Type type)
+    genExpr(expr, ctx, type)
+  }
+
+  # Convert a byteString to a string
+  PROC $byteString2string(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aByteString)
+  }
+
+  # Convert a byteString to a varString
+  PROC $byteString2varString(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aByteString)
+  }
+
+  # Convert a varString to a string
+  PROC $varString2string(Zui.Expression expr, SContext ctx, Type type)
+    genExpr(expr, ctx, type)
+  }
+
+  # Convert a varByteString to a string
+  PROC $varByteString2string(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aVarByteString)
+  }
+
+  # Convert a varByteString to a varString
+  PROC $varByteString2varString(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aVarByteString)
+  }
+
+  # Turn a string into an array.
+  PROC $stringToArray(Zui.Expression expr, SContext ctx)
+    genExpr(expr, ctx, Type.aString)
+    ctx.addUsedItem(DeclStore.getDecl("MEModule", "FthrowIllegalByte"))
+  }
+
+  # Generate a switch() and return the type of the expression.
+  FUNC $switch(Zui.Expression expr, Zui.CodeBlock block, SContext ctx) Type
+    RETURN genExpr(expr, ctx)
+  }
+
+  FUNC $caseString(Zui.Expression expr, bool caseFollows, SContext ctx) string
+    genExpr(expr, ctx, ctx.scope.switchType)
+    RETURN ""
+  }
+
+  PROC $writeProceed(Zui.Statement stmt, SContext ctx)
+  }
+
+  PROC $default(SContext ctx)
+  }
+
+  PROC $writeTtype(string name, Zui.Position pos, SContext ctx)
+  }
+
+  # Write the start of a block, "{".
+  PROC $startBlock(SContext ctx)
+  }
+
+  # Write the start of the block that contains the for loop.
+  PROC $forBlockStart(Zui.Position pos, SContext ctx)
+  }
+
+  # Write the first part of a FOR loop, declare the iterator.
+  # The name of the loop status var is |varName|.
+  # Return a symbol for the loop variable type.
+  FUNC $forStart(ForLoopInfo info,
+                      Type toType, Type untilType, Type stepType, SContext ctx
+                ) list<Type>
+    list<Type> itemTypes = NEW()
+
+    FOR idx IN 0 UNTIL info.iters.Size()
+      ForLoopInfo.Iter iter = info.iters[idx]
+      Type iterType = iter.varDecl.type
+      ctx.scope.wantBacktrace = TRUE
+      IF iterType.ttype == Type.Enum.list
+        ctx.addUsedItem(Declaration.list)
+      }
+
+      IF iter.iteratorType != NIL
+        ClassType class = iterType.getClassType(ctx)
+        IF class != NIL && class.templateTypes != NIL
+          # I.Iterator<int> returns int.
+          # I.KeyIterator<int, string> returns int + string..
+          FOR decl IN class.templateTypes
+            itemTypes.add(decl.type)
+          }
+        }
+      ELSEIF toType == NIL && untilType == NIL
+        SWITCH iterType.ttype
+          CASE Type.Enum.byteString
+            ctx.addUsedItem(Declaration.forBytestring)
+            itemTypes.add(Type.anInt)
+
+          CASE Type.Enum.string
+            ctx.addUsedItem(Declaration.forString)
+            itemTypes.add(Type.anInt)
+
+          CASE Type.Enum.stringval
+            itemTypes.add(Type.anInt)
+
+          CASE Type.Enum.array
+          CASE Type.Enum.list
+            Type itemType = iterType.getEffType().<ContainerType>.itemType
+            IF info.forStmt.sizeLoopVar() > info.iters.Size()
+              # FOR idx, item IN list
+              RETURN [Type.anInt, itemType]
+            }
+            itemTypes.add(itemType)
+
+          CASE Type.Enum.dict
+            ContainerType ct = iterType.getEffType()
+            IF info.forStmt.sizeLoopVar() > info.iters.Size()
+              # FOR key, item IN dict
+              RETURN [ct.keyType, ct.itemType]
+            }
+            # FOR item IN dict
+            itemTypes.add(ct.itemType)
+
+          CASE Type.Enum.enum
+            itemTypes.add(iterType.<EnumType>.getEnumValue())
+
+          CASE Type.Enum.enumValue
+            itemTypes.add(iterType)
+        }
+      ELSEIF iterType.isIntType()
+             && ((toType != NIL && toType.isIntType())
+                  || (untilType != NIL && untilType.isIntType()))
+             && (stepType == NIL || stepType.isIntType())
+        itemTypes.add(Type.anInt)
+      ELSE
+        itemTypes.add(Type.anUnknown)
+      }
+    }
+    RETURN itemTypes
+  }
+
+  # Write the loop part of a for loop:
+  #   inits;
+  #   for (init(varName); cond(varName); advance(varName)) {
+  PROC $forLoop(ForLoopInfo info, list<Declaration> varList, SContext ctx)
+    FOR i IN 0 UNTIL info.iters.Size()
+      IF info.iters[i].iteratorType != NIL
+        # Mark hasNext() and next() of the iterator as used.
+        $forLoopIteratorWhile(info, varList, i, ctx)
+      }
+    }
+  }
+
+  PROC $forEnd(Zui.Statement stmt, SContext ctx)
+  }
+
+  # A BREAK statement that jumps to a FINALLY.
+  PROC $writeBreakGotoFinally(Scope s, SContext ctx)
+    endOfLoopStuff(ctx, TRUE)
+  }
+
+  # A BREAK statement that finishes a loop.
+  PROC $writeBreak(SContext ctx)
+    endOfLoopStuff(ctx, TRUE)
+  }
+
+  # A CONTINUE statement that jumps to a FINALLY.
+  PROC $writeContinueGotoFinally(Scope s, SContext ctx)
+    endOfLoopStuff(ctx, FALSE)
+  }
+
+  # A CONTINUE statement that finishes a loop.
+  PROC $writeContinue(SContext ctx)
+    endOfLoopStuff(ctx, FALSE)
+  }
+
+  # UNITL of a DO block.
+  FUNC $until(Zui.Condition cond, SContext ctx) int
+    genExpr(cond.getCond(), ctx, Type.aBool)
+    RETURN ZuiExpressionExt.get(cond.getCond()).undefined
+  }
+
+  # Write a typecast for |sym| to |ctx.out|.  Return a closing paren when it
+  # is needed after the value.
+  FUNC $typecast(Type type, SContext ctx) string
+    RETURN ""
+  }
+
+  # Like $typecast(), when |ptr| is TRUE typecast for pointer to |type|.
+  FUNC $ptrTypecast(Type type, bool ptr, SContext ctx) string
+    RETURN ""
+  }
+
+  # Write the leading and tail part for a THROW.
+  # |type| is E.Exception or a string.
+  PROC $throw(Zui.Statement stmt, bool hasNextStmt, Type type, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+    VAR stmtExt = ZuiStatementExt.get(stmt)
+    IF stmt.hasExpr()
+      Zui.Expression expr = stmt.getExpr()
+      Generate.genExprDoConv(expr, ctx, type)
+      stmtExt.undefined = ZuiExpressionExt.get(expr).undefined
+      IF type != NIL && type.ttype == Type.Enum.string
+        ctx.addUsedItem(Declaration.throwPos)
+        newPosString(stmt.getPos(), ctx)
+      ELSE
+        ctx.addUsedItem(Declaration.throwObject)
+      }
+    ELSE
+      stmtExt.undefined = 0
+    }
+  }
+
+  # Generate the TRY block start of a TRY/CATCH/FINALLY
+  PROC $try_block(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Generate the TRY block end of a TRY/CATCH/FINALLY
+  PROC $try_block_end(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Generate a CATCH part of a TRY/CATCH/FINALLY
+  # |symList| is the list of exception types to be caught.
+  PROC $try_catch(Zui.Catch catch, list<Type> typeList, SContext ctx)
+  }
+
+  # Write the value of the current exception.
+  PROC $topException(Declaration.C destDecl, Zui.Position pos,
+                                              SContext ctx, SContext blockCtx)
+  }
+
+  # Generate the ELSE part of a TRY/CATCH/FINALLY
+  PROC $try_else(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Generate the FINALLY part of a TRY/CATCH/FINALLY
+  PROC $try_finally(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Generate the end of the TRY part of a TRY/CATCH/FINALLY
+  PROC $try_end(Zui.Statement stmt, SContext ctx)
+    Zui.TryStatement tryStmt = stmt.getTry()
+    TryScope tryScope = ZuiTryStatementExt.get(tryStmt).scope
+    # This is only needed if there is a FINALLY.
+    IF tryStmt.hasFinally()
+           && (tryScope.foundReturn
+            || tryScope.foundBreak
+            || tryScope.foundContinue)
+      # handle a RETURN before the FINALLY
+      # handle a BREAK before the FINALLY
+      # handle a CONTINUE before the FINALLY
+      $jumpToOuterScope(ctx)
+    }
+  }
+
+  # The expression that evaluates to TRUE when THIS is NIL.
+  PROC $ifnilExpr(SContext ctx)
+  }
+
+  # Write just before a non-call statement.
+  PROC $beforeStatement(Zui.Statement stmt, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+  }
+
+  # Write just before a statement.
+  PROC $beforeStatement(Zui.Position pos, Zui.Statement stmt, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+  }
+
+  # Write just before a statement.
+  PROC $beforeStatement(Zui.Position pos, bool beforeCall, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+  }
+
+  # Write just before a call statement.
+  PROC $beforeCallStatement(Zui.Position pos, SContext ctx)
+    ctx.scope.wantBacktrace = TRUE
+  }
+
+  # Write just after a >>> statement <<<.
+  PROC $afterStatement(Zui.Statement stmt, SContext ctx)
+  }
+
+  # Write just after a function call.
+  PROC $afterCall(SContext ctx)
+  }
+
+  # Write a call statement, possibly dereferencing the return value.
+  PROC $callStatement(Type retType, Output callOut, SContext ctx)
+  }
+
+  # Write code to return, before evaluating the argument.
+  PROC $returnBefore(bool proc, bool multi, SContext ctx)
+    Scope s = ctx.scope.tryScope(FALSE, FALSE)
+    IF s != NIL
+      # Remember there is a RETURN inside this TRY.
+      s.<TryScope>.foundReturn = TRUE
+    }
+  }
+
+  # Write code to return from a PROC (returnType is NIL) or FUNC, after
+  # evaluating the argument.
+  PROC $returnAfter(Type returnType, bool writeScopeEnd,
+                                               Zui.Position pos, SContext ctx)
+  }
+
+  # RETURN halfway a MethodScope: jump to the return at the end.
+  PROC $jumpToReturn(SContext ctx)
+  }
+
+  # Extra argument for RETURN.
+  # expr.undefined will be set.
+  PROC $extraReturn(Zui.Expression expr, int idx, SContext ctx, Type destType)
+    Generate.genTopExprDoConv(expr, ctx, destType)
+  }
+
+  # RETURN in an inner scope: set "rt" flag and jump to the end of the outer
+  # scope.
+  PROC $jumpToOuterScope(SContext ctx)
+    Scope scope = ctx.scope
+    scope.needRetFlag = TRUE
+    bool inTry = scope.inTry()
+    IF inTry
+      scope.retFlagInTry = TRUE
+    }
+    WHILE TRUE
+      scope = scope.outer
+      scope.needRetFlag = TRUE
+      IF inTry
+        scope.retFlagInTry = TRUE
+      }
+      IF scope ISA MethodScope
+        BREAK
+      }
+    }
+  }
+
+  # Write code to exit, before evaluating the argument.
+  PROC $exitBefore(Zui.Statement stmt, SContext ctx)
+    ctx.addUsedItem(Declaration.exit)
+    ctx.scope.wantBacktrace = TRUE
+  }
+
+  # Write code to exit, after evaluating the argument.
+  PROC $exitAfter(bool lastStatement, SContext ctx)
+  }
+
+  # Write code to create a backtrace.
+  PROC $writeBacktrace(Zui.MethodCall call, SContext ctx)
+    ctx.addUsedItem(Declaration.newList)
+    ctx.scope.wantBacktrace = TRUE
+    IF call.sizeArgument() >= 1
+      Generate.genExpr(call.getArgument(0), ctx, Type.anInt)
+    }
+    IF call.sizeArgument() >= 2
+      Generate.genExpr(call.getArgument(1), ctx, Type.anInt)
+    }
+  }
+
+  # Write code to create a Pos with the position of the caller.
+  PROC $writeCallerPos(SContext ctx)
+  }
+
+  # Return TRUE when a module needs to be generated.
+  FUNC $doGenerateModule(SContext ctx) bool
+    RETURN TRUE
+  }
+
+  # Write the module type.
+  PROC $moduleType(ModuleType mt, SContext ctx)
+  }
+
+  # Set dependencies between items.
+  PROC $addDependencies()
+  }
+
+  # Set used flags for dependencies of used items.
+  PROC $markUsed()
+  }
+
+  SHARED
+
+    FUNC genExpr(Zui.Expression expr, SContext ctx) Type
+      RETURN Generate.genExpr(expr, ctx)
+    }
+    FUNC genExpr(Zui.Expression expr, SContext ctx, Type destType) Type
+      RETURN Generate.genExpr(expr, ctx, destType)
+    }
+    FUNC genExprConv(Zui.Expression expr, SContext ctx, ExprArg exprArg) Type
+      RETURN Generate.genExprConv(expr, ctx, exprArg)
+    }
+
+    # Figure out the conversion for |ret| to |exprArg.destType()|.
+    # Return a symbol of the converted type.
+    # Set expr.conversion and expr.retClass for the conversion.
+    FUNC exprConversion(Zui.Expression expr, Type ret,
+                                                 SContext ctx, ExprArg exprArg
+         ) Type
+      VAR exprExt = ZuiExpressionExt.get(expr)
+
+      # When the type is any, use the destination type without conversion.
+      IF ret?.ttype == Type.Enum.any
+        exprExt.conversion = Conversion.none
+        RETURN exprArg.destType()
+      }
+
+      # Do not do conversion if both are a typedef.
+      IF exprArg.destType() != NIL
+             && ret != NIL
+             && (exprArg.destType().ttype != Type.Enum.typedef
+                                            || ret.ttype != Type.Enum.typedef)
+        Type.Enum retTtype = ret.getTtype()
+        Type.Enum destTtype = exprArg.destType().getTtype()
+
+        IF retTtype == Type.Enum.dyn
+          # Converion from dyn to something else
+          SWITCH destTtype
+            CASE Type.Enum.int
+              exprExt.conversion = Conversion.dyn2int
+            CASE Type.Enum.int8
+              exprExt.conversion = Conversion.dyn2int8
+            CASE Type.Enum.int16
+              exprExt.conversion = Conversion.dyn2int16
+            CASE Type.Enum.int32
+              exprExt.conversion = Conversion.dyn2int32
+            CASE Type.Enum.nat
+              exprExt.conversion = Conversion.dyn2nat
+            CASE Type.Enum.byte
+              exprExt.conversion = Conversion.dyn2byte
+            CASE Type.Enum.nat16
+              exprExt.conversion = Conversion.dyn2nat16
+            CASE Type.Enum.nat32
+              exprExt.conversion = Conversion.dyn2nat32
+            CASE Type.Enum.bool
+              exprExt.conversion = Conversion.dyn2bool
+            CASE Type.Enum.status
+              exprExt.conversion = Conversion.dyn2status
+            CASE Type.Enum.enumValue
+              EnumType et = exprArg.destType().getEffType()
+                                                     .<EnumValueType>.enumType
+              IF et.usedEnumName == NIL
+                et.usedEnumName = NEW("usedEnumName")
+              }
+              ctx.addUsedItem(et.usedEnumName)
+              exprExt.conversion = Conversion.dyn2enum
+            CASE Type.Enum.float32
+            CASE Type.Enum.float
+            CASE Type.Enum.float80
+            CASE Type.Enum.float128
+              exprExt.conversion = Conversion.dyn2float
+            CASE Type.Enum.string
+              exprExt.conversion = Conversion.dyn2string
+              ctx.addUsedItem(Declaration.itemToString)
+            CASE Type.Enum.byteString
+              exprExt.conversion = Conversion.dyn2byteString
+            CASE Type.Enum.tuple
+              exprExt.conversion = Conversion.dyn2tuple
+            CASE Type.Enum.type
+              exprExt.conversion = Conversion.dyn2type
+            CASE Type.Enum.iobject
+              exprExt.conversion = Conversion.dyn2iobject
+              ClassType ct = exprArg.destType().getEffType().getClassType(ctx)
+              IF ct != NIL
+                ct.imttUsed(ctx)
+              }
+              ctx.addUsedItem(Declaration.convertDynToIobject)
+            CASE Type.Enum.object
+              exprExt.conversion = Conversion.dyn2object
+            CASE Type.Enum.array
+              exprExt.conversion = Conversion.dyn2array
+            CASE Type.Enum.list
+              exprExt.conversion = Conversion.dyn2list
+            CASE Type.Enum.dict
+              exprExt.conversion = Conversion.dyn2dict
+            CASE Type.Enum.dyn
+              exprExt.conversion = Conversion.none
+            DEFAULT
+              # TODO: handle other types
+              exprExt.conversion = Conversion.none
+              RETURN ret
+          }
+          IF exprExt.undefined == 0
+            ctx.addUsedItem(Declaration.convertFromDyn)
+          }
+          RETURN exprArg.destType()
+        }
+
+        SWITCH destTtype
+          CASE Type.Enum.natval
+          CASE Type.Enum.intval
+            IF ret.isNumberType()
+              exprExt.conversion = Conversion.none
+              RETURN ret
+            }
+
+          # If dest is int type must be some kind of int.
+          CASE Type.Enum.int
+          CASE Type.Enum.int8
+          CASE Type.Enum.int16
+          CASE Type.Enum.int32
+          CASE Type.Enum.nat
+          CASE Type.Enum.byte
+          CASE Type.Enum.nat16
+          CASE Type.Enum.nat32
+            IF ret.isIntType()
+              exprExt.conversion = Conversion.none
+              RETURN exprArg.destType()
+            }
+
+          # If dest is float type must be some kind of float or int.
+          CASE Type.Enum.float
+          CASE Type.Enum.float32
+          CASE Type.Enum.float80
+          CASE Type.Enum.float128
+            IF ret.isNumberType()
+              exprExt.conversion = Conversion.none
+              RETURN exprArg.destType()
+            }
+
+          CASE Type.Enum.varString
+            IF retTtype == Type.Enum.string
+              # automatic conversion from string to varString
+              exprExt.conversion = Conversion.string2varString
+              RETURN Type.aVarString
+            }
+
+          CASE Type.Enum.string
+            IF retTtype == Type.Enum.varString
+              # automatic conversion from varString to string
+              exprExt.conversion = Conversion.varString2string
+              RETURN Type.aString
+            }
+            IF ret.isNatType() && exprArg.stringConvert
+              # automatic conversion from nat to string
+              exprExt.conversion = Conversion.nat2string
+              RETURN Type.aString
+            }
+            IF ret.isIntType() && exprArg.stringConvert
+              # automatic conversion from int to string
+              exprExt.conversion = Conversion.int2string
+              RETURN Type.aString
+            }
+            IF ret.isFloatType() && exprArg.stringConvert
+              # automatic conversion from float to string
+              exprExt.conversion = Conversion.float2string
+              RETURN Type.aString
+            }
+            IF retTtype == Type.Enum.bool && exprArg.stringConvert
+              # automatic conversion from bool to string
+              exprExt.conversion = Conversion.bool2string
+              RETURN Type.aString
+            }
+            IF retTtype == Type.Enum.status && exprArg.stringConvert
+              # automatic conversion from Status to string
+              exprExt.conversion = Conversion.status2string
+              RETURN Type.aString
+            }
+
+          CASE Type.Enum.byteString
+            IF retTtype == Type.Enum.string
+              # automatic conversion from string to byteString: no-op
+              exprExt.conversion = Conversion.none
+              RETURN Type.aByteString
+            }
+            IF retTtype == Type.Enum.varString
+              # automatic conversion from varString to byteString
+              exprExt.conversion = Conversion.varString2string
+              RETURN Type.aByteString
+            }
+            IF retTtype == Type.Enum.varByteString
+              # automatic conversion from varByteString to byteString
+              exprExt.conversion = Conversion.varString2string
+              RETURN Type.aByteString
+            }
+
+          CASE Type.Enum.varByteString
+            IF retTtype == Type.Enum.string
+              # automatic conversion from string to byteString
+              exprExt.conversion = Conversion.string2varString
+              RETURN Type.aVarByteString
+            }
+            IF retTtype == Type.Enum.varString
+              # no-op conversion
+              exprExt.conversion = Conversion.none
+              RETURN Type.aVarByteString
+            }
+            IF retTtype == Type.Enum.byteString
+              # automatic conversion from "string" to varByteString
+              exprExt.conversion = Conversion.string2varString
+              RETURN Type.aVarByteString
+            }
+            IF ret.isIntType() && exprArg.stringConvert
+              # automatic conversion from int to varString
+              exprExt.conversion = Conversion.int2varString
+              RETURN Type.aVarByteString
+            }
+            # TODO: float to varString
+            IF retTtype == Type.Enum.bool && exprArg.stringConvert
+              # automatic conversion from bool to varString
+              exprExt.conversion = Conversion.bool2varString
+              RETURN Type.aVarByteString
+            }
+            IF retTtype == Type.Enum.status && exprArg.stringConvert
+              # automatic conversion from Status to varString
+              exprExt.conversion = Conversion.status2varString
+              RETURN Type.aVarByteString
+            }
+
+          CASE Type.Enum.iobject
+            ClassType retClass = ret.getClassType(ctx)
+            IF retTtype == Type.Enum.object
+              # Need to wrap the object in a Tr and set the type.
+              exprExt.conversion = Conversion.object2iobject
+              IF retClass == NIL
+                ++exprExt.undefined
+                exprExt.retClass = NIL
+              ELSE
+                exprExt.retClass = retClass
+              }
+              RETURN exprArg.destType()
+            }
+
+            ClassType destClass = exprArg.destType().getClassType(ctx)
+            # TODO: For an interface destClass is an interface and retClass
+            # the class that would implement it or an interface that would
+            # implement it.
+            IF retTtype == Type.Enum.iobject
+                  && destClass ISNOT retClass
+                  && (destClass == NIL
+                       || destClass.ttype == Type.Enum.class
+                       || destClass.ttype == Type.Enum.interface
+                      )
+              # Classes differ, allocate a To with a different type number.
+              exprExt.conversion = Conversion.iobject2iobject
+              IF retClass == NIL
+                ++exprExt.undefined
+                exprExt.retClass = NIL
+              ELSE
+                ctx.addUsedItem(Declaration.convertZoref)
+                exprExt.retClass = retClass
+              }
+              RETURN exprArg.destType()
+            ELSEIF exprArg.dest.type.isNoAlloc()
+              # When the destination is not allocated we need to call a
+              # function even when the types match.
+              exprExt.conversion = Conversion.iobject2noalloc
+              RETURN exprArg.destType()
+            }
+
+          CASE Type.Enum.object
+            IF retTtype == Type.Enum.iobject
+              # Need to dereference the To and check the type.
+              ctx.scope.wantBacktrace = TRUE
+              exprExt.conversion = Conversion.iobject2object
+              ClassType retClass = ret.getClassType(ctx)
+              IF retClass == NIL
+                ++exprExt.undefined
+              ELSE
+                ctx.addUsedItem(Declaration.iobject2object)
+                exprExt.retClass = retClass
+              }
+              RETURN exprArg.destType()
+            }
+
+          CASE Type.Enum.procRef
+          CASE Type.Enum.funcRef
+            # Using a callback where a method reference is expected.
+            IF retTtype == Type.Enum.callback
+              exprExt.conversion = Conversion.callback2method
+              RETURN ret.getEffType().<CallbackType>.methodType
+            }
+
+          CASE Type.Enum.dyn
+            SWITCH retTtype
+              CASE Type.Enum.bool
+                exprExt.conversion = Conversion.bool2dyn
+              CASE Type.Enum.status
+                exprExt.conversion = Conversion.status2dyn
+              CASE Type.Enum.int
+              CASE Type.Enum.intval
+                exprExt.conversion = Conversion.int2dyn
+              CASE Type.Enum.int8
+                exprExt.conversion = Conversion.int82dyn
+              CASE Type.Enum.int16
+                exprExt.conversion = Conversion.int162dyn
+              CASE Type.Enum.int32
+                exprExt.conversion = Conversion.int322dyn
+              CASE Type.Enum.nat
+              CASE Type.Enum.natval
+                exprExt.conversion = Conversion.nat2dyn
+              CASE Type.Enum.byte
+                exprExt.conversion = Conversion.byte2dyn
+              CASE Type.Enum.nat16
+                exprExt.conversion = Conversion.nat162dyn
+              CASE Type.Enum.nat32
+                exprExt.conversion = Conversion.nat322dyn
+              CASE Type.Enum.float32
+              CASE Type.Enum.float
+              CASE Type.Enum.float80
+              CASE Type.Enum.float128
+              CASE Type.Enum.floatval
+                exprExt.conversion = Conversion.float2dyn
+              CASE Type.Enum.enumValue
+                EnumType et = ret.getEffType().<EnumValueType>.enumType
+                IF et.usedEnumName == NIL
+                  et.usedEnumName = NEW("usedEnumName")
+                }
+                ctx.addUsedItem(et.usedEnumName)
+                exprExt.conversion = Conversion.enum2dyn
+              CASE Type.Enum.bitsValue
+                BitsType bt = ret.getEffType().<BitsValueType>.bitsType
+                IF bt.usedBitsName == NIL
+                  bt.usedBitsName = NEW("usedBitsName")
+                }
+                ctx.addUsedItem(bt.usedBitsName)
+                exprExt.conversion = Conversion.bits2dyn
+              CASE Type.Enum.string
+                exprExt.conversion = Conversion.string2dyn
+              CASE Type.Enum.byteString
+                exprExt.conversion = Conversion.byteString2dyn
+              CASE Type.Enum.tuple
+                exprExt.conversion = Conversion.tuple2dyn
+              CASE Type.Enum.type
+                exprExt.conversion = Conversion.type2dyn
+              CASE Type.Enum.iobject
+                exprExt.conversion = Conversion.iobject2dyn
+              CASE Type.Enum.object
+                exprExt.conversion = Conversion.object2dyn
+              CASE Type.Enum.array
+                exprExt.conversion = Conversion.array2dyn
+                ret.getEffType().<ContainerType>.typeUsed(ctx)
+              CASE Type.Enum.list
+                exprExt.conversion = Conversion.list2dyn
+                ret.getEffType().<ContainerType>.typeUsed(ctx)
+              CASE Type.Enum.dict
+                exprExt.conversion = Conversion.dict2dyn
+                ret.getEffType().<ContainerType>.typeUsed(ctx)
+              DEFAULT
+                exprExt.conversion = Conversion.none
+                RETURN ret
+            }
+            ctx.addUsedItem(Declaration.convert2dyn)
+            RETURN exprArg.destType()
+        }
+      }
+
+      # Reset the conversion, it may have been set in a previous pass.
+      exprExt.conversion = Conversion.none
+      RETURN ret
+    }
+    
+    # Make a function name that includes all the argument types to
+    # make it unique.
+    FUNC objectArgName(list<Declaration.C> arglist, Type mtype, SContext ctx
+                      ) string
+      string name = ""
+      IF arglist != NIL
+        VAR pArglist = mtype.<MethodType>.arguments
+        FOR i IN 0 UNTIL arglist.Size()
+          Declaration.C d = arglist[i]
+          IF d != NIL
+            IF d.type.ttype == Type.Enum.unknown
+                || d.type.ttype == Type.Enum.nilval
+              # The argument is NEW() or NIL, use the argument type
+              # ofthe found method .
+              d = pArglist[i]
+              arglist[i] = d
+            }
+            IF d.type.ttype == Type.Enum.iobject
+              name ..= "__" .. d.type.getClassType(ctx).pName .. "_I"
+            ELSEIF d.type.ttype == Type.Enum.object
+                                   || d.type.ttype == Type.Enum.class
+              name ..= "__" .. d.type.getClassType(ctx).pName
+            ELSE
+              name ..= "__" .. d.type.ttype.ToString()
+            }
+          }
+        }
+      }
+      RETURN name
+    }
+
+    # |vartype|.split(|argType|)
+    PROC anySplit(Zui.Expression var_expr, bool dotnil,
+          list<Zui.Expression> args, SContext ctx, Type vartype, Type argtype)
+      ctx.scope.wantBacktrace = TRUE
+      genExpr(var_expr, ctx, vartype)
+      genExpr(args[0], ctx, argtype)
+      ZuiExpressionExt.get(var_expr).undefined +=
+                                       ZuiExpressionExt.get(args[0]).undefined
+      ctx.addUsedItem(Declaration.list)
+    }
+
+    # Get a list of all functions called |name| in |parent| with |argCount|
+    # arguments.  Does not check visibility. Excludes abstract methods.
+    PROC addMatchingMethods(string name, Type parent, int argCount,
+                                                list<Declaration> functions)
+      Type type = parent
+      WHILE type != NIL
+        IF type.getObjectDeclDict() != NIL
+          FOR l IN type.getObjectDeclDict().values()
+            FOR decl IN l
+              IF decl.name == name && !decl.type.isAbstract()
+                                  && decl.type.getArgList().Size() == argCount
+                functions.add(decl)
+              }
+            }
+          }
+        }
+        IF type ISNOTA ClassType
+          BREAK
+        }
+        type = type.<ClassType>.parent
+      }
+    }
+
+    # Make a list with list of possible symbols for THIS and each argument.
+    # altList[0] for A0 THIS  
+    # altList[1] for A1 arg 1
+    # altList[1] for A2 arg 2
+    # etc.
+    FUNC getDeclAltList(Type varType, string methodName, Zui.Position pos,
+                        int &undef, list<Declaration.C> arglist, SContext ctx
+                       ) list<list<Declaration>>
+      list<list<Declaration>> altList = NEW()
+      
+      # Fill altList[0]: THIS
+      list<Declaration> alist
+      IF varType.ttype == Type.Enum.iobject
+                                       || varType.ttype == Type.Enum.interface
+        ClassType class = varType.getClassType(ctx)
+
+        IF !ctx.doError()
+          # Another class might be added later, therefore always come back here
+          # when that happens.
+          class.scope.addScopeDependency(ctx.scope)
+        }
+        alist = interfaceClassList(class, ctx)
+        IF alist.Size() == 0
+          IF ctx.doError()
+            ctx.error("No classes implementing " .. class.name, pos)
+          }
+          RETURN NIL
+        }
+      ELSE
+        alist = NEW()
+        Type t = varType.getValueType(ctx)
+        alist.add(t)
+      }
+      altList.add(alist)
+
+      # Find all functions for the possible classes that have the right name
+      # and number of arguments.
+      list<Declaration> functions = NEW()
+      FOR l IN alist
+        addMatchingMethods(methodName, l.type, arglist.Size(), functions)
+      }
+      IF functions.Size() == 0  # No matching functions
+        undef += 10
+        IF ctx.doError()
+          ctx.error("No matching methods for " .. methodName, pos)
+        }
+        RETURN NIL
+      }
+
+      # Fill altList[1] and further from the argument types.
+      FOR di IN 0 UNTIL arglist.Size()
+        Declaration.C d = arglist[di]
+        IF d == NIL || d.type == NIL
+          undef += 10  # Error is given where arg is parsed.
+          RETURN NIL
+        }
+        IF d.type.ttype == Type.Enum.iobject
+          # If all possible functions have the same argument type there is no
+          # need to try all possible implementing classes.  This saves an
+          # awful lot of time.
+          alist = NIL
+          Declaration.C validArg
+          FOR f IN functions
+            Declaration.C arg = f.type.<MethodType>.getArgList()[di]
+            IF arg.type != NIL && arg.type.ttype != Type.Enum.unknown
+              IF validArg == NIL
+                validArg = arg
+              ELSE
+                IF !Type.matchingTypes(validArg.type, arg.type, ctx)
+                  # Two possible types for this argument, add all possible types
+                  # to find the right method (with conversion etc.).
+                  alist = interfaceClassList(d.type.getClassType(ctx), ctx)
+                  IF alist.Size() == 0
+                    undef += 10
+                    IF ctx.doError()
+                      ctx.error("No classes implement "
+                                        .. d.type.getClassType(ctx).name, pos)
+                    }
+                    RETURN NIL
+                  }
+                  BREAK
+                }
+              }
+            }
+          }
+          IF alist == NIL
+            IF validArg == NIL
+              # No argument type on any possible function.
+              undef += 10
+              IF ctx.doError()
+                ctx.error("Unknown argument type for " .. methodName, pos)
+              }
+              RETURN NIL
+            }
+
+            # All methods use the same type for this arg.
+            alist = NEW()
+            alist.add(validArg)
+          }
+        ELSE
+          alist = NEW()
+          IF d.type == NIL
+            IF ctx.doError()
+              ctx.error("Unknown type for " .. d.name, pos)
+            }
+            undef += 5
+            RETURN NIL
+          }
+          Type t = d.type.getValueType(ctx)
+          Declaration.C td = NEW("copy")
+          td.type = t
+          alist.add(td)
+        }
+        altList.add(alist)
+      }
+
+      RETURN altList
+    }
+
+    # When encountering a BREAK or CONTINUE: need a label to jump to the end
+    # of the scope and a variable at the method level.
+    PROC endOfLoopStuff(SContext ctx, bool isBreak)
+
+      # All scopes inside the loop need a jump label.
+      Scope scope = ctx.scope
+      WHILE scope != NIL
+        IF scope.isLoopScope() || isBreak && scope.isCaseScope()
+          BREAK
+        }
+        scope = scope.outer
+      }
+
+      # The method scope needs to declare "rt".
+      WHILE scope != NIL && !scope.isMethodType()
+        scope = scope.outer
+      }
+      IF scope != NIL
+        scope.needRetFlag = TRUE
+        IF scope.inTry()
+          scope.retFlagInTry = TRUE
+        }
+      }
+    }
+
+    # Common between list and array: list used to initialize a container.
+    # Return the item type, detected from the common type of all items.
+    FUNC initFromList(Zui.Expression expr, Type destType, SContext ctx) Type
+      Type type = destType
+      bool didFirst
+      FOR item IN expr.getListItemList()
+        Type t = Generate.genExprDoConv(item, ctx, type)
+        IF t != NIL
+          IF !didFirst
+            type = t.getEffType()
+            didFirst = TRUE
+          ELSEIF type.getTtype() != t.getTtype()
+            # When types differ take the common denominator, ultimately dyn.
+            type = type.getCommonType(t, ctx)
+          }
+        }
+        ZuiExpressionExt.get(expr).undefined +=
+                                          ZuiExpressionExt.get(item).undefined
+      }
+      IF expr.sizeListItem() > 0
+        # Store the final item type with the first list item.
+        ZuiExpressionExt.get(expr.getListItem(0)).resultType = type
+      }
+      RETURN type
+    }
+
+  }
+}

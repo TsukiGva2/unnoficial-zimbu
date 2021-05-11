@@ -1,0 +1,275 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module I
+#
+
+#= Builtin Interfaces.
+#
+#*license
+#* Copyright 2013 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE IModule @public
+
+  #= The interface that all iterators must implement.
+  #- Sketch of how this is used:
+  #%  I.Iterator it = foo.Iterator()
+  #%  IF it.hasNext() && it.peekSupported()
+  #%    IO.print("First item: " .. it.peek().ToString())
+  #%  }
+  #%  FOR item IN it
+  #%    IO.print("Item: " .. item.ToString())
+  #%  }
+  INTERFACE Iterator<Titem> @public
+
+    #= Returns TRUE when there is another item to fetch.
+    FUNC $hasNext() bool @public
+    }
+
+    #= Returns the next item and advances.
+    #- When there is no next item it throws an E.OutOfRange exception.
+    FUNC $next() Titem @public
+    }
+
+    #= Returns TRUE when peek() is supported.
+    FUNC $peekSupported() bool @public
+    }
+
+    #= Returns the next item without advancing.
+    #- When there is no next item it throws an E.OutOfRange exception.
+    #- First use hasNext() to check.
+    #
+    #- This is an optional method, when peeking is not possible it throws an
+    #- E.Unsupported exception.
+    FUNC $peek() Titem @public
+    }
+  }
+
+  #= The interface for an iterator that provides access to its current
+  #= position.
+  #- Sketch of how this is used:
+  #%  I.KeyIterator kit = foo.KeyIterator()
+  #%  IF kit.hasNext() && kit.peekSupported()
+  #%    KeyType key, ItemType item = kit.peek()
+  #%    IO.print("First item[" .. key.ToString() .. "]: " .. item.ToString())
+  #%  }
+  #%  FOR key, item IN kit
+  #%    IO.print("Item[" .. key.ToString() .. "]: " .. item.ToString())
+  #%  }
+  INTERFACE KeyIterator<Tkey, Titem> @public
+
+    #= Returns TRUE when there is another item to fetch.
+    FUNC $hasNext() bool @public
+    }
+
+    #= Returns the next key/item and advances.
+    #- When there is no next item it throws an E.OutOfRange exception.
+    FUNC $next() Tkey, Titem @public
+    }
+
+    #= Returns TRUE when peek() is supported.
+    FUNC $peekSupported() bool @public
+    }
+
+    #= Returns the next key/item without advancing.
+    #- When there is no next item it throws an E.OutOfRange exception.
+    #- First use hasNext() to check.
+    #
+    #- This is an optional method, when peeking is not possible it throws an
+    #- E.Unsupported exception.
+    FUNC $peek() Tkey, Titem @public
+    }
+  }
+
+  #= Interface for an iterator that can modify the container.
+  #- Sketch of how this is used:
+  #%  I.MutateIterator<ItemType> it = foo.Iterator()
+  #%  FOR item IN it
+  #%    IF item.bad()
+  #%      IF it.removeSupported()
+  #%        it.remove()
+  #%      ELSE
+  #%        IO.print("Bad item: " .. item.ToString())
+  #%      }
+  #%    }
+  #%  }
+  INTERFACE MutateIterator<Titem> EXTENDS I.Iterator<Titem> @public
+
+    #= Returns TRUE when $set() is supported.
+    FUNC $setSupported() bool @public
+    }
+
+    #= Replaces the item that was previously obtained with $next()
+    #- This can be used only once after calling $next().
+    #- This can not be called after $remove() or $add().
+    #
+    #- This is an optional method, when setting is not possible it throws an
+    #- E.Unsupported exception.
+    #
+    #- When setting is not possible FAIL is returned.  Normally the
+    #- implementation always works when it is implemented, but in rare cases
+    #- it may fail to set only some items.
+    FUNC $set(Titem item) status @public
+    }
+
+    #= Returns TRUE when $remove() is supported.
+    FUNC $removeSupported() bool @public
+    }
+
+    #= Removes the item that was previously obtained with $next()
+    #- This can be used only once after calling $next().
+    #- This can not be used after $set().
+    #
+    #- This is an optional method, when removing is not possible it throws an
+    #- E.Unsupported exception.
+    #
+    #- When removing is not possible FAIL is returned.  Normally the
+    #- implementation always works when it is implemented, but in rare cases
+    #- it may fail to remove only some items.
+    FUNC $remove() status @public
+    }
+
+    #= Returns TRUE when $add() is supported.
+    FUNC $addSupported() bool @public
+    }
+
+    #= Adds |item| after the one that was previously obtained with $next() or
+    #= $previous().
+    #- This can be used after calling $remove, $set() and $insert() and can be
+    #- called multiple times.  However, it may fail in some cases.
+    #
+    #- When calling $add(one) and then $add(two) the two item will be placed
+    #- after the one item.
+    #
+    #- This is an optional method, when adding is not possible it throws an
+    #- E.Unsupported exception.
+    #
+    #- When adding is not possible FAIL is returned.  Normally the
+    #- implementation always works when it is implemented, but in rare cases
+    #- it may fail to add only some items.
+    FUNC $add(Titem item) status @public
+    }
+
+    #= Returns TRUE when $insert() is supported.
+    FUNC $insertSupported() bool @public
+    }
+
+    #= Inserts |item| before the one that was previously obtained with $next()
+    #= or $previous()
+    #- This can be used after calling $remove or $set() and can be called
+    #- multiple times.  However, it may fail in some cases.
+    #
+    #- When calling $insert(one) and then $insert(two) the two item will be
+    #- placed after the one item.
+    #
+    #- This can called before $next() and will insert |item| before the start
+    #- of the box.
+    #
+    #- This is an optional method, when inserting is not possible it throws an
+    #- E.Unsupported exception.
+    #
+    #- When inserting is not possible FAIL is returned.  Normally the
+    #- implementation always works when it is implemented, but in rare cases
+    #- it may fail to insert only some items.
+    FUNC $insert(Titem item) status @public
+    }
+  }
+
+  #= Interface for an iterator that can go in both directions.
+  INTERFACE BidiIterator<Titem> EXTENDS I.Iterator<Titem> @public
+    #= Returns TRUE when there is an item to fetch with previous().
+    FUNC $hasPrevious() bool @public
+    }
+
+    #= Returns the previous item and advances backwards.
+    #- When there is no previous item it throws an E.OutOfRange exception.
+    FUNC $previous() Titem @public
+    }
+
+    #= Returns TRUE when peekPrevious() is supported.
+    FUNC $peekPreviousSupported() bool @public
+    }
+
+    #= Returns the previous item without advancing.
+    #- When there is no previous item it throws an E.OutOfRange exception.
+    #
+    #- This is an optional method, when peeking is not possible it throws an
+    #- E.Unsupported exception.
+    FUNC $peekPrevious() Titem @public
+    }
+  }
+
+  #= Interface for an iterator that can go in both directions and can modify
+  #= the container.  The methods that can normally only be called after
+  #= $next() will also work after $previous().
+  INTERFACE BidiMutateIterator<Titem> EXTENDS I.MutateIterator<Titem> @public
+    INCLUDE
+      BidiIterator<Titem> $bidi
+    }
+
+#    #= Returns TRUE when there is an item to fetch with previous().
+#    FUNC $hasPrevious() bool @public
+#    }
+#
+#    #= Returns the previous item and advances backwards.
+#    #- When there is no previous item it throws an E.OutOfRange exception.
+#    FUNC $previous() Titem @public
+#    }
+#
+#    #= Returns TRUE when peekPrevious() is supported.
+#    FUNC $peekPreviousSupported() bool @public
+#    }
+#
+#    #= Returns the previous item without advancing.
+#    #- When there is no previous item it throws an E.OutOfRange exception.
+#    #
+#    #- This is an optional method, when peeking is not possible it throws an
+#    #- E.Unsupported exception.
+#    FUNC $peekPrevious() Titem @public
+#    }
+  }
+
+  #= Interface allowing a class to be iterated over.
+  #- Sketch of how this is used:
+  #%  CLASS Foo<Titem> IMPLEMENTS I.Iterable<Titem>
+  #%    List<Titem> $container
+  #%    FUNC $Iterator() I.Iterator
+  #%      RETURN FooIterator.NEW($container)
+  #%    }
+  #%  }
+  #- Defining $Iterator(), without explicitly adding the IMPLEMENTS, works to
+  #- use the class with "FOR item IN".
+  INTERFACE Iterable<Titem> @public
+
+    #= Returns an iterator.
+    #- The returned iterator will iterate over the container in the state as
+    #- it currently is.  Changes to the container, other then calling methods
+    #- on the iterator, have unpredictable effects.
+    FUNC $Iterator() I.Iterator<Titem> @public
+    }
+  }
+
+  #= Interface allowing a class to be iterated over, with a key.
+  #- Sketch of how this is used:
+  #%  CLASS Foo<Titem> IMPLEMENTS I.KeyIterable<Tkey, Titem>
+  #%    List<Titem> $container
+  #%    FUNC $KeyIterator() I.Iterator
+  #%      RETURN FooKeyIterator.NEW($container)
+  #%    }
+  #%  }
+  #- Defining $KeyIterator(), without explicitly adding the IMPLEMENTS, works
+  #- to use the class with "FOR key, item IN".
+  INTERFACE KeyIterable<Tkey, Titem> @public
+
+    #= Returns a key iterator.
+    #- The returned iterator will iterate over the container in the state as
+    #- it currently is.  Changes to the container, other then calling methods
+    #- on the iterator, have unpredictable effects.
+    FUNC $KeyIterator() I.KeyIterator<Tkey, Titem> @public
+    }
+  }
+
+}

@@ -1,0 +1,3 @@
+FUNC Main() int
+  RETURN 1
+}

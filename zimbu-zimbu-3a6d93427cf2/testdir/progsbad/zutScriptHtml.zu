@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutScriptHtml.zut
+
+FUNC Main() int
+  # HTML + Javascript / Html
+  ZUT.Html html = NEW().add("xxx")
+  string fail = Testing.inScriptHtml(html).ToString()
+  RETURN 0
+}

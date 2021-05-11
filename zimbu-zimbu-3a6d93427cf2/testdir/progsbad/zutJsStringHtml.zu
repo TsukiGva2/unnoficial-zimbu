@@ -1,0 +1,9 @@
+# Small test program: Verify that this does not compile.
+IMPORT.ZUT zutJsStringHtml.zut
+
+FUNC Main() int
+  # Javascript string / Html
+  ZUT.Html html = NEW().add("xxx")
+  string fail = Testing.inJsStringHtml(html).ToString()
+  RETURN 0
+}

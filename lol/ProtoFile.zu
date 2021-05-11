@@ -1,0 +1,62 @@
+# The Zimbu compiler written in Zimbu
+#
+# Interface for class containing items.
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT "I_ItemFinder.zu"
+IMPORT "I_ProtoItem.zu"
+IMPORT "OptionItem.zu"
+IMPORT "ParseProto.zu"
+IMPORT "PToken.zu"
+
+CLASS ProtoFile IMPLEMENTS I_ItemFinder @items=directory
+  string                    $package
+
+  list<ProtoFile>           $imports
+
+  list<I_ProtoItem>         $itemList  # ordered list of items in this file
+
+  dict<string, I_ProtoItem> $itemDict  # lookup table with the same items.
+
+  list<OptionItem>          $optionList
+
+  NEW()
+    $itemList = NEW()
+    $itemDict = NEW()
+    $imports = NEW()
+    # $optionList = NEW()
+  }
+
+  PROC $addItem(I_ProtoItem item)
+    IF item.name != NIL
+      $itemList.add(item)
+      $itemDict.add(item.name, item)
+    }
+  }
+
+  PROC $addOption(OptionItem option)
+    # TODO
+  }
+
+  FUNC $findItem(string name) I_ProtoItem
+    # TODO: use $itemDict?
+    FOR item IN $itemList
+      IF item.name == name
+        RETURN item
+      }
+    }
+
+    FOR import IN $imports
+      I_ProtoItem item = import.findItem(name)
+      IF item != NIL
+        RETURN item
+      }
+    }
+
+    RETURN NIL
+  }
+}

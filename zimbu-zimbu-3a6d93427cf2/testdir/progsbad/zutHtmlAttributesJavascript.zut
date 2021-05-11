@@ -1,0 +1,6 @@
+MODULE Testing
+  # HTML attributes / Javascript
+  TEMPLATE inAttributesJavascript(ZUT.Javascript text) ZUT.Html @public
+    <div [=text]>foo</div>
+  }
+}

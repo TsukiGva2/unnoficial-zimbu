@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<style type="text/css">
+body {
+font-family: arial,sans-serif;
+}
+.keyword {
+  color: #774400;
+}
+.type {
+  color: #227722;
+}
+.attribute {
+  color: #990077;
+}
+.typehref {
+  color: #227722;
+  text-decoration: underline;
+}
+.example {
+  background-color: #EEFFCC;
+  border-color: #88AA66;
+  border-style: solid none;
+  border-width: 1px medium;
+  padding: 5px;
+}
+.commentcode {
+  font-family: monospace;
+  background-color: #EEFFCC;
+}
+.ptext {
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+.pheader {
+  margin-bottom: 3px;
+}
+small {
+  font-size: 60%;
+}
+.nowrap {
+  white-space: nowrap;
+  vertical-align: top;
+}
+</style>
+
+<title>HTTP.Server class - Zimbu documentation</title>
+</head><body>
+<table width='500'><tr><td>
+<A href='HTTP.html'>up:&nbsp;HTTP</A>
+</td><td>
+&nbsp;&nbsp;&nbsp;
+</td><td>
+<A href='index.html'>index</A>
+</td><td align='right' width='90%'>
+<A href='http://www.zimbu.org/documentation'>Zimbu documentation</A>
+</td></tr></table>
+<h1><span class='keyword'>CLASS</span> HTTP.Server
+<span class='attribute'><small> @public</small></span></h1>
+<h2>summary</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<p class='ptext'> The actual HTTP server.
+</p>
+<p class='ptext'> The defaults are set to use URL "http://localhost" and low verbosity.
+</p>
+<table><tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#NEW'><b>NEW</b></a>(<small>port</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Create a new HTTP server on port <b>port</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$setVerbosity'><b>$setVerbosity</b></a>(<small>level</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the verbosity for the server to <b>level</b>.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$setBase'><b>$setBase</b></a>(<small>base</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Setting the base URL allows servlets to use it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$setFileRoot'><b>$setFileRoot</b></a>(<small>root</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Set the directory where files for FileServlet can be found.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$addServlet'><b>$addServlet</b></a>(<small>servlet</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a servlet.  The server will ask each servlet if it can handle a
+ request.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$addPage'><b>$addPage</b></a>(<small>page</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Add a ZUT page.  This will create the page according to the <b>page</b>
+ argument and create a servlet for it.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$redirect'><b>$redirect</b></a>(<small>from, to</small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Generate a "301 moved permanently" response.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$openInBrowser'><b>$openInBrowser</b></a>(<small>page</small>) <small><span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span></small><span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Open <b>page</b> in a browser, for localhost and the port number of the
+ server.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$quit'><b>$quit</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Tell the server to quit.
+</td>
+</tr>
+<tr><td align='right'></td><td class='nowrap'><A href='HTTP.Server.html#$waitForExit'><b>$waitForExit</b></a>(<small></small>)<span class='attribute'><small> @public</small></span>&nbsp;</td>
+<td> Wait until the server exits.
+</td>
+</tr>
+<tr><td>&nbsp;</td></tr></table></td></tr></table>
+<h2>members (alphabetically)</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='pheader'><span class='keyword'>PROC</span> <A name='NEW'><b>NEW</b></A>(<span class='type'><A class='typehref' href='INT.int.html'>int</A></span> port)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Create a new HTTP server on port <b>port</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addPage'><b>$addPage</b></A>(<span class='type'><A class='typehref' href='ZUT.Page.html'>ZUT.Page</A></span> page)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a ZUT page.  This will create the page according to the <b>page</b>
+ argument and create a servlet for it.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$addServlet'><b>$addServlet</b></A>(<span class='type'><A class='typehref' href='HTTP.Servlet.html'>HTTP.Servlet</A></span> servlet)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Add a servlet.  The server will ask each servlet if it can handle a
+ request.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>FUNC</span> <A name='$openInBrowser'><b>$openInBrowser</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> page) <span class='type'><A class='typehref' href='STATUS.status.html'>status</A></span><span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Open <b>page</b> in a browser, for localhost and the port number of the
+ server.
+</p>
+<p class='ptext'> This has the effect of invoking SYS.openInBrowser() for
+ http://localhost:{port}/{page}
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$quit'><b>$quit</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Tell the server to quit.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$redirect'><b>$redirect</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> from, <span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> to)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Generate a "301 moved permanently" response.
+</p>
+<p class='ptext'> A simple way to add a RedirectServlet and set the <b>from</b> and <b>to</b> URLs.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setBase'><b>$setBase</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> base)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Setting the base URL allows servlets to use it.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setFileRoot'><b>$setFileRoot</b></A>(<span class='type'><A class='typehref' href='STRING.string.html'>string</A></span> root)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the directory where files for FileServlet can be found.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$setVerbosity'><b>$setVerbosity</b></A>(<span class='type'><A class='typehref' href='HTTP.Verbosity.html'>HTTP.Verbosity</A></span> level)<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Set the verbosity for the server to <b>level</b>.
+</p>
+</td></tr></table><p class='pheader'><span class='keyword'>PROC</span> <A name='$waitForExit'><b>$waitForExit</b></A>()<span class='attribute'> @public</span></p><table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td><p class='ptext'> Wait until the server exits.
+</p>
+</td></tr></table></td></tr></table><h2>license
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Copyright 2009 Bram Moolenaar  All Rights Reserved.
+</td></tr></table><h2>
+</h2>
+<table width=1000><tr><td width=40>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td> Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+ obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+<p class='ptext'></td></tr></table></body></html>

@@ -1,0 +1,15 @@
+# Small test program: Verify that this does not compile.
+
+TYPE int Weight
+TYPE int Size
+
+FUNC Main() int
+  Weight w = 4
+  doit(w)
+
+  RETURN 0
+}
+
+PROC doit(Size s)
+  IO.print(s)
+}

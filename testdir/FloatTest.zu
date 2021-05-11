@@ -1,0 +1,233 @@
+# Test file for float
+#
+# Copyright 2014 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE FloatTest @public
+
+  PROC test() @public
+    IO.print("testdir/FloatTest.zu")
+    test1()
+    test2()
+    test3()
+    test4()
+    testFloat32()
+    testInfAndNan()
+    testPredefMethods()
+  }
+
+  PROC test1()
+    float f = 0
+    IO.print("Size(): " .. f.Size())
+
+    f = 2 * f + 22
+    IO.print(f)
+
+    f = "1.01".toFloat()
+    IO.print(f)
+
+    int len
+    f = "1.123456789".toFloat(&len)
+    IO.print(f.ToString() .. " len: " .. len)
+    IO.print(f.ToString("3.8e"))
+    IO.print(f.ToString("3.10E"))
+    IO.print(f.ToString("3.8f"))
+    IO.print(f.ToString("3.10F"))
+    IO.print(f.ToString("3.8g"))
+    IO.print(f.ToString("3.10G"))
+    f = 123456789.1
+    IO.print(f.ToString())
+    IO.print(f.ToString("3.8e"))
+    IO.print(f.ToString("3.10E"))
+    IO.print(f.ToString("3.8f"))
+    IO.print(f.ToString("3.10F").slice(0, -3))
+    IO.print(f.ToString("3.8g"))
+    IO.print(f.ToString("3.10G"))
+
+    f = 1.12e10
+    IO.print("exp: " .. f)
+    string sf = f
+
+    f = -1.1234e99
+    IO.print("negative is " .. f)
+    f = -1.1234e-23
+    IO.print("negative exp is " .. f)
+
+    IO.print("T.float.max: " .. T.float.max)
+    IO.print("overflow: " .. 9999.9.pow(999))
+    IO.print("does overflow: " .. (T.float.max == 9999.9.pow(999)))
+
+    IO.print("pi: " .. T.float.pi)
+    IO.print("e: " .. T.float.e)
+  }
+
+  PROC test2()
+    float f1 = 1.12
+    float f2 = 3.45
+    IO.print("4.57 == " .. (f1 + f2))
+    IO.print("-2.33 == " .. (f1 - f2))
+    IO.print("3.864 == " .. (f1 * f2))
+    IO.print("1.12 == " .. (f1 % f2))
+
+    IO.print("f1 == f2: " .. (f1 == f2))
+    IO.print("f1 != f2: " .. (f1 != f2))
+    IO.print("f1 > f2: " .. (f1 > f2))
+    IO.print("f1 >= f2: " .. (f1 >= f2))
+    IO.print("f1 < f2: " .. (f1 < f2))
+    IO.print("f1 <= f2: " .. (f1 <= f2))
+
+    IO.print("f2 == f1: " .. (f2 == f1))
+    IO.print("f2 != f1: " .. (f2 != f1))
+    IO.print("f2 > f1: " .. (f2 > f1))
+    IO.print("f2 >= f1: " .. (f2 >= f1))
+    IO.print("f2 < f1: " .. (f2 < f1))
+    IO.print("f2 <= f1: " .. (f2 <= f1))
+
+    IO.print("f1 == f1: " .. (f1 == f1))
+    IO.print("f1 != f1: " .. (f1 != f1))
+    IO.print("f1 > f1: " .. (f1 > f1))
+    IO.print("f1 >= f1: " .. (f1 >= f1))
+    IO.print("f1 < f1: " .. (f1 < f1))
+    IO.print("f1 <= f1: " .. (f1 <= f1))
+
+    f1 = 1234
+    int i1 = 1234
+    IO.print("f1 == i1: " .. (f1 == i1))
+    IO.print("f1 != i1: " .. (f1 != i1))
+    IO.print("f1 > i1: " .. (f1 > i1))
+    IO.print("f1 >= i1: " .. (f1 >= i1))
+    IO.print("f1 < i1: " .. (f1 < i1))
+    IO.print("f1 <= i1: " .. (f1 <= i1))
+
+    IO.print("i1 == f1: " .. (i1 == f1))
+    IO.print("i1 != f1: " .. (i1 != f1))
+    IO.print("i1 > f1: " .. (i1 > f1))
+    IO.print("i1 >= f1: " .. (i1 >= f1))
+    IO.print("i1 < f1: " .. (i1 < f1))
+    IO.print("i1 <= f1: " .. (i1 <= f1))
+  }
+
+  PROC test3()
+    float f1 = 3.1 + 4
+    float f2 = 3 + 4.2
+    float f3 = 3.1 + 4.2
+    IO.print("constants + " .. f1 .. ", " .. f2 .. ", " .. f3)
+
+    f1 = 3.3 - 2
+    f2 = 3 - 1.2
+    f3 = 3.1 - 1.2
+    IO.print("constants - " .. f1 .. ", " .. f2 .. ", " .. f3)
+
+    f1 = 3.3 * 2
+    f2 = 3 * 1.2
+    f3 = 3.1 * 1.2
+    IO.print("constants * " .. f1 .. ", " .. f2 .. ", " .. f3)
+
+    f1 = 3.3 / 2
+    f2 = 3 / 1.2
+    f3 = 3.1 / 1.2
+    IO.print("constants / " .. f1 .. ", " .. f2 .. ", " .. f3)
+
+    f1 += f2
+    f2 -= f3
+
+    int verbose
+    IF verbose >= 1
+      IO.print("yes")
+    }
+  }
+
+  PROC test4()
+    float f1 = 1.5
+    float f2 = -1.5
+    float f3 = 0.5
+    IO.print("floor(): " .. f1.floor() .. " , " .. f2.floor())
+    IO.print("ceil(): " .. f1.ceil() .. " , " .. f2.ceil())
+    IO.print("round(): " .. f1.round() .. " , " .. f2.round())
+    IO.print("trunc(): " .. f1.trunc() .. " , " .. f2.trunc())
+    IO.print("abs(): " .. f1.abs() .. " , " .. f2.abs())
+
+    IO.print("exp(): " .. f1.exp())
+    IO.print("log(): " .. f1.log())
+    IO.print("log10(): " .. f1.log10())
+    IO.print("sqrt(): " .. f1.sqrt())
+    IO.print("pow(): " .. f1.pow(f2))
+
+    IO.print("sin(): " .. f1.sin())
+    IO.print("sinh(): " .. f1.sinh())
+    IO.print("tan(): " .. f1.tan())
+    IO.print("tanh(): " .. f1.tanh())
+    IO.print("cos(): " .. f1.cos())
+    IO.print("cosh(): " .. f1.cosh())
+    IO.print("acos(): " .. f3.acos())
+    IO.print("asin(): " .. f3.asin())
+    IO.print("atan(): " .. f1.atan())
+    IO.print("atan2(): " .. f1.atan2(f2))
+  }
+
+  PROC testFloat32()
+    float32 f = 1.5
+    IO.print("float32: " .. f)
+    IO.print("size: " .. f.Size())
+    f = -1.234
+    IO.print("abs: " .. f.abs())
+  }
+
+  PROC testInfAndNan()
+    IO.print("NAN is " .. NAN)
+    float f = NAN
+    IO.print("f == NAN: " .. (f == NAN))
+    IO.print("f != NAN: " .. (f != NAN))
+    IO.print("NAN == f: " .. (NAN == f))
+    IO.print("NAN != f: " .. (NAN != f))
+    IO.print("f == f: " .. (f == f))
+    IO.print("f != f: " .. (f != f))
+    IO.print("f.isInfinite(): " .. f.isInfinite())
+    IO.print("f.isNan(): " .. f.isNan())
+
+    IO.print("INF is " .. INF)
+    f = INF
+    IO.print("f == INF: " .. (f == INF))
+    IO.print("f != INF: " .. (f != INF))
+    IO.print("f == NINF: " .. (f == NINF))
+    IO.print("f != NINF: " .. (f != NINF))
+    IO.print("f.isInfinite(): " .. f.isInfinite())
+    IO.print("f.isNan(): " .. f.isNan())
+
+    f = NINF
+    IO.print("NINF is " .. NINF)
+    IO.print("f == INF: " .. (f == INF))
+    IO.print("f != INF: " .. (f != INF))
+    IO.print("f == NINF: " .. (f == NINF))
+    IO.print("f != NINF: " .. (f != NINF))
+    IO.print("f.isInfinite(): " .. f.isInfinite())
+    IO.print("f.isNan(): " .. f.isNan())
+  }
+
+  PROC testPredefMethods()
+    float f = 1.234
+    IO.print(f.Size())
+    IO.print(f.ToString())
+    IO.print(f.Type().ToString())
+    float32 f32 = 1.234
+    IO.print(f32.Size())
+    IO.print(f32.ToString())
+    IO.print(f32.Type().ToString())
+
+    float eight = 8
+    float four = 4
+    float otherFour = 4
+    IO.print("4.Compare(4): " .. (four.Compare(four)))
+    IO.print("4.Compare(8): " .. (four.Compare(eight)))
+    IO.print("8.Compare(4): " .. (eight.Compare(four)))
+    IO.print("INF.Compare(INF): " .. (INF.Compare(INF)))
+    IO.print("INF.Compare(NINF): " .. (INF.Compare(NINF)))
+    IO.print("NINF.Compare(NINF): " .. (NINF.Compare(NINF)))
+    IO.print("NINF.Compare(INF): " .. (NINF.Compare(INF)))
+
+    IO.print("4.Equal(4): " .. (four.Equal(otherFour)))
+    IO.print("8.Equal(4): " .. (eight.Equal(four)))
+  }
+}

@@ -1,0 +1,87 @@
+#
+# Test for the Zimbu compiler written in Zimbu
+#
+# Test file for pipe
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+MODULE PipeTest @public
+
+  # Run all the tests.
+  PROC test() @public
+    IO.print("testdir/PipeTest.zu")
+    test1()
+    test2()
+    test3()
+  }
+
+  pipe<string> p
+
+  # Simple function to read from a pipe and print the strings.
+  PROC print()
+    WHILE TRUE
+      status st
+      string s = p.read(&st)
+      IF st == FAIL
+        BREAK
+      }
+      IO.print(s)
+    }
+  }
+
+  # Simple function to write to a pipe in the current thread and read from it
+  # in another thread.
+  PROC test1()
+    p = NEW()
+    thread t = NEW(print)
+    t.start()
+    FOR day IN ["Mon", "Tue", "Wed", "Thu", "Fri"]
+      p.write(day)
+    }
+    p.close()
+    t.wait()
+  }
+
+  # Test creating a pipe to return result of evalThread.eval().
+  PROC test2()
+    evalThread<string> t = NEW()
+    pipe<string> tp = t.eval({ => "hello thread!" })
+    IO.print("from thread: " .. tp.read())
+    string s = tp.read()  # reads NIL
+    IF s == NIL
+      s = "NIL"
+    }
+    IO.print("from thread: " .. s)
+
+    VAR tp2 = THREAD.eval({ => "hello from THREAD.eval()" })
+    IO.print("also " .. tp2.read())
+
+    pipe<string> ps = T.evalThread<string>.eval(
+        FUNC () string
+          IO.print("hello from the thread")
+          RETURN "hello through the pipe"
+        })
+    IO.print("from FUNC: " .. ps.read())
+  }
+
+  PROC test3()
+    string m = "world"
+    pipe<string> sp = T.evalThread<string>.NEW()
+                                             .eval({ USE m => "hello " .. m })
+    IO.print(sp.read())
+
+    func< => string> f = getFunc()
+    sp = T.evalThread<string>.NEW().eval(f)
+    IO.print(sp.read())
+  }
+
+  FUNC getFunc() func< => string>
+    string m = "there"
+    RETURN { USE &m => "hello " .. m }
+  }
+
+}
+

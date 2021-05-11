@@ -1,0 +1,1260 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# Type class.
+#
+# A Type defines the kind of item that is declared or passed around.
+# Type class hyrarchy
+#
+#    Type                  unknown var id ctype (not real types)
+#       ValueType          int nat bool status enumValue
+#          BitsType        BITS
+#          EnumType        ENUM
+#       ReferenceType      nil string byteString object method-ref ref
+#          ClassType       CLASS and INTERFACE
+#          MethodType      PROC FUNC
+#          ContainerType   list dict array etc.
+#          TupleType       tuple
+#       ModuleType         MODULE
+#
+# Copyright 2011 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO "zui.proto"
+
+IMPORT "BitsType.zu"
+IMPORT "CallbackType.zu"
+IMPORT "ClassRefType.zu"
+IMPORT "ClassScope.zu"
+IMPORT "ClassType.zu"
+IMPORT "ContainerType.zu"
+IMPORT "Declaration.zu"
+IMPORT "EnumValueType.zu"
+IMPORT "ExprArg.zu"
+IMPORT "MethodRefType.zu"
+IMPORT "MethodType.zu"
+IMPORT "MultipleType.zu"
+IMPORT "NoAllocType.zu"
+IMPORT "ReferenceType.zu"
+IMPORT "SContext.zu"
+IMPORT "SymUse.zu"
+IMPORT "ValueType.zu"
+
+
+CLASS Type EXTENDS Declaration @items=public
+  Enum        $ttype     # The type of type.
+
+  string      $ctypeName # for Enum.ctype
+              @private
+
+  bool        $defined   # TRUE only when type was completely resolved.
+
+  Declaration $compareFunc  # Compare function to be wrapped in dereferencing
+                            # the object.
+  Declaration $compareWrapper  # The function to do the wrapping.
+
+  # Create a new type declaration.
+  # |name| is the name of the class, enum, etc.
+  NEW(Enum type, string name) @default
+    $ttype = type
+    $name = name
+    $type = THIS  # When used as a Declaration the object is the type itself.
+  }
+
+  # Make a copy of this Type.  Every subclass must redefine it.
+  FUNC $copyType() Type @default
+    Type.C ret = NEW($ttype, $name)
+    $copyTypeValues(ret)
+    RETURN ret
+  }
+
+  # Copy the values of this object into |ret|.
+  PROC $copyTypeValues(Type ret) @default
+    $copyDeclValues(ret)
+    ret.ttype = $ttype
+    ret.ctypeName = $ctypeName
+    ret.defined = $defined
+  }
+
+  # If this type is a Class, Enum, Bits or Method, return a reference to it.
+  # Otherwise return THIS.
+  FUNC $getValueType(SContext ctx) Type @default
+    RETURN THIS
+  }
+
+  # Wrap this type in NoAllocType to note it is not in the heap but on the
+  # stack.  Can't cache the result, because the NoAllocType object is used to
+  # keep track of the NEW() methods involved.
+  FUNC $getNoAllocType() Type @default
+    RETURN NoAllocType.NEW(THIS, $name .. "NoAlloc")
+  }
+
+  # Whether this type is on the stack, not on the heap.
+  FUNC $isNoAlloc() bool @default
+    RETURN FALSE
+  }
+
+  # Return the $ttype.  For a typedef it is the defined type.
+  FUNC $getTtype() Enum @default
+    RETURN $ttype
+  }
+
+  # Return the effective type.  For a typedef it is the defined type.
+  FUNC $getEffType() Type @default
+    RETURN THIS
+  }
+
+  # Return the type that can actually be declared.  Thus turns a constant into
+  # a type.  e.g. natval to nat.
+  FUNC $getDeclarableType() Type @default
+    SWITCH $getTtype()
+      CASE Enum.natval
+        RETURN Type.aNat
+      CASE Enum.intval
+        RETURN Type.anInt
+      CASE Enum.floatval
+        RETURN Type.aFloat
+      CASE Enum.stringval
+        RETURN Type.aString
+    }
+    RETURN THIS
+  }
+
+  # Get a type that is a reference to this type.
+  FUNC $getRefType() Type @default
+    # TODO: cache the result?
+    RETURN ReferenceType.NEW(Type.Enum.byRef, THIS, "byRef")
+  }
+
+  PROC $setCtypeName(string name) @default
+    $ctypeName = name
+  }
+
+  FUNC $getCtypeName() string @default
+    RETURN $ctypeName
+  }
+
+
+  # Turn this type into an allocated type.  This is like an object with one
+  # member.
+  FUNC $getAllocType(SContext ctx) Type @default
+    IF %allocTypes == NIL
+      %allocTypes = NEW()
+    ELSEIF %allocTypes.has($ttype)
+      RETURN %allocTypes[$ttype]
+    }
+    ClassType type = NEW(Enum.class, $ttype.ToString())
+    type.pName = "T" .. $ttype.ToString()
+    type.scope = ClassScope.NEW(ctx.scope, NIL)
+    Declaration.C decl = NEW("m")
+    decl.type = THIS
+    type.addObjectMember(decl)
+    type.allocDecl = decl
+    %allocTypes[$ttype] = type
+    RETURN type
+  }
+
+  # Return TRUE when this is a class used to store an allocated variable, used
+  # in a USE &argument.
+  FUNC $isAllocType(SContext ctx) bool @default
+    RETURN FALSE
+  }
+
+  # For a class, return an classDotC type.
+  # Otherwise return NIL
+  FUNC $getStarType(Zui.Position pos, SContext ctx) ClassRefType @default
+    ctx.error("Can only use .C after a class name", pos)
+    RETURN NIL
+  }
+
+  # Take over the properties of this Type to a Declaration.
+  PROC $copyToDecl(Declaration.C decl)
+    decl.type = THIS
+  }
+
+  # Only makes sense for a class.
+  FUNC $isAbstract() bool @default
+    RETURN $zuiAttr != NIL && $zuiAttr.getAbstract()
+  }
+
+
+  # All types that can be used.
+  # Note: Some types can only be used for an intermediate result, not for a
+  # declared item.
+  ENUM Enum
+    unknown
+
+    # Most often used types.
+    bool
+    status
+    id         # identifier (IO, HTTP, etc.) TODO: remove?
+    byRef      # argument or variable passed by reference
+
+    # used for initializers and constants
+    nilval       # NIL
+    intval       # -123
+    natval       # 123
+    floatval     # 1.2
+    stringval    # "foo bar"
+    listval      # [foo, bar]
+    dictval      # [ foo: bar, foo: bar]
+    enumval      # Entry in an enum, ValueType.value is used.
+
+    # String types
+    string
+    varString
+    byteString
+    varByteString
+
+    # Container types
+    array
+    tuple
+    list
+    dict
+    multiDict
+    set
+    multiSet
+
+    # Multiple return values
+    multiple
+
+    # Method definitions
+    proc
+    func
+    new
+
+    # Method references
+    procRef
+    funcRef
+    callback
+
+    # Modules, Classes and objects.
+    module
+    builtinModule
+    builtinMethod # module member with produce method
+
+    class         # declaration of a CLASS
+    classDotC     # class type with .C: SomeClass.C
+    object        # variable or expression for a classDotC
+
+    interface     # declaration of an INTERFACE
+    iclass        # declaration of an interface of a CLASS: SomeClass.I
+    iobject       # variable or expression for an interface or class or its
+                  # children
+
+    piece         # declaration of a PIECE
+
+    bits          # declaration of a BITS
+    bitsValue     # variable or expression for a bits
+
+    enum          # declaration of an ENUM
+    enumValue     # variable or expression for an enum
+
+    # Signed numbers.
+    int   # same as int64
+    int8
+    int16
+    int32
+    bigint
+
+    # Unsigned numbers.
+    nat   # same as nat64
+    byte  # same as nat8
+    nat16
+    nat32
+    bignat
+
+    # Floating point numbers.
+    float    # same as float64
+    float32
+    float80
+    float128
+
+    # Fixed point numbers in 64 bit, number of decimals set in
+    # "ValueType.decimals".
+    fixed
+
+    # Various.
+    alias
+    typedef
+    dyn
+    type
+    var        # used for variable so long as type is not known
+    ctype
+
+    # Type returned by C code, can be anything, not type-checked.
+    any
+  }
+
+  #= Return TRUE when "pass by value" semantics apply, not "pass by reference".
+  FUNC $isValueType() bool @default
+    RETURN FALSE
+  }
+
+  #= Return TRUE when this is a number, signed or unsigned, int or float.
+  FUNC $isNumberType() bool @default
+    RETURN $isIntType() || $isFloatType()
+  }
+
+  #= Return TRUE when this is an int, signed or unsigned.
+  FUNC $isIntType() bool @default
+    RETURN $ttype == Type.Enum.int
+        || $ttype == Type.Enum.int8
+        || $ttype == Type.Enum.int16
+        || $ttype == Type.Enum.int32
+        || $ttype == Type.Enum.nat
+        || $ttype == Type.Enum.byte
+        || $ttype == Type.Enum.nat16
+        || $ttype == Type.Enum.nat32
+        || $ttype == Type.Enum.natval
+        || $ttype == Type.Enum.intval
+  }
+
+  #= Return TRUE when this is an unsigned.
+  FUNC $isNatType() bool @default
+    RETURN $ttype == Type.Enum.nat
+        || $ttype == Type.Enum.byte
+        || $ttype == Type.Enum.nat16
+        || $ttype == Type.Enum.nat32
+        || $ttype == Type.Enum.natval
+  }
+
+  #= Return TRUE when this is a float, signed or unsigned.
+  FUNC $isFloatType() bool @default
+    RETURN $ttype == Type.Enum.float
+        || $ttype == Type.Enum.float32
+        || $ttype == Type.Enum.float80
+        || $ttype == Type.Enum.float128
+        || $ttype == Type.Enum.floatval
+  }
+
+  # Return TRUE if the type of this object is known.  Returns FALSE for
+  # Enum.unknown, Enum,var and composites with an unknown item.
+  # For a method the argument and return types are checked.
+  FUNC $typeDefined() bool @default
+    RETURN $ttype != Enum.unknown && $ttype != Enum.var
+  }
+
+  # Return TRUE if this is a method.
+  FUNC $isMethodType() bool @default
+    RETURN FALSE
+  }
+
+  # Return TRUE if this is a method or a reference to a method.
+  FUNC $isMethodOrRefType() bool @default
+    RETURN FALSE
+  }
+
+  # A type that is a variable when used inside a class.
+  # Most types are, but not Class, Enum, Bits and Methods.
+  FUNC $isVariableType() bool
+    RETURN !($needCopyValue() || $isMethodType())
+  }
+
+  # Return a short name for the type: "bool", "func", "list<int>", etc.
+  FUNC $typeName(bool long) string @default
+    RETURN $ttype.ToString()
+  }
+  
+  FUNC $typeName() string @replace
+    RETURN $typeName(TRUE)
+  }
+
+  FUNC $typeToString() string @default
+    RETURN $toString("", TRUE)
+  }
+
+  FUNC $toString(string indent, bool recurse) string @default
+    string res = indent .. "Type declaration: " .. $typeName(TRUE)
+    RETURN res
+  }
+
+  # Return the name for the object declaration table.
+  # Return NIL if this is not an object.
+  FUNC $getTypeName(SContext ctx) string @default
+    SWITCH $ttype
+      CASE Enum.dyn
+        RETURN "dyn"
+      CASE Enum.int
+      CASE Enum.intval
+        RETURN "int"
+      CASE Enum.int8
+        RETURN "int8"
+      CASE Enum.int16
+        RETURN "int16"
+      CASE Enum.int32
+        RETURN "int32"
+      CASE Enum.byte
+        RETURN "byte"
+      CASE Enum.nat
+      CASE Enum.natval
+        RETURN "nat"
+      CASE Enum.nat16
+        RETURN "nat16"
+      CASE Enum.nat32
+        RETURN "nat32"
+      CASE Enum.float32
+        RETURN "float32"
+      CASE Enum.float
+      CASE Enum.floatval
+        RETURN "float"
+      CASE Enum.float80
+        RETURN "float80"
+      CASE Enum.float128
+        RETURN "float128"
+      CASE Enum.bool
+        RETURN "bool"
+      CASE Enum.status
+        RETURN "status"
+      CASE Enum.type
+        RETURN "type"
+      CASE Enum.unknown
+      CASE Enum.var
+      CASE Enum.ctype
+        RETURN ""
+    }
+    THROW "INTERNAL: Unknown type in Type.getTypeName(): " .. $ttype.ToString()
+  }
+
+  # Return TRUE for types that use managed memory.  This excludes pointers to
+  # callbacks, these are in static memory.  Also exclude references, e.g. an
+  # "&undef" argument.
+  FUNC $isManaged() bool @default
+    SWITCH $ttype
+      CASE Enum.dyn
+        RETURN TRUE
+      CASE Enum.int
+      CASE Enum.int8
+      CASE Enum.int16
+      CASE Enum.int32
+      CASE Enum.nat
+      CASE Enum.byte
+      CASE Enum.nat16
+      CASE Enum.nat32
+      CASE Enum.float32
+      CASE Enum.float
+      CASE Enum.float80
+      CASE Enum.float128
+      CASE Enum.bool
+      CASE Enum.status
+      CASE Enum.enum
+      CASE Enum.enumValue
+      CASE Enum.bitsValue
+      CASE Enum.unknown
+      CASE Enum.var
+      CASE Enum.type
+      CASE Enum.ctype
+      CASE Enum.module
+      CASE Enum.builtinModule
+        RETURN FALSE
+    }
+    THROW "INTERNAL: Unknown type in Type.isManaged(): " .. $ttype.ToString()
+  }
+
+  # Return TRUE for types that can have an instance: Class, Enum, Bits.
+  FUNC $needCopyValue() bool @default
+    RETURN FALSE
+  }
+
+  # For an object, iobject and class: return the class type.
+  # Otherwise return NIL
+  FUNC $getClassType(SContext ctx) ClassType @default
+    RETURN NIL
+  }
+
+  # For a proc, func, procRef, funcRef: return the method type.
+  # Otherwise return NIL
+  FUNC $getMethod() MethodType @default
+    RETURN NIL
+  }
+
+  # Get the dictionary with member Declarations, if any.
+  # This is a dummy implementation, subclasses must replace this if they have
+  # members.
+  FUNC $getDeclDict() multiDict<string, Declaration> @default
+    RETURN NIL
+  }
+
+  # Get the list of object member Declarations, if any
+  # This is a dummy implementation, subclasses must replace this if they have
+  # members.
+  FUNC $getObjectDeclDict() multiDict<string, Declaration> @default
+    RETURN NIL
+  }
+
+  # For a method or method reference return the argument list.
+  # Otherwise return NIL
+  FUNC $getArgList() list<Declaration.C> @default
+    RETURN NIL
+  }
+
+  # For a method or method reference return the return type.
+  # Otherwise return NIL
+  FUNC $getReturnType() Type @default
+    RETURN NIL
+  }
+
+  # Return the extra return types.
+  FUNC $getMoreReturnTypes() list<Type> @default
+    RETURN NIL
+  }
+
+  # Return the types as they are used in a typespec.
+  # foo<type0, type1>
+  # For a function the return type is at the end: foo<type0 => type1>
+  FUNC $getTypespecType(int idx) Type @default
+    RETURN NIL
+  }
+
+  # Verify that |decl|, which is a member of this type, can be accessed from
+  # |symUse|.
+  # If it is or we don't know, return |decl|.
+  # When not return NIL, unless |symUse.doError| is set, then say why.
+  FUNC $verifyAccess(Declaration decl, SymUse symUse) Declaration
+    IF decl != NIL && symUse != NIL
+      IF !symUse.visibleInDecl(decl, THIS, symUse.ctx)
+        IF symUse.doError
+          symUse.pos.error(decl.name .. " is not visible in this scope")
+          Declaration.reportError("Defined here", decl, symUse.ctx)
+        }
+        RETURN NIL
+      }
+    }
+    RETURN decl
+  }
+
+  # Return TRUE if this type can have any members.
+  FUNC $hasAnyMembers() bool @default
+    RETURN FALSE
+  }
+
+  # Find any member with name |name|.
+  # When |symUse| is NIL don't check access rights.
+  # This generic implementation produces an error, types with members must
+  # replace it.
+  FUNC $findMember(string name, SymUse symUse) Declaration @default
+    RETURN NIL
+  }
+
+  # Search for |name| in the object member dict, checking for usage with 
+  # |symUse|.  Only search parents when |options.searchParent| is TRUE.
+  FUNC $findObjectMember(string name,
+                         SymUse symUse,
+                         MethodType.FindFuncOptions options,
+                         bool inParent
+                        ) Declaration @default
+    RETURN NIL
+  }
+
+  # Find the first method with name |method| that matches the arguments
+  # |argList|.  Skip |skip.method|.
+  # This is a generic implementation, works for all types.
+  FUNC $findMatchingMethod(string name,
+                           bool objectMethod,
+                           list<Declaration.C> argList,
+                           MethodType.Skip skip,
+                           MethodType.FindFuncOptions optionsArg,
+                           int &undef,
+                           SContext ctx
+                          ) Declaration
+    multiDict<int, Declaration> funcs = NEW()
+    MethodType.FindFuncOptions options = optionsArg
+    options += findFirst
+    $findMatchingMethods(name, objectMethod, argList,
+                                             skip, options, undef, funcs, ctx)
+    IF funcs.Size() > 0
+      RETURN funcs.get(funcs.keys()[0])[0]
+    }
+    RETURN NIL
+  }
+
+  # Find methods with name |method| that match the arguments |argList|.
+  # Skip |skip.method|.
+  # When options.findFirst is set only find the first match.
+  # This is a dummy implementation that always returns NIL, subclasses must
+  # replace this if they can contain methods.
+  PROC $findMatchingMethods(string name,
+                            bool objectMethod,
+                            list<Declaration.C> argList,
+                            MethodType.Skip skip,
+                            MethodType.FindFuncOptions options,
+                            int &undef,
+                            multiDict<int, Declaration> funcs,
+                            SContext ctx
+                           ) @default
+  }
+
+  # Return the NEW() method that accepts a list of items or a dict with items.
+  FUNC $findNewFromContainerMethod(Zui.Expression expr,
+                                   Type.Enum ttype, string tName,
+                                             SContext ctx) MethodType @default
+    RETURN NIL
+  }
+
+  # The the common type for this type and |other|.
+  # Ultimately return dyn.
+  FUNC $getCommonType(Type other, SContext ctx) Type
+    Enum ttype = $getTtype()
+    Enum otherTtype = other.getTtype()
+    IF ttype == Enum.nilval || ttype == Enum.unknown
+      RETURN other
+    }
+    IF otherTtype == Enum.nilval || otherTtype == Enum.unknown
+      RETURN THIS
+    }
+
+    IF ttype == otherTtype
+      IF $isValueType() || $getTypeName(ctx) == other.getTypeName(ctx)
+        RETURN THIS
+      }
+    }
+    IF $isNatType() && other.isNatType()
+      RETURN Type.aNat
+    }
+    IF $isIntType() && other.isIntType()
+      RETURN Type.anInt
+    }
+    IF $isNumberType() && other.isNumberType()
+      RETURN Type.aFloat  # TODO: more bits?
+    }
+    RETURN Type.aDyn
+  }
+
+  SHARED
+
+    # Objects created for easy passing around.
+    Type %anUnknown
+    Type %aNatval
+    Type %anIntval
+    Type %aFloatval
+    Type %anInt
+    Type %anInt8
+    Type %anInt16
+    Type %anInt32
+    Type %anIntRef
+    Type %aByte
+    Type %aNat
+    Type %aNat16
+    Type %aNat32
+    Type %aFloat
+    Type %aFloat32
+    Type %aFloat80
+    Type %aFloat128
+    Type %aBool
+    Type %aStatus
+    Type %anEnumValue
+    Type %aNil
+    Type %aVar
+    Type %aDyn
+    Type %aType
+    Type %aVarString
+    Type %aVarByteString
+    Type %aString
+    Type %aByteString
+    Type %aByRef
+    Type %anObject
+    ClassRefType.C %aParent
+    Type %anArray
+    Type %aList
+    Type %aDict
+    Type %aBits
+    Type %anAny
+
+    dict<Enum, ClassType>  %allocTypes
+    dict<string, Declaration> %typeNames
+
+    int convCostLarger = 1        # e.g. byte to nat16
+    int convCostNoLoss = 2        # e.g. byte to int, nat to float
+    int convCostSimilar = 100     # e.g. object to iobject, ? to dyn.
+    int convCostToString = 10000  # e.g. int to string
+    int convCostMax = 1000000     # can't convert
+
+    FUNC Init() status
+      %anUnknown = ValueType.NEW(Enum.unknown, "unknown")
+      %aNatval = ValueType.NEW(Enum.natval, "number")
+      %anIntval = ValueType.NEW(Enum.intval, "number")
+      %aFloatval = ValueType.NEW(Enum.floatval, "number")
+      %anInt = ValueType.NEW(Enum.int, "int")
+      %anInt8 = ValueType.NEW(Enum.int8, "int8")
+      %anInt16 = ValueType.NEW(Enum.int16, "int16")
+      %anInt32 = ValueType.NEW(Enum.int32, "int32")
+      %anIntRef = ReferenceType.NEW(Type.Enum.byRef, %anInt, "anIntRef")
+      %aByte = ValueType.NEW(Enum.byte, "byte")
+      %aNat = ValueType.NEW(Enum.nat, "nat")
+      %aNat16 = ValueType.NEW(Enum.nat16, "nat16")
+      %aNat32 = ValueType.NEW(Enum.nat32, "nat32")
+      %aFloat = ValueType.NEW(Enum.float, "float")
+      %aFloat32 = ValueType.NEW(Enum.float32, "float32")
+      %aFloat80 = ValueType.NEW(Enum.float80, "float64")
+      %aFloat128 = ValueType.NEW(Enum.float128, "float128")
+      %aBool = ValueType.NEW(Enum.bool, "bool")
+      %aStatus = ValueType.NEW(Enum.status, "status")
+      %anEnumValue = EnumValueType.NEW(Enum.enumValue, "enumValue")
+      %aNil = ReferenceType.NEW(Enum.nilval, "NIL")
+      %aVar = NEW(Type.Enum.var, "var")
+      %aDyn = NEW(Type.Enum.dyn, "dyn")
+      %aType = NEW(Type.Enum.type, "type")
+      %aVarString = ReferenceType.NEW(Enum.varString, "varString")
+      %aVarByteString = ReferenceType.NEW(Enum.varByteString, "varByteString")
+      %aString = ReferenceType.NEW(Enum.string, "string")
+      %aByteString = ReferenceType.NEW(Enum.byteString, "byteString")
+      %aByRef = ReferenceType.NEW(Enum.byRef, "byRef")
+      %anObject = ClassRefType.NEW(Enum.object, "object")
+      %anArray = ContainerType.NEW(Enum.array, "array")
+      %aList = ContainerType.NEW(Enum.list, "list")
+      %aDict = ContainerType.NEW(Enum.dict, "dict")
+      %aBits = BitsType.NEW(Type.Enum.bits, "bits")
+      %anAny = ValueType.NEW(Type.Enum.any, "any")
+
+      %typeNames = [
+          "string": %aString,
+          "varstring": %aVarString, # TODO: remove
+          "varString": %aVarString,
+          "bytes": %aByteString,  # TODO: remove
+          "byteString": %aByteString,
+          "varbytes": %aVarByteString,  # TODO: remove
+          "varByteString": %aVarByteString,
+          "dyn": %aDyn,
+          "type": %aType,
+          "int": %anInt,
+          "int8": %anInt8,
+          "int16": %anInt16,
+          "int32": %anInt32,
+          "int64": %anInt,
+          "byte": %aByte,
+          "nat": %aNat,
+          "nat8": %aByte,
+          "nat16": %aNat16,
+          "nat32": %aNat32,
+          "nat64": %aNat,
+          "float": %aFloat,
+          "float32": %aFloat32,
+          "float64": %aFloat,
+          "float80": %aFloat80,
+          "float128": %aFloat128,
+          "bool": %aBool,
+          "status": %aStatus,
+          "list": %aList,
+          "dict": %aDict,
+          ]
+      RETURN OK
+    }
+
+    #= Create a Type object from a builtin type name.
+    #= When the name is not valid return NIL.
+    FUNC typeFromName(string name) Declaration
+      RETURN %typeNames.get(name, NIL)
+    }
+
+    # Call compatibleTypes() without conversion.  Does allow object/iobject.
+    FUNC compatibleTypes(Type src, Type dest, SContext ctx) bool
+      RETURN compatibleTypes(src, dest, NEW(FALSE), ctx)
+    }
+
+    # Give an error if assigning src to dest is not allowed.
+    PROC matchingTypesCheck(Type src, Type dest, Zui.Position pos, SContext ctx)
+      IF ctx.doError() && !matchingTypes(src, dest, ctx)
+        ctx.error("Type mismatch; assigning " .. src.typeName()
+                                              .. " to " .. dest.typeName(), pos)
+      }
+    }
+
+    # Call compatibleTypes() without conversion and an exact match (object and
+    # interface object are different).
+    FUNC matchingTypes(Type src, Type dest, SContext ctx) bool
+      ExprArg exprArg = NEW(FALSE)
+      exprArg.exactMatch = TRUE
+      RETURN compatibleTypes(src, dest, exprArg, ctx)
+    }
+
+    # Return TRUE when |dest| can be assigned to |source|, possibly using
+    # automatic conversion when |exprArg.stringConvert| is TRUE.
+    # When |exprArg.exactMatch| is TRUE require matching types.
+    # Increment |exprArg.undef| when the type can't be checked properly, e.g.,
+    FUNC compatibleTypes(Type src, Type dest, ExprArg exprArg, SContext ctx
+                        ) bool
+      int cost = typeConversionCost(src, dest, &exprArg.undef, ctx)
+      IF exprArg.exactMatch && cost >= convCostSimilar
+        RETURN FALSE
+      }
+      IF !exprArg.stringConvert && cost >= convCostToString
+        RETURN FALSE
+      }
+      RETURN cost < convCostMax
+    }
+
+    # Return the conversion cost of turning |source| into |dest|
+    # 0 = Equivalent types.
+    # convCostLarger   = Conversion without loss of precision (e.g., byte to
+    #                    nat32).
+    # convCostNoLoss   = Conversion without loss of precision to slightly
+    #                    different type (e.g., byte to int).
+    # convCostSimilar  = Conversion to similar type (e.g. object to iobject,
+    #                    to dyn)
+    # convCostToString = Conversion to string (e.g., int to string)
+    # Increment |undef| when the type can't be checked properly, e.g.,
+    # when a class is unknown.
+    FUNC typeConversionCost(Type srcArg, Type destArg, int &undef,
+                                                             SContext ctx) int
+      Type src = srcArg
+      Type dest = destArg
+      Enum srcType = src == NIL ? Enum.unknown : src.ttype
+      Enum destType = dest == NIL ? Enum.unknown : dest.ttype
+      IF destType == Enum.unknown
+        # No destination type specified, no conversion.
+        RETURN 0
+      }
+      IF destType == Enum.dyn
+        RETURN srcType == Enum.dyn ? 0 : convCostSimilar
+      }
+
+      # If the destination is a Typedef it must match exactly.
+      IF destType == Enum.typedef
+        # If the source and destination are a Typedef they must match exactly.
+        IF src IS dest
+          RETURN 0
+        }
+        # When destination is a typedef and source isn't, use the effective
+        # type.
+        dest = dest.getEffType()
+        destType = dest.ttype
+      ELSEIF srcType == Enum.typedef
+        # When source is a typedef and destination isn't, use the effective
+        # type.
+        src = src.getEffType()
+        srcType = src.ttype
+      }
+      IF dest != NIL && dest ISA NoAllocType
+        dest = dest.getEffType()
+      }
+      IF src != NIL && src ISA NoAllocType
+        src = src.getEffType()
+      }
+
+      # If we got a NIL it fits with any non-value type.
+      IF srcType == Enum.nilval && dest != NIL && !dest.isValueType()
+        RETURN 0
+      }
+      # If we want a NIL it means we accept any non-value type.
+      IF destType == Enum.nilval && src != NIL && !src.isValueType()
+        RETURN 0
+      }
+
+      # A callback can be used if the first argument matches.
+      IF srcType == Enum.callback && destType != Enum.callback
+                                                     && dest ISA MethodRefType
+        RETURN compatibleTypes(src.<CallbackType>.methodType,
+                                      dest.getMethod(), ctx) ? 0 : convCostMax
+      }
+
+      # Accept number conversion when this cannot lead to losing precision.
+      # Float to bigger float and int to bigger int conversion is OK.
+      # Give it a small cost to prefer a matching function.
+      # TODO: when srcType is Enum.natval check the number value.
+      SWITCH destType
+        CASE Enum.natval
+        CASE Enum.intval
+              RETURN srcType == Enum.natval
+                  || srcType == Enum.intval
+                  || srcType == Enum.float
+                  || srcType == Enum.float32
+                  || srcType == Enum.float80
+                  || srcType == Enum.float128
+                  || srcType == Enum.int
+                  || srcType == Enum.int8
+                  || srcType == Enum.int16
+                  || srcType == Enum.int32
+                  || srcType == Enum.nat
+                  || srcType == Enum.byte
+                  || srcType == Enum.nat16
+                  || srcType == Enum.nat32
+                     ? 0 : convCostMax
+
+        # Cost of number to int is zero, number to smaller int type is 1, so
+        # that a method with int argument is preferred.
+        # Cost of number to nat is 1, number to smaller nat is 2, so that
+        # method preference is int, nat, then smaller nat.
+        CASE Enum.int8
+              RETURN srcType == Enum.int8
+                     ? 0 : srcType == Enum.intval
+                     ? convCostLarger : srcType == Enum.natval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.int16
+              RETURN srcType == Enum.int16
+                     ? 0 : srcType == Enum.int8
+                        || srcType == Enum.intval
+                     ? convCostLarger : srcType == Enum.byte
+                        || srcType == Enum.natval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.int32
+              RETURN srcType == Enum.int32
+                     ? 0 : srcType == Enum.int8
+                        || srcType == Enum.int16
+                        || srcType == Enum.intval
+                     ? convCostLarger : srcType == Enum.byte
+                        || srcType == Enum.nat16
+                        || srcType == Enum.natval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.int
+              RETURN srcType == Enum.int
+                  || srcType == Enum.intval
+                     ? 0 : srcType == Enum.int8
+                        || srcType == Enum.int16
+                        || srcType == Enum.int32
+                     ? convCostLarger : srcType == Enum.byte
+                        || srcType == Enum.nat16
+                        || srcType == Enum.nat32
+                        || srcType == Enum.natval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.byte
+              RETURN srcType == Enum.byte
+                     ? 0 : srcType == Enum.natval
+                     ? convCostLarger : convCostMax
+        CASE Enum.nat16
+              RETURN srcType == Enum.nat16
+                     ? 0 : srcType == Enum.byte
+                        || srcType == Enum.natval
+                     ? convCostLarger : convCostMax
+        CASE Enum.nat32
+              RETURN srcType == Enum.nat32
+                     ? 0 : srcType == Enum.byte
+                        || srcType == Enum.nat16
+                        || srcType == Enum.natval
+                     ? convCostLarger : convCostMax
+        CASE Enum.nat
+              RETURN srcType == Enum.nat
+                  || srcType == Enum.natval
+                     ? 0 : srcType == Enum.byte
+                        || srcType == Enum.nat16
+                        || srcType == Enum.nat32
+                     ? convCostLarger : convCostMax
+
+        CASE Enum.float32
+              RETURN srcType == Enum.float32
+                     ? 0 : srcType == Enum.floatval
+                     ? convCostLarger : srcType == Enum.natval
+                        || srcType == Enum.intval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.float
+              RETURN srcType == Enum.float
+                  || srcType == Enum.floatval
+                     ? 0 : srcType == Enum.float32
+                     ? convCostLarger : srcType == Enum.natval
+                        || srcType == Enum.intval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.float80
+              RETURN srcType == Enum.float80
+                     ? 0 : srcType == Enum.floatval
+                        || srcType == Enum.float32
+                        || srcType == Enum.float
+                     ? convCostLarger : srcType == Enum.natval
+                        || srcType == Enum.intval
+                     ? convCostNoLoss : convCostMax
+        CASE Enum.float128
+              RETURN srcType == Enum.float128
+                     ? 0 : srcType == Enum.floatval
+                        || srcType == Enum.float32
+                        || srcType == Enum.float
+                        || srcType == Enum.float80
+                     ? convCostLarger : srcType == Enum.natval
+                        || srcType == Enum.intval
+                     ? convCostNoLoss : convCostMax
+      }
+
+      # Other conversions at least cost something.
+      int cost = (srcType == destType) ? 0 : convCostSimilar
+
+      SWITCH destType
+        CASE Enum.varByteString
+              IF srcType == Enum.varByteString
+                RETURN 0
+              }
+              IF srcType == Enum.byteString
+                RETURN convCostToString
+              }
+              RETURN convCostMax
+
+        CASE Enum.string
+              IF srcType == Enum.string
+                RETURN 0
+              }
+              IF srcType == Enum.int
+                || srcType == Enum.bool
+                || srcType == Enum.status
+                || srcType == Enum.varString
+                RETURN convCostToString
+              }
+              RETURN convCostMax
+
+        CASE Enum.varString
+              IF srcType == Enum.varString
+                RETURN 0
+              }
+              IF srcType == Enum.int
+                || srcType == Enum.bool
+                || srcType == Enum.status
+                || srcType == Enum.string
+                RETURN convCostToString
+              }
+              RETURN convCostMax
+
+        CASE Enum.byteString
+              IF srcType == Enum.byteString
+                RETURN 0
+              }
+              IF srcType == Enum.varByteString
+                RETURN convCostToString
+              }
+              RETURN convCostMax
+
+        CASE Enum.procRef
+              IF srcType == Enum.procRef || srcType == Enum.proc
+                RETURN funcRefArgConvCost(src, dest, undef, ctx)
+              }
+              IF srcType == Enum.funcRef || srcType == Enum.func
+                # Can use a func where a proc is expected, but add some cost
+                # for that.
+                RETURN funcRefArgConvCost(src, dest, undef, ctx)
+                                                              + convCostNoLoss
+              }
+              RETURN convCostMax
+
+        CASE Enum.funcRef
+              IF srcType == Enum.funcRef || srcType == Enum.func
+                cost = funcRefArgConvCost(src, dest, undef, ctx)
+                Type srcReturnType = src.getMethod().returnType
+                # The unknown type is used to find a matching method, accept
+                # any dest return type.
+                IF srcReturnType.getTtype() != Type.Enum.unknown
+                  cost += typeConversionCost(srcReturnType,
+                                      dest.getMethod().returnType, undef, ctx)
+                }
+                RETURN cost
+              }
+              RETURN convCostMax
+
+        CASE Enum.class
+        CASE Enum.object
+        CASE Enum.iobject
+              IF srcType != Enum.class && srcType != Enum.object
+                                                    && srcType != Enum.iobject
+                RETURN convCostMax
+              }
+              ClassType srcClass = src.getClassType(ctx)
+              ClassType destClass = dest.getClassType(ctx)
+              IF srcClass == NIL || destClass == NIL
+                ++undef
+                RETURN convCostMax
+              }
+              IF srcClass IS destClass
+                RETURN cost
+              }
+              IF destType == Enum.iobject && destClass.hasSubclass(srcClass)
+                # Dest is a superclass of the src.  Conversion is possible,
+                # but costs something (e.g., not allowed when using a
+                # container type).
+                RETURN convCostSimilar + destClass.subClassDepth(srcClass)
+              }
+              RETURN convCostMax
+
+         CASE Enum.enum
+              RETURN srcType == Enum.enum && src IS dest
+                     ? cost : convCostMax
+         CASE Enum.enumValue
+              RETURN srcType == Enum.enumValue && src.<EnumValueType>.enumType
+                                              IS dest.<EnumValueType>.enumType
+                     ? cost : convCostMax
+
+         CASE Enum.multiple
+              IF srcType != Enum.multiple
+                RETURN convCostMax
+              }
+              VAR srcTypes = src.<MultipleType>.getTypes()
+              VAR destTypes = dest.<MultipleType>.getTypes()
+              IF srcTypes.Size() != destTypes.Size()
+                RETURN convCostMax
+              }
+              FOR i IN 0 UNTIL srcTypes.Size()
+                cost += typeConversionCost(srcTypes[i].type, destTypes[i].type,
+                                                                   undef, ctx)
+              }
+              RETURN cost
+      }
+
+      IF destType != srcType
+        RETURN convCostMax
+      }
+
+      IF dest ISA ContainerType
+        IF src ISNOTA ContainerType
+          RETURN convCostMax
+        }
+        ContainerType st = src
+        ContainerType dt = dest
+        IF st.itemType == NIL || dt.itemType == NIL
+          IF st.itemType != NIL
+            # When st.itemType is NIL we assume it is an empty list, which is
+            # OK.
+            ++undef
+          }
+          RETURN cost
+        }
+        bool itemMatch = matchingTypes(st.itemType, dt.itemType, ctx)
+        IF destType == Enum.dict
+          IF st.keyType == NIL || dt.keyType == NIL
+            ++undef
+            RETURN cost
+          }
+          RETURN itemMatch && matchingTypes(st.keyType, dt.keyType, ctx)
+                 ? cost : convCostMax
+        }
+        RETURN itemMatch ? cost : convCostMax
+      }
+
+      # Types match, no further checks.
+      RETURN cost
+    }
+
+    # Return if method references |src| and |dest| have the same arguments,
+    # not allowing any conversion.
+    FUNC matchingArguments(Type src, Type dest, SContext ctx) bool
+      VAR srcArgs = src.getArgList()
+      VAR destArgs = dest.getArgList()
+      IF (srcArgs == NIL ? 0 : srcArgs.Size())
+                                    != (destArgs == NIL ? 0 : destArgs.Size())
+        RETURN FALSE
+      }
+      IF srcArgs == NIL || destArgs == NIL
+        RETURN TRUE
+      }
+      FOR i IN 0 UNTIL srcArgs.Size()
+        IF !matchingTypes(srcArgs[i].type, destArgs[i].type, ctx)
+          RETURN FALSE
+        }
+      }
+      RETURN TRUE
+    }
+
+    # Return cost for converting arguments of method references |src| to
+    # |dest|.
+    FUNC funcRefArgConvCost(Type src, Type dest, int &undef, SContext ctx) int
+      VAR srcArgs = src.getArgList()
+      VAR destArgs = dest.getArgList()
+      IF (srcArgs == NIL ? 0 : srcArgs.Size())
+                                    != (destArgs == NIL ? 0 : destArgs.Size())
+        RETURN convCostMax
+      }
+      IF srcArgs == NIL || destArgs == NIL
+        RETURN 0
+      }
+      int cost
+      FOR i IN 0 UNTIL srcArgs.Size()
+        cost += argConvCost(destArgs[i].type, srcArgs[i].type, undef, ctx)
+      }
+      RETURN cost
+    }
+
+    # Return TRUE if the |arg| argument matches the used type |used|.
+    # Allow for the type of conversion that is used for method arguments.
+    #
+    # Matching function arguments happens in two rounds:
+    # 1. limited conversion - class and class.I of that class are different,
+    #                         "string" and "varString are different,
+    #                         can use class for object of that class, etc.
+    # 2. with conversion - any permitted conversion
+    FUNC matchingArgument(Type arg, Type used,
+                          MethodType.FindFuncOptions options, int &undef,
+                          SContext ctx
+                         ) bool
+      int cost = argConvCost(arg, used, undef, ctx)
+      IF options.convert
+        RETURN cost < convCostMax
+      }
+      RETURN cost < convCostSimilar
+    }
+
+    # Return the cost of using |used| for an |arg| argument.
+    FUNC argConvCost(Type arg, Type used, int &undef, SContext ctx) int
+      IF (arg.ttype == Enum.class
+                     && used.ttype == Enum.object
+                     && arg IS used.getClassType(ctx))
+          || used.ttype == Enum.unknown
+                       # Int fits any BITS type, because we can't detect
+                       # the type from the expression (flag1 + flag2).
+          || (arg.ttype == Enum.bitsValue
+                       && (used.ttype == Enum.int || used.ttype == Enum.natval))
+        RETURN 0
+      }
+      IF (arg.ttype == Enum.funcRef && used.ttype == Enum.func)
+          || (arg.ttype == Enum.func && used.ttype == Enum.funcRef)
+          || (arg.ttype == Enum.procRef && used.ttype == Enum.proc)
+          || (arg.ttype == Enum.proc && used.ttype == Enum.procRef)
+        # Cost of using a funcRef or procRef is the cost of using its
+        # arguments added up together.
+        RETURN funcRefArgConvCost(used, arg, undef, ctx)
+      }
+      IF (arg.ttype == Enum.procRef || arg.ttype == Enum.proc)
+        && (used.ttype == Enum.func || used.ttype == Enum.funcRef)
+        # It is possible to pass a function where a proc is expected.
+        # Add a little to the cost for discarding the return value.
+        RETURN funcRefArgConvCost(used, arg, undef, ctx) + convCostNoLoss
+      }
+
+      # When using templates we may not know the argument type here.
+      IF arg.ttype == Enum.unknown
+        RETURN convCostSimilar
+      }
+
+      # callback matches when its first type matches
+      IF used.getTtype() == Enum.callback
+        RETURN argConvCost(arg, used.getEffType().<CallbackType>.methodType,
+                                                                   undef, ctx)
+      }
+
+      RETURN typeConversionCost(used, arg, undef, ctx)
+    }
+
+    # Return TRUE when the type of |t| is defined.  Returns FALSE when type is
+    # unknown or container types are missing.
+    FUNC typeDefined(Type t) bool
+      IF t == NIL
+        RETURN FALSE
+      }
+      RETURN t.typeDefined()
+    }
+
+    # Return a short name for type |t|.  Handles a NIL type.
+    # When |long| is TRUE add object ID as Class/123.
+    FUNC typeName(Type t, bool long) string
+      IF t == NIL
+        RETURN "nil"
+      }
+      RETURN t.typeName(long)
+    }
+
+    FUNC typeName(Type t) string
+      RETURN typeName(t, TRUE)
+    }
+
+    FUNC typeNameList(list<Declaration.C> decls) string
+      list<Type> types = NEW()
+      FOR d IN decls
+        types.add(d.type)
+      }
+      RETURN typeNameList(types)
+    }
+
+    FUNC typeNameList(list<Type> types) string
+      string s = "["
+      string comma = ""
+      FOR t IN types
+        s ..= comma
+        s ..= typeName(t, TRUE)
+        comma = ", "
+      }
+      RETURN s .. "]"
+    }
+  }
+}

@@ -1,0 +1,489 @@
+# The Zimbu compiler written in Zimbu
+#
+# builtin module THREAD
+#
+
+IMPORT "../Config.zu"
+
+#= Classes and methods for thread support.
+#
+#- Still very much under development.
+#
+#*license
+#* Copyright 2009 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE THREADModule @public
+
+  #= The possible states a thread can be in.
+  ENUM State @public
+    new         #= thread has just been created, start() not invoked.
+    running     #= start() has been invoked.
+    finished    #= the thread has finished executing body().
+  }
+
+  #= The possible types of threads.
+  ENUM Type @public
+    normal      #= A regular thread.
+    main        #= The thread that runs Main().
+    daemon      #= Thread that doesn't stop the process from exiting.
+  }
+
+  #= Exception thrown when there is a thread related error.
+  CLASS E_Thread EXTENDS E.Error @public
+  }
+
+  #= Base class for Thread and EvalThread
+  CLASS ThreadBase @abstract @public
+    string   $name  @public   #= optional name, NIL when not set
+    State    $state @public   #= state of the thread
+    Type     $type  @public   #= type of thread
+
+    C(pthread_t) $thread_id    #!
+    list<int> $stack           #!
+                               #=
+    #= Create a new thread.
+    #- Must call |setProc()| or replace |body()| before it can do something
+    #- useful.
+    NEW() @public
+    }
+
+    #= Set the name of the thread.
+    PROC $setName(string name)
+      $name = name
+      # TODO RETURN THIS
+    }
+
+    # Child class must define the body of the thread.
+    PROC $body() @abstract @public
+    }
+
+    #! Internal method to setup the stack backtrace before invoking $body().
+    PROC $startBody() @backtrace=yes
+      GENERATE_IF Z.have("backtrace")
+>>>
+ int i = 0;
+ Zsf *prev = NULL;
+ e->startFrames = calloc(1, %$stack.Size()% * sizeof(Zsf));
+<<<
+        # These stack frames only contain the position, they are not used for
+        # marking used memory, because the "frof" field is NULL.
+        FOR pos IN $stack
+>>>
+ e->startFrames[i].pos = %pos%;
+ e->startFrames[i].prev = prev;
+ prev = &e->startFrames[i];
+ ++i;
+<<<
+        }
+>>>
+ sf.prev = prev;
+<<<
+
+        GENERATE_IF Z.have("managed")
+          # Before adding this thread in the global list of threads make sure
+          # we are not in "stop-the-world" state.
+          # Repeat until we own the threadsMutex while gcSTW is not set.
+          # That's because gcSTW is set to 1 while holding threadsMutex, but
+          # it's reset while holding gcMarkPhaseMutex.
+>>> blockgc  # block GC for ZLa call
+ for (;;) {
+  pthread_mutex_lock(&gcMarkPhaseMutex);
+  while (gcSTW || gcMarkPhase) pthread_cond_wait(&gcMarkPhaseCond, &gcMarkPhaseMutex);
+  pthread_mutex_unlock(&gcMarkPhaseMutex);
+  pthread_mutex_lock(&threadsMutex);
+  if (gcSTW) {
+   pthread_mutex_unlock(&threadsMutex);
+  } else {
+   ZLa(threads, -1, (Tz)(void*)e);
+   pthread_mutex_unlock(&threadsMutex);
+   break;
+  }
+ }
+<<<
+        GENERATE_ELSE
+          # A lot simpler without the GC stuff.
+>>> blockgc  # block GC for ZLa call
+ pthread_mutex_lock(&threadsMutex);
+ ZLa(threads, -1, (Tz)(void*)e);
+ pthread_mutex_unlock(&threadsMutex);
+<<<
+        }
+      }
+
+      # Invoke the body of the thread.
+>>>
+ %[$body]%(t);
+
+ e->finished = 1;
+<<<
+        GENERATE_IF Z.have("managed")
+>>>
+ if (e->wantGC) ZthreadGC();
+<<<
+        }
+    }
+
+    #= Start executing the thread.
+    #- This will create the actual thread and have it invoke |body()|.
+    #- This method returns once the thread has started.
+    #
+    #- TODO: should return THIS.
+    PROC $start() @backtrace=yes @default @public
+      GENERATE_IF Z.have("backtrace")
+        # Copy up to 30 entries of the stack, so that we can put them at the
+        # top of the stack of the new thread.
+>>>
+ Zsf *top = e->topFrame;
+<<<
+        $stack = NEW()
+        WHILE $stack.Size() < 30
+          int entry
+>>>
+  if (top == NULL) break;
+  %entry% = top->pos;
+  top = top->prev;
+<<<
+          $stack.insert(entry)
+        }
+      }
+>>>
+ if (pthread_create(&%$thread_id%, NULL, (void *(*)(void *))%[$startBody]%, %THIS%) != 0) {
+<<<
+        IF TRUE
+          THROW E_Thread.NEW("Thread start")
+        }
+>>>
+ }
+ {
+  int oldstate;
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+ }
+<<<
+      $state = State.running
+    }
+
+    #= Wait in the current thread for the thread of this object to finish.
+    PROC $wait() @public
+>>> uses(throwThread)
+ if (pthread_join(%$thread_id%, NULL) != 0) {
+<<<
+>>> blockgc
+  ZthrowThread(Zstr("wait()"));
+ }
+<<<
+      $state = State.finished
+    }
+
+    #= Kill the thread, stop its execution.
+    PROC $kill() @public
+>>> uses(throwThread)
+ if (pthread_cancel(%$thread_id%) != 0) {
+<<<
+>>> blockgc
+  ZthrowThread(Zstr("kill()"));
+ }
+<<<
+    }
+
+    #! Release the thread. Called by the garbage collector.  Would free memory
+    # (although it doesn't always appear to work).
+    FUNC $Finish() status
+>>>
+ pthread_detach(%$thread_id%);
+<<<
+      RETURN OK
+    }
+
+    #= Not Implemented Yet
+    PROC $remove() @public
+      # TODO
+    }
+  }
+
+  #= The builtin type thread.
+  #! The THREADloader changes "THREADmodule.Thread" to "thread", as
+  #! this is how it is used globally.
+  #
+  #- A thread that will execute a method.
+  #
+  #- Example: run myProc() in a thread:
+  #% thread t = NEW(myProc).start()
+  #% t.wait()
+  #
+  #- Example: subclass
+  #% CLASS MyThread EXTENDS thread
+  #%  PROC $body() @replace
+  #%    int count
+  #%    WHILE TRUE
+  #%      IO.print(count)
+  #%      ++count
+  #%      TIME.sleep(500'000)
+  #%    }
+  #%  }
+  #% }
+  #%
+  #% MyThread t = NEW(doSomething)
+  #% t.start()
+  #% TIME.sleepSec(3)
+  #% t.kill()
+  CLASS Thread EXTENDS ThreadBase @public
+    proc<> $proc    #!
+
+    #= Create a new thread that will execute |proc|.
+    NEW(proc<> proc) @public
+      $proc = proc
+    }
+
+    #= Create a new thread that will execute |func|.
+    #- The return value is ignored.
+    NEW(func< => status> func) @public
+      # TODO: somehow ignore return type, make this generic
+>>>
+ %$proc% = %func%;
+<<<
+    }
+
+    # TODO: NEW(callback<> callback)
+
+    #= The default method to execute: call the method specified at creation or
+    #= with |setProc()|.
+    #- Replace this method in a subclass to have the thread do something else.
+    PROC $body() @backtrace=no @define @default @public
+      IF $proc != NIL
+        $proc()
+      }
+    }
+
+    #= Set the method to be invoked by the default |body()| method.
+    #- TODO: return the object.
+    PROC $setProc(proc<> proc) @public
+      $proc = proc
+    }
+
+  }
+
+  #= Thread to be used for evaluating a function and returning the result
+  #= through a pipe.
+  #- |Titem| is the type of the item returned through the pipe.
+  #
+  #- Example: evaluate an expression in a thread:
+  #% pipe<string> p = T.evalThread<string>.NEW().eval({ => "hello there" })
+  #% IO.print(p.read())
+  #
+  CLASS EvalThread<Titem> EXTENDS ThreadBase @public
+    func< => Titem> $evalFunc    #!
+    pipe<Titem>    $resultPipe  #!
+
+    NEW(func< => Titem> f) @public
+      $evalFunc = f
+      $resultPipe = NEW()
+    }
+
+    #= Set the function to be invoked by start().
+    #- TODO: return the object.
+    PROC $setProc(func< => Titem> f) @public
+      $evalFunc = f
+      $resultPipe = NEW()
+    }
+
+    #= Start the thread and return the pipe to read the result from.
+    FUNC $eval(func< => Titem> f) pipe<Titem> @public
+      $evalFunc = f
+      $resultPipe = NEW()
+      $start()
+      RETURN $resultPipe
+    }
+
+    #= Return the pipe to read the result from.
+    #- read() on this pipe will only work once.
+    FUNC $getPipe() pipe<Titem> @public
+      RETURN $resultPipe
+    }
+
+    #!
+    PROC $body() @backtrace=no @define
+      IF $evalFunc == NIL
+        THROW "Started evalThread without calling eval()"
+      ELSE
+        # call $evalFunc(), write the result to the pipe and close it.
+        $resultPipe.write($evalFunc())
+        $resultPipe.close()
+      }
+    }
+
+    SHARED
+      #= Quick way to evaluate a function in a thread.
+      #- Equivalent to T.evalThread<Titem>.NEW().eval(f)
+      FUNC eval(func< => Titem> f) pipe<Titem> @public
+        RETURN EvalThread<Titem>.NEW().eval(f)
+      }
+    }
+  }
+
+  #= Create a thread to evaluate |f| and return a pipe from which the
+  #= result can be read.
+  #
+  #- Example:
+  #% pipe<string> p = THREAD.eval({ => "hello there" })
+  #% IO.print(p.read())
+  FUNC eval<Titem>(func< => Titem> f) pipe<Titem> @public
+    EvalThread<Titem> et = NEW()
+    RETURN et.eval(f)
+  }
+
+
+  #= Return a list of all currently created threads.  TODO
+  #- Thread objects that have been created but for which |start()| has not
+  #- been invoked are not included.
+  #
+  #- Not Implemented Yet
+  FUNC threads() list<thread> @public
+    list<thread> threadList = NEW()
+    # TODO: fill list of all threads.
+    RETURN threadList
+  }
+
+  #= Return the object associated with the current thread. TODO
+  #- Not Implemented Yet
+  FUNC current() thread @public
+    # TODO: return current Thread
+    RETURN NIL
+  }
+
+  #= The builtin type lock: An object to get exclusive access.
+  #- Useful in multi-threading applications.
+  #- A Lock object can be used to allow only one thread at a time access.
+  #- Also known as mutex (MUTual EXclusive).
+  CLASS Lock @public
+    C(pthread_mutex_t) $mutex #! the mutex
+
+    NEW() @public
+>>> uses(pthread)
+ pthread_mutex_init(&%$mutex%, NULL);
+<<<
+    }
+
+    #= Block until the lock is obtained.
+    #- When this method returns this thread has exclusive access to what is
+    #- protected by the Lock.  Other threads will have to wait until $end() is
+    #- called in this thread.
+    #
+    #- Must always call end() later!
+    PROC $begin() @public
+>>> uses(pthread)
+ pthread_mutex_lock(&%$mutex%);
+<<<
+    }
+
+    #= Try obtaining the lock.  Return OK when obtained, FAIL when another
+    #= thread has the lock.
+    #- This will never block.
+    #
+    #- When OK is returned must call end() later!
+    FUNC $tryBegin() status @public
+      status r
+>>> uses(pthread)
+ if (pthread_mutex_trylock(&%$mutex%) == 0)
+  %r% = %OK%;
+ else
+  %r% = %FAIL%;
+<<<
+      RETURN r
+    }
+
+    #= Release the lock.  Wakes up threads in wait() for this Lock.
+    #- Only to be called when the lock was obtained with begin() or tryBegin()
+    #- earlier!
+    PROC $end() @public
+>>> uses(pthread)
+ pthread_mutex_unlock(&%$mutex%);
+<<<
+    }
+
+    #! Destructor.
+    FUNC $Finish() status @public
+>>> uses(pthread)
+ pthread_mutex_destroy(&%$mutex%);
+<<<
+      RETURN OK
+    }
+  }
+
+  #= The builtin type autoLock: an object that keeps a lock and releases it
+  #= when destructed.
+  #- Put the object on the stack to make sure the destructor is called when
+  #- leaving the block.  Otherwise it only happens when the garbage collector
+  #- finds the object unused, which may be much later.
+  #
+  #- Typical use:
+  #%  {
+  #%    autoLock %al = NEW(myLock)
+  #%    # Do something that might crash
+  #%  } # %al.Finish() calls myLock.end() here, always
+  CLASS AutoLock @public
+    Lock $lock   #!
+    bool $didEnd #!
+
+    #= Calls |lock|.begin().
+    NEW(Lock lock) @public
+      lock.begin()
+      $lock = lock
+    }
+
+    #= Destructor: calls end() on the lock the object was created with.
+    #- Can be called multiple times, end() will only be called once.
+    FUNC $Finish() status @public
+      IF !$didEnd
+        $didEnd = TRUE
+        $lock.end()
+      }
+      RETURN OK
+    }
+  }
+
+  #= The builtin type cond: An object to wait on a condition.
+  #- Useful in multi-threading applications.
+  #- A Cond object can be used for a thread to wait on a condition to be
+  #- changed in another thread.
+  CLASS Cond @public
+    C(pthread_cond_t) $cond   #! the condition variable
+
+    #= Create a new condition.  It can be used for anything.
+    NEW() @public
+>>> uses(pthread)
+ pthread_cond_init(&%$cond%, NULL);
+<<<
+    }
+
+    #= Wakeup threads blocked in wait() on this Cond object.
+    #- When |all| is TRUE wakeup all threads, otherwise only one.
+    PROC $wakeup(bool all) @public
+>>> uses(pthread)
+ if (%all%)
+  pthread_cond_broadcast(&%$cond%);
+ else
+  pthread_cond_signal(&%$cond%);
+<<<
+    }
+
+    #= Wait for another thread to call  wakeup() on this Cond object.
+    #- |lock| is used do the blocking wait.  It must be owned when called. It
+    #- is released while waiting. It is locked again when this method returns.
+    PROC $wait(Lock lock) @public
+>>> uses(pthread)
+ pthread_cond_wait(&%$cond%, &%lock.mutex%);
+<<<
+    }
+
+    #! TODO
+    PROC $cleanup() @public
+>>> uses(pthread)
+ pthread_cond_destroy(&%$cond%);
+<<<
+    }
+  }
+
+}

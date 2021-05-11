@@ -1,0 +1,1469 @@
+#
+# Zut file parser for the Zimbu Templates plugin
+#
+# Copyright 2015 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO ../../parser/zui.proto
+
+IMPORT ../../parser/Parser.zu
+IMPORT ../../parser/Token.zu
+IMPORT ZutTokenType.zu
+
+CLASS ZutParser EXTENDS Parser
+
+  # We use ZutTokenType a lot, define an alias.
+  ALIAS ZutTokenType ZTType
+
+  IO.File $outFile
+
+  PROC $setOutFile(IO.File outFile)
+    $outFile = outFile
+  }
+
+  # The output that is collected until $writeBody() is called.
+  IO.StringWriter $out = NEW()
+
+  # The output that is collected until $writeText() is called.
+  IO.StringWriter $textOut = NEW()
+
+  CLASS Import
+    string     $text      # what is in the original file
+    string     $fileName  # e.g. subdir/MyController.zu
+    bool       $usedAsController
+  }
+
+  # Store the imports, the ones used as a controller get "@javascript"
+  dict<string, Import> $imports = NEW()
+
+  bool $gotImport
+
+  # Parser extension point: 
+  # This method is called just before getting the IMPORT token.
+  PROC $beforeImport() @replace
+    IF !$gotImport
+      # Copy the text up to the first import.
+      $outFile.write($in.getRecorded())
+      $gotImport = TRUE
+    }
+  }
+
+  # Parser extension point:
+  # This method is called just after parsing an IMPORT statement.
+  PROC $afterImport(Zui.Import zuiImport) @replace
+    Import import = NEW()
+    import.text = $in.getRecorded().trimTrailing()
+    import.fileName = zuiImport.getFileName()
+
+    string shortName = IO.root(IO.tail(import.fileName))
+    $imports.set(shortName, import)
+  }
+
+  bool $seenTemplate
+  bool $hasCss
+
+  # Parser extension point for toplevel statements.
+  # Return the statement or NIL if no statement was recognized.
+  FUNC $extendTopStatement(Token token, BlockType blockType
+                          ) Zui.Statement @replace
+    SWITCH token.type
+      CASE ZTType.css
+        IF $seenTemplate
+          $in.error("CSS must come before the first HTML")
+        }
+        IF $hasCss
+          $in.error("can only have one CSS block")
+        }
+        $hasCss = TRUE
+        $processCssBlock(token)
+        RETURN %emptyStatement
+
+      CASE ZTType.template
+        $seenTemplate = TRUE
+        $processTemplate(token)
+        RETURN %emptyStatement
+    }
+    RETURN NIL
+  }
+
+  # Where we are in the template.
+  ENUM Ctx
+    none
+
+    html            # HTML toplevel or inside element
+    htmlData        # HTML inside element without nesting, e.g. <title>
+    htmlTagName     # HTML tag name, just after <
+    htmlComment     # HTML inside <!-- comment
+
+    attributes      # HTML tag, after <name or </name
+    attrValue       # HTML tag attribute value <name name="attr"
+    attrNoSpace     # HTML tag attribute value <name name=attr
+
+    url             # URL at the start
+    urlHead         # URL after http: or /, before ?
+    urlTail         # URL after ?
+    urlParam        # URL after param=
+    urlFragment     # URL after #
+
+    css             # CSS toplevel
+    cssComment      # CSS comment
+    cssSQuoted      # CSS 'quoted'
+    cssDQuoted      # CSS "quoted"
+    cssUrl          # CSS URL
+
+    javascript      # Javascript toplevel
+    jsLineComment   # Javascript // comment
+    jsBlockComment  # Javascript /* comment */
+    jsSquotedString # Javascript 'string'
+    jsDquotedString # Javascript "string"
+    jsRegexp        # Javascript /regexp/
+
+    text
+  }
+
+  CLASS State
+    Ctx      $templateType  # context for the whole template
+    Ctx      $context       # current context
+    Ctx      $within        # what $context is inside
+    Ctx      $recordContext # context where recording started
+
+    bool     $writeUrl      # write to zutUrl
+    bool     $declareUrl    # Need "ZUT.url zutUrl"
+
+    string   $tagName
+    bool     $endTag
+    bool     $afterLiteral
+
+    # Stack of encountered controllers.
+    list<string> $controllers = NEW()
+
+    # Keep track of which actions were already registered.
+    # Key is "controllerName/actionName".
+    set<string>  $actionsDone = NEW()
+
+    # Keep track of which events were already listened on.
+    set<string>  $eventsDone = NEW()
+
+    NEW(Ctx ctx)
+      $templateType = ctx
+      $context = ctx
+      $recordContext = ctx
+    }
+  }
+
+  SHARED
+    dict<string, Ctx> sectionTypeLookup = [
+        "ZUT.Html":       Ctx.html,
+        "ZUT.Attributes": Ctx.attributes,
+        "ZUT.Url":        Ctx.url,
+        "ZUT.Css":        Ctx.css,
+        "ZUT.Javascript": Ctx.javascript,
+        "string":         Ctx.text,
+        ]
+  }
+
+  # Return a comment with the line number in the input file.
+  FUNC $positionComment() string
+    RETURN "#@ :\($in.input.pos.lnum)"
+  }
+
+  # Process a TEMPLATE block.
+  PROC $processTemplate(Token startToken)
+    # Copy the text up to the TEMPLATE token.
+    $in.pushToken(startToken)
+    $out.print($in.getRecorded())
+    $in.getToken()
+
+    $out.print($positionComment())
+    $out.write("  FUNC")
+    $in.input.getRecord()
+
+    # Read and write the function signature: name(type arg)
+    bool hadParen
+    int parens
+    WHILE TRUE
+      Token token = $in.getToken()
+      SWITCH token.type
+        CASE TType.eof
+          $in.error("Unexpected end of file")
+          RETURN
+        CASE TType.p_open
+          IF !hadParen
+            hadParen = TRUE
+            $out.write($in.input.getRecord())
+          }
+          ++parens
+        CASE TType.p_close
+          --parens
+      }
+      IF hadParen && parens == 0
+        BREAK
+      }
+    }
+    $out.write($in.input.getRecord())
+
+    # Skip "  ZUT.Type "
+    Token token = $in.getToken()
+    IF token.type != TType.sep
+      $in.error("Missing white space")
+    }
+    token = $in.getToken()
+    IF token.type != TType.id
+      $in.error("Missing return type")
+    ELSE
+      token = $in.getToken()
+      IF token.type != TType.dot
+        $in.pushToken(token)
+      ELSE
+        token = $in.getToken()
+        IF token.type != TType.id
+          $in.error("Malformed return type")
+        }
+      }
+    }
+
+    # Write the return type: ZUT.Html, ZUT.Attributes, etc.
+    $in.emptyStack()
+    string returnType = $in.input.getRecord().trim()
+    $out.write(" ")
+    $out.write(returnType)
+    Ctx ctx = sectionTypeLookup.get(returnType, Ctx.none)
+    IF ctx == Ctx.none
+      $in.error("Return type not recognized")
+      ctx = Ctx.html
+    }
+
+    # Read and write attributes (until end of line).
+    WHILE TRUE
+      # Check for white space and end of line here, the tokenizer would
+      # consume the following comment.
+      int c = $in.get()
+      IF c == ' '
+        CONTINUE
+      ELSEIF c == '\n'
+        BREAK
+      }
+      $in.push(c)
+
+      token = $in.getToken()
+      IF token.type == TType.eof
+        $in.error("Unexpected end of file")
+        RETURN
+      }
+      IF token.type == TType.line_sep
+        BREAK
+      }
+    }
+    $out.write($in.input.getRecord())
+    $in.emptyStack()
+
+    # Include the default CSS for Html and Attributes.
+    IF $hasCss && (ctx == Ctx.html || ctx == Ctx.attributes)
+      $out.write("    ")
+      $out.print("addCss()")
+    }
+
+    # Write the body of the function to $out, then insert any required
+    # declarations.
+    IO.StringWriter topOut = $out
+    $out = NEW()
+    
+    State state = NEW(ctx)
+    $out.write("    ")
+    SWITCH ctx
+      CASE Ctx.html
+        $out.print("ZUT.Html zutOut = NEW()")
+        $processHtml(state)
+      CASE Ctx.attributes
+        $out.print("ZUT.Attributes zutOut = NEW()")
+        $processAttributes(state, FALSE)
+      CASE Ctx.url
+        $out.print("ZUT.Url zutOut = NEW()")
+        $processFallback(state)
+      CASE Ctx.css
+        $out.print("ZUT.Css zutOut = NEW()")
+        $processCss(state, FALSE, 0)
+      CASE Ctx.javascript
+        $out.print("ZUT.Javascript zutOut = NEW()")
+        $processJavascript(state, FALSE, 0)
+      CASE Ctx.text
+        $out.print("IO.StringWriter zutSW = NEW()")
+        $processFallback(state)
+      DEFAULT
+        LOG.internal("Wrong context type")
+    }
+    IF state.declareUrl
+      topOut.write("    ZUT.Url zutUrl\n")
+    }
+    topOut.write($out.ToString())
+    $out = topOut
+
+    # write the tail, excluding the } and trailing white space.
+    $writeEndTemplate(state)
+    $writeText(state)
+
+    IF state.templateType == Ctx.html
+        || state.templateType == Ctx.attributes
+        || state.templateType == Ctx.url
+        || state.templateType == Ctx.css
+        || state.templateType == Ctx.javascript
+      $out.print("    RETURN zutOut")
+    ELSEIF state.templateType == Ctx.text
+      $out.print("    RETURN zutSW.ToString()")
+    ELSE
+      $out.print("    RETURN \(returnType).fromSafeString(zutSW.ToString())")
+    }
+    $out.print("  }")
+  }
+
+  #= Parse starting at the toplevel of HTML.
+  #- TODO: verify this with http://www.w3.org/TR/html5/syntax.html
+  PROC $processHtml(State state)
+    int    curlyDepth
+    int    spaceCount
+
+    # TODO: Better HTML parsing
+    WHILE curlyDepth >= 0
+      int c = $in.get()
+      IF c == IO.eof
+        $in.error("Unexpected end of file while processing HTML in context \(state.context)")
+        RETURN
+      }
+
+      SWITCH state.context
+        CASE Ctx.html
+        CASE Ctx.htmlData
+          SWITCH c
+            CASE '<'
+              state.context = Ctx.htmlTagName
+            CASE '}'
+              --curlyDepth
+            CASE '#'
+              IF spaceCount >= 2
+                spaceCount = $maySkipComment(state)
+                c = -1  # don't change spaceCount below
+              }
+            CASE '['
+              # [statement], [=expression] or [" "]
+              $processZimbu(state)
+          }
+
+        CASE Ctx.htmlTagName
+          c = $skipWhite(c)
+          bool endTag
+          string tagName
+
+          IF c == '/'
+            endTag = TRUE
+            c = $in.get()
+          ELSEIF c == '!'  # For <!DOCTYPE
+            c = $in.get()
+          }
+          c = $skipWhite(c)
+
+          IF c == '['
+            IF state.context == Ctx.htmlData
+              # Inside pre and title <[=tagname]> is not allowed.
+              BREAK
+            }
+            # [statement], [=expression] or [" "]
+            $processZimbu(state)
+            state.recordContext = Ctx.attributes
+
+            # If the result is style, script, etc. then tagNameEscape() will
+            # have changed it to BADtagName, so assume a generic tagName.
+            tagName = "fromZimbu"
+          ELSE
+            tagName = $readName(c)
+          }
+
+          # pre and title can only end with </pre and </title
+          IF state.context != Ctx.htmlData
+                                       || (endTag && tagName == state.tagName)
+            state.tagName = tagName
+            state.endTag = endTag
+            state.context = Ctx.attributes
+          }
+
+        CASE Ctx.attributes
+          # process until the ">"
+          $in.push(c)
+          $processAttributes(state, TRUE)
+
+          # End of <tag attributes> or </tag>, decide what follows.
+          IF state.endTag
+            state.context = Ctx.html
+          ELSEIF state.tagName == "style"
+            state.context = Ctx.css
+          ELSEIF state.tagName == "script"
+            state.context = Ctx.javascript
+          ELSEIF state.tagName == "pre"
+              || state.tagName == "title"
+              || state.tagName == "textarea"
+            state.context = Ctx.htmlData
+          ELSE
+            state.context = Ctx.html
+          }
+
+        CASE Ctx.css
+          $in.push(c)
+          # Process up to </style>.
+          $processCss(state, TRUE, 0)
+          state.context = Ctx.html
+
+        CASE Ctx.javascript
+          $in.push(c)
+          # Process up to </script>.
+          $processJavascript(state, TRUE, 0)
+          state.context = Ctx.html
+      }
+      IF c == ' '
+        ++spaceCount
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+    }
+  }
+
+  #= Parse starting at the toplevel of Url and text.
+  PROC $processFallback(State startState)
+    State state = startState
+   
+    int curlyDepth
+    int spaceCount
+    # TODO: Proper parsing for each type
+    WHILE TRUE
+      int c = $in.get()
+      SWITCH c
+        CASE IO.eof
+          $in.error("Unexpected end of file in context \(state.context)")
+          RETURN
+        CASE  '{'
+          ++curlyDepth
+        CASE '}'
+          --curlyDepth
+        CASE '#'
+          IF spaceCount >= 2
+            spaceCount = $maySkipComment(state)
+            c = -1  # don't change spaceCount below
+          }
+        CASE '['
+          # [statement], [=expression] or [" "]
+          $processZimbu(state)
+      }
+      IF curlyDepth == -1
+        BREAK
+      }
+      IF c == ' '
+        ++spaceCount
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+    }
+  }
+
+  SHARED
+    # All attribute names that are a URL.
+    # See http://www.w3.org/TR/html4/index/attributes.html
+    set<string> urlAttributes = ["action", "background", "cite",
+                                 "codebase", "data", "href",
+                                 "longdesc", "profile", "src", "usemap"]
+    set<string> jsAttributes = ["onchange", "onclick", "ondblclick",
+                                "onfocus", "onkeydown", "onkeypress",
+                                "onkeyup", "onload", "onmousedown",
+                                "onmousemove", "onmouseout", "onmouseover",
+                                "onmouseup", "onreset", "onselect",
+                                "onsubmit", "onunload"]
+  }
+
+  # Process attributes in a tag: <tag name=value name="value">.
+  # Ends at the ">".
+  PROC $processAttributes(State state, bool inTag)
+    int    spaceCount
+
+    WHILE TRUE
+      int c = $in.get()
+      IF c == IO.eof
+        $in.error("Unexpected end of file while processing attributes in context \(state.context)")
+        BREAK
+      }
+      IF c == '}' && state.context == Ctx.attributes && !inTag
+        # End of ZUT.Attributes block
+        BREAK
+      ELSEIF c == '>' && (state.context == Ctx.attributes
+                                 || state.context == Ctx.attrNoSpace) && inTag
+        # End of attributes in a tag.
+        BREAK
+      ELSEIF c == '['
+        # [statement], [=expression] or [" "]
+        $processZimbu(state)
+      ELSEIF c == '#'
+        IF spaceCount >= 2
+          spaceCount = $maySkipComment(state)
+          c = -1  # don't change spaceCount below
+        }
+      ELSEIF state.context == Ctx.attributes && !c.isWhite()
+        # Must be an attribute name: class=value
+        string attrName = $readName(c)
+        c = $in.get()
+        c = $skipWhite(c)
+        IF c == '='
+          c = $in.get()
+          c = $skipWhite(c)
+          IF c == '"' || c == '\''
+            # quoted attribute value, ends at the same quote
+            state.context = Ctx.attrValue
+          ELSE
+            # unquoted attribute value, ends at a space
+            $in.push(c)
+            c = ' '
+            state.context = Ctx.attrNoSpace
+          }
+          IF urlAttributes.has(attrName)
+            $processUrlArgument(state, c)
+            state.context = Ctx.attributes
+          ELSEIF jsAttributes.has(attrName)
+            state.within = state.context
+            state.context = Ctx.javascript
+            $processJavascript(state, FALSE, c)
+            state.within = Ctx.none
+            state.context = Ctx.attributes
+          ELSEIF attrName == "style"
+            state.within = state.context
+            state.context = Ctx.css
+            $processCss(state, FALSE, c)
+            state.within = Ctx.none
+            state.context = Ctx.attributes
+          }
+        ELSEIF c == '>'
+          BREAK
+        }
+      ELSEIF (state.context == Ctx.attrNoSpace && c.isWhite())
+          || (state.context == Ctx.attrValue && (c == '"' || c == '\''))
+        state.context = Ctx.attributes
+      }
+
+      IF c == ' '
+        ++spaceCount
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+    }
+  }
+
+  #= Create a ZUT.Url object and call $processUrl().
+  PROC $processUrlArgument(State state, int endChar)
+    # Write the URL to a new object, so that parsing happens at
+    # runtime.
+    $writeRecorded(state)
+    $writeText(state)
+    state.declareUrl = TRUE
+    $out.write("    zutUrl = NEW()\n")
+    state.context = Ctx.url
+    state.writeUrl = TRUE
+    $processUrl(state, endChar)
+    $writeText(state)
+    $out.write("    zutOut.addUNESCAPED(zutUrl.ToString())\n")
+    state.writeUrl = FALSE
+  }
+
+  #= Read $in, which is at the start of a URL.
+  #- When |endChar| is not NIL we are in a style="value" attribute, where
+  #- |endChar| is the double or single quote that ends it, or a space if there
+  #- is no quote.
+  #
+  #- We do not parse the URL here at compile time, we do this at runtime, so
+  #- that all kinds of expressions are possible.
+  PROC $processUrl(State state, int endChar)
+    int spaceCount
+    WHILE TRUE
+      int c = $in.get()
+      SWITCH c
+        CASE  IO.eof
+          $in.error("Unexpected end of file while processing URL")
+          RETURN
+        CASE '#'
+          IF spaceCount >= 2
+            spaceCount = $maySkipComment(state)
+            c = -1  # don't change spaceCount below
+          }
+        CASE '['
+          # [statement], [=expression] or [" "]
+          $processZimbu(state)
+      }
+      IF c == ' '
+        IF endChar == ' '
+          $in.push(' ')
+          BREAK
+        }
+        ++spaceCount
+      ELSEIF c == endChar
+        $in.push(c)
+        BREAK
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+    }
+    $writeRecorded(state)
+  }
+
+  FUNC $skipWhite(int startc) int
+    int c = startc
+    WHILE c.isWhite()
+      c = $in.get()
+    }
+    RETURN c
+  }
+
+  # Read a name that consists only of ASCII letters, digits, underscore and
+  # dash.
+  FUNC $readName(int firstC) string
+    int c = firstC
+    IO.StringWriter w = NEW()
+    WHILE c.isAlphaAscii() || c.isDigit() || c == '_' || c == '-'
+      w.writeChar(c)
+      c = $in.get()
+    }
+    $in.push(c)
+    RETURN w.ToString()
+  }
+
+  # When finding a '#' after two spaces or a line break: if the next character
+  # is a space then skip the rest of the line, it is a comment.
+  FUNC $maySkipComment(State state) int
+    IF $in.get() == ' '
+      # Read and discard a Zimbu-style comment.
+      # Avoids finding {} and [] inside it.
+      $in.input.push(' ')
+      $writeRecordedButOne(state)
+      $in.input.get()
+      $in.input.getRecord()  # drop the space
+      WHILE TRUE
+        int c = $in.get()
+        IF c == '\n' || c == IO.eof
+          BREAK
+        }
+      }
+      $getRecorded()
+      RETURN 2  # spaceCount after a line break
+    }
+    RETURN 0
+  }
+
+  # Process a [statement], [=expression], [#] or ["}"].
+  PROC $processZimbu(State state)
+    # Get the recorded text before peeking, the size will be wrong when it's a
+    # string.
+    int recordStartCol = $in.input.recordStartCol
+    string recorded = $getRecorded()
+
+    Token token = $in.peekToken()
+
+    string stmtText
+    IF token.type == ZTType.stringLiteral || token.type == ZTType.assign
+      $writeRecorded(state, TRUE, FALSE, recordStartCol, recorded)
+
+      token = $in.getToken()
+      $in.input.getRecord()
+      $skipSep()
+
+      IF token.type == ZTType.stringLiteral
+        # ["literal"], e.g. ["["], ["}"]
+        stmtText = token.value
+        $in.emptyStack()
+      ELSEIF token.type == ZTType.assign
+        # [=expression]
+        $parseExpr()
+        $in.emptyStack()
+        stmtText = $in.getRecorded()
+      }
+
+      WHILE TRUE
+        int c = $in.get()
+        IF c == ']'
+          BREAK
+        }
+        IF c != ' '
+          $in.error("Missing ] after expression")
+          RETURN
+        }
+      }
+      $in.input.getRecord()  # drop the ]
+    ELSE
+      # [statement] or [#]
+      # Drop trailing white space, since the statement is always on a new
+      # line, also when no separating space is desired:
+      #    </small>
+      #  [ELSE]
+      $writeRecorded(state, TRUE, FALSE,
+                                      recordStartCol, recorded.trimTrailing())
+
+      # Since this can be a part of a statement, e.g. [ELSE] we can't do
+      # normal parsing.  TODO: use Zimbu parsing.
+      $in.emptyStack()
+      int squareDepth
+      WHILE TRUE
+        SWITCH $in.get()
+          CASE IO.eof
+            $in.error("Unexpected end of file while processing a Zimbu statement")
+            RETURN
+          CASE '['
+            ++squareDepth
+          CASE ']'
+            --squareDepth
+        }
+        IF squareDepth == -1
+          BREAK
+        }
+      }
+
+      # Exclude the "]"
+      $in.input.push(' ')
+      stmtText = $in.input.getRecord().trim()
+      $in.input.get()
+      $in.input.getRecord()  # drop the space
+    }
+
+    string trimmed = stmtText.trim()
+
+    state.afterLiteral = FALSE
+    IF token.type == ZTType.stringLiteral
+      # ["#"], [" "], ["}"], ["["], etc.
+      WHILE TRUE
+        int idx = stmtText.find("\"''")
+        IF idx < 0
+          BREAK
+        }
+        $textOut.write(stmtText.slice(0, idx - 1))
+        $textOut.write("\"'' .. \"\\\"''\" .. ''\"")
+        stmtText = stmtText.slice(idx + 3)
+      }
+      $textOut.write(stmtText)
+      state.afterLiteral = TRUE
+    ELSEIF token.type == ZTType.assign
+      # [=expression]
+      $writeText(state)
+
+      string tail = ")"
+      $out.print($positionComment())
+      IF state.templateType == Ctx.html && state.context == Ctx.attributes
+        $out.write("    zutOut.addAttributes(ZUT.Attributes.NEW().add(")
+        tail = "))"
+      ELSEIF (state.templateType == Ctx.html
+           || state.templateType == Ctx.attrValue)
+              && state.context == Ctx.attrValue
+        $out.write("    zutOut.addUNESCAPED(ZUT.attrValueEscape(")
+        tail = "))"
+      ELSEIF (state.templateType == Ctx.html
+           || state.templateType == Ctx.attrValue)
+              && state.context == Ctx.attrNoSpace
+        $out.write("    zutOut.addUNESCAPED(ZUT.attrNoSpaceEscape(")
+        tail = "))"
+      ELSEIF state.templateType == Ctx.html
+              && state.context == Ctx.htmlData
+        $out.write("    zutOut.addData(")
+      ELSEIF state.context == Ctx.cssSQuoted
+        $out.write("    zutOut.addUNESCAPED(ZUT.cssSingleStringEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.cssDQuoted
+        $out.write("    zutOut.addUNESCAPED(ZUT.cssDoubleStringEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.cssComment
+        $out.write("    zutOut.addUNESCAPED(ZUT.cssCommentEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.jsSquotedString
+        $out.write("    zutOut.addUNESCAPED(ZUT.javascriptSingleStringEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.jsDquotedString
+        $out.write("    zutOut.addUNESCAPED(ZUT.javascriptDoubleStringEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.jsRegexp
+        $out.write("    zutOut.addUNESCAPED(ZUT.javascriptRegexpEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.jsLineComment
+        $out.write("    zutOut.addUNESCAPED(ZUT.javascriptLineCommentEscape(")
+        tail = "))"
+      ELSEIF state.context == Ctx.jsBlockComment
+        $out.write("    zutOut.addUNESCAPED(ZUT.javascriptBlockCommentEscape(")
+        tail = "))"
+      ELSEIF state.templateType == Ctx.html && state.context == Ctx.css
+        IF state.within == Ctx.attrValue
+          $out.write("    zutOut.addUNESCAPED(ZUT.attrValueEscape(")
+          tail = ").ToString()))"
+        ELSEIF state.within == Ctx.attrNoSpace
+          $out.write("    zutOut.addUNESCAPED(ZUT.attrNoSpaceEscape(")
+          tail = ").ToString()))"
+        ELSE
+          $out.write("    zutOut.addCss(")
+          tail = "))"
+        }
+        $out.write("ZUT.Css.NEW().add(")
+      ELSEIF (state.templateType == Ctx.html
+                                       || state.templateType == Ctx.attrValue)
+             && state.context == Ctx.javascript
+        IF state.within == Ctx.attrValue
+          $out.write("    zutOut.addUNESCAPED(ZUT.attrValueEscape(")
+          tail = ")))"
+        ELSEIF state.within == Ctx.attrNoSpace
+          $out.write("    zutOut.addUNESCAPED(ZUT.attrNoSpaceEscape(")
+          tail = ")))"
+        ELSE
+          $out.write("    zutOut.addUNESCAPED(")
+          tail = "))"
+        }
+        $out.write("ZUT.Javascript.toSafeString(")
+      ELSEIF state.writeUrl
+        $out.write("    zutUrl.add(")
+      ELSEIF state.templateType == Ctx.html
+          || state.templateType == Ctx.attributes
+          || state.templateType == Ctx.url
+          || state.templateType == Ctx.css
+          || state.templateType == Ctx.javascript
+        $out.write("    zutOut.add(")
+      ELSEIF state.templateType == Ctx.text
+        $out.write("    zutSW.write(")
+      ELSE
+        $out.print("    # TODO: convert to \(state.templateType)")
+        $out.write("    zutSW.write(")
+      }
+
+      SWITCH state.context
+        CASE Ctx.htmlTagName
+          $out.write("ZUT.tagNameEscape(")
+          $out.write(stmtText)
+          $out.write(")")
+        DEFAULT
+          $out.write(stmtText)
+      }
+
+      $out.print(tail)
+    ELSE
+      # [statement], including [}]
+      $writeText(state)
+      $out.write("    ")
+      $out.print(stmtText)
+    }
+  }
+
+  # Process a CSS block.
+  PROC $processCssBlock(Token token)
+    # Copy the text up to the CSS token.
+    $in.pushToken(token)
+    $out.print($in.getRecorded())
+    $in.getToken()
+    $in.input.getRecord()  # drop "CSS"
+    $in.emptyStack()
+
+    $out.print("  PROC addCss()")
+    $out.print("    ZUT.Context zutContext = CTX.get(ZUT.Context.Type())")
+    $out.print("    IF zutContext.hasCss(\"\($in.input.pos.filename)\")")
+    $out.print("      RETURN")
+    $out.print("    }")
+
+    $out.print("    ZUT.Css zutOut = NEW()")
+
+    # Parse the CSS, output gets written into zutOut.
+    State state = NEW(Ctx.css)
+    $processCss(state, FALSE, 0)
+    $writeRecordedButOne(state)  # write the tail, excluding the }
+    $writeText(state)
+
+    $out.print("    zutContext.addCss(\"\($in.input.pos.filename)\", zutOut)")
+    $out.print("  }")
+  }
+
+  #= Read $in, which is at the toplevel CSS context.
+  #- When |endChar| is not NIL we are in a style="value" attribute, where
+  #- |endChar| is the double or single quote that ends it, or a space if there
+  #- is no quote, in which case a '>' also ends.
+  PROC $processCss(State state, bool inStyleTag, int endChar)
+    int curlyDepth = endChar == 0 ? 0 : 1
+    int spaceCount
+    int urlIndex
+    WHILE curlyDepth >= 0
+      int c = $in.get()
+      IF c == endChar || (c == '>' && endChar == ' ')
+        $in.push(c)
+        BREAK
+      }
+
+      SWITCH c
+        CASE  IO.eof
+          $in.error("Unexpected end of file while processing CSS")
+          RETURN
+        CASE  '{'
+          IF state.context == Ctx.css
+            ++curlyDepth
+          }
+        CASE '}'
+          IF state.context == Ctx.css
+            --curlyDepth
+          }
+        CASE '"'
+          IF state.context == Ctx.css
+            state.context = Ctx.cssDQuoted
+          ELSEIF state.context == Ctx.cssDQuoted
+            state.context = Ctx.css
+          }
+        CASE '\''
+          IF state.context == Ctx.css
+            state.context = Ctx.cssSQuoted
+          ELSEIF state.context == Ctx.cssSQuoted
+            state.context = Ctx.css
+          }
+        CASE '\n'
+          IF state.context == Ctx.cssSQuoted
+            $in.error("missing single quote")
+          ELSEIF state.context == Ctx.cssDQuoted
+            $in.error("missing double quote")
+          }
+        CASE '/'
+          IF state.context == Ctx.css
+            IF $in.peek() == '*'
+              state.context = Ctx.cssComment
+            }
+          }
+        CASE '*'
+          IF state.context == Ctx.cssComment && $in.peek() == '/'
+            state.context = Ctx.css
+            $in.get()
+          }
+        CASE '<'
+          IF inStyleTag && $in.peek() == '/'
+            # Assume </style> follows.
+            $in.push(c)
+            curlyDepth = -1
+          }
+        CASE '#'
+          IF state.context == Ctx.css && spaceCount >= 2
+            spaceCount = $maySkipComment(state)
+            c = -1  # don't change spaceCount below
+          }
+        CASE '['
+          # [=expression] or [A statement]
+          $processZimbu(state)
+      }
+
+      IF c == ' '
+        ++spaceCount
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+
+      IF state.context == Ctx.css && c == "url("[urlIndex]
+        ++urlIndex
+        IF urlIndex == 4
+          urlIndex = 0
+          c = $in.get()
+          c = $skipWhite(c)
+          IF c == '"'
+            state.context = Ctx.cssUrl
+          ELSEIF c == '\''
+            state.context = Ctx.cssUrl
+          ELSE
+            $in.push(c)
+            state.context = Ctx.cssUrl
+            c = ')'
+          }
+          $processUrlArgument(state, c)
+          IF $in.peek() == c
+            $in.get()
+          }
+          state.context = Ctx.css
+        }
+      ELSE
+        urlIndex = 0
+      }
+    }
+
+    IF state.context == Ctx.cssSQuoted
+      $in.error("missing single quote")
+    ELSEIF state.context == Ctx.cssDQuoted
+      $in.error("missing double quote")
+    ELSEIF state.context == Ctx.cssComment
+      $in.error("missing */")
+    }
+  }
+
+  #= Read $in, which is at the toplevel Javascript context.
+  #- When |endChar| is not zero we are in a style="value" attribute, where
+  #- |endChar| is the double or single quote that ends it, or a space if there
+  #- is no quote, in which case we also check for ">".
+  PROC $processJavascript(State state, bool inScriptTag, int endChar)
+    # TODO: Better Javascript parsing
+    int curlyDepth = endChar == 0 ? 0 : 1
+    int spaceCount
+    WHILE curlyDepth >= 0
+      int c = $in.get()
+      IF c == endChar || (endChar == ' ' && c == '>')
+        $in.push(c)
+        BREAK
+      }
+
+      SWITCH c
+        CASE  IO.eof
+          $in.error("Unexpected end of file while processing Javascript")
+          RETURN
+        CASE  '{'
+          IF state.context == Ctx.javascript
+            ++curlyDepth
+          }
+        CASE '}'
+          IF state.context == Ctx.javascript
+            --curlyDepth
+            IF inScriptTag && curlyDepth < 0
+              curlyDepth = 0
+              $in.error("unmatched }")
+            }
+          }
+        CASE '\''
+          IF state.context == Ctx.javascript
+            state.context = Ctx.jsSquotedString
+          ELSEIF state.context == Ctx.jsSquotedString
+            state.context = Ctx.javascript
+          }
+        CASE '"'
+          IF state.context == Ctx.javascript
+            state.context = Ctx.jsDquotedString
+          ELSEIF state.context == Ctx.jsDquotedString
+            state.context = Ctx.javascript
+          }
+        CASE '\n'
+          IF state.context == Ctx.jsSquotedString
+            $in.error("missing single quote")
+          ELSEIF state.context == Ctx.jsDquotedString
+            $in.error("missing double quote")
+          ELSEIF state.context == Ctx.jsRegexp
+            $in.error("missing slash")
+          ELSEIF state.context == Ctx.jsLineComment
+            state.context = Ctx.javascript
+          }
+        CASE '/'
+          IF state.context == Ctx.javascript
+            c = $in.peek()
+            IF c == '/'
+              state.context = Ctx.jsLineComment
+            ELSEIF c == '*'
+              state.context = Ctx.jsBlockComment
+            ELSEIF !c.isWhite()
+              # TODO: how to distinguish a regexp from "a / 2" ?
+              state.context = Ctx.jsRegexp
+            }
+          ELSEIF state.context == Ctx.jsRegexp
+            state.context = Ctx.javascript
+          }
+        CASE '*'
+          IF state.context == Ctx.jsBlockComment && $in.peek() == '/'
+            state.context = Ctx.javascript
+            $in.get()
+          }
+        CASE '<'
+          IF inScriptTag && $in.peek() == '/'
+            # Assume </script> follows.
+            # TODO: also inside a comment or string?
+            $in.push(c)
+            IF curlyDepth > 0
+              $in.error("unmatched {")
+            }
+            curlyDepth = -1
+          }
+        CASE '#'
+          IF state.context == Ctx.javascript && spaceCount >= 2
+            spaceCount = $maySkipComment(state)
+            c = -1  # don't change spaceCount below
+          }
+        CASE '['
+          # [=expression] or [A statement]
+          $processZimbu(state)
+      }
+      IF c == ' '
+        IF endChar == ' '
+          $in.push(' ')
+          BREAK
+        }
+        ++spaceCount
+      ELSEIF c == endChar
+        $in.push(c)
+        BREAK
+      ELSEIF c == '\n'
+        spaceCount = 2
+      ELSEIF c != -1
+        spaceCount = 0
+      }
+    }
+
+    IF state.context == Ctx.jsSquotedString
+      $in.error("missing single quote")
+    ELSEIF state.context == Ctx.jsDquotedString
+      $in.error("missing double quote")
+    ELSEIF state.context == Ctx.jsRegexp
+      $in.error("missing slash")
+    ELSEIF state.context == Ctx.jsBlockComment
+      $in.error("missing */")
+    }
+  }
+
+  # Get the recorded text, but exclude the last character
+  FUNC $getRecorded() string
+    $in.input.push(' ')
+    string recorded = $in.input.getRecord()
+    $in.input.get()
+    $in.input.getRecord()  # drop the space
+    RETURN recorded
+  }
+
+  # Write what was recorded in $in.input but drop the last character.
+  PROC $writeRecordedButOne(State state)
+    $writeRecorded(state, TRUE, FALSE)
+  }
+
+  # Write what was recorded in $in.input but drop the last character and
+  # the trailing white space.
+  PROC $writeEndTemplate(State state)
+    $writeRecorded(state, TRUE, TRUE)
+  }
+
+  # Write was was recorded in $in.input.
+  PROC $writeRecorded(State state)
+    $writeRecorded(state, FALSE, FALSE)
+  }
+
+  # Write what was recorded in |in.input|.
+  # When |dropLastChar| is TRUE drop the last character.
+  PROC $writeRecorded(State state,
+                      bool dropLastChar,
+                      bool endTemplate,
+                      int startColArg = 0, string recordedArg = NIL)
+    int recordStartCol = $in.input.recordStartCol
+    string recorded
+    IF recordedArg == NIL
+      recorded = dropLastChar ? $getRecorded() : $in.input.getRecord()
+    ELSE
+      recorded = recordedArg
+      recordStartCol = startColArg
+    }
+
+    IF state.templateType == Ctx.html
+        || state.templateType == Ctx.attributes
+      # Find controller names.
+      int idx
+      WHILE TRUE
+        int cidx = $findAttribute(recorded, "zcontroller", idx)
+        int aidx = $findAttribute(recorded, "zaction", idx)
+        IF cidx < 0 && aidx < 0
+          BREAK
+        }
+
+        bool isAction
+        IF cidx >= 0 && (cidx < aidx || aidx < 0)
+          idx = cidx + 13
+        ELSE
+          idx = aidx + 9
+          isAction = TRUE
+        }
+
+        int end = idx
+        WHILE end < recorded.Size() && recorded[end] != '"'
+          ++end
+        }
+        string value = recorded.slice(idx, end - 1)
+
+        IF isAction
+          # The value is "click: method, hoover: method".
+          FOR action IN value.split(",")
+            list<string> parts = action.split(":")
+            IF parts.Size() == 2
+              string eventName = parts[0].trim()
+              string funcName = parts[1].trim()
+
+              IF !state.eventsDone.has(eventName)
+                IF state.eventsDone.Size() == 0
+                  $out.print("    ZUT.Context zutContext = CTX.get(ZUT.Context.Type())")
+                }
+                # TODO: error for unknown event name.
+                $out.print("    zutContext.listen(ZUT.EventType.\(eventName))")
+                state.eventsDone.set(eventName)
+              }
+
+              string lastController = state.controllers.Size() > 0
+                                                     ? state.controllers[0] : ""
+              int di = funcName.findLast('.')
+              IF di > 0
+                # Function name includes the controller name: Controller.func
+                lastController = funcName.slice(0, di - 1)
+                funcName = funcName.slice(di + 1)
+              }
+
+              string key = lastController .. "/" .. funcName
+              IF !state.actionsDone.has(key)
+                IF lastController == ""
+                  $in.error("missing zcontroller for zaction \(funcName)")
+                ELSEIF funcName == ""
+                  $in.error("empty zaction for zcontroller \(lastController)")
+                ELSE
+                  $out.print("    ZUT.registerAction(\(lastController).\(funcName))")
+                }
+                state.actionsDone.set(key)
+              }
+            }
+          }
+        ELSE
+          IF $imports.has(value)
+            $imports[value].usedAsController = TRUE
+          ELSE
+            $in.error("Controller not imported: \(value)")
+          }
+          # TODO: use state.controllers as a stack.
+          state.controllers.clear()
+          state.controllers.add(value)
+
+          # Use ZUT.controllerName() to have the compiler fill in the pName of
+          # the class.  Using the name of the class would lead to confusion if
+          # the same class name is used in two directories.
+          recorded = recorded.slice(0, idx - 1)
+                    .. "\"'' .. ZUT.controllerName("
+                    .. value
+                    .. ") .. ''\""
+                    .. recorded.slice(end)
+          idx += 20
+        }
+      }
+    }
+
+    IF state.recordContext != Ctx.htmlData && state.tagName != "textarea"
+      # Remove indent after a linebreak.  Keep empty lines.
+      int nl
+      WHILE TRUE
+        nl = recorded.find('\n', nl)
+        IF nl < 0
+          BREAK
+        }
+        int i = nl + 1
+        WHILE i < recorded.Size() && recorded[i] == ' '
+          ++i
+        }
+        IF i > nl + 1
+          recorded = recorded.slice(0, nl) .. recorded.slice(i)
+        }
+        ++nl
+      }
+    }
+
+    # Use recordContext for the leading white space, that is the context where
+    # recording started.
+    string trimmed
+    IF recorded.Size() == 0
+      trimmed = recorded
+    ELSEIF state.recordContext == Ctx.attributes
+          || state.recordContext == Ctx.attrValue
+          || state.recordContext == Ctx.attrNoSpace
+      # Collapse multiple leading and trailing white space characters into
+      # one.  Use a line break if there was one.
+      trimmed = $collapseLeadingWhite(recorded)
+    ELSEIF state.recordContext == Ctx.htmlData
+      # keep all white space inside pre
+      trimmed = recorded
+    ELSEIF state.recordContext == Ctx.jsLineComment
+      # keep line break that ends the line comment
+      trimmed = recorded.trimLeading()
+      int less = recorded.Size() - trimmed.Size()
+      IF recorded.slice(0, less - 1).find("\n") >= 0
+        trimmed = "\n" .. trimmed
+      }
+    ELSEIF state.recordContext == Ctx.jsBlockComment
+        || state.recordContext == Ctx.cssComment
+        || (recordStartCol > 1 && recorded[0] != '\n')
+        || state.afterLiteral
+      # Keep all white space inside /* comment */.
+      # Keep white space after escaped text ["}"] and [=expr].
+      trimmed = recorded
+    ELSE
+      # Drop all leading white space.
+      trimmed = recorded.trimLeading()
+    }
+
+    # Use the current context for the trailing white space.
+    bool trimmedTail
+    IF state.context == Ctx.attributes
+          || state.context == Ctx.attrValue
+          || state.context == Ctx.attrNoSpace
+      # Collapse multiple leading and trailing white space characters into
+      # one.  Use a line break if there was one.
+      trimmed = $collapseTrailingWhite(trimmed)
+    ELSEIF state.context != Ctx.htmlData
+      # Drop all trailing white space.  If the result is empty we also removed
+      # leading white space, we don't want that.
+      string s = trimmed.trimTrailing()
+      IF s.Size() > 0
+        trimmed = s
+        trimmedTail = TRUE
+      }
+    }
+
+
+    IF trimmed.Size() > 0
+      $textOut.write(trimmed)
+
+      IF trimmedTail && !endTemplate
+        # If the text ends in white space, write one space.
+        # If the white space contained a NL, write a NL.
+        int end = recorded.Size() - 1
+        bool foundNL
+        WHILE end >= 0 && recorded[end].isWhite()
+          IF recorded[end] == '\n'
+            foundNL = TRUE
+            BREAK
+          }
+          --end
+        }
+        IF foundNL
+          $textOut.writeChar('\n')
+        ELSEIF end < recorded.Size() - 1
+          $textOut.writeChar(' ')
+        }
+      }
+    }
+
+    state.afterLiteral = FALSE
+    state.recordContext = state.context
+  }
+
+  # Returns the index of attribute |name| in |text| at or after |idx|.
+  # Returns -1 if not found.
+  FUNC $findAttribute(string text, string name, int idx) int
+    int i = idx
+    WHILE TRUE
+      i = text.find(name .. "=\"", i)
+      IF i < 0
+        BREAK
+      }
+      # Only return if there isn't a letter before the name.
+      IF i == 0 || !text[i - 1].isAlphaAscii()
+        RETURN i
+      }
+      ++i
+    }
+    RETURN i
+  }
+
+  # Collapses leading white space of |recorded|.
+  # When there is a newline collapse into one newline, otherwise a space.
+  FUNC $collapseLeadingWhite(string recorded) string
+    IF recorded == "" || recorded == "\n"
+      RETURN ""
+    }
+
+    string lead = " "
+    int firstNonWhite
+    FOR c IN recorded
+      IF !c.isWhite()
+        BREAK
+      }
+      ++firstNonWhite
+      IF c == '\n'
+        lead = "\n"
+      }
+    }
+    IF firstNonWhite == 0
+      RETURN recorded
+    ELSEIF firstNonWhite == recorded.Size()
+      RETURN lead
+    }
+    RETURN lead .. recorded.slice(firstNonWhite)
+  }
+
+  # Collapses trailing white space of |recorded|.
+  # When there is a newline collapse into one newline, otherwise a space.
+  FUNC $collapseTrailingWhite(string recorded) string
+    IF recorded == "" || recorded == "\n"
+      RETURN ""
+    }
+    string tail = " "
+    int idx
+    int lastNonWhite = -1
+    FOR c IN recorded
+      IF !c.isWhite()
+        lastNonWhite = idx
+        tail = " "
+      ELSEIF c == '\n'
+        tail = "\n"
+      }
+      ++idx
+    }
+    IF lastNonWhite == recorded.Size() - 1
+      RETURN recorded
+    }
+
+    RETURN recorded.slice(0, lastNonWhite) .. tail
+  }
+
+  # Write the text collected in $textOut() to $out, if any.
+  PROC $writeText(State state)
+    IF !$textOut.empty()
+      IF state.writeUrl
+        $out.write("    zutUrl.addUNESCAPED(''\"")
+      ELSEIF state.templateType == Ctx.html
+         || state.templateType == Ctx.attributes
+         || state.templateType == Ctx.css
+         || state.templateType == Ctx.javascript
+         || state.templateType == Ctx.url
+        $out.write("    zutOut.addUNESCAPED(''\"")
+      ELSE
+        $out.write("    zutSW.write(''\"")
+      }
+      $out.write($textOut.ToString())
+      $out.print("\"'')")
+      $textOut.truncate()
+    }
+  }
+
+
+  # Write the import statements, possibly modified, to $outFile.
+  PROC $writeImports() @public
+    FOR import IN $imports
+      # Insert "../" before the file name, the template is produced in the
+      # ZUDIR directory.
+      string text = import.text
+      int idx
+      WHILE idx < text.Size() && !text[idx].isWhite()
+        ++idx
+      }
+      WHILE idx < text.Size() && text[idx].isWhite()
+        ++idx
+      }
+      IF text[idx] == '<' || text[idx] == '"'
+        ++idx
+      }
+      $outFile.write(text.slice(0, idx - 1))
+      text = text.slice(idx)
+      IF !IO.isFullPath(text)
+        $outFile.write("../")
+      }
+      $outFile.write(text)
+
+      IF import.usedAsController
+        $outFile.write(" @javascript")
+      }
+      $outFile.print()
+    }
+    $outFile.print()
+  }
+
+  # Write the body of the file.
+  PROC $writeBody() @public
+    $outFile.write($out.ToString())
+    $outFile.write($in.input.getRecord())
+  }
+}

@@ -1,0 +1,447 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# JS implementation for Array.
+#
+# Copyright 2009-2012 Bram Moolenaar
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+IMPORT.PROTO ../parser/zui.proto
+
+IMPORT ../ArrayStuff.zu
+IMPORT ../CodeWriter.zu
+IMPORT ../ContainerType.zu
+IMPORT ../Declaration.zu
+IMPORT ../DeclStore.zu
+IMPORT ../Generate.zu
+IMPORT ../Output.zu
+IMPORT ../SContext.zu
+IMPORT ../Type.zu
+IMPORT ../TupleType.zu
+IMPORT ../WriteCommon.zu
+IMPORT WriteJS.zu
+
+MODULE WriteArrayJS @items=public                   # TODO: restrict visibility
+
+  FUNC generateMethodCall(ContainerType type,
+                          Zui.MethodCall call,
+                          SContext ctx,
+                          Type destType
+                         ) Type
+    Type retType
+    Zui.Expression name = call.getName()
+    CHECK.true(name.getType() == Zui.ExprType.eMEMBER)
+    string methodName = name.getRight().getName()
+    Zui.Expression object = name.getLeft()
+    list<Zui.Expression> argList = call.getArgumentList()
+
+    IF methodName == "map" || methodName == "keyMap"
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        IF methodName == "map"
+          ctx.setDeclUsed(%arrayMap)
+          ctx.out.write("ZarrayMap(")
+        ELSE
+          ctx.setDeclUsed(%arrayKeyMap)
+          ctx.out.write("ZarrayKeyMap(")
+        }
+        Generate.generateVarname(object, ctx, type)
+
+        ctx.out.write(", ")
+        Generate.genFuncArg(argList[0], methodName == "map" ? NIL : Type.anInt,
+                                                           type.itemType, ctx)
+        ctx.out.write(")")
+        retType = type
+      }
+    ELSEIF methodName == "resize"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 1, 1, ctx) == OK
+        ctx.out.write("ZarrayResize(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", ")
+        Generate.genExpr(argList[0], ctx, Type.anInt)
+        ctx.out.write(")")
+        ctx.setDeclUsed(%arrayResize)
+      }
+      retType = type
+    ELSEIF methodName == "size" || methodName == "Size"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 0, ctx) == FAIL
+        # nothing
+      ELSE
+        ctx.setDeclUsed(%arraySize)
+        ctx.out.write("ZarraySize(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(")")
+      }
+      retType = Type.anInt
+    ELSEIF methodName == "ToString"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 0, 1, ctx) == FAIL
+        # nothing
+      ELSE
+        ctx.setDeclUsed(%arrayToString)
+        ctx.out.write("ZarrayToString(")
+        Generate.genExpr(object, ctx, type)
+        # TODO: format argument
+        ctx.out.write(", 1)")
+      }
+      retType = Type.aString
+    ELSEIF methodName == "Type"
+      ctx.out.write(type.typeUsed(ctx).pName)
+      ctx.out.write("__T")
+      retType = Type.aType
+    ELSEIF methodName == "set"
+      # TODO: multi-dimensional arrays.
+      IF Generate.checkArgCount(call, 2, 2, ctx) == OK && ctx.gen.writing
+        ctx.out.write("Zas(")
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", ")
+        Type r = Generate.genExpr(argList[1], ctx)
+        IF r != NIL
+          WriteCommon.writeItemType(r, type.itemType, call.getPos(), ctx)
+        }
+        Generate.genExpr(argList[0], ctx, Type.anInt)
+        ctx.out.write(")")
+        ctx.setDeclUsed(%arraySet)
+      }
+      retType = type
+    ELSEIF methodName == "find" || methodName == "has"
+      IF Generate.checkArgCount(call, 1, 1, ctx) != FAIL
+        IF methodName == "has"
+          ctx.out.write("(")
+        }
+        IF type.itemType.getTtype() == Type.Enum.dyn
+          ctx.setDeclUsed(%arrayFindDyn)
+          ctx.out.write("ZArrayFindDyn(")
+        ELSE
+          ctx.setDeclUsed(%arrayFind)
+          ctx.out.write("ZArrayFind(")
+        }
+        Generate.generateVarname(object, ctx, type)
+        ctx.out.write(", ")
+        Generate.genTopExprDoConv(call.getArgument(0), ctx, type.itemType)
+        ctx.out.write(")")
+        IF methodName == "has"
+          ctx.out.write(">= 0)")
+        }
+      }
+      retType = methodName == "has" ? Type.aBool : Type.anInt
+    ELSE
+      IF ctx.doError()
+        ctx.error("Method " .. methodName .. "() not supported for array",
+                                                              call.getPos())
+      }
+    }
+    IF retType == NIL
+      RETURN Type.anUnknown
+    }
+    RETURN retType
+  }
+
+  PROC writeArrayAlloc(ContainerType type, string noAllocName,
+                                Zui.MethodCall call, int &undef, SContext ctx)
+    list<Zui.Expression> args = call.getArgumentList()
+    IF args.Size() == 1
+      IF type.itemType != NIL
+        Output out = ctx.out
+        ctx.setDeclUsed(Declaration.newArray)
+        out.write("ZnewArray(")
+        out.write(WriteJS.getTypeName(type.itemType, ctx))
+        out.write(", ")
+        Generate.genExpr(args[0], ctx, Type.anInt)
+        out.write(")")
+      }
+    ELSE
+      ctx.error("Expected one argument", call.getPos())
+    }
+  }
+
+  FUNC generateSubscript(ContainerType type, Zui.Expression expr,
+                                bool lvalue, SContext ctx, Type destType) Type
+    IF lvalue
+      # TODO: this evaluates expr twice, side effects can be a problem.
+      ctx.setDeclUsed(%arrayGetIdx)
+      ctx.out.write("(")
+      Generate.genExpr(expr.getLeft(), ctx)
+      ctx.out.write(").a[ZArrayGetIdx(")
+      Generate.genExpr(expr.getLeft(), ctx)
+      ctx.out.write(", ")
+      Generate.genExpr(expr.getRight(), ctx, Type.anInt)
+      ctx.out.write(")]")
+    ELSE
+      ctx.setDeclUsed(%arrayGet)
+      ctx.out.write("ZarrayGet(")
+      Generate.genExpr(expr.getLeft(), ctx, Type.anArray)
+      ctx.out.write(", ")
+      Generate.genExpr(expr.getRight(), ctx, Type.anInt)
+      ctx.out.write(")")
+    }
+    Type ret = type.itemType
+    IF ret == NIL && ctx.out.writing
+      ctx.error("type of array item unknown", expr)
+    }
+    RETURN ret
+  }
+
+  # Set dependencies between used items.  Called before marking Main() as
+  # used.
+  PROC addDependencies(WriteJS gen)
+    Declaration.itemToString.addDependsOnCond(%arrayToString,
+                                                       Declaration.array, gen)
+  }
+
+  Declaration %arrayMap = NEW("arrayMap")
+  Declaration %arrayKeyMap = NEW("arrayKeyMap")
+  Declaration %arrayGet = NEW("arrayGet")
+  Declaration %arrayGetIdx = NEW("arrayGetIdx")
+  Declaration %arraySet = NEW("arraySet")
+  Declaration %arrayResize = NEW("arrayResize")
+  Declaration %arrayCompare = NEW("arrayCompare")
+  Declaration %arrayEqual = NEW("arrayEqual")
+  Declaration %arrayFind = NEW("arrayFind")
+  Declaration %arrayFindDyn = NEW("arrayFindDyn")
+  Declaration %arraySize = NEW("arraySize")
+  Declaration %arrayToString = NEW("arrayToString")
+
+  PROC initCodeWriters(list<CodeWriter> codeWriters)
+    codeWriters.add(NEW(%arrayMap,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZarrayMap(head, f) {
+ if (head) {
+  for (var i = 0; i < head.a.length; ++i) {
+   head.a[i] = f(head.a[i]);
+  }
+ }
+ return head;
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(%arrayKeyMap,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZarrayKeyMap(head, f) {
+ if (head) {
+  for (var i = 0; i < head.a.length; ++i) {
+   head.a[i] = f(i, head.a[i]);
+  }
+ }
+ return head;
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(Declaration.newArray,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZnewArray(type, len) {
+ var a = [];
+ for (var i = 0; i < len; ++i) {
+  a[i] = type[0] < 100 ? 0 : null;
+ }
+ return {a: a, itemType: type};
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(%arraySize,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZarraySize(head) {
+ return head ? head.a.length : 0;
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(%arrayToString,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZarrayToString(head, useq) {
+ if (!head) return "NIL";
+ ++tosNr;
+ return ZArrayToStringGa(head, useq);
+}
+function ZArrayToStringGa(head, useq) {
+ var r = ['['];
+ if (head.tosNr == tosNr) {
+  r.push('recursive-array');
+ } else {
+  head.tosNr = tosNr;
+  for (var i = 0; i < head.a.length; ++i) {
+   if (i > 0) r.push(", ");
+   r.push(ZitemToString(head.a[i], head.itemType, useq));
+  }
+  head.tosNr = 0;
+ }
+ r.push(']');
+ return r.join('');
+}"'')
+      }).setDependencies([Declaration.itemToString]))
+
+    codeWriters.add(NEW(%arrayResize,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZarrayResize(head, size) {
+ if (head == null) ZthrowNil("Invoking resize() on NIL array");
+ if (size > head.a.length) {
+  for (var i = head.a.length; i < size; ++i) {
+   head.a[i] = head.itemType[0] < 100 ? 0 : null;
+  }
+ } else {
+  head.a.length = size;
+ }
+ return head;
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(%arrayGetIdx,
+      PROC (WriteJS gen, IO.File fd)
+        string throwOutOfRange = DeclStore.getPName("MEModule",
+                                                           "FthrowOutOfRange")
+        fd.write(''"
+function ZArrayGetIdx(head, idx) {
+ if (head == null) ZthrowNil("subscript on NIL array");
+ if (idx < 0 || idx >= head.a.length) {
+   "'' .. throwOutOfRange .. ''"(idx, 'Index out of range');
+ }
+ return idx;
+}
+"'')
+      }).setDependencies([["MEModule", "FthrowOutOfRange"]]))
+
+    codeWriters.add(NEW(%arrayGet,
+      PROC (WriteJS gen, IO.File fd)
+        string throwOutOfRange = DeclStore.getPName("MEModule",
+                                                           "FthrowOutOfRange")
+        fd.write(''"
+function ZarrayGet(head, idx) {
+ if (!head) ZthrowNil("getting item from NIL array");
+ if (idx < 0 || idx >= head.a.length) "'' .. throwOutOfRange .. ''"(idx, 'array index out of range');
+ return head.a[idx];
+}
+"'')
+      }).setDependencies([["MEModule", "FthrowOutOfRange"]]))
+
+    codeWriters.add(NEW(%arraySet,
+      PROC (WriteJS gen, IO.File fd)
+        # TODO: throw right type of exception
+        # TODO: when the types don't match throw an error?
+        fd.write(''"
+function Zas(head, vals, type, offset) {
+ var len;
+ var i;
+ if (head == null) ZthrowNil("Invoking set() on NIL array");
+ if (type == 0) {
+  // vals is a byteString
+  len = vals.length
+  if (len > head.a.length - offset) len = head.a.length - offset;
+  for (var i = 0; i < len; ++i) {
+   head.a[offset + i] = vals.charCodeAt(i);
+  }
+ } else {
+  // vals is a list or array
+  len = vals.a.length;
+  if (len > head.a.length - offset) len = head.a.length - offset;
+  for (var i = 0; i < len; ++i) {
+   head.a[offset + i] = vals.a[i];
+  }
+ }
+ return head;
+}
+"'')
+      }))
+
+    codeWriters.add(NEW(%arrayEqual,
+      PROC (WriteJS gen, IO.File fd)
+        # TODO: use itemEqual()
+        fd.write(''"
+function ZArrayEqual(l, r) {
+ if (!l && !r) return true;
+ if (!l || !r) return false;
+ if (l.a.length != r.a.length) return false;
+ for (var i = 0; i < l.a.length; ++i) {
+  if (!ZitemEqual(l.itemType, l.a[i], r.itemType, r.a[i])) return false;
+ }
+ return true;
+}
+"'')
+      }).setDependencies([Declaration.itemEqual]))
+
+    codeWriters.add(NEW(%arrayFind,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZArrayFind(head, val) {
+ if (!head) return -1;
+ return head.a.indexOf(val);
+}
+"'')
+      }).setDependencies([Declaration.dynEqual]))
+
+    codeWriters.add(NEW(%arrayFindDyn,
+      PROC (WriteJS gen, IO.File fd)
+        fd.write(''"
+function ZArrayFindDyn(head, val) {
+ if (!head || !val) return -1;
+ for (var i = 0; i < head.a.length; ++i) {
+  if (ZdynEqual(head.a[i], val)) return i;
+ }
+ return -1;
+}
+"'')
+      }).setDependencies([Declaration.dynEqual]))
+
+  }  # end of initCodeWriters()
+
+  PROC writeBody(WriteJS gen, IO.File fd)
+  }
+
+  # Write a varargs argument for |args[startIndex]| .. |args[args.Size() - 1]|
+  # Note that |args| may be reordered compared to call.getArgumentList().
+  # |type| is the type of the method varargs.
+  # Return the number of undefined symbols.
+  PROC writeVarargs(Zui.MethodCall call, Type type, TupleType tupleType,
+                      list<Zui.Expression> args, int startIndex, SContext ctx)
+    Output out = ctx.out
+
+    # it's a tuple<array<string>, array<type>>
+    #   [[name, name], [expr, expr]]
+    out.write("[{a: [")
+
+    # Write each item name.
+    string separator = ""
+    FOR idx IN startIndex UNTIL args.Size()
+      Zui.Expression item = args[idx]
+      Zui.Expression name
+      IF item.getType() == Zui.ExprType.eASSIGN
+        name = item.getLeft()
+      ELSE
+        # no name, use NIL.
+        Zui.Expression nilItem = NEW().setType(Zui.ExprType.eNIL)
+        nilItem.setPos(item.getPos())
+        name = nilItem
+      }
+      out.write(separator)
+      Generate.genExpr(name, ctx, Type.aString)
+      separator = ", "
+    }
+    out.write("], itemType: string__T}, {a: [")
+
+    # Write each value.
+    separator = ""
+    FOR idx IN startIndex UNTIL args.Size()
+      Zui.Expression item = args[idx]
+      out.write(separator)
+      Generate.genExpr(item.getType() == Zui.ExprType.eASSIGN
+                                          ? item.getRight() : item, ctx, type)
+      separator = ", "
+    }
+    out.write("], itemType: ")
+    out.write(WriteJS.getTypeName(type, ctx))
+    out.write("}]")
+  }
+
+}

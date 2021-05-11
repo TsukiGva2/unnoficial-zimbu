@@ -1,0 +1,36 @@
+# Trying out the SHARED section
+#
+# Copyright 2009 Bram Moolenaar  All Rights Reserved.
+# Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+# obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+
+CLASS Date @public
+  string $month
+  int    $day
+  int    $year
+
+  FUNC $ToString() string @public
+    RETURN $year .. "-" .. $month .. "-" .. $day
+  }
+
+  SHARED @items=public
+    int asdf
+
+    FUNC fromString(string s) Date
+      Date d = NEW()
+      d.year = 2009
+      d.month = s
+      d.day = 1
+      RETURN d
+    }
+
+    PROC testje()
+      Date d = fromString("May 9 2009")
+      asdf = 5
+      IO.print(d.ToString() .. asdf)
+    }
+  }
+
+  # comment
+}

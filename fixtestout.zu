@@ -1,0 +1,35 @@
+# Small program to filter test.out.
+
+FUNC Main() int
+
+  IF ARG.Size() != 1
+    IO.print("Usage: fixtestout <filename>")
+    EXIT 1
+  }
+
+  IO.File r = IO.fileReader(ARG.get(0))
+  list<string> lines = r.readAllLines()
+  r.close()
+
+  I.MutateIterator<string> it = lines.Iterator()
+  bool insert
+  FOR l IN it
+    IF l == "test6 caught SEGV: testdir/TryCatch.zu line col 15: Exception: signal SEGV"
+      it.set("test6 caught SEGV: testdir/TryCatch.zu line col 12: Exception: signal SEGV")
+      insert = TRUE
+    }
+    IF l == "testdir/TryCatch.zu line 311 col 15: TryCatch.test6()"
+      IF insert
+        it.insert("testdir/TryCatch.zu line 301 col 12: TryCatch.breakMe()")
+      }
+      BREAK
+    }
+  }
+
+  IO.File w = IO.fileWriter(ARG.get(0))
+  w.writeAllLines(lines)
+  w.close()
+
+
+  RETURN 0
+}

@@ -1,0 +1,648 @@
+#
+# The Zimbu compiler written in Zimbu
+#
+# builtin module E
+#
+
+#= Classes, Interfaces and methods for Exceptions
+#
+#- Still very much under development.
+#
+#- Class hierarchy:
+#% E.Exception
+#%   E.Exit                EXIT encountered
+#%   E.Interrupt           user interrupt or signal received
+#%   E.TimeOut             timer expired
+#%   E.Error
+#%     E.OutOfMemory       ran out of RAM
+#%     E.NilAccess         dereferencing object that is NIL
+#%     E.MemoryAccess      accessing memory that doesn't exist (SEGV signal)
+#%     E.Init              Initialization failed
+#%     E.Check             CHECK.name() failed
+#%     E.Unsupported       feature not implemented
+#%     E.BadValue
+#%       E.OutOfRange      list or array index out of range
+#%       E.KeyNotFound     dict access with non-existing key
+#%       E.ItemNotFound    container searched for non-existing item
+#%       E.KeyExists       adding to dict with key that already exists
+#%       E.IllegalByte     not in utf-8 encoding
+#%     E.Arithmetic
+#%       E.DivideByZero    x / 0
+#%       E.Overflow        x * y
+#%     E.IOError
+#%       E.FileNotFound    when opening file or directory
+#%       E.AccessDenied    when opening or reading file
+#%       E.Pipe            reading from or writing to pipe that's not open
+#%     E.Dyn               dyn type used badly
+#%     E.WrongType         typecast failed
+#%     E.Thread            when operating on a thread
+#%     E.Internal          bad Zimbu!
+#
+#*license
+#* Copyright 2011 Bram Moolenaar  All Rights Reserved.
+#*
+#* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
+#* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
+#
+MODULE EModule @public
+
+  #= The base class for all exceptions.
+  #- It's very unusual to catch this, you should probably catch a subclass:
+  #%    E.Exit           EXIT encountered
+  #%    E.Interrupt      User pressed CTRL-C, SIGINT or SIGHUP
+  #%    E.Error          Runtime error
+  CLASS Exception @public
+    string        $message  #!
+    Z.Pos         $pos      #!
+    list<Z.Pos>   $backtrace #!
+
+    #= Create a new generic exception using the position of the caller.
+    NEW(string msg) @default @public
+      $message = msg
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+
+    #= Create a new generic exception with position |pos|.
+    NEW(Z.Pos pos, string msg) @public
+      $message = msg
+      $pos = pos
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+
+    #= Return a string representation of the exception.
+    #- This includes the position, does not include a stack trace.
+    FUNC $ToString() string @default @public
+      IO.StringWriter w = NEW()
+      $writeTo(w)
+      RETURN w.ToString()
+    }
+
+    #= Write a string representation of the exception to |w|.
+    #- This includes the position, does not include a stack trace.
+    PROC $writeTo(IO.I_Writer w) @default @public
+      IF $pos != NIL
+        w.write($pos.ToString())
+        w.write(": ")
+      }
+
+      IF $message != NIL && $message != ""
+        # TODO: use the exception class name
+        w.write("Exception: ")
+        w.write($message)
+      ELSE
+        w.write("Exception")
+      }
+    }
+
+    #= Return a string representation of the exception.
+    #- When |verbose| is FALSE this is the same as ToString().
+    #- When |verbose| is TRUE the stack trace is included.
+    FUNC $toString(bool verbose) string @default @public
+      IO.StringWriter w = NEW()
+      $writeTo(verbose, w)
+      RETURN w.ToString()
+    }
+
+    #= Return a string representation of the exception.
+    #- When |verbose| is FALSE this is the same as ToString().
+    #- When |verbose| is TRUE the stack trace is inclued.
+    PROC $writeTo(bool verbose, IO.I_Writer w) @default @public
+      $writeTo(w)
+      GENERATE_IF Z.have("backtrace")
+        IF verbose && $backtrace != NIL
+           w.write("\nStack backtrace (last called first):")
+           FOR pos IN $backtrace
+             IF pos.filename == NIL
+               w.write("\n(unknown)")
+             ELSE
+               w.write("\n")
+               w.write(pos.ToString())
+               IF pos.text != NIL
+                 w.write(": ")
+                 w.write(pos.text)
+               }
+             }
+           }
+        }
+      }
+    }
+
+    #= Return the message of the Exception.
+    FUNC $getMessage() string @public
+      RETURN $message
+    }
+
+    #= Return the position where the Exception was thrown.
+    FUNC $getPos() Z.Pos @public
+      RETURN $pos
+    }
+
+    #= Return the stack trace of where the Exception was thrown.
+    FUNC $getBacktrace() list<Z.Pos> @public
+      GENERATE_IF Z.have("backtrace")
+        RETURN $backtrace
+      GENERATE_ELSE
+        RETURN NIL
+      }
+    }
+  }
+
+  #! Internal function throwing E.Exception
+  PROC throwException(int pos, string text) @backtrace=no
+    Exception e = NEW(text)
+>>>
+ %e.pos% = MZ__posnr2pos(NULL, %pos%);
+<<<
+    THROW e
+  }
+
+
+  #= Exception thrown by EXIT.
+  CLASS Exit EXTENDS Exception @public
+    int       $value    #!
+
+    #= Create a new E.Exit exception.
+    #= |value| is the exit value.
+    NEW(int value)
+      $value = value
+      $message = "EXIT " .. value
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+
+    #= Return a string representation of the exception.
+    #- This includes the exit value and position, does not include a stack
+    #- trace.
+    FUNC $ToString() string @replace
+      IO.StringWriter w = NEW()
+      $writeTo(w)
+      RETURN w.ToString()
+    }
+    
+    #= Write a string representation of the exception to |w|.
+    #- This includes the exit value and position, does not include a stack
+    #- trace.
+    PROC $writeTo(IO.I_Writer w) @replace
+      IF $pos != NIL
+        w.write($pos.ToString())
+        w.write(": ")
+      }
+      w.write("EXIT ")
+      w.write($value)
+      IF $message != NIL && $message != ""
+        w.write(": ")
+        w.write($message)
+      }
+    }
+
+    #= Get the exit value, the argument of EXIT.
+    FUNC $getValue() int
+      RETURN $value
+    }
+  }
+
+  #! Internal function for throwing E.Exit
+  PROC throwExit(Z.Pos pos, int val) @backtrace=no
+    Exit e = NEW(val)
+    e.pos = pos
+    THROW e
+  }
+
+  #= Exception thrown by a user interrupt: CTRL-C pressed or signal SIGHUP or
+  #= SIGINT received.
+  CLASS Interrupt EXTENDS Exception @public
+  }
+
+  #= Exception thrown when a timer expires.
+  CLASS TimeOut EXTENDS Error @public
+    #= Create a new E.Timeout exception.
+    NEW()
+      $message = "Timeout"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #= Base class for exceptions that are an error.
+  CLASS Error EXTENDS Exception @public
+  }
+
+  #= Exception thrown when out of memory.
+  CLASS OutOfMemory EXTENDS Error @public
+    #= Create a new E.OutOfMemory exception.
+    #- You would normally not create this yourself.
+    NEW()
+      $message = "Out of memory"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+
+    #= Create a new E.OutOfMemory exception.
+    #- You would normally not create this yourself.
+    NEW(int limit)
+      $message = "Out of memory"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1, limit)
+      }
+    }
+
+    #= Create a new E.OutOfMemory exception.
+    #- You would normally not create this yourself.
+    NEW(int size, int limit)
+      $message = "Out of memory (allocating " .. size .. " bytes)"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1, limit)
+      }
+    }
+  }
+
+  #! Internal function for throwing E.OutOfMemory
+  PROC throwOutOfMemory() @backtrace=no
+    THROW OutOfMemory.NEW(30)
+  }
+
+  #! Internal function for throwing E.OutOfMemory
+  PROC throwOutOfMemorySize(int size) @backtrace=no
+    THROW OutOfMemory.NEW(size, 30)
+  }
+
+
+  #= Exception thrown when dereferencing a NIL.
+  CLASS NilAccess EXTENDS Error @public
+    #= Create a new E.NilAccess exception.
+    NEW()
+      $message = "dereferencing NIL"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #! Internal function for throwing E.NilAccess
+  PROC throwNil(Z.Pos pos, string text) @backtrace=no
+    NilAccess e = NEW(text)
+    IF pos != NIL
+      e.pos = pos
+    }
+    THROW e
+  }
+
+  #= Exception thrown when accessing memory that cannot be accessed.
+  CLASS MemoryAccess EXTENDS Error @public
+    #= Create a new E.MemoryAccess exception.
+    NEW()
+      $message = "Illegal memory access"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #! Internal function for throwing an exception for a deadly signal |nr|.
+  PROC throwDeadly(int nr) @backtrace=no
+    IF nr == 11
+      THROW MemoryAccess.NEW("signal SEGV")
+    }
+    IF nr == 8
+      THROW DivideByZero.NEW("signal FPE")
+    }
+    IF nr == 7
+      THROW MemoryAccess.NEW("signal BUS")
+    }
+    THROW MemoryAccess.NEW("signal " .. nr)
+  }
+
+  #= Exception thrown when initialization failed.
+  CLASS Init EXTENDS Error @public
+    #= Create a new E.Init exception.
+    NEW()
+      NEW(Z.callerPos(), "Initialization failed")
+    }
+  }
+
+  #! Internal function for throwing E.Init
+  PROC throwInit(string text) @backtrace=no
+    THROW Init.NEW(text)
+  }
+
+  #= Exception thrown by a method in the CHECK module.
+  CLASS Check EXTENDS Error @public
+  }
+
+  #= Exception thrown when code is not implemented.
+  CLASS Unsupported EXTENDS Error @public
+  }
+
+  #= Class of exceptions that are thrown when a value is unacceptable.
+  CLASS BadValue EXTENDS Error @public
+  }
+
+  #! Internal function for throwing E.BadValue
+  PROC throwBadValue(string text) @backtrace=no
+    THROW BadValue.NEW(text)
+  }
+
+  #= Exception thrown when an index is out of range: idx < 0 || idx >= Size()
+  CLASS OutOfRange EXTENDS BadValue @public
+  }
+
+  #! Internal function throwing E.OutOfRange
+  PROC throwOutOfRange(int index, string msg) @backtrace=no
+    THROW OutOfRange.NEW(msg .. ": " .. index)
+  }
+  
+  #= Exception thrown when making a dict loopup for a key that does not exist.
+  CLASS KeyNotFound EXTENDS BadValue @public
+  }
+
+  #! Internal function throwing E.KeyNotFound
+  PROC throwIntKeyNotFound(int key, string msg) @backtrace=no
+    THROW KeyNotFound.NEW(msg .. "Key not found: " .. key)
+  }
+  
+  #! Internal function throwing E.KeyNotFound
+  PROC throwStringKeyNotFound(string key, string msg) @backtrace=no
+    # TODO: escape non-printable characters
+    THROW KeyNotFound.NEW(msg .. "Key not found: \"" .. key .. "\"")
+  }
+
+  #= Exception thrown when searching for an item in a container that does not
+  #= exist.
+  CLASS ItemNotFound EXTENDS BadValue @public
+  }
+
+
+  #= Exception thrown when adding an item to a dict for a key that already
+  #= exist.
+  CLASS KeyExists EXTENDS BadValue @public
+  }
+
+  #! Internal function throwing E.KeyExists
+  PROC throwIntKeyExists(int key, string msg) @backtrace=no
+    THROW KeyExists.NEW(msg .. "Key already exists: " .. key)
+  }
+  
+  #! Internal function throwing E.KeyExists
+  PROC throwStringKeyExists(string key, string msg) @backtrace=no
+    # TODO: escape non-printable characters
+    THROW KeyExists.NEW(msg .. "Key already exists: \"" .. key .. "\"")
+  }
+  
+
+  #= Exception thrown when encountering an illegal byte in a UTF-8 string.
+  CLASS IllegalByte EXTENDS BadValue @public
+  }
+
+  #! Internal function for throwing E.IllegalByte
+  PROC throwIllegalByte() @backtrace=no
+    THROW IllegalByte.NEW("invalid UTF-8")
+  }
+
+  #= Exception thrown for a non-specific Arithmetic error
+  CLASS Arithmetic EXTENDS Error @public
+  }
+
+  #= Exception thrown when dividing by zero.
+  CLASS DivideByZero EXTENDS Arithmetic @public
+    #= Create a new E.DivideByZero exception.
+    NEW()
+      $message = "Divide by zero"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #= Exception thrown for a value overflow.
+  CLASS Overflow EXTENDS Arithmetic @public
+    #= Create a new E.Overflow exception.
+    NEW()
+      $message = "Overflow"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+
+  #= Exception thrown for a non-specific I/O error
+  CLASS IOError EXTENDS Error @public
+    #= Create a new E.IOError exception.
+    NEW() @default
+      $message = "IO error"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #! Internal function throwing E.IOError
+  PROC throwIOError(string msg) @backtrace=no @public
+    THROW IOError.NEW(msg)
+  }
+  
+  #= Exception thrown when a file cannot be opened because it, or its
+  #= directory, cannot be found.
+  CLASS FileNotFound EXTENDS IOError @public
+    #= Create a new E.FileNotFound exception with file name |fname|.
+    NEW(string fname) @replace
+      $message = "Cannot find \"" .. fname .. "\""
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #= Exception thrown when a file cannot be opened for the current user
+  #= and the requested operation.
+  CLASS AccessDenied EXTENDS IOError @public
+    #= Create a new E.AccessDenied exception with file name |fname|.
+    NEW(string fname) @replace
+      $message = "Access denied for \"" .. fname .. "\""
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #= Exception thrown when writing to or reading from a pipe that is not open.
+  CLASS Pipe EXTENDS IOError @public
+    #= Create a new E.Pipe exception.
+    NEW() @replace
+      $message = "Pipe is not open"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #= Exception thrown when using a dyn type.
+  CLASS Dyn EXTENDS Error @public
+  }
+
+  #! Internal function for throwing E.Dyn
+  PROC throwDyn(string msg) @backtrace=no
+    Dyn e = NEW(msg)
+    THROW e
+  }
+  
+
+  #= Exception thrown when a type is used where another type is expected and
+  #= automatic conversion is not possible.
+  CLASS WrongType EXTENDS Error @public
+    #= Create a new E.WrongType exception.
+    NEW() @public
+      $message = "Type mismatch"
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+
+    #= Create a new E.WrongType exception with expected and actual type.
+    #- |actual| can be NIL to omit that part.
+    NEW(string expected, string actual) @public
+      IO.StringWriter w = NEW()
+      w.write("Type mismatch; expected ")
+      w.write(expected)
+      IF actual != NIL
+        w.write(" but found ")
+        w.write(actual)
+      }
+      $message = w.ToString()
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #! Internal function for throwing E.WrongType
+  PROC throwWrongType(int pos) @backtrace=no
+    WrongType e = NEW()
+>>>
+ %e.pos% = MZ__posnr2pos(NULL, %pos%);
+<<<
+    THROW e
+  }
+  
+  #! Internal function for throwing E.WrongType
+  PROC throwWrongTypeEx(int pos,
+                        type expected,
+                        type actual) @backtrace=no
+    WrongType e = NEW()
+>>>
+ %e.pos% = MZ__posnr2pos(NULL, %pos%);
+<<<
+    IO.StringWriter w = NEW()
+    w.write("Type mismatch; expected ")
+    w.write(expected.ToString())
+    w.write(" but found ")
+    w.write(actual.ToString())
+    e.message = w.ToString()
+    THROW e
+  }
+  
+  #= Exception thrown when an operation on a thread fails.
+  CLASS Thread EXTENDS Error @public
+    #= Create a new E.Thread exception.
+    NEW(string msg) @replace @public
+      $message = msg
+      $pos = Z.callerPos()
+      GENERATE_IF Z.have("backtrace")
+        $backtrace = Z.backtrace(1)
+      }
+    }
+  }
+
+  #! Internal function throwing E.Thread
+  PROC throwThread(Z.Pos pos, string text) @backtrace=no
+    Thread e = NEW(text)
+    e.pos = pos
+    THROW e
+  }
+  
+  #= Exception thrown when running into an internal error.  Sorry!
+  CLASS Internal EXTENDS Error @public
+  }
+
+  #! Internal function for throwing E.NilAccess
+  PROC throwInternal(Z.Pos pos, string text) @backtrace=no
+    Internal e = NEW(text)
+    IF pos != NIL
+      e.pos = pos
+    }
+    THROW e
+  }
+
+  #! Internal function for THROW not inside a TRY/CATCH
+  #- When an exception is thrown while in here do not call beforeExit() again.
+  #- Otherwise a SEGV in beforeExit() will loop forever.
+  PROC unhandledException(Exception e) @backtrace=no
+    GENERATE_IF Z.lang == "C"
+>>>
+      static int entered = 0;
+      int didEnter = entered;
+      entered = 1;
+<<<
+      IF e ISA Exit
+        int exitVal = e.<Exit>.value
+>>>
+  if (!didEnter) beforeExit();
+  exit(%exitVal%);
+<<<
+      ELSE
+        writeToStderr(e)
+>>>
+  if (!didEnter) beforeExit();
+  exit(1);
+<<<
+      }
+    GENERATE_ELSE
+      # ISA not implemented yet
+      writeToStderr(e)
+    }
+  }
+
+  #!
+  PROC writeToStderr(Exception e)
+    IO.flush()  # don't overtake stdout
+    e.writeTo(TRUE, IO.stderr)
+    IO.stderr.print()
+  }
+
+  #= Write the current stack backtrace to |writer|.
+  PROC reportStack(IO.I_Writer writer) @public
+    GENERATE_IF Z.lang == "C" && Z.have("backtrace")
+      writer.print("Stack backtrace (last called first):")
+      FOR p IN Z.backtrace(1)
+        writer.write(p.ToString())
+        writer.write(": ")
+        writer.print(p.text)
+      }
+    GENERATE_ELSE
+      writer.print("Stack backtrace: not available")
+    }
+  }
+
+}
