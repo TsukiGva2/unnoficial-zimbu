@@ -12,6 +12,9 @@
 #* Licensed under the Apache License, Version 2.0.  See the LICENSE file or
 #* obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
 #
+#*notice
+#* last modified 05/11/2021 by TsukiGva2 <tsukigva@gmail.com>
+
 MODULE STRINGModule @public
 
   #= The builtin type string.
@@ -187,6 +190,7 @@ MODULE STRINGModule @public
   #- instead insert {THROW} before any placeholders.
   FUNC format(string this, dyn ... arguments) string
     
+    # this isn't a typo, see what_is_wBugFix.md
     dyn wBugFix = 0
     IF wBugFix == 0
     }
