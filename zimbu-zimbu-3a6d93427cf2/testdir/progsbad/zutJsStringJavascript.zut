@@ -1,6 +1,0 @@
-MODULE Testing
-  # Javascript string / Javascript
-  TEMPLATE inJsStringJavascript(ZUT.Javascript text) ZUT.Javascript @public
-    var a = '[=text]';
-  }
-}

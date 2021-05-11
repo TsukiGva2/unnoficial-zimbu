@@ -1,6 +1,0 @@
-# Small test program: Verify that this compiles and runs.
-FUNC Main() int
-  list<string> l = ["one", "two"]
-  IO.print(l.ToString())
-  RETURN 0
-}

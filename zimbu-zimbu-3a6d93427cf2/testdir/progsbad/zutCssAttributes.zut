@@ -1,8 +1,0 @@
-MODULE Testing
-  # CSS / Attributes
-  TEMPLATE inCssAttributes(ZUT.Attributes text) ZUT.Css @public
-    p {
-     color: [=text];
-    }
-  }
-}

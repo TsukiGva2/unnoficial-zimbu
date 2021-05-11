@@ -1,7 +1,0 @@
-MODULE Testing
-  # HTML data / Javascript
-  TEMPLATE inDataJavascript(ZUT.Javascript text) ZUT.Html @public
-    <title>[=text]</title>
-  }
-}
-

@@ -1,6 +1,0 @@
-MODULE Testing
-  # Javascript string / Attributes
-  TEMPLATE inJsStringAttributes(ZUT.Attributes text) ZUT.Javascript @public
-    var a = '[=text]';
-  }
-}

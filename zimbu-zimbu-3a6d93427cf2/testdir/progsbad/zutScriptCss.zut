@@ -1,8 +1,0 @@
-MODULE Testing
-  # HTML + Javascript / Css
-  TEMPLATE inScriptCss(ZUT.Css text) ZUT.Html @public
-    <script>[=text]</script>
-  }
-
-}
-

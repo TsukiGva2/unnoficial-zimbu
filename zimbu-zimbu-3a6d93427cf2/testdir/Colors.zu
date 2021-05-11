@@ -1,4 +1,0 @@
-
-MODULE Colors
-  string foreground @public = "red"
-}

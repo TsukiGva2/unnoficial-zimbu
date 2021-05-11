@@ -1,8 +1,0 @@
-MODULE Testing
-  # CSS single string / Html
-  TEMPLATE inCssSStringHtml(ZUT.Html text) ZUT.Css @public
-    p {
-     color: '[=text]';
-    }
-  }
-}

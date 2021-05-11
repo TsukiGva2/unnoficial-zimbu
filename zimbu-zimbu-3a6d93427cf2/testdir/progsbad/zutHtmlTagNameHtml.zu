@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlTagNameHtml.zut
-
-FUNC Main() int
-  # HTML tag name / Html
-  ZUT.Html html = NEW().add("xxx")
-  string fail = Testing.inTagNameHtml(html).ToString()
-  RETURN 0
-}

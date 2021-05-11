@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlAttrValueHtml.zut
-
-FUNC Main() int
-  # HTML attribute value / Html
-  ZUT.Html html = NEW().add("xxx")
-  string fail = Testing.inAttrValueHtml(html).ToString()
-  RETURN 0
-}

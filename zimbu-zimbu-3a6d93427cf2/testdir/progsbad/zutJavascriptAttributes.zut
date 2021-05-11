@@ -1,6 +1,0 @@
-MODULE Testing
-  # Javascript / Attributes
-  TEMPLATE inJavascriptAttributes(ZUT.Attributes text) ZUT.Javascript @public
-    var a = [=text];
-  }
-}

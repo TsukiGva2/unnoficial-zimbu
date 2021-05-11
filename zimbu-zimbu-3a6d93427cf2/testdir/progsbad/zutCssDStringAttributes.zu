@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutCssDStringAttributes.zut
-
-FUNC Main() int
-  # CSS double string / Javascript
-  ZUT.Attributes attr = NEW().add("xxx")
-  string fail = Testing.inCssDStringAttributes(attr).ToString()
-  RETURN 0
-}

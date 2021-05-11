@@ -1,6 +1,0 @@
-MODULE Testing
-  # HTML / Css
-  TEMPLATE inElementCss(ZUT.Css text) ZUT.Html @public
-    <div>[=text]</div>
-  }
-}

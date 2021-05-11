@@ -1,7 +1,0 @@
-# Small test program: Verify that this does not compile.
-
-FUNC Main() int
-  int _OPEN
-  RETURN 0
-}
-

@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlAttributesJavascript.zut
-
-FUNC Main() int
-  # HTML attributes / Javascript
-  ZUT.Javascript js = NEW().add("xxx")
-  string fail = Testing.inAttributesJavascript(js).ToString()
-  RETURN 0
-}

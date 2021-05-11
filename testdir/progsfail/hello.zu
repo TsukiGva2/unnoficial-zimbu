@@ -1,6 +1,0 @@
-# Small test program: Verify that this compiles OK but crashes.
-FUNC Main() int
-  string s
-  IO.write(s)
-  RETURN 0
-}

@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutUrlJavascript.zut
-
-FUNC Main() int
-  # URL / Javascript
-  ZUT.Javascript js = NEW().add("xxx")
-  string fail = Testing.inUrlJavascript(js).ToString()
-  RETURN 0
-}

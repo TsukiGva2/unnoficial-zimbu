@@ -1,6 +1,0 @@
-MODULE Testing
-  # Javascript / Css
-  TEMPLATE inJavascriptCss(ZUT.Css text) ZUT.Javascript @public
-    var a = [=text];
-  }
-}

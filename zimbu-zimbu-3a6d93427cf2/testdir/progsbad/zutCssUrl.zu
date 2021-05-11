@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutCssUrl.zut
-
-FUNC Main() int
-  # CSS / Url
-  ZUT.Url url = NEW().add("xxx")
-  string fail = Testing.inCssUrl(url).ToString()
-  RETURN 0
-}

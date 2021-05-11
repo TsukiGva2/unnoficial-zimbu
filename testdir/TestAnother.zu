@@ -1,7 +1,0 @@
-# Just a module that can be imported from TestSome.zu
-
-MODULE TestAnother @items=public
-  PROC doNothing()
-    IO.print("still still nothing")
-  }
-}

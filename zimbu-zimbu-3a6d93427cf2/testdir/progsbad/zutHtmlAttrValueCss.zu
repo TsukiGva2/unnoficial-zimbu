@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlAttrValueCss.zut
-
-FUNC Main() int
-  # HTML attribute value / Css
-  ZUT.Css css = NEW().add("xxx")
-  string fail = Testing.inAttrValueCss(css).ToString()
-  RETURN 0
-}

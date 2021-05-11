@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutJsStringCss.zut
-
-FUNC Main() int
-  # Javascript string / Css
-  ZUT.Css css = NEW().add("xxx")
-  string fail = Testing.inJsStringCss(css).ToString()
-  RETURN 0
-}

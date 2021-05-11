@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlAttrValueJavascript.zut
-
-FUNC Main() int
-  # HTML attribute value / Javascript
-  ZUT.Javascript js = NEW().add("xxx")
-  string fail = Testing.inAttrValueJavascript(js).ToString()
-  RETURN 0
-}

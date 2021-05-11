@@ -1,6 +1,0 @@
-MODULE Testing
-  # HTML attributes / Url
-  TEMPLATE inAttributesUrl(ZUT.Url text) ZUT.Html @public
-    <div [=text]>foo</div>
-  }
-}

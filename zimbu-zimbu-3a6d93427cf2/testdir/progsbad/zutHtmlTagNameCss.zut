@@ -1,6 +1,0 @@
-MODULE Testing
-  # HTML tag name / Css
-  TEMPLATE inTagNameCss(ZUT.Css text) ZUT.Html @public
-    <[=text]>foo</div>
-  }
-}

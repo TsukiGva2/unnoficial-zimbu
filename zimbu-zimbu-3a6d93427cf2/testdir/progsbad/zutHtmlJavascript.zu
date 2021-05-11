@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlJavascript.zut
-
-FUNC Main() int
-  # HTML / Javascript
-  ZUT.Javascript js = NEW().add("xxx")
-  string fail = Testing.inElementJavascript(js).ToString()
-  RETURN 0
-}

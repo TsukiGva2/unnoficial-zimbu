@@ -1,8 +1,0 @@
-# Small test program: Verify that this compiles and runs.
-FUNC Main() int
-  list<proc<>> ll = NEW()
-  FOR l IN ll
-    l()
-  }
-  RETURN 0
-}

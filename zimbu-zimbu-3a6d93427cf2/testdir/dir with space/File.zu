@@ -1,6 +1,0 @@
-
-MODULE File @public
-  PROC print(string s) @public
-    IO.print(s)
-  }
-}

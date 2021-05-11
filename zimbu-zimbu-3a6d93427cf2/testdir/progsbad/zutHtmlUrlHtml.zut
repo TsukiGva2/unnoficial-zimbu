@@ -1,7 +1,0 @@
-MODULE Testing
-  # HTML - Url / Html
-  TEMPLATE inHtmlUrlHtml(ZUT.Html html) ZUT.Html @public
-    <a href="[=html]">here</a>
-  }
-}
-

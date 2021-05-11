@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutJsStringAttributes.zut
-
-FUNC Main() int
-  # Javascript string / Attributes
-  ZUT.Attributes attr = NEW().add("xxx")
-  string fail = Testing.inJsStringAttributes(attr).ToString()
-  RETURN 0
-}

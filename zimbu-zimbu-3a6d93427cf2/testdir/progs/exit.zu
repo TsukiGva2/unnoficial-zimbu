@@ -1,4 +1,0 @@
-# Small test program: Verify that this compiles and runs.
-FUNC Main() int
-  EXIT 0
-}

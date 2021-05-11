@@ -1,9 +1,0 @@
-# Small test program: Verify that this does not compile.
-IMPORT.ZUT zutHtmlUrlHtml.zut
-
-FUNC Main() int
-  # HTML - Url / Html
-  ZUT.Html html = NEW().add("xxx")
-  string fail = Testing.inHtmlUrlHtml(html).ToString()
-  RETURN 0
-}
