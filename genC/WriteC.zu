@@ -1157,7 +1157,7 @@ int Fmain(void) {
       int undef
       int t = getArgumentType(type, pos, &undef, newCtx)
       bodyOut.write("\n ZitemToString(" .. getTname(type, ctx))
-      IF t < 100
+      IF t < 100 && t != 22
         bodyOut.write(", 1, (Tz)t->m" .. i)
       ELSEIF t == 360
         # dyn is a struct, take its reference

@@ -110,7 +110,7 @@ MODULE Config @items=public                   # TODO: restrict visibility
         }
       }
     }
-    libPath = "/usr/include/zulib/lib"
+    libPath = root .. "lib"
     pluginPath = root .. "plugin"
 
     string configName = ARG.getExeDir() .. "/zimbuConfig.out"

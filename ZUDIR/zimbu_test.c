@@ -1281,7 +1281,7 @@ Tb YSaE = 0; /* MConfig.portable */
 YNdL *Y9bJ = 0; /* MConfig.zimbuConfig */
 Ts YszV(); /* MConfig.run */
 Zs3 YDa = {"\001\\\000"};
-Zs24 YCXA = {"\026/usr/include/zulib/lib\000"};
+Zs5 YuqB = {"\003lib\000"};
 Zs8 YY26 = {"\006plugin\000"};
 Zs18 YjgX = {"\020/zimbuConfig.out\000"};
 Zs14 Yz5d = {"\014Cannot open \000"};
@@ -1574,7 +1574,7 @@ Tc YxTh[]="plugin/proto/Proto.zu";
 Tc Y9y_[]="zimbu_test.zu";
 Tc Yaa[]="";
 Tcpos ZcTbl0[]={
-{47,28},
+{46,28},
 {-3,16},
 {1,10},
 {6,28},
@@ -3073,7 +3073,7 @@ Tcpos ZcTbl84899[]={
 };
 Tc Y9QD[]="Main()";
 Tcpos ZcTbl5270[]={
-{70,3},
+{69,3},
 {1,5},
 {2,5},
 {3,10},
@@ -3342,7 +3342,7 @@ Tcpos ZcTbl42378[]={
 };
 Tc YuIh[]="STRING.replaceAll()";
 Tcpos ZcTbl12035[]={
-{674,5},
+{677,5},
 {1,14},
 {3,18},
 {4,5},
@@ -12366,7 +12366,7 @@ Ts YszV() {
   }
  }
  sf.pos=2347815;
- Yjm9 = ((Tc*)&YCXA);
+ Yjm9 = ZcS(Vroot, ((Tc*)&YuqB));
  sf.pos=2347816;
  YajM = ZcS(Vroot, ((Tc*)&YY26));
  sf.pos=2347817;

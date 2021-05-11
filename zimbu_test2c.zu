@@ -68,6 +68,7 @@ FUNC Main() int
   # Try opening the output file now.  It's pointless to start parsing if we
   # can't write the result.
   string outFileName = IO.concatPath(zudirName, rootTail .. ".c")
+
   IO.File outFile = IO.fileWriter(outFileName)
   IF outFile == NIL
     LOG.fatal("Cannot open file for writing: \(outFileName)")

@@ -188,13 +188,13 @@ MODULE STRINGModule @public
   #
   #- Errors are reported in the resulting string.  To throw an exception
   #- instead insert {THROW} before any placeholders.
-  FUNC format(string this, dyn ... arguments) string
-    
+  FUNC format(string this, dyn ... arguments) string 
+
     # this isn't a typo, see what_is_wBugFix.md
     dyn wBugFix = 0
     IF wBugFix == 0
     }
-
+    
     IO.StringWriter w = NEW()
     # Convert the string to an array, lookup by character index works much
     # faster.
