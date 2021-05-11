@@ -1,6 +1,6 @@
 # wBugFix
 
-i recently added these 3 lines of code to zimbu/lib/STRINGModule.zu
+i recently added these 3 lines of code to unnoficial-zimbu/lib/STRINGModule.zu
 
 
     dyn wBugFix = 0
