@@ -1,5 +1,3 @@
-syntax: glob
-
 testdir/ZUDIR/*
 testdir/subdir/ZUDIR/*
 plugin/proto/ZUDIR/*
