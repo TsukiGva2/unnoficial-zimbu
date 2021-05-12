@@ -8,6 +8,7 @@
 # Licensed under the Apache License, Version 2.0.  See the LICENSE file or
 # obtain a copy at: http://www.apache.org/licenses/LICENSE-2.0
 #
+# last modified 05/12/2021 by TsukiGva2 <tsukigva@gmail.com>
 
 # Names used for the generated C code:
 # A.*                   method argument
@@ -1157,7 +1158,7 @@ int Fmain(void) {
       int undef
       int t = getArgumentType(type, pos, &undef, newCtx)
       bodyOut.write("\n ZitemToString(" .. getTname(type, ctx))
-      IF t < 100 && t != 22
+      IF t < 100 && (t < 10 || t > 22) # exclude nat types, bool and status
         bodyOut.write(", 1, (Tz)t->m" .. i)
       ELSEIF t == 360
         # dyn is a struct, take its reference
