@@ -13,14 +13,14 @@ i recently added these 3 lines of code to unnoficial-zimbu/lib/STRINGModule.zu
 first of all, the 'w' in wBugFix stands for weird.
 
 it all started with a test, i was trying to use the string $format function 
-and i was getting some kind of cryptic and weird error message
+and i was getting this weird error message
 
     $ zup --run
     bla bla bla, check buildlog
   
     $ cat buildlog
     ...
-    Warning: implicit defiinition of ZdynEqual
+    Warning: implicit definition of ZdynEqual
     ...
     ld: undefined reference to ZdynEqual
     ...
